@@ -245,7 +245,8 @@ def _warm_database_probe() -> None:
         pass
 
 
-@app.get("/health", response_model=HealthCheckResponse)
+# HEAD is allowed too: uptime monitors (UptimeRobot, Render, load balancers) often probe with HEAD and would otherwise see 405 and report "down"
+@app.api_route("/health", methods=["GET", "HEAD"], response_model=HealthCheckResponse)
 def health_check():
     """Unauthenticated liveness plus a row-free database report (cached 30 s): ok | permission_denied | unreachable."""
     probe = _database_report()
