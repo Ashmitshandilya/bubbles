@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 // Self-hosted by next/font (no runtime request to Google) with size-adjusted
@@ -48,6 +49,7 @@ export default function RootLayout({
     <html lang="en" className={`${nunito.variable} ${fredoka.variable}`}>
       <body className="bubbles-shell min-h-screen flex flex-col">
         {children}
+        <Analytics />
       </body>
     </html>
   );
