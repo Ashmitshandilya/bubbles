@@ -1,0 +1,78 @@
+# =========================
+# Environment / Secrets
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# =========================
+# Node / Next.js
+# =========================
+node_modules/
+.next/
+out/
+dist/
+coverage/
+*.tsbuildinfo
+
+# =========================
+# Python
+# =========================
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# =========================
+# Logs
+# =========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
+*.swp
+
+
+
+
+# Local AI / development tooling state
+.mimocode/
+.playwright/
+.playwright-cli/
+.omc/state/
+.omc/*.log
+
+# Local Claude configuration/state
+.claude/settings.local.json
+.claude/settings.json.bak
+.claude/scheduled_tasks.lock
+# Credential scratch files: never commit (they were once committed; rotate any key that was in them)
+api more
+batch knowledge
+backend/test_token.txt
+*.token
+backend/.env.*
+!backend/.env.example

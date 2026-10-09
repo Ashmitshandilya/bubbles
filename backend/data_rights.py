@@ -1,0 +1,66 @@
+"""Export and delete the user's Whole-Health OS data (profile, plans, food/workout logs, cycle days, schedules, notifications).
+
+Tracker entries (sleep, weight, ...) keep their own privacy endpoints; this covers the JSON documents stored through doc_store.
+"""
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any, Callable
+
+from fastapi import APIRouter, Header, HTTPException, Query
+from starlette.concurrency import run_in_threadpool
+
+import doc_store
+
+EXPORT_LIMIT = 5000
+
+
+MIRROR_DOMAINS = ("food_log",)       # analytics copies this feature wrote to extracted_health_events
+
+
+def export_documents(db: Any, uid: str) -> list[dict]:
+    rows = (db.table(doc_store.TABLE).select("*").eq("user_id", uid).eq("event_type", doc_store.EVENT_TYPE).order("event_date", desc=True).limit(EXPORT_LIMIT + 1).execute().data or [])
+    return [{k: v for k, v in doc_store._unpack(r).items() if k not in ("id", "valid")} for r in rows if doc_store.row_is_valid(r)]
+
+
+def delete_mirrors(db: Any, uid: str) -> int:
+    """Remove the analytics copies of food-log entries so insights and AI context stop using them."""
+    removed = 0
+    for domain in MIRROR_DOMAINS:
+        try:
+            rows = (db.table("extracted_health_events").select("id").eq("user_id", uid).eq("extracted_data->_prov->>domain", domain).limit(2000).execute().data or [])
+            for r in rows:
+                db.table("extracted_health_events").delete().eq("id", r["id"]).eq("user_id", uid).execute()
+                removed += 1
+        except Exception:  # noqa: BLE001
+            pass
+    return removed
+
+
+def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
+    router = APIRouter()
+
+    @router.get("/me/whole-health/export")
+    def export(authorization: str | None = Header(default=None)):
+        uid = str(get_user(authorization).id)
+        docs = export_documents(db, uid)
+        truncated = len(docs) > EXPORT_LIMIT
+        docs = docs[:EXPORT_LIMIT]
+        by_kind: dict[str, int] = {}
+        for d in docs:
+            by_kind[d["kind"]] = by_kind.get(d["kind"], 0) + 1
+        return {"status": "success", "exported_at": datetime.now(timezone.utc).isoformat(), "count": len(docs), "truncated": truncated, "kinds": by_kind, "documents": docs,
+                "note": "Your tracker entries (sleep, weight, symptoms and so on) are separate and can be exported from their own pages."}
+
+    @router.delete("/me/whole-health/data")
+    async def delete_all(confirm: bool = Query(default=False), authorization: str | None = Header(default=None)):
+        uid = str((await run_in_threadpool(get_user, authorization)).id)
+        if not confirm:
+            raise HTTPException(status_code=422, detail="Add confirm=true to delete all of your Fitness, Cycle and plan data. This cannot be undone.")
+        before = await run_in_threadpool(doc_store.delete_everything, db, uid)
+        mirrors = await run_in_threadpool(delete_mirrors, db, uid)
+        return {"status": "success", "deleted": before, "analytics_copies_removed": mirrors,
+                "note": ("Your tracker entries (sleep, weight, symptoms and so on) are separate and were not deleted. "
+                         "If Bubbles recently paused a plan for your safety, that short safety hold stays in place so a strict plan cannot restart straight away.")}
+
+    return router

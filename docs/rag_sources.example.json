@@ -1,0 +1,22 @@
+[
+  {
+    "source_name": "WHO",
+    "publisher": "World Health Organization",
+    "source_url": "https://www.who.int/",
+    "evidence_level": "guideline",
+    "country": "global",
+    "population": "general",
+    "topic_tags": ["health", "clinical-guidance"],
+    "document_type": "guideline"
+  },
+  {
+    "source_name": "ICMR",
+    "publisher": "Indian Council of Medical Research",
+    "source_url": "https://www.icmr.gov.in/",
+    "evidence_level": "guideline",
+    "country": "IN",
+    "population": "general",
+    "topic_tags": ["india", "healthcare", "ethics"],
+    "document_type": "guideline"
+  }
+]

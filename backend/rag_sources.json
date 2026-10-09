@@ -1,0 +1,90 @@
+[
+  {
+    "source_name": "World Health Organization",
+    "publisher": "WHO",
+    "country": "GLOBAL",
+    "evidence_tier": "A",
+    "base_url": "https://www.who.int",
+    "enabled": true
+  },
+  {
+    "source_name": "National Institute of Nutrition",
+    "publisher": "ICMR-NIN",
+    "country": "IN",
+    "evidence_tier": "A",
+    "base_url": "https://www.nin.res.in",
+    "enabled": true
+  },
+  {
+    "source_name": "Indian Council of Medical Research",
+    "publisher": "ICMR",
+    "country": "IN",
+    "evidence_tier": "A",
+    "base_url": "https://www.icmr.gov.in",
+    "enabled": true
+  },
+  {
+    "source_name": "National Institutes of Health",
+    "publisher": "NIH",
+    "country": "US",
+    "evidence_tier": "A",
+    "base_url": "https://www.nih.gov",
+    "enabled": true
+  },
+  {
+    "source_name": "National Institute of Neurological Disorders and Stroke",
+    "publisher": "NINDS",
+    "country": "US",
+    "evidence_tier": "A",
+    "base_url": "https://www.ninds.nih.gov",
+    "enabled": true
+  },
+  {
+    "source_name": "National Institute of Diabetes and Digestive and Kidney Diseases",
+    "publisher": "NIDDK",
+    "country": "US",
+    "evidence_tier": "A",
+    "base_url": "https://www.niddk.nih.gov",
+    "enabled": true
+  },
+  {
+    "source_name": "Food and Drug Administration",
+    "publisher": "FDA",
+    "country": "US",
+    "evidence_tier": "A",
+    "base_url": "https://www.fda.gov",
+    "enabled": true
+  },
+  {
+    "source_name": "NHS (England)",
+    "publisher": "NHS",
+    "country": "UK",
+    "evidence_tier": "A",
+    "base_url": "https://www.nhs.uk",
+    "enabled": true
+  },
+  {
+    "source_name": "MedlinePlus (US National Library of Medicine)",
+    "publisher": "NLM",
+    "country": "US",
+    "evidence_tier": "A",
+    "base_url": "https://medlineplus.gov",
+    "enabled": true
+  },
+  {
+    "source_name": "Indian Food Composition Tables 2017 (ICMR-NIN)",
+    "publisher": "ICMR-NIN",
+    "country": "IN",
+    "evidence_tier": "A",
+    "base_url": "http://ifct2017.com",
+    "enabled": true
+  },
+  {
+    "source_name": "Bubbles editorial (authored, unreviewed)",
+    "publisher": "Bubbles",
+    "country": "IN",
+    "evidence_tier": "C",
+    "base_url": "https://bubbles.invalid",
+    "enabled": true
+  }
+]

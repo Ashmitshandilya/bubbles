@@ -1,0 +1,9 @@
+{"id": "F01", "text": "I have chest pain.", "concept": "chest_pain", "assertion": "present", "temporal": "current"}
+{"id": "F02", "text": "I do not have chest pain.", "concept": "chest_pain", "assertion": "negated", "temporal": "current"}
+{"id": "F03", "text": "I had chest pain last month.", "concept": "chest_pain", "assertion": "present", "temporal": "past"}
+{"id": "F04", "text": "I am worried I might develop chest pain.", "concept": "chest_pain", "assertion": "hypothetical", "temporal": "future"}
+{"id": "F05", "text": "My previous report mentioned chest pain.", "concept": "chest_pain", "assertion": "quoted", "temporal": null}
+{"id": "F06", "text": "The example dataset contains chest pain.", "concept": "chest_pain", "assertion": "quoted", "temporal": null}
+{"id": "F07", "text": "My mother has chest pain.", "concept": "chest_pain", "assertion": "other_person", "temporal": null}
+{"id": "F08", "text": "What is chest pain?", "concept": "chest_pain", "assertion": "question", "temporal": null}
+{"id": "F09", "text": "Actually I meant I did not have chest pain", "concept": "chest_pain", "assertion": "negated", "temporal": "current"}

@@ -1,0 +1,265 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><title>Bubbles Clinical Review Packet</title><style>body{font-family:Georgia,serif;max-width:900px;margin:2rem auto;padding:0 1rem;color:#222;line-height:1.5}
+h1,h2,h3{font-family:Arial,sans-serif}h1{border-bottom:3px solid #6A45F5}h2{margin-top:2rem;border-bottom:1px solid #ccc}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.9rem}th,td{border:1px solid #bbb;padding:.35rem .5rem;text-align:left;vertical-align:top}
+th{background:#f1ecff}code{background:#f4f4f4;padding:0 .2rem;font-size:.85em}hr{border:0;border-top:1px solid #ccc}
+@media print{body{max-width:none;margin:0}h2{page-break-after:avoid}table,tr{page-break-inside:avoid}}</style></head><body><h1>Bubbles — Clinical Review Packet</h1>
+<p><strong>For:</strong> a licensed doctor, a registered dietitian / nutritionist, and a pharmacist</p>
+<p><strong>From:</strong> the Bubbles product team</p>
+<p><strong>Status of everything below:</strong> <strong>PENDING CLINICIAN REVIEW — proposals, not medical advice</strong></p>
+<p><strong>Where the numbers live in code:</strong> <code>backend/clinical_constants.py</code> (one file; a change you request is a one-line edit)</p>
+<hr>
+<h2>1. What Bubbles is, and what we are asking you to check</h2>
+<p>Bubbles is a chat-first personal health companion. It is <strong>not</strong> a diagnostic tool and never replaces a clinician.</p>
+<p>We are adding a <strong>Fitness</strong> section (diet planner, exercise planner, calorie calculator) and a **Strict</p>
+<p>Transformation mode** that joins the three to move a user toward a target weight, plus a much deeper</p>
+<p><strong>Menstrual cycle</strong> section, richer sleep, hydration, medication and mind trackers.</p>
+<p>Because these features touch eating, exercise and medication, **no user should reach Strict Transformation mode</p>
+<p>until a clinician has signed off the sections below** (the app shows "pending clinician review" on every plan</p>
+<p>until the owner flips the review flag). Please mark each item <strong>Approve / Change to ___ / Reject</strong> and add comments.</p>
+<p>Bubbles does <strong>not</strong> diagnose, prescribe, recommend supplements, or advise medication dose changes. Anything that</p>
+<p>looks like a symptom or condition is routed to a deterministic safety check first, and the user is told to see a</p>
+<p>clinician. All estimates are shown as ranges.</p>
+<p>How to read the "source" column: <strong>WHO / CDC / NHS / ACOG</strong> = public guidance we believe matches the value;</p>
+<p><strong>LIT</strong> = widely used published formula or convention; <strong>BUBBLES</strong> = our own design choice that needs your agreement.</p>
+<p>*We could not verify every figure against its primary source while drafting; please treat the "source" column as</p>
+<p>"where we believe this comes from", not as a citation.*</p>
+<hr>
+<h2>2. Energy and weight-change numbers</h2>
+<table><thead><tr><th>#</th><th>Constant (code name)</th><th>Proposed value</th><th>Source</th><th>Why / how it is used</th><th>Your decision</th></tr></thead><tbody>
+<tr><td>2.1</td><td><code>MIFFLIN_*</code> Mifflin-St Jeor resting energy</td><td><code>10·kg + 6.25·cm − 5·age + 5</code> (male basis) or <code>− 161</code> (female basis); <strong>“average” basis uses −78</strong></td><td>LIT</td><td>Starting estimate of resting energy. Users pick the formula basis (we do not assume from sex or gender).</td><td></td></tr>
+<tr><td>2.2</td><td><code>ACTIVITY_FACTORS</code></td><td>1.2 / 1.375 / 1.55 / 1.725 / 1.9</td><td>LIT</td><td>Multiplies resting energy to estimate daily energy use (TDEE).</td><td></td></tr>
+<tr><td>2.3</td><td><code>PACE_PCT_PER_WEEK</code></td><td>planned loss <strong>0.25 – 0.75 %</strong> of body weight per week</td><td>BUBBLES</td><td>Default pace we propose.</td><td></td></tr>
+<tr><td>2.4</td><td><code>HARD_CAP_KG_PER_WEEK</code>, <code>HARD_CAP_PCT_PER_WEEK</code></td><td><strong>never faster than 1.0 kg/week and never &gt; 1 % of body weight/week</strong></td><td>CDC</td><td>Hard ceiling; engine will not plan or accept more.</td><td></td></tr>
+<tr><td>2.5</td><td><code>MAX_DEFICIT_PCT_OF_TDEE</code>, <code>MAX_DEFICIT_KCAL</code></td><td>deficit <strong>≤ 25 % of TDEE and ≤ 1000 kcal/day</strong></td><td>BUBBLES</td><td>Limits how aggressive the calorie target can be.</td><td></td></tr>
+<tr><td>2.6</td><td><code>INTAKE_FLOOR_KCAL</code></td><td><strong>female basis 1200, male basis 1500, average basis 1350</strong> kcal/day; absolute floor 1200</td><td>LIT</td><td>Bubbles never outputs a calorie target below this for any input (fuzz-tested).</td><td></td></tr>
+<tr><td>2.7</td><td><code>KCAL_PER_KG_RANGE</code></td><td>6500 – 7700 kcal per kg of body mass</td><td>LIT/BUBBLES</td><td>Only used to show a <strong>time-to-goal range</strong>, never a single date.</td><td></td></tr>
+<tr><td>2.8</td><td><code>MAX_SURPLUS_KCAL</code>, <code>MAX_GAIN_KG_PER_WEEK</code></td><td>gain goals: ≤ +500 kcal/day, ≤ 0.5 kg/week</td><td>BUBBLES</td><td>For underweight/gain goals (gentle plan only).</td><td></td></tr>
+<tr><td>2.9</td><td><code>EXERCISE_CALORIE_CREDIT</code></td><td>only <strong>50 %</strong> of estimated exercise burn is added back to the food budget</td><td>BUBBLES</td><td>Wearable/MET burn estimates are noisy; this avoids over-eating <em>or</em> under-eating.</td><td></td></tr>
+<tr><td>2.10</td><td><code>KCAL</code> weekly changes</td><td>the weekly check-in moves the calorie target by <strong>at most 150 kcal</strong></td><td>BUBBLES</td><td>Prevents swings from noisy weight data.</td><td></td></tr>
+</tbody></table>
+<p><strong>Questions for the dietitian</strong></p>
+<ol>
+<li>Is a 1200 / 1500 kcal floor acceptable for an unsupervised consumer app, or should it be higher (e.g. never below estimated resting energy)?</li>
+<li>Should the floor differ for very short, older, or very active people?</li>
+<li>Should we require the user to be above a minimum BMI <strong>to start a deficit</strong> (we propose ≥ 18.5; Indian users may prefer the Asian BMI cut-offs, see 3.1)?</li>
+<li>Is 25 % / 1000 kcal the right deficit ceiling? Is the “7700 kcal/kg” rule acceptable if shown only as a range?</li>
+</ol>
+<hr>
+<h2>3. BMI, targets and body composition</h2>
+<table><thead><tr><th>#</th><th>Constant</th><th>Value</th><th>Source</th><th>Note</th><th>Decision</th></tr></thead><tbody>
+<tr><td>3.1</td><td><code>BMI_UNDERWEIGHT/OVERWEIGHT/OBESE</code>, <code>BMI_ASIAN_*</code></td><td>18.5 / 25 / 30 (WHO); <strong>Asian cut-offs 23 / 27.5</strong></td><td>WHO</td><td>We show both and caveat that BMI ignores muscle, age, sex and ethnicity.</td><td></td></tr>
+<tr><td>3.2</td><td><code>MIN_TARGET_BMI</code></td><td><strong>a target weight below BMI 18.5 is refused</strong></td><td>WHO/BUBBLES</td><td></td><td></td></tr>
+<tr><td>3.3</td><td><code>MIN_START_BMI_FOR_LOSS</code></td><td>a weight-<strong>loss</strong> plan from BMI &lt; 18.5 is refused</td><td>BUBBLES</td><td></td><td></td></tr>
+<tr><td>3.4</td><td>Input sanity ranges <code>MIN_PLAUSIBLE</code></td><td>height 120–230 cm, weight 30–300 kg, age 13–100</td><td>BUBBLES</td><td>Prevents nonsense calculations.</td><td></td></tr>
+</tbody></table>
+<hr>
+<h2>4. Macros and nutrients</h2>
+<table><thead><tr><th>#</th><th>Constant</th><th>Value</th><th>Source</th><th>Note</th><th>Decision</th></tr></thead><tbody>
+<tr><td>4.1</td><td><code>PROTEIN_G_PER_KG</code> (+ <code>PROTEIN_G_PER_KG_TRAINING</code>)</td><td><strong>1.2 – 2.0 g/kg</strong> (default <strong>1.4</strong> with resistance training, <strong>1.2</strong> without) of reference weight (up to 2.2 with resistance training in a deficit)</td><td>LIT</td><td>Reference weight for BMI ≥ 30 = ideal + 25 % of the excess (<code>OBESE_REFERENCE_WEIGHT_WEIGHT</code>).</td><td></td></tr>
+<tr><td>4.2</td><td><code>PROTEIN_G_PER_KG_KIDNEY_NOTE</code></td><td>users who record kidney disease get <strong>no high-protein target</strong>, only a clinician note</td><td>BUBBLES</td><td>Strict mode is also blocked for them.</td><td></td></tr>
+<tr><td>4.3</td><td><code>FAT_MIN_PCT_KCAL</code>, <code>FAT_MAX_PCT_KCAL</code></td><td>20 % – 35 % of energy</td><td>LIT</td><td></td><td></td></tr>
+<tr><td>4.4</td><td><code>FIBRE_G_PER_DAY</code></td><td>25 – 30 g</td><td>LIT</td><td></td><td></td></tr>
+<tr><td>4.5</td><td><code>SODIUM_LIMIT_MG</code></td><td>&lt; 2000 mg sodium (&lt; 5 g salt) per day</td><td>WHO</td><td>Hypertension users get a stricter note, no number change by us.</td><td></td></tr>
+<tr><td>4.6</td><td><code>ADDED_SUGAR_PCT_KCAL</code></td><td>&lt; 10 % of energy from free sugars</td><td>WHO</td><td></td><td></td></tr>
+<tr><td>4.7</td><td>Micronutrient attention list</td><td>iron, calcium, vitamin B12, vitamin D, folate</td><td>BUBBLES</td><td>We <strong>show gaps and suggest foods only</strong>. We never advise supplements or doses.</td><td></td></tr>
+</tbody></table>
+<p><strong>Question:</strong> Are the vitamin/mineral “attention” nutrients right for vegetarian/vegan Indian diets and for menstruating users (iron, B12, folate)? Anything missing (iodine, zinc, omega-3)?</p>
+<hr>
+<h2>5. Exercise</h2>
+<table><thead><tr><th>#</th><th>Constant</th><th>Value</th><th>Source</th><th>Decision</th></tr></thead><tbody>
+<tr><td>5.1</td><td><code>WHO_MODERATE_MIN_PER_WEEK</code> / <code>WHO_VIGOROUS_MIN_PER_WEEK</code></td><td>150–300 min moderate <strong>or</strong> 75–150 min vigorous per week</td><td>WHO</td><td></td></tr>
+<tr><td>5.2</td><td><code>WHO_STRENGTH_DAYS_MIN</code></td><td>muscle-strengthening on ≥ 2 days/week</td><td>WHO</td><td></td></tr>
+<tr><td>5.3</td><td><code>MAX_WEEKLY_VOLUME_INCREASE</code></td><td>≤ ~10 % more volume than last week</td><td>LIT/BUBBLES</td><td></td></tr>
+<tr><td>5.4</td><td><code>DELOAD_EVERY_WEEKS</code></td><td>a lighter week every 5th week</td><td>BUBBLES</td><td></td></tr>
+<tr><td>5.5</td><td><code>MET_VALUES</code></td><td>table of activity MET values (walking 2.8–6.0, running 9.8, yoga 2.8, etc.)</td><td>LIT (Compendium of Physical Activities)</td><td>Used for <strong>estimated</strong> calories burned only. Please review the table.</td></tr>
+<tr><td>5.6</td><td><code>RPE_TARGET_MODERATE</code></td><td>effort 3–6 on a 0–10 scale</td><td>LIT</td><td></td></tr>
+</tbody></table>
+<h3>5.7 Pre-participation screening (our wording, in the spirit of the free PAR-Q+)</h3>
+<p>Asked before any exercise plan. A <strong>yes to any of the first five</strong> → the app says *talk to a clinician before</p>
+<p>starting*, and offers only easy walking and gentle mobility until the user says they have been cleared.</p>
+<ol>
+<li>Heart condition, or told to only exercise on a doctor's advice? <em>(blocking)</em></li>
+<li>Chest pain with activity or at rest? <em>(blocking)</em></li>
+<li>Dizziness causing loss of balance, or loss of consciousness in the last 12 months? <em>(blocking)</em></li>
+<li>High blood pressure that is not controlled? <em>(blocking)</em></li>
+<li>Unusual breathlessness with light activity? <em>(blocking)</em></li>
+<li>Bone or joint problem that could worsen? <em>(adapts the plan)</em></li>
+<li>Taking medicine for blood pressure, heart, diabetes or breathing? <em>(adds a note)</em></li>
+<li>Pregnant or within 6 weeks of birth? <em>(pregnancy/postpartum plan only)</em></li>
+<li>Any other reason not to be more active? <em>(clinician note)</em></li>
+</ol>
+<p><strong>Question for the doctor:</strong> Is this screen adequate? Should any “adapts the plan” question be blocking?</p>
+<h3>5.8 Condition-specific exercise adaptations we propose (please correct)</h3>
+<table><thead><tr><th>Condition</th><th>What the plan does</th></tr></thead><tbody>
+<tr><td>Hypertension</td><td>no heavy straining/Valsalva moves, moderate cardio, longer warm-up</td></tr>
+<tr><td>Type 2 diabetes</td><td>regular timing, carry fast sugar, avoid very long fasted sessions</td></tr>
+<tr><td>Asthma / COPD</td><td>warm-up, longer intervals, no forced cold-air intensity</td></tr>
+<tr><td>Knee / back / joint issues</td><td>low-impact options (cycling, swimming, chair/band work), no jumping/deep loaded flexion</td></tr>
+<tr><td>Osteoporosis</td><td>weight-bearing + balance, no loaded spinal flexion/twisting</td></tr>
+<tr><td>PCOS</td><td>strength training emphasis + moderate cardio</td></tr>
+<tr><td>Pregnancy / postpartum</td><td>WHO pregnancy guidance only; no strict mode; no supine-heavy or contact moves</td></tr>
+<tr><td>Obesity (BMI ≥ 30)</td><td>low-impact start, shorter bouts, gradual build</td></tr>
+</tbody></table>
+<hr>
+<h2>6. Strict Transformation mode</h2>
+<p>Strict mode combines the diet planner + exercise planner + calorie log into one plan toward a target weight.</p>
+<p>It is <strong>off for everyone unless every rule below passes</strong>.</p>
+<h3>6.1 Hard exclusions — strict mode is refused (user is offered a gentle plan or told to see a clinician)</h3>
+<table><thead><tr><th>#</th><th>Rule</th><th>Decision</th></tr></thead><tbody>
+<tr><td>1</td><td>Age under 18</td><td></td></tr>
+<tr><td>2</td><td>Pregnant, breastfeeding, or actively trying to conceive</td><td></td></tr>
+<tr><td>3</td><td>Positive eating-disorder screen (SCOFF ≥ 2) <strong>or</strong> any eating-disorder history the user records</td><td></td></tr>
+<tr><td>4</td><td>Target BMI &lt; 18.5, or starting BMI &lt; 18.5 for a weight-loss goal</td><td></td></tr>
+<tr><td>5</td><td>Type 1 diabetes; or insulin / sulfonylurea use — unless the user confirms a clinician has approved the plan</td><td></td></tr>
+<tr><td>6</td><td>Kidney disease (advanced), heart disease, uncontrolled hypertension, liver cirrhosis, cancer treatment — unless a clinician has approved</td><td></td></tr>
+<tr><td>7</td><td>Missed periods for ≥ 3 months not explained by pregnancy (possible low energy availability)</td><td></td></tr>
+<tr><td>8</td><td>Recent surgery or an active injury — unless cleared</td><td></td></tr>
+<tr><td>9</td><td>Any red-flag symptom reported in the last 14 days</td><td></td></tr>
+<tr><td>10</td><td>Age ≥ 70 without a clinician acknowledgement</td><td></td></tr>
+<tr><td>11</td><td>Warfarin/acenocoumarol (steady vitamin-K intake matters) or lithium (salt/fluid shifts) — unless approved</td><td></td></tr>
+</tbody></table>
+<p><strong>Condition keyword lists</strong> (what text counts as each condition) are in <code>STRICT_BLOCKING_CONDITIONS</code> and</p>
+<p><code>STRICT_BLOCKING_MEDICATIONS</code> in <code>clinical_constants.py</code>. *Please review the wording lists — they are matched</p>
+<p>against free text the user entered.*</p>
+<h3>6.2 Soft cautions (allowed, but the plan adapts and a clinician note is shown)</h3>
+<p>Age &gt; 60; type 2 diabetes / prediabetes / insulin resistance (carbohydrate spread, low-GI emphasis, hypoglycaemia</p>
+<p>awareness); hypertension (sodium note); PCOS (low-GI, strength training); thyroid conditions; anaemia (iron-rich</p>
+<p>foods + vitamin C pairing, no supplement advice); asthma; joint issues; osteoporosis; GERD; IBS/coeliac/IBD;</p>
+<p>gout; endometriosis; depression/anxiety; high cholesterol; GLP-1 medicine use (protein and fluids emphasised,</p>
+<p><strong>Bubbles never suggests dose changes</strong>); perimenopause (protein, strength, calcium and vitamin D foods).</p>
+<h3>6.3 What the always-on safety monitors do (<code>transformation</code> module)</h3>
+<table><thead><tr><th>Trigger</th><th>Response</th><th>Constant</th></tr></thead><tbody>
+<tr><td>Logged intake under the floor on ≥ 3 of 7 days</td><td>pause strict mode, raise targets to the floor, gentle check-in</td><td><code>SAFETY_LOW_INTAKE_DAYS_OF_7</code></td></tr>
+<tr><td>Weight trend falling faster than 1.2 kg/week for 2 weeks</td><td>pause and soften</td><td><code>SAFETY_RAPID_LOSS_*</code></td></tr>
+<tr><td>Regain &gt; 2 kg in a week</td><td>gentle check-in (could be water/cycle), no punishment</td><td><code>SAFETY_REGAIN_KG_IN_WEEK</code></td></tr>
+<tr><td>Very low intake <strong>and</strong> &gt; 420 min/week exercise</td><td>pause, recommend a clinician (relative energy deficiency risk)</td><td><code>SAFETY_HIGH_EXERCISE_MIN_PER_WEEK</code></td></tr>
+<tr><td>Missed period ≥ 3 months</td><td>pause, recommend a clinician</td><td><code>SAFETY_MISSED_PERIOD_MONTHS</code></td></tr>
+<tr><td>Dizziness / fainting / chest pain / palpitations in chat</td><td>deterministic emergency/urgent safety response first</td><td>existing safety engine</td></tr>
+<tr><td>Language such as “starve myself”, “punish”, “purge”, “can't stop thinking about food”</td><td>pause, supportive message, point to professional help</td><td>restriction-language check</td></tr>
+<tr><td>Day-to-day intake swing &gt; 1500 kcal repeatedly</td><td>gentle check-in about restricting/bingeing patterns</td><td><code>SAFETY_BINGE_RESTRICT_SWING_KCAL</code></td></tr>
+</tbody></table>
+<p>Bubbles never uses guilt or shame language; “off-plan” days are treated as normal.</p>
+<h3>6.4 Weekly adaptive check-in</h3>
+<ul>
+<li>Weight trend: exponentially weighted moving average, factor <code>TREND_SMOOTHING_ALPHA = 0.1</code>.</li>
+<li>Needs ≥ 4 food-logged days and ≥ 3 weigh-ins in the week to adjust anything.</li>
+<li>After ≥ 2 weeks, real energy expenditure is estimated from average intake and the trend; the calorie target moves at most 150 kcal and never below the floor.</li>
+<li>Plateau = trend change below 0.1 %/week for 3 weeks → options (diet break, add steps, review logging). After 12 weeks of dieting the app suggests a 1–2 week maintenance break.</li>
+<li>For users with cycles the trend is read with menstrual-cycle water retention in mind (no “failure” message for a luteal-phase uptick).</li>
+<li>Finishing: gradual return to maintenance by +100 kcal/week.</li>
+</ul>
+<p><strong>Questions:</strong> Is the pause logic safe and sensible? Anything you would add (e.g. blood-pressure or glucose logging prompts, mandatory medical check-in interval)? Should a clinician acknowledgement expire after N months?</p>
+<h3>6.5 What Bubbles says in chat (please review the wording)</h3>
+<ul>
+<li><strong>Restriction / disordered-eating language</strong> (for example "starve myself", "make myself throw up", "can't stop thinking about food", "skip all my meals") gets a fixed, kind reply: it pauses an active strict plan, encourages a doctor, counsellor or trusted person, and gives an emergency / crisis-line reminder. No numbers or tips follow. The phrase list is in <code>transformation.py</code> (<code>_RESTRICT</code>); please add or remove phrases.</li>
+<li><strong>A request to eat below the floor</strong> (for example "I want to eat 800 calories") is declined: Bubbles says it cannot plan below about 1200-1500 kcal, explains why in plain words, says very-low-calorie diets need medical supervision, and offers a steady plan instead.</li>
+<li><strong>Plan questions</strong> ("how many calories should I eat?", "what's my workout?") are answered from the saved plan with the word <em>estimate</em> and, until you sign off, the pending-review notice. Chat never changes a plan; it points to the screen where the user confirms a change.</li>
+<li><strong>Data rights:</strong> a user can export all Fitness / Cycle / plan data and delete it all (<code>/me/whole-health/export</code>, <code>/me/whole-health/data?confirm=true</code>).</li>
+</ul>
+<hr>
+<h2>7. Hydration</h2>
+<table><thead><tr><th>Constant</th><th>Value</th><th>Source</th><th>Decision</th></tr></thead><tbody>
+<tr><td><code>HYDRATION_ML_PER_KG</code></td><td>33 ml per kg body weight per day (from drinks), a rough baseline</td><td>LIT</td><td></td></tr>
+<tr><td><code>HYDRATION_ML_PER_EXERCISE_MIN</code></td><td>+ 10 ml per minute of moderate exercise</td><td>BUBBLES</td><td></td></tr>
+<tr><td>Pregnancy / breastfeeding additions</td><td>+ 300 ml / + 700 ml</td><td>LIT</td><td></td></tr>
+<tr><td>Min / max suggestion</td><td>1500 ml / 4000 ml</td><td>BUBBLES</td><td></td></tr>
+<tr><td>Single drink cap</td><td>a logged drink &gt; 2000 ml is rejected as a typo</td><td>BUBBLES</td><td></td></tr>
+<tr><td>Beverage factors</td><td>water 1.0, tea 0.9, coffee 0.8, milk 0.9, juice 0.85, buttermilk 0.95, coconut water 0.95, soda 0.8, alcohol 0</td><td>LIT/BUBBLES</td><td></td></tr>
+<tr><td>Fluid-restricted conditions</td><td>heart failure, kidney disease/dialysis, cirrhosis, SIADH, hyponatraemia → <strong>no target is shown</strong>, only a clinician note</td><td>BUBBLES</td><td></td></tr>
+</tbody></table>
+<hr>
+<h2>8. Sleep</h2>
+<p>Adult 7–9 h, teen 8–10 h, older adults and children have their own bands (<code>SLEEP_HOURS_OLDER</code>, <code>SLEEP_HOURS_CHILD</code>, <code>SLEEP_GOAL_BOUNDS_H</code> in <code>clinical_constants.py</code> — please confirm these too); “consistent” = bedtime/wake variation ≤ 30 min; sleep debt = shortfall against the</p>
+<p>user's own goal over 7 days. No audio recording. No claim to detect sleep disorders; persistent problems → see a clinician.</p>
+<hr>
+<h2>9. Menstrual-cycle section (flags — Bubbles never diagnoses)</h2>
+<table><thead><tr><th>#</th><th>Rule</th><th>Value</th><th>Source</th><th>Decision</th></tr></thead><tbody>
+<tr><td>9.1</td><td>Typical cycle length shown as normal</td><td>21–35 days (adults), 21–45 (teens)</td><td>ACOG</td><td></td></tr>
+<tr><td>9.2</td><td>Suggest a clinician when a cycle is</td><td>&lt; 21 or &gt; 35 days</td><td>ACOG</td><td></td></tr>
+<tr><td>9.3</td><td>Bleeding longer than</td><td>7 days</td><td>ACOG</td><td></td></tr>
+<tr><td>9.4</td><td>Soaking a pad/tampon <strong>every hour for 2+ hours</strong></td><td>prompt for urgent care</td><td>ACOG</td><td></td></tr>
+<tr><td>9.5</td><td>Missed periods</td><td>≥ 3 in a row (and not pregnant / menopausal)</td><td>ACOG</td><td></td></tr>
+<tr><td>9.6</td><td>Bleeding after 12 months without a period</td><td>prompt for clinician</td><td>NHS</td><td></td></tr>
+<tr><td>9.7</td><td>Severe pain, bleeding between periods, sudden big change</td><td>prompt for clinician (severe → safety engine)</td><td>BUBBLES</td><td></td></tr>
+<tr><td>9.8</td><td>Ovulation estimate</td><td>~14 days before the next period (range 10–16); fertile window = 5 days before + day of ovulation</td><td>LIT</td><td></td></tr>
+<tr><td>9.9</td><td>Temperature shift detection</td><td>3 consecutive days ≥ 0.2 °C above the previous 6</td><td>LIT</td><td></td></tr>
+<tr><td>9.10</td><td>Predictions</td><td>weighted recent cycles (decay 0.8), window widens with variability; labelled “learning” until 3 cycles; irregular mode when SD &gt; 4 days</td><td>BUBBLES</td><td></td></tr>
+</tbody></table>
+<p><strong>Further cycle constants to review</strong> (all in <code>clinical_constants.py</code>, cycle section): <code>CYCLE_DEFAULT_LENGTH_DAYS</code>, <code>CYCLE_LEARNING_HALF_WINDOW_DAYS</code>, <code>CYCLE_WINDOW_SD_MULTIPLIER</code>, <code>CYCLE_WINDOW_HALF_DAYS</code>, <code>CYCLE_HIGH_CONFIDENCE</code>, <code>PERIOD_MERGE_WITHIN_DAYS</code>, <code>PERIOD_DEFAULT_LENGTH_DAYS</code>, <code>PERIOD_MAX_PLAUSIBLE_DAYS</code>, <code>MISSED_PERIOD_GRACE_DAYS</code>, <code>SEVERE_PAIN_LEVEL</code>, <code>CYCLE_SUDDEN_CHANGE_DAYS</code>, <code>POSTPARTUM_LOCHIA_DAYS</code>, <code>PREGNANCY_DAYS</code>, <code>BBT_VALID_C</code>, <code>LH_OVULATION_AFTER_POSITIVE_DAYS</code>, <code>INSIGHT_MIN_CYCLES</code>, <code>INSIGHT_MIN_POINTS_PER_PHASE</code>, <code>INSIGHT_MIN_DIFFERENCE_FRACTION</code>. Also please review the <strong>education articles</strong> (18) and the <strong>pregnancy week notes</strong> (42) in <code>backend/cycle_content.py</code>, the 156 symptom/factor chips, and the Bubbles "inner weather" one-liners. Notes: the postpartum mode ignores bleeding for the first 42 days; the "3-over-6" temperature rule here is deliberately stricter than the common version; the fertile-window range is wider than the single 14-day luteal estimate.</p>
+<p><strong>Not offered:</strong> contraception claims, “safe days”, pregnancy diagnosis, or any claim that a fertile-window estimate</p>
+<p>prevents pregnancy. Copy states plainly that predictions are estimates and are not a method of birth control.</p>
+<p><strong>Questions for the doctor / gynaecologist:</strong> Are the flag thresholds right? Postpartum, post-pill and perimenopause</p>
+<p>wording? PCOS/endometriosis/PMDD tracking templates (symptom lists) — anything missing or misleading?</p>
+<hr>
+<h2>10. Medications</h2>
+<p>Bubbles stores what the user enters; <strong>it never changes a dose, never says to stop a medicine, never recommends a drug</strong>.</p>
+<ul>
+<li><strong>Interaction warnings</strong> use a short curated list (below) plus an optional online lookup of NIH RxNav. They are</li>
+</ul>
+<p>  warnings to “check with your pharmacist”, never prohibitions.</p>
+<ul>
+<li><strong>Pharmacist: please review each pair</strong> (and tell us which to drop):</li>
+</ul>
+<table><thead><tr><th>Pair</th><th>Concern</th><th>Level</th></tr></thead><tbody>
+<tr><td>warfarin + NSAIDs (ibuprofen, diclofenac, naproxen) or aspirin</td><td>bleeding</td><td>high</td></tr>
+<tr><td>NSAID + SSRI/SNRI</td><td>bleeding, stomach</td><td>moderate</td></tr>
+<tr><td>ACE inhibitor / ARB + potassium supplements or spironolactone</td><td>high potassium</td><td>high</td></tr>
+<tr><td>ACE inhibitor / ARB + NSAID</td><td>kidney strain, less BP effect</td><td>moderate</td></tr>
+<tr><td>SSRI + tramadol / triptan / linezolid / St John's wort</td><td>serotonin syndrome</td><td>high</td></tr>
+<tr><td>nitrate + sildenafil / tadalafil</td><td>severe low BP</td><td>high</td></tr>
+<tr><td>statin (simvastatin) + clarithromycin / grapefruit</td><td>muscle toxicity</td><td>high</td></tr>
+<tr><td>levothyroxine + calcium / iron / antacid</td><td>absorption — separate by 4 h</td><td>timing</td></tr>
+<tr><td>tetracycline / doxycycline / ciprofloxacin + dairy / calcium / iron / antacid</td><td>absorption — separate</td><td>timing</td></tr>
+<tr><td>metformin + heavy alcohol</td><td>lactic acidosis risk</td><td>moderate</td></tr>
+<tr><td>methotrexate + NSAID / trimethoprim</td><td>toxicity</td><td>high</td></tr>
+<tr><td>digoxin + diuretics (low potassium)</td><td>digoxin toxicity</td><td>high</td></tr>
+<tr><td>insulin / sulfonylurea + alcohol / big calorie cuts</td><td>low blood sugar</td><td>high</td></tr>
+<tr><td>lithium + NSAID / ACE inhibitor / diuretic</td><td>lithium toxicity</td><td>high</td></tr>
+<tr><td>combined hormonal contraceptive + rifampicin / some anti-epileptics / St John's wort</td><td>contraceptive less effective</td><td>high</td></tr>
+</tbody></table>
+<ul>
+<li><strong>GLP-1 tracker:</strong> dose-day reminders, injection-site rotation, appetite/nausea log, protein and fluid prompts.</li>
+</ul>
+<p>  Bubbles never suggests dose changes and states that a prescriber decides.</p>
+<ul>
+<li><strong>Strict mode and medicines:</strong> insulin/sulfonylurea, anticoagulants and lithium block strict mode unless the user</li>
+</ul>
+<p>  confirms a clinician approved the plan.</p>
+<hr>
+<h2>11. Mind (mood) check-ins</h2>
+<p>PHQ-2 and GAD-2 style questions are used as a <strong>gentle check-in</strong>, not a diagnosis: a score ≥ 3 shows kind wording</p>
+<p>and suggests speaking with a professional. Any self-harm language goes straight to the existing emergency safety</p>
+<p>response with crisis resources. Please confirm wording and thresholds.</p>
+<hr>
+<h2>12. Food data</h2>
+<p>Calorie and nutrient values are <strong>reference estimates</strong> compiled from typical published values (IFCT 2017, USDA</p>
+<p>FoodData Central, Open Food Facts). Every row is tagged with its source and <code>verified: false</code> until a dietitian</p>
+<p>confirms it. Portions use Indian household units (katori, roti, ladle, glass, piece, tsp/tbsp). Values are shown as</p>
+<p>ranges when uncertain. **Dietitian: please check the most-used staples first (roti, rice, dal, idli, dosa, paneer,</p>
+<p>chicken curry, biryani, poha, upma, curd, milk, tea) and the oil/ghee adjustment defaults.**</p>
+<hr>
+<h2>13. Language and disclaimers shown to users</h2>
+<ul>
+<li>“Estimates, not medical advice. Talk to a doctor or dietitian before big changes.”</li>
+<li>Never “you will lose X kg by date”; always “typically between A and B”.</li>
+<li>Never shaming, never calorie-counting “red numbers”, never moralising food as good/bad.</li>
+<li>Never recommends supplements, drugs or doses. Never diagnoses.</li>
+<li>Please review the <strong>commit screen</strong> text in <code>docs/plans/whole-health-os.md</code> §7.</li>
+</ul>
+<hr>
+<h2>13b. Other limits in the code (please confirm)</h2>
+<p><code>EXERCISE_CREDIT_MAX_KCAL</code> (at most 300 kcal of exercise added back per day), <code>SAFETY_COOLDOWN_DAYS</code> (7-day wait after a safety pause),</p>
+<p><code>EATING_SCREEN_STICKY_DAYS</code> (a positive eating screen keeps weight-loss numbers off for 30 days), <code>CHECKIN_MIN_DAYS_BETWEEN</code> (6),</p>
+<p><code>CLEARANCE_VALID_DAYS</code> (a recorded clinician go-ahead lasts 365 days and must name what it covers), <code>STEPS_BY_ACTIVITY</code> (6000-10000 steps),</p>
+<p>and the wellness constants at the end of <code>clinical_constants.py</code> (sleep score weights and bands, hydration presets and reminder cadence,</p>
+<p>medication dose windows and refill alerts, mind check-in thresholds, notification caps and quiet hours). The Cycle section's pregnancy,</p>
+<p>trying-to-conceive and postpartum modes also switch off any calorie deficit.</p>
+<h2>14. Sign-off</h2>
+<table><thead><tr><th>Role</th><th>Name</th><th>Registration no.</th><th>Sections reviewed</th><th>Date</th><th>Signature</th></tr></thead><tbody>
+<tr><td>Medical doctor</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Registered dietitian</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Pharmacist</td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Gynaecologist (section 9)</td><td></td><td></td><td></td><td></td><td></td></tr>
+</tbody></table>
+<p><strong>Release rule:</strong> the owner sets <code>BUBBLES_CLINICALLY_REVIEWED=true</code> in <code>backend/.env</code> only after this table is signed and any</p>
+<p>requested changes are made in <code>clinical_constants.py</code>. Until then every plan carries the "pending clinician review" banner.</p></body></html>

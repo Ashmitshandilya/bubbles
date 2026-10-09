@@ -1,0 +1,27 @@
+{"id": "I01", "kind": "interaction", "names": ["warfarin", "ibuprofen"], "expect": "high", "known_gap": false, "note": ""}
+{"id": "I02", "kind": "interaction", "names": ["warfarin", "aspirin"], "expect": "high", "known_gap": false, "note": ""}
+{"id": "I03", "kind": "interaction", "names": ["Ecosprin", "Uniwarfin"], "expect": "high", "known_gap": false, "note": ""}
+{"id": "I04", "kind": "interaction", "names": ["sildenafil", "isosorbide mononitrate"], "expect": "high", "known_gap": false, "note": ""}
+{"id": "I05", "kind": "interaction", "names": ["sertraline", "tramadol"], "expect": "high", "known_gap": false, "note": ""}
+{"id": "I06", "kind": "interaction", "names": ["lisinopril", "diclofenac"], "expect": "any", "known_gap": false, "note": ""}
+{"id": "I07", "kind": "interaction", "names": ["simvastatin", "clarithromycin"], "expect": "high", "known_gap": false, "note": ""}
+{"id": "I08", "kind": "interaction", "names": ["paracetamol", "vitamin C"], "expect": "none", "known_gap": false, "note": ""}
+{"id": "I09", "kind": "interaction", "names": ["cetirizine", "paracetamol"], "expect": "none", "known_gap": false, "note": ""}
+{"id": "I10", "kind": "interaction", "names": ["levothyroxine", "calcium carbonate"], "expect": "any", "known_gap": false, "note": ""}
+{"id": "I11", "kind": "interaction", "names": ["Thyronorm", "Shelcal"], "expect": "any", "known_gap": false, "note": ""}
+{"id": "I12", "kind": "interaction", "names": ["methotrexate", "ibuprofen"], "expect": "high", "known_gap": false, "note": ""}
+{"id": "I13", "kind": "interaction", "names": ["Combiflam", "Uniwarfin"], "expect": "any", "known_gap": false, "note": "Indian OTC brand (ibuprofen+paracetamol) with warfarin"}
+{"id": "I14", "kind": "interaction", "names": ["Voveran", "warfarin"], "expect": "any", "known_gap": false, "note": ""}
+{"id": "I15", "kind": "interaction", "names": ["Zerodol", "Warf"], "expect": "any", "known_gap": false, "note": ""}
+{"id": "I16", "kind": "interaction", "names": ["Brufen", "Warf"], "expect": "any", "known_gap": false, "note": ""}
+{"id": "I19", "kind": "interaction", "names": ["metformin", "amlodipine"], "expect": "none", "known_gap": false, "note": ""}
+{"id": "I17", "kind": "interaction", "names": ["Crocin", "Combiflam"], "expect": "any", "known_gap": true, "note": "Duplicate paracetamol (Crocin + Combiflam) is a classic OTC overdose route; the engine has no same-ingredient duplication check and no brand->ingredient map for paracetamol brands."}
+{"id": "I18", "kind": "interaction", "names": ["clopidogrel", "omeprazole"], "expect": "any", "known_gap": true, "note": "Known clinically relevant (CYP2C19) pair; not in the pharmacist-reviewed rule table. Needs a reviewed rule, not an engineer's edit."}
+{"id": "A01", "kind": "allergy", "meds": ["amoxicillin"], "allergies": ["penicillin"], "expect": "warn", "known_gap": false, "note": ""}
+{"id": "A02", "kind": "allergy", "meds": ["azithromycin"], "allergies": ["penicillin"], "expect": "none", "known_gap": false, "note": ""}
+{"id": "A03", "kind": "allergy", "meds": ["Augmentin"], "allergies": ["penicillin"], "expect": "warn", "known_gap": false, "note": ""}
+{"id": "A04", "kind": "allergy", "meds": ["paracetamol"], "allergies": ["penicillin"], "expect": "none", "known_gap": false, "note": ""}
+{"id": "A05", "kind": "allergy", "meds": ["cotrimoxazole"], "allergies": ["sulfa"], "expect": "warn", "known_gap": false, "note": ""}
+{"id": "A06", "kind": "allergy", "meds": ["diclofenac"], "allergies": ["NSAID"], "expect": "warn", "known_gap": false, "note": ""}
+{"id": "A08", "kind": "allergy", "meds": ["Combiflam"], "allergies": ["NSAID"], "expect": "warn", "known_gap": false, "note": ""}
+{"id": "A07", "kind": "allergy", "meds": ["ibuprofen"], "allergies": ["aspirin"], "expect": "warn", "known_gap": true, "note": "Aspirin allergy -> NSAID cross-reactivity is a recognised caution; the engine treats aspirin and NSAID as separate families. Clinical decision for the pharmacist/clinician, not changed."}

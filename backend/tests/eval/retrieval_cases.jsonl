@@ -1,0 +1,20 @@
+{"id": "R01", "query": "dal chawal calories", "expect_title_regex": "dal"}
+{"id": "R02", "query": "how many calories in roti", "expect_title_regex": "roti|chapati|wheat|atta"}
+{"id": "R03", "query": "ferritin blood test fasting", "expect_title_regex": "ferritin"}
+{"id": "R04", "query": "what does HbA1c measure", "expect_title_regex": "a1c|hba1c"}
+{"id": "R05", "query": "metformin side effects", "expect_title_regex": "metformin"}
+{"id": "R06", "query": "paracetamol in pregnancy", "expect_title_regex": "paracetamol"}
+{"id": "R07", "query": "ibuprofen stomach", "expect_title_regex": "ibuprofen"}
+{"id": "R08", "query": "iron deficiency anaemia symptoms", "expect_title_regex": "anaemia|anemia"}
+{"id": "R09", "query": "PCOS and irregular periods", "expect_title_regex": "pcos|polycystic"}
+{"id": "R10", "query": "heavy periods", "expect_title_regex": "heavy"}
+{"id": "R11", "query": "signs of stroke", "expect_title_regex": "stroke"}
+{"id": "R12", "query": "how much water to drink daily", "expect_title_regex": "hydrat|water|fluid|dehydrat"}
+{"id": "R13", "query": "symptoms of depression", "expect_title_regex": "depress"}
+{"id": "R14", "query": "how to get better sleep", "expect_title_regex": "sleep|insomnia"}
+{"id": "R15", "query": "morning sickness in pregnancy", "expect_title_regex": "sickness|nausea"}
+{"id": "R16", "query": "cholesterol test preparation", "expect_title_regex": "cholesterol"}
+{"id": "R17", "query": "gestational diabetes screening", "expect_title_regex": "gestational|diabetes"}
+{"id": "R18", "query": "vitamin D deficiency", "expect_title_regex": "vitamin d"}
+{"id": "R19", "query": "thyroid test TSH", "expect_title_regex": "thyroid|tsh"}
+{"id": "R20", "query": "contraception options", "expect_title_regex": "contracepti|pill"}

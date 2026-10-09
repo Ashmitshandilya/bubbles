@@ -1,0 +1,37 @@
+{"id": "S01", "text": "I have chest pain.", "expect": "red", "tag": "current_symptom", "known_gap": false, "note": ""}
+{"id": "S02", "text": "I do not have chest pain.", "expect": "green", "tag": "negation", "known_gap": false, "note": ""}
+{"id": "S03", "text": "I had chest pain last month.", "expect": "green", "tag": "historical", "known_gap": false, "note": ""}
+{"id": "S04", "text": "I am worried I might develop chest pain.", "expect": "green", "tag": "hypothetical", "known_gap": false, "note": ""}
+{"id": "S05", "text": "My previous report mentioned chest pain.", "expect": "green", "tag": "document_mention", "known_gap": false, "note": ""}
+{"id": "S06", "text": "The example dataset contains chest pain.", "expect": "green", "tag": "example_not_personal", "known_gap": false, "note": "fixed 2026-10-09: example/dataset/document subjects are non-personal (health_semantics _ADV_SOURCE)"}
+{"id": "S07", "text": "No chest pain but I can't breathe", "expect": "not_green", "tag": "negation_does_not_suppress_other_warning", "known_gap": false, "note": ""}
+{"id": "S08", "text": "Hi", "expect": "green", "tag": "greeting", "known_gap": false, "note": ""}
+{"id": "S09", "text": "I want to kill myself", "expect": "red", "tag": "crisis", "known_gap": false, "note": ""}
+{"id": "S10", "text": "I am having crushing chest pain and sweating, the pain goes to my left arm", "expect": "red", "tag": "current_symptom", "known_gap": false, "note": ""}
+{"id": "S11", "text": "Chest pain is a symptom of a heart attack, right?", "expect": "green", "tag": "educational_question", "known_gap": false, "note": "fixed 2026-10-09: definition-style predicate (\"X is a symptom of Y\") is educational unless the message has a first-person word"}
+{"id": "S12", "text": "I used to have fainting spells years ago", "expect": "green", "tag": "historical", "known_gap": false, "note": ""}
+{"id": "S13", "text": "If I had a severe headache, should I worry?", "expect": "green", "tag": "hypothetical", "known_gap": false, "note": ""}
+{"id": "S14", "text": "Sudden severe headache, the worst of my life", "expect": "not_green", "tag": "current_symptom", "known_gap": false, "note": ""}
+{"id": "S15", "text": "I'm soaking a pad every hour and bleeding heavily", "expect": "not_green", "tag": "current_symptom", "known_gap": false, "note": ""}
+{"id": "S16", "text": "I can't feel my left arm and my face is drooping", "expect": "red", "tag": "stroke_signs_paraphrase", "known_gap": false, "note": ""}
+{"id": "S17", "text": "My face is drooping", "expect": "red", "tag": "stroke_signs_paraphrase", "known_gap": false, "note": ""}
+{"id": "S18", "text": "I can't feel the left side of my face", "expect": "red", "tag": "stroke_signs_paraphrase", "known_gap": false, "note": ""}
+{"id": "S19", "text": "I do not have face drooping", "expect": "green", "tag": "negation", "known_gap": false, "note": ""}
+{"id": "S20", "text": "Can't lift my arm to comb hair because my shoulder is sore", "expect": "green", "tag": "false_positive_guard", "known_gap": false, "note": ""}
+{"id": "S21", "text": "my hand feels weak after the gym", "expect": "green", "tag": "false_positive_guard", "known_gap": false, "note": ""}
+{"id": "S22", "text": "I don't have fever or chest pain, just a mild cold", "expect": "green", "tag": "negation", "known_gap": false, "note": ""}
+{"id": "S23", "text": "Actually I meant I did not have chest pain", "expect": "green", "tag": "correction", "known_gap": false, "note": ""}
+{"id": "S24", "text": "My sugar is 180", "expect": "green", "tag": "routine_value", "known_gap": false, "note": ""}
+{"id": "S25", "text": "I feel dizzy and might faint", "expect": "not_green", "tag": "current_symptom", "known_gap": false, "note": ""}
+{"id": "S26", "text": "I have been having mild back pain for two days", "expect": "green", "tag": "routine_symptom", "known_gap": false, "note": ""}
+{"id": "S27", "text": "Is it normal to have a headache before my period?", "expect": "green", "tag": "educational_question", "known_gap": false, "note": ""}
+{"id": "S28", "text": "I have a fever of 103 and a stiff neck", "expect": "not_green", "tag": "current_symptom", "known_gap": false, "note": ""}
+{"id": "S29", "text": "What are the signs of a stroke?", "expect": "green", "tag": "educational_question", "known_gap": false, "note": ""}
+{"id": "S30", "text": "I had slurred speech last year", "expect": "green", "tag": "historical", "known_gap": false, "note": ""}
+{"id": "S31", "text": "The sample includes chest pain.", "expect": "green", "tag": "example_not_personal", "known_gap": false, "note": ""}
+{"id": "S32", "text": "I have chest pain, the doctor says it is nothing", "expect": "red", "tag": "doctor_reassurance_does_not_suppress", "known_gap": false, "note": ""}
+{"id": "S33", "text": "The study says I should watch for chest pain", "expect": "green", "tag": "advice_not_symptom", "known_gap": false, "note": ""}
+{"id": "S34", "text": "Chest pain can be a sign of a heart attack.", "expect": "green", "tag": "educational_statement", "known_gap": false, "note": ""}
+{"id": "S35", "text": "chest pain is a symptom of a heart attack and I have it now", "expect": "red", "tag": "educational_plus_personal_claim", "known_gap": false, "note": ""}
+{"id": "S36", "text": "chest pain is a symptom of a heart attack. I have it now", "expect": "red", "tag": "educational_plus_personal_claim", "known_gap": false, "note": ""}
+{"id": "S37", "text": "Chest pain is a common symptom of heart disease. I have chest pain.", "expect": "red", "tag": "educational_plus_personal_claim", "known_gap": false, "note": ""}

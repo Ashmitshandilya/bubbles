@@ -1,0 +1,346 @@
+/* ============================================================
+   BUBBLES DESIGN TOKENS — Semantic System (Phase 2)
+   Single source of truth for colors, spacing, typography,
+   shadows, radius, motion. No magic numbers in components.
+   ============================================================ */
+
+/* ── Bubbles palette: bright & cute (see the "Bubbles Bright Redesign" canvas) ──
+   Fills (pink/grape/sun/mint/sky/peach) are decorative; text-safe "ink"
+   variants are used for any text or icon on white. Never put white text on
+   --bubbles-pink, --bubbles-sun or --bubbles-mint. */
+:root {
+  color-scheme: light;
+
+  --bubbles-pink: #FF5FA2;
+  --bubbles-pink-ink: #D6246F;      /* white text 4.9:1 */
+  --bubbles-pink-deep: #A8155A;
+  --bubbles-grape: #6A45F5;         /* white text 5.5:1 */
+  --bubbles-grape-deep: #4A2BC7;
+  --bubbles-sun: #FFC83D;
+  --bubbles-sun-deep: #7A5300;
+  --bubbles-mint: #22C39A;
+  --bubbles-mint-deep: #0D6B52;
+  --bubbles-sky: #1F7FD6;
+  --bubbles-sky-deep: #11589A;
+  --bubbles-peach: #FF9F6B;
+  --bubbles-peach-deep: #9A3A12;
+  --bubbles-urgent: #C42B3B;
+
+  --bubbles-ink: #2B1A3F;
+  --bubbles-ink-soft: #5E4E73;      /* 7.5:1 on white */
+  --bubbles-ink-faint: #7A6B8C;     /* 4.9:1 on white: smallest allowed text */
+  --bubbles-blush: #FFF6FA;
+  --bubbles-white: #FFFFFF;
+  --bubbles-line: #F6DCE9;
+  --bubbles-line-strong: #EBC3D7;
+
+  --tint-pink: #FFE3EF;
+  --tint-grape: #EEE8FF;
+  --tint-sun: #FFF1C2;
+  --tint-mint: #DDF7EE;
+  --tint-sky: #E0F1FF;
+  --tint-peach: #FFE9DF;
+  --tint-urgent: #FDE2E4;
+
+  /* ── Color: Base ── */
+  --color-bg: var(--bubbles-blush);
+  --color-bg-elevated: var(--bubbles-white);
+  --color-surface: var(--bubbles-white);
+  --color-surface-strong: var(--tint-pink);
+  --color-surface-soft: #FFFBFD;
+  --color-border: var(--bubbles-line-strong);
+  --color-border-soft: var(--bubbles-line);
+  --color-border-strong: #D9A3BF;
+
+  /* ── Color: Brand ── */
+  --color-brand: var(--bubbles-pink-ink);
+  --color-brand-hover: var(--bubbles-pink-deep);
+  --color-brand-muted: var(--tint-pink);
+  --color-brand-strong: var(--bubbles-pink-deep);
+  --color-brand-bright: var(--bubbles-pink);
+  --color-brand-violet: var(--bubbles-grape);
+  --color-brand-violet-hover: var(--bubbles-grape-deep);
+
+  /* ── Color: Accent (Bubbles' intelligence) ── */
+  --color-accent: var(--bubbles-grape);
+  --color-accent-hover: var(--bubbles-grape-deep);
+  --color-accent-muted: var(--tint-grape);
+  --color-accent-strong: var(--bubbles-grape-deep);
+
+  /* ── Color: Semantic (text-safe) ── */
+  --color-success: var(--bubbles-mint-deep);
+  --color-success-muted: var(--tint-mint);
+  --color-warning: var(--bubbles-sun-deep);
+  --color-warning-muted: var(--tint-sun);
+  --color-danger: var(--bubbles-urgent);
+  --color-danger-muted: var(--tint-urgent);
+  --color-info: var(--bubbles-sky-deep);
+  --color-info-muted: var(--tint-sky);
+
+  /* ── Color: Text ── */
+  --color-text: var(--bubbles-ink);
+  --color-text-muted: var(--bubbles-ink-soft);
+  --color-text-subtle: var(--bubbles-ink-faint);
+  --color-text-inverse: var(--bubbles-white);
+  --color-text-on-brand: var(--bubbles-white);
+
+  /* ── Color: Overlay ── */
+  --color-overlay: rgba(255, 246, 250, 0.92);
+  --color-overlay-strong: rgba(255, 246, 250, 0.97);
+
+  /* ── "Gradients": names kept for compatibility, now flat bright fills ── */
+  --gradient-brand: var(--bubbles-pink-ink);
+  --gradient-brand-hover: var(--bubbles-pink-deep);
+  --gradient-surface: var(--bubbles-white);
+  --gradient-shell: var(--bubbles-blush);
+  --gradient-card: var(--bubbles-white);
+  --gradient-hero: var(--bubbles-white);
+
+  /* ── Spacing Scale ── */
+  --space-0: 0;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 20px;
+  --space-7: 24px;
+  --space-8: 28px;
+  --space-9: 32px;
+  --space-10: 40px;
+  --space-11: 48px;
+  --space-12: 56px;
+  --space-13: 64px;
+  --space-14: 80px;
+  --space-15: 96px;
+
+  /* ── Spacing: Semantic ── */
+  --space-gutter: var(--space-5);
+  --space-gutter-lg: var(--space-6);
+  --space-gutter-xl: var(--space-8);
+  --space-page-gutter: var(--space-5);
+  --space-page-gutter-lg: var(--space-7);
+  --space-section: var(--space-10);
+  --space-section-lg: var(--space-12);
+  --space-card-padding: var(--space-6);
+  --space-card-padding-lg: var(--space-7);
+  --space-hero-padding: var(--space-7);
+  --space-hero-padding-lg: var(--space-9);
+  --space-nav-item-gap: var(--space-3);
+  --space-nav-group-gap: var(--space-5);
+
+  /* ── Typography: Font Families ── */
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
+
+  /* ── Typography: Scale ── */
+  --text-display: 3.5rem;
+  --text-h1: 2.25rem;
+  --text-h2: 1.625rem;
+  --text-h3: 1.25rem;
+  --text-h4: 1.125rem;
+  --text-body: 1rem;
+  --text-body-sm: 0.9375rem;
+  --text-caption: 0.8125rem;
+  --text-label: 0.75rem;
+  --text-metric: 1.875rem;
+  --text-metric-lg: 2.5rem;
+  --text-nav: 0.9375rem;
+
+  /* ── Typography: Weights ── */
+  --weight-normal: 400;
+  --weight-medium: 600;
+  --weight-semibold: 700;
+  --weight-bold: 800;
+  --weight-display: 600;
+
+  /* ── Typography: Line Heights ── */
+  --leading-tight: 1.05;
+  --leading-snug: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.65;
+  --leading-loose: 1.8;
+
+  /* ── Typography: Letter Spacing ── */
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.04em;
+  --tracking-wider: 0.08em;
+
+  /* ── Border Radius ── */
+  --radius-none: 0;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-3xl: 36px;
+  --radius-full: 9999px;
+  --radius-card: var(--radius-xl);
+  --radius-button: var(--radius-full);
+  --radius-input: var(--radius-lg);
+  --radius-badge: var(--radius-full);
+  --radius-avatar: var(--radius-xl);
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 2px rgba(43,26,63,.06);
+  --shadow-sm: 0 4px 12px rgba(43,26,63,.06);
+  --shadow-md: 0 10px 24px rgba(43,26,63,.08);
+  --shadow-lg: 0 16px 40px rgba(43,26,63,.12);
+  --shadow-xl: 0 24px 56px rgba(43,26,63,.16);
+  --shadow-inner: inset 0 1px 0 rgba(255,255,255,.6);
+  --shadow-glow-brand: 0 10px 24px rgba(214,36,111,.18);
+  --shadow-glow-accent: 0 10px 24px rgba(106,69,245,.2);
+  --shadow-glow-success: 0 10px 24px rgba(34,195,154,.18);
+  /* Cute "sticker" press shadows for primary buttons and hero cards */
+  --shadow-pop-brand: 0 5px 0 var(--bubbles-pink-deep);
+  --shadow-pop-accent: 0 6px 0 var(--bubbles-grape-deep);
+  --shadow-pop-ink: 0 5px 0 var(--bubbles-ink);
+
+  /* ── Motion ── */
+  --duration-instant: 0ms;
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-slower: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0.75, 0.25, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Motion: Semantic ── */
+  --transition-fast: var(--duration-fast) var(--ease-standard);
+  --transition-normal: var(--duration-normal) var(--ease-standard);
+  --transition-slow: var(--duration-slow) var(--ease-standard);
+  --transition-transform: transform var(--duration-fast) var(--ease-out);
+  --transition-colors: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+  --transition-all: var(--duration-normal) var(--ease-standard);
+
+  /* ── Z-Index ── */
+  --z-base: 0;
+  --z-dropdown: 40;
+  --z-sticky: 50;
+  --z-modal: 60;
+  --z-toast: 70;
+  --z-tooltip: 80;
+
+  /* ── Layout ── */
+  --header-height: 64px;
+  --header-height-mobile: 56px;
+  --sidebar-width: 220px;
+  --sidebar-width-collapsed: 64px;
+  --content-max-width: 1180px;
+  --content-gutter: var(--space-5);
+  --content-gutter-lg: var(--space-7);
+
+  /* ── Focus ── */
+  --focus-ring: var(--bubbles-grape);
+  --focus-ring-offset: 2px;
+  --focus-ring-offset-color: var(--color-bg);
+}
+
+/* Bubbles is light-first by design: no automatic dark-mode colour flip. */
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-slower: 0ms;
+  }
+}
+
+@layer components {/* Background */
+
+.bg-surface { background: var(--color-surface); }/* Border */
+
+.border-soft { border: 1px solid var(--color-border-soft); }
+
+/* Text */
+.text-default { color: var(--color-text); }
+.text-muted { color: var(--color-text-muted); }
+.text-subtle { color: var(--color-text-subtle); }/* Typography */
+
+.font-display { font-family: var(--font-display); }
+.text-h1 { font-size: var(--text-h1); font-weight: var(--weight-bold); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
+.text-h2 { font-size: var(--text-h2); font-weight: var(--weight-semibold); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
+.text-h3 { font-size: var(--text-h3); font-weight: var(--weight-semibold); line-height: var(--leading-snug); letter-spacing: var(--tracking-tight); }
+.text-h4 { font-size: var(--text-h4); font-weight: var(--weight-semibold); line-height: var(--leading-snug); }
+.text-body { font-size: var(--text-body); font-weight: var(--weight-normal); line-height: var(--leading-normal); }
+.text-body-sm { font-size: var(--text-body-sm); font-weight: var(--weight-normal); line-height: var(--leading-normal); }
+.text-caption { font-size: var(--text-caption); font-weight: var(--weight-medium); line-height: var(--leading-normal); }
+.text-label { font-size: var(--text-label); font-weight: var(--weight-semibold); line-height: var(--leading-normal); letter-spacing: var(--tracking-wider); text-transform: uppercase; }
+.text-metric { font-size: var(--text-metric); font-weight: var(--weight-bold); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
+.text-nav { font-size: var(--text-nav); font-weight: var(--weight-medium); line-height: var(--leading-normal); }/* Shadows */
+
+.shadow-glow-accent { box-shadow: var(--shadow-glow-accent); }/* Transitions */
+
+.transition-transform { transition: var(--transition-transform); }
+.transition-colors { transition: var(--transition-colors); }/* PHASE 6: Visual detail utilities */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-section-lg);
+  text-align: center;
+  background: var(--color-surface-soft);
+  border: 1px dashed var(--color-border-soft);
+  border-radius: var(--radius-card);
+}
+
+/* Layout */
+.max-w-content { max-width: var(--content-max-width); }/* Alignment */
+
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.items-end { align-items: flex-end; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-around { justify-content: space-around; }/* Grid alignment */
+
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+/* Flex direction */
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.flex-wrap { flex-wrap: wrap; }
+.flex-1 { flex: 1 1 0%; }/* Self alignment */
+
+.self-start { align-self: flex-start; }
+.self-end { align-self: flex-end; }
+
+/* Text alignment */
+.text-left { text-align: left; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }/* Overflow */
+.overflow-hidden { overflow: hidden; }
+.overflow-x-auto { overflow-x: auto; }
+.overflow-y-auto { overflow-y: auto; }
+
+/* Position */
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+
+/* Sizing */
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.h-dvh { height: 100dvh; }
+.min-h-0 { min-height: 0; }
+.min-h-screen { min-height: 100vh; }
+.min-h-dvh { min-height: 100dvh; }
+.max-w-full { max-width: 100%; }
+
+/* Z-index */
+.z-base { z-index: var(--z-base); }
+.z-sticky { z-index: var(--z-sticky); }
+.z-toast { z-index: var(--z-toast); }
+}

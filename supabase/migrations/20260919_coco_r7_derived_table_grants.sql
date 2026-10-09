@@ -1,0 +1,4 @@
+-- R7 follow-up marker.
+-- The derived-table privilege revokes are intentionally consolidated in
+-- 20260919_coco_r7_chat_write_authority.sql so fresh installs receive one
+-- coherent backend-owned chat/derived-data boundary.

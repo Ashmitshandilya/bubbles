@@ -1,0 +1,288 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* ============================================================
+   BUBBLES GLOBALS — bright & cute theme
+   Colors, type and radii come from tokens.css. This file holds
+   only: Tailwind theme registration, base element styles, the few
+   shared component classes still referenced by the app, and the
+   Bubbles motion primitives. (The previous dark/"cosmic" V3 rules were
+   unused and were removed — see scratchpad backup if ever needed.)
+   ============================================================ */
+
+/* Legacy aliases still read by a few components */
+:root {
+  --bubbles-bg: var(--color-bg);
+  --bubbles-panel: var(--color-bg-elevated);
+  --bubbles-panel-2: var(--color-surface-strong);
+  --bubbles-border: var(--color-border);
+  --bubbles-text: var(--color-text);
+  --bubbles-muted: var(--color-text-muted);
+  --bubbles-violet: var(--bubbles-grape);
+}
+
+/* Make the palette available as Tailwind utilities:
+   bg-tint-pink, text-bubbles-grape-deep, border-line, bg-brand/10 … */
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
+
+  --color-brand: var(--bubbles-pink-ink);
+  --color-brand-strong: var(--bubbles-pink-deep);
+  --color-brand-muted: var(--tint-pink);
+  --color-brand-bright: var(--bubbles-pink);
+  --color-accent: var(--bubbles-grape);
+  --color-accent-strong: var(--bubbles-grape-deep);
+  --color-accent-muted: var(--tint-grape);
+  --color-success: var(--bubbles-mint-deep);
+  --color-warning: var(--bubbles-sun-deep);
+  --color-danger: var(--bubbles-urgent);
+  --color-info: var(--bubbles-sky-deep);
+
+  --color-ink: var(--bubbles-ink);
+  --color-ink-soft: var(--bubbles-ink-soft);
+  --color-ink-faint: var(--bubbles-ink-faint);
+  --color-blush: var(--bubbles-blush);
+  --color-line: var(--bubbles-line);
+  --color-line-strong: var(--bubbles-line-strong);
+
+  --color-bubbles-pink: var(--bubbles-pink);
+  --color-bubbles-pink-ink: var(--bubbles-pink-ink);
+  --color-bubbles-pink-deep: var(--bubbles-pink-deep);
+  --color-bubbles-grape: var(--bubbles-grape);
+  --color-bubbles-grape-deep: var(--bubbles-grape-deep);
+  --color-bubbles-sun: var(--bubbles-sun);
+  --color-bubbles-sun-deep: var(--bubbles-sun-deep);
+  --color-bubbles-mint: var(--bubbles-mint);
+  --color-bubbles-mint-deep: var(--bubbles-mint-deep);
+  --color-bubbles-sky: var(--bubbles-sky);
+  --color-bubbles-sky-deep: var(--bubbles-sky-deep);
+  --color-bubbles-peach: var(--bubbles-peach);
+  --color-bubbles-peach-deep: var(--bubbles-peach-deep);
+  --color-bubbles-urgent: var(--bubbles-urgent);
+
+  --color-tint-pink: var(--tint-pink);
+  --color-tint-grape: var(--tint-grape);
+  --color-tint-sun: var(--tint-sun);
+  --color-tint-mint: var(--tint-mint);
+  --color-tint-sky: var(--tint-sky);
+  --color-tint-peach: var(--tint-peach);
+  --color-tint-urgent: var(--tint-urgent);
+}
+
+@layer base {
+/* ── Base ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+html, body { min-height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none; /* never fake bold/italic: keeps glyph widths stable */
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-text);
+}
+
+.text-display, .text-h1, .text-h2, .text-h3, .text-h4, .text-metric, .text-metric-lg {
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--bubbles-grape);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection { background: var(--tint-pink); color: var(--bubbles-ink); }
+
+input::placeholder, textarea::placeholder { color: var(--bubbles-ink-faint); opacity: 1; }
+}
+
+/* One step down on small screens; fixed sizes otherwise (no viewport-fluid jitter) */
+@media (max-width: 640px) {
+  :root {
+    --text-display: 2.5rem;
+    --text-h1: 1.875rem;
+    --text-h2: 1.375rem;
+    --text-h3: 1.125rem;
+    --text-metric: 1.5rem;
+    --text-metric-lg: 2rem;
+  }
+}
+
+@layer components {
+/* ── Shared component classes still used by the app ────────── */
+.bubbles-shell {
+  min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Square badge that holds the Bubbles mascot / initial */
+.bubbles-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  background: var(--tint-pink);
+  color: var(--bubbles-pink-ink);
+  font-family: var(--font-display);
+  font-weight: var(--weight-display);
+}
+
+.bubbles-pulse-dot { animation: bubbles-pulse 1.2s infinite; }
+.bubbles-pulse-dot:nth-child(2) { animation-delay: .15s; }
+.bubbles-pulse-dot:nth-child(3) { animation-delay: .3s; }
+@keyframes bubbles-pulse { 0%, 60%, 100% { opacity: .25; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+/* Soft flat background shapes behind hero areas */
+.hero-decoration {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 1;
+}
+.hero-decoration.top-left { top: -120px; left: -120px; background: var(--tint-pink); }
+.hero-decoration.bottom-right { bottom: -120px; right: -120px; background: var(--tint-grape); }
+.hero-decoration.center { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; height: 400px; background: var(--tint-sun); opacity: .6; }
+
+.petal-decoration {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: var(--bubbles-pink);
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(45deg);
+  opacity: .25;
+  animation: float-petal-delicate 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes float-petal-delicate {
+  0%, 100% { transform: rotate(45deg) translateY(0); }
+  50% { transform: rotate(45deg) translateY(-14px) translateX(6px); }
+}
+.sparkle-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bubbles-sun);
+  animation: sparkle 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sparkle {
+  0%, 100% { opacity: .35; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.4); }
+}
+}
+
+/* Keyframes referenced by tokens.css utilities (.page-enter, .card-enter, .fade-in-0 …) */
+@keyframes fade-in-0 { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zoom-in-95 { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes page-slide-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes card-entrance { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+/* ============================================================
+   BUBBLES MOTION PRIMITIVES (see "Design system & motion" artboard)
+   pop 200ms spring · rise 320–500ms · ambient 4–9s
+   Transform/opacity only. All off under prefers-reduced-motion.
+   ============================================================ */
+@keyframes bubbles-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes bubbles-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+@keyframes bubbles-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.12); } }
+@keyframes bubbles-tilt { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes bubbles-hop { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-8px); } 60% { transform: translateY(0); } }
+@keyframes bubbles-drift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(8px, -10px); } }
+@keyframes bubbles-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes bubbles-pop-in { 0% { opacity: 0; transform: scale(.7); } 70% { opacity: 1; transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes bubbles-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes bubbles-dot { 0%, 80%, 100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-6px); opacity: 1; } }
+@keyframes bubbles-bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes bubbles-skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.bubbles-float { animation: bubbles-float 5s ease-in-out infinite; }
+.bubbles-breathe { animation: bubbles-breathe 4s ease-in-out infinite; }
+.bubbles-blink { transform-box: fill-box; transform-origin: center; animation: bubbles-blink 5.5s infinite; }
+.bubbles-tilt { animation: bubbles-tilt 2.4s ease-in-out infinite; }
+.bubbles-hop { animation: bubbles-hop .7s var(--ease-bounce) 1; }
+.bubbles-drift { animation: bubbles-drift 8s ease-in-out infinite; }
+.bubbles-drift-slow { animation: bubbles-drift 11s ease-in-out infinite reverse; }
+.bubbles-rise { animation: bubbles-rise .45s var(--ease-standard) both; }
+.bubbles-pop-in { animation: bubbles-pop-in .5s var(--ease-bounce) both; }
+.bubbles-sheet-up { animation: bubbles-sheet-up .42s var(--ease-standard) both; }
+.bubbles-bar { transform-origin: bottom; animation: bubbles-bar-grow .7s var(--ease-standard) both; }
+
+/* Staggered entrance for lists/grids: children rise one after another */
+.bubbles-stagger > * { animation: bubbles-rise .45s var(--ease-standard) both; }
+.bubbles-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.bubbles-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.bubbles-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.bubbles-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.bubbles-stagger > *:nth-child(6) { animation-delay: 300ms; }
+.bubbles-stagger > *:nth-child(n+7) { animation-delay: 360ms; }
+
+/* AI thinking dots */
+.bubbles-thinking-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; animation: bubbles-dot 1.2s ease-in-out infinite; }
+.bubbles-thinking-dot:nth-child(1) { background: var(--bubbles-grape); }
+.bubbles-thinking-dot:nth-child(2) { background: var(--bubbles-pink); animation-delay: .15s; }
+.bubbles-thinking-dot:nth-child(3) { background: var(--bubbles-sun); animation-delay: .3s; }
+
+/* Skeleton loading block */
+.bubbles-skeleton {
+  border-radius: var(--radius-lg);
+  background: linear-gradient(90deg, var(--tint-pink) 25%, #FFF0F6 50%, var(--tint-pink) 75%);
+  background-size: 200% 100%;
+  animation: bubbles-skeleton 1.4s linear infinite;
+}
+
+/* Springy, tactile buttons: lift on hover, press down on click */
+.bubbles-press {
+  transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-standard), background-color 150ms var(--ease-standard);
+}
+.bubbles-press:hover:not(:disabled) { transform: translateY(-2px); }
+.bubbles-press:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+
+/* Cards that respond gently to hover */
+.bubbles-lift { transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-standard); }
+.bubbles-lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+/* Reserve room under the floating Ask Bubbles button so the last rows of any page
+   can scroll clear of it instead of hiding beneath it. */
+body:has(.bubbles-ask-fab) main { padding-bottom: 7rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .bubbles-float, .bubbles-breathe, .bubbles-blink, .bubbles-tilt, .bubbles-hop, .bubbles-drift, .bubbles-drift-slow,
+  .bubbles-rise, .bubbles-pop-in, .bubbles-sheet-up, .bubbles-bar, .bubbles-stagger > *, .bubbles-thinking-dot,
+  .bubbles-skeleton, .bubbles-pulse-dot, .petal-decoration, .sparkle-dot { animation: none !important; }
+  .bubbles-press, .bubbles-lift { transition: none; }
+  .bubbles-press:hover:not(:disabled), .bubbles-lift:hover { transform: none; }
+}
