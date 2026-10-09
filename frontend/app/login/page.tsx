@@ -64,7 +64,8 @@ function LoginForm() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { display_name: displayName } },
+          // after the email is confirmed, come back to THIS site (must also be in Supabase -> Authentication -> Redirect URLs)
+          options: { data: { display_name: displayName }, emailRedirectTo: `${window.location.origin}/callback` },
         });
         if (error) {
           setMessage({ kind: "error", text: error.message });
