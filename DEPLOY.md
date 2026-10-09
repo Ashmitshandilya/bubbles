@@ -48,3 +48,26 @@ Point `heybubbles.in` and `www` at the frontend host and `api` at the backend ho
 - Clinical review of the safety rules, stroke-sign patterns and drug-brand aliases (see `docs/clinical/`).
 - Monitoring, alerts and a backup schedule; rotating any key that was ever shared.
 - The RAG knowledge load is separate (`backend/rag_bulk_ingest.py`); the editorial source is now named "Bubbles editorial".
+
+---
+
+## Current production setup (live since 2026-10-10)
+
+| Part | Where | Notes |
+|---|---|---|
+| Website | Vercel project `bubbles-7x74` (team `hey-bubbles`), deploys from GitHub `Ashmitshandilya/bubbles`, branch `main`, Root Directory `frontend` | Main address **https://heybubbles.in**; `www.heybubbles.in` redirects to it. Next.js 15.5.27. |
+| Backend API | Render Web Service `bubbles`, Singapore, **Free plan** (sleeps after ~15 min idle) | https://bubbles-dk3v.onrender.com. Root Directory `backend`. Start: `uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'`. Health check path `/health`. `PYTHON_VERSION=3.14.7`. |
+| Database | Supabase, region ap-northeast-2 (Seoul) | Rename script `supabase/migrations/20261010_bubbles_rename.sql` applied 2026-10-10 (undo script in `supabase/undo/`). |
+| DNS | GoDaddy: `A @ -> 216.198.79.1`, `CNAME www -> 4fe0e7f393824a0d.vercel-dns-017.com` | Verified working. |
+
+Vercel settings (names only): `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ALLOW_INDEXING` (false = hidden from Google), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL` (the Render address).
+Render settings (names only): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `BUBBLES_FRONTEND_ORIGINS`, `BUBBLES_DOC_SIGNING_KEY`, `PYTHON_VERSION`, the AI provider keys and models, `ALLOW_PAID_AI=false`, `ALLOW_KEYLESS_AI=false`, `ALLOW_KEYLESS_HEALTH_DATA=false`.
+
+### Still to do before inviting real users
+1. Replace every secret that was ever pasted into a chat (Supabase secret key, all AI provider keys); update them in Render and your local `.env`.
+2. Supabase -> Authentication -> URL Configuration: Site URL `https://heybubbles.in`, Redirect URLs `https://heybubbles.in/**` and `https://www.heybubbles.in/**`.
+3. Move Render from Free to a paid plan (the free server sleeps; the first message after a pause is very slow).
+4. Optional: `api.heybubbles.in` (Render -> Custom Domains, GoDaddy CNAME `api`), then change `NEXT_PUBLIC_API_URL` in Vercel and redeploy.
+5. Delete the old empty Vercel project `bubbles`; remove the extra Supabase/Postgres variables Vercel's Supabase integration added to the website project.
+6. Trademark check for "Bubbles", privacy policy, terms of use, clinical review; then set `NEXT_PUBLIC_ALLOW_INDEXING=true` to launch.
+7. Test with two real accounts: sign up, chat, partner sharing (invite code and quick link).
