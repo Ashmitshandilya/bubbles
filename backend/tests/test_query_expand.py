@@ -16,7 +16,7 @@ def test_lay_terms_gain_english_words(query, added):
 
 
 def test_unrelated_and_partial_words_unchanged():
-    for q in ["", "  ", "ferritin blood test", "gastric ulcer", "motion sickness", "bpm resting", "sugarcane juice"]:
+    for q in ["", "  ", "ferritin blood test", "knee brace sizing", "motion sickness", "bpm resting", "sugarcane juice"]:
         assert expand(q) == q and lexical(q) == q
 
 
@@ -46,3 +46,26 @@ def test_never_adds_a_word_the_user_wrote_and_is_capped_and_deterministic():
     q = "bukhar khansi zukam chakkar ulti kamzori thakan peeliya khujli daad pathri"
     assert len(expand(q).split()) - len(q.split()) <= MAX_ADDED and expand(q) == expand(q)
     assert sum(len(a) for a in terms(q)) <= MAX_ADDED
+
+
+@pytest.mark.parametrize("query,added", [
+    ("pet mein jalan ho rahi hai khane ke baad", "heartburn"), ("baal bahut jhad rahe hain", "hair loss"), ("paon mein sujan hai", "swelling"),
+    ("gale mein kharash aur dard", "sore throat"), ("motapa kaise kam karein", "obesity"), ("very thirsty and passing urine a lot, tired", "excessive thirst"),
+    ("period pain so bad I miss work", "dysmenorrhoea"),
+])
+def test_more_everyday_phrases_gain_english_words(query, added):
+    assert added in lexical(query)
+
+
+@pytest.mark.parametrize("query,added", [
+    ("bellyache since morning", "abdominal pain"), ("the runs and cramps", "diarrhea"), ("what is pcos", "polycystic ovary syndrome"),
+    ("afib symptoms", "atrial fibrillation"), ("backache after sitting", "back pain"),
+])
+def test_also_called_names_from_the_lay_terms_sheet_become_or_alternatives(query, added):
+    out = lexical(query)
+    assert out.startswith(query) and f" or {added}" in out
+
+
+def test_synonyms_never_exceed_two_additions_or_repeat_a_word_already_asked():
+    assert terms("what is pcos polycystic ovary syndrome") == []                      # already said in full
+    assert len(terms("bellyache backache afib pimples zits")) <= 3 + 2                 # manual rules plus at most two synonym additions

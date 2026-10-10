@@ -63,3 +63,46 @@
 {"id": "R63", "query": "does menopause affect sleep and mood", "expect_title_regex": "[Mm]enopause|Women's sleep"}
 {"id": "R64", "query": "is low energy linked to thyroid or anaemia", "expect_title_regex": "Fatigue: definition|Iron deficiency|Underactive thyroid"}
 {"id": "R65", "query": "does alcohol before bed ruin sleep", "expect_title_regex": "Alcohol may hasten"}
+{"id": "N01", "query": "pet mein jalan ho rahi hai khane ke baad", "expect_title_regex": "heartburn|indigestion|reflux|acid"}
+{"id": "N02", "query": "bacche ko dast ho rahe hain", "expect_title_regex": "diarrh"}
+{"id": "N03", "query": "peshab mein jalan aur baar baar peshab", "expect_title_regex": "urinary|cystitis|uti\b|bladder"}
+{"id": "N04", "query": "baal bahut jhad rahe hain", "expect_title_regex": "hair loss|hair|alopecia"}
+{"id": "N05", "query": "paon mein sujan hai", "expect_title_regex": "swell|oedema|edema"}
+{"id": "N06", "query": "gale mein kharash aur dard", "expect_title_regex": "sore throat|throat|tonsil"}
+{"id": "N07", "query": "mooh mein chaale pad gaye", "expect_title_regex": "mouth ulcer|ulcer"}
+{"id": "N08", "query": "motapa kaise kam karein", "expect_title_regex": "weight|obes|overweight"}
+{"id": "N09", "query": "tired all the time, always cold and gaining weight", "expect_title_regex": "thyroid|underactive"}
+{"id": "N10", "query": "lower back pain that shoots down my leg", "expect_title_regex": "sciatica|back pain"}
+{"id": "N11", "query": "very thirsty and passing urine a lot, tired", "expect_title_regex": "diabetes|glucose|thirst|urination"}
+{"id": "N12", "query": "tingling in hands and feet, I am vegetarian", "expect_title_regex": "b12|vitamin b|neuropathy|pins and needles|numb"}
+{"id": "N13", "query": "dizzy when I stand up quickly", "expect_title_regex": "dizz|postural|low blood pressure|faint"}
+{"id": "N14", "query": "bloated and gassy after drinking milk", "expect_title_regex": "lactose|bloat|wind"}
+{"id": "N15", "query": "period pain so bad I miss work", "expect_title_regex": "period pain|painful period|endometriosis|dysmenorrh"}
+{"id": "N16", "query": "headache and blurry vision in my third trimester", "expect_title_regex": "pre-eclampsia|preeclampsia|headache|vision"}
+{"id": "N17", "query": "what should I eat for iron deficiency", "expect_title_regex": "iron|anaemia|anemia"}
+{"id": "N18", "query": "what to eat to lower cholesterol", "expect_title_regex": "cholesterol"}
+{"id": "N19", "query": "diet for high blood pressure", "expect_title_regex": "blood pressure|hypertension|salt"}
+{"id": "N20", "query": "what should I eat if I have PCOS", "expect_title_regex": "pcos|polycystic"}
+{"id": "N21", "query": "best vegetarian protein sources", "expect_title_regex": "protein|paneer|dal|soya|lentil|pulse"}
+{"id": "N22", "query": "what to eat for constipation", "expect_title_regex": "constipation|fibre|fiber"}
+{"id": "N23", "query": "my hemoglobin is 9.5 what does it mean", "expect_title_regex": "haemoglobin|hemoglobin|anaemia|anemia"}
+{"id": "N24", "query": "TSH 6.2 is that high", "expect_title_regex": "tsh|thyroid"}
+{"id": "N25", "query": "fasting blood sugar 118", "expect_title_regex": "glucose|diabetes|prediabetes"}
+{"id": "N26", "query": "LDL 160 what does that mean", "expect_title_regex": "cholesterol|ldl|lipid"}
+{"id": "N27", "query": "SGPT high in my report", "expect_title_regex": "alt|alanine|liver|sgpt"}
+{"id": "N28", "query": "creatinine 1.4 in blood test", "expect_title_regex": "creatinine|kidney"}
+{"id": "N29", "query": "vitamin B12 180 pg/ml low", "expect_title_regex": "b12|vitamin b"}
+{"id": "N30", "query": "missed my period but pregnancy test is negative", "expect_title_regex": "period|amenorrh|menstru|missed"}
+{"id": "N31", "query": "spotting between periods", "expect_title_regex": "between periods|spotting|irregular|bleeding"}
+{"id": "N32", "query": "when do I ovulate in my cycle", "expect_title_regex": "ovulat|menstrual cycle|fertil"}
+{"id": "N33", "query": "passing big clots during periods", "expect_title_regex": "heavy period|clot|period"}
+{"id": "N34", "query": "how many days a week should I exercise", "expect_title_regex": "physical activity|exercise|active"}
+{"id": "N35", "query": "how to start running as a beginner", "expect_title_regex": "running|exercise|activity|couch"}
+{"id": "N36", "query": "calories in a plate of poha", "expect_title_regex": "poha"}
+{"id": "N37", "query": "calories in paneer", "expect_title_regex": "paneer"}
+{"id": "N38", "query": "is intermittent fasting safe", "expect_title_regex": "fasting|diet|weight"}
+{"id": "N39", "query": "can I take ibuprofen and paracetamol together", "expect_title_regex": "ibuprofen|paracetamol"}
+{"id": "N40", "query": "antibiotics for viral fever", "expect_title_regex": "antibiotic|azithromycin|amoxicillin|fever"}
+{"id": "N41", "query": "can I stop my thyroid tablet when I feel fine", "expect_title_regex": "levothyroxine|thyroxine|underactive|thyroid"}
+{"id": "N42", "query": "omeprazole long term side effects", "expect_title_regex": "omeprazole|proton pump"}
+{"id": "N43", "query": "missed a pill of the contraceptive pill", "expect_title_regex": "contracept|pill"}

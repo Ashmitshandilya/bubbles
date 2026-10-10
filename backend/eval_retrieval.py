@@ -15,7 +15,7 @@ from pathlib import Path
 import rag
 
 K = 5
-cases = [json.loads(l) for l in Path("tests/eval/retrieval_cases.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+cases = [json.loads(l) for l in Path(__import__("os").environ.get("EVAL_CASES", "tests/eval/retrieval_cases.jsonl")).read_text(encoding="utf-8").splitlines() if l.strip()]
 uid, rows, h1, hk = str(uuid.uuid4()), [], 0, 0
 for c in cases:
     res = rag.hybrid_search(query=c["query"], user_id=uid, limit=K)

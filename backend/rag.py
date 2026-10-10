@@ -357,6 +357,17 @@ def hybrid_search(
         r["policy"] = policy.get(r.get("document_id"), default)
     rows = [r for r in rows if not r["policy"].startswith("BYPASS_LLM")]
     rows.sort(key=lambda r: (not r.get("linked"), -(_score(r) + EVIDENCE_BONUS.get(str(r.get("evidence_level")), 0.0))))  # stable
+    # One long page (overview / causes / when to get help) must not fill the whole list: keep the best RAG_PAGE_CAP chunks per source page.
+    cap = int(os.environ.get("RAG_PAGE_CAP", "2") or 0)
+    if cap > 0:
+        per_page: dict[Any, int] = {}
+        kept = []
+        for r in rows:
+            page = r.get("source_url") or r.get("chunk_id")
+            per_page[page] = per_page.get(page, 0) + 1
+            if per_page[page] <= cap:
+                kept.append(r)
+        rows = kept
     return rows[:limit]
 
 

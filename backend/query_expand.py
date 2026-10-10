@@ -9,6 +9,8 @@ everyday words (sugar, gas) expand only when the sentence also carries a health 
 not in food/household phrases ("sugar free", "sugar in mango", "gas stove"). Matching is case-insensitive on whole words
 (ASCII and Devanagari). At most MAX_ADDED words are appended.
 """
+import json
+import os
 import re
 
 MAX_ADDED = 8
@@ -52,6 +54,37 @@ _ENTRIES: dict[tuple[str, ...], str] = {
     ("chhole", "chole"): "chickpea",
     ("tb",): "tuberculosis",
     ("uti",): "urinary tract infection",
+    # more everyday Hindi / Hinglish
+    ("pet mein jalan", "pet me jalan", "seene mein jalan", "seene me jalan", "पेट में जलन", "सीने में जलन"): "heartburn|acid reflux|indigestion",
+    ("dast", "dast ho rahe", "dast lag", "दस्त"): "diarrhoea",
+    ("baal jhad", "baal bahut jhad", "baal jhad rahe", "baal jhadna", "baal girna", "baal gir", "बाल झड़", "बाल झड़ना"): "hair loss",
+    ("sujan", "सूजन"): "swelling",
+    ("gale mein dard", "gale me dard", "gale mein kharash", "gale me kharash", "gala kharab", "गले में दर्द", "गले में खराश"): "sore throat",
+    ("chaale", "chhale", "mooh mein chaale", "मुंह में छाले"): "mouth ulcers",
+    ("motapa", "mota hona", "मोटापा"): "obesity|weight loss",
+    ("peshab mein jalan", "peshab me jalan", "पेशाब में जलन"): "burning urination|urinary tract infection",
+    ("baar baar peshab", "bar bar peshab", "बार बार पेशाब"): "frequent urination",
+    ("pyaas", "bahut pyaas", "प्यास"): "excessive thirst",
+    ("kamar dard", "kamar mein dard", "kamar me dard", "कमर दर्द"): "back pain",
+    ("ghutne mein dard", "ghutno ka dard", "ghutne ka dard", "घुटनों में दर्द"): "knee pain",
+    ("aankh lal", "aankhen lal", "आंख लाल"): "red eye|conjunctivitis",
+    ("kaan dard", "kaan mein dard", "kaan me dard", "कान दर्द"): "earache|ear infection",
+    ("daant dard", "daant mein dard", "daant me dard", "दांत दर्द"): "toothache",
+    ("pet fulna", "pet phoolna", "पेट फूलना"): "bloating|flatulence",
+    ("tanav", "तनाव"): "stress|anxiety",
+    ("udaasi", "udaas", "उदासी"): "low mood|depression",
+    ("bhookh nahi", "bhook nahi", "भूख नहीं"): "loss of appetite",
+    ("vajan badh", "vajan badhna", "वजन बढ़"): "weight gain",
+    ("vajan kam", "वजन कम"): "weight loss",
+    ("periods mein dard", "period mein dard", "period dard", "painful periods", "period pain"): "period pain|menstrual cramps|dysmenorrhoea",
+    # plain-English symptom phrases
+    ("thirsty", "very thirsty", "always thirsty"): "excessive thirst",
+    ("passing urine a lot", "urinating a lot", "peeing a lot", "pee a lot", "peeing more"): "frequent urination",
+    ("hair fall", "hairfall"): "hair loss",
+    ("swollen feet", "swollen ankles"): "swelling ankles",
+    ("bloated",): "bloating",
+    ("constipated",): "constipation",
+    ("breathless",): "breathlessness|shortness of breath",
 }
 
 # words that mean something else without a health cue
@@ -67,6 +100,40 @@ for _keys, _terms in _ENTRIES.items():
     for _key in _keys:
         # Whole-word match; the lookarounds (not \b) keep Devanagari vowel signs inside a word.
         _RULES.append((re.compile(r"(?<![\wऀ-ॿ])" + re.escape(_key) + r"(?![\wऀ-ॿ])"), _key, _alts))
+
+
+# English "also called" names from the MedlinePlus lay-terms sheet: synonym -> the topic's usual name. Built by build_lay_synonyms.py
+# (clear one-to-one mappings only). A missing file just means no synonym help.
+MAX_SYN_WORDS = 6
+_SYN_SKIP = {"drinking", "nursing", "medications", "feces"}   # everyday words where adding the usual name would only add noise
+try:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "lay_synonyms.json"), encoding="utf-8") as _f:
+        _SYN: dict[str, list[str]] = {
+            k: [w for w in re.sub(r"[^\w\s\-]", " ", v).split() if w not in ("or", "and")]
+            for k, v in json.load(_f).items() if k not in _SYN_SKIP
+        }
+except (OSError, ValueError):
+    _SYN = {}
+_WORD = re.compile(r"[\wऀ-ॿ][\wऀ-ॿ'\-]*")
+
+
+def _synonym_terms(text: str, have: set[str], budget: int) -> list[list[str]]:
+    """Longest-match scan of the query for 'also called' names (1 to 4 words); at most two additions, MAX_SYN_WORDS words."""
+    words = _WORD.findall(text)
+    out: list[list[str]] = []
+    i, spent = 0, 0
+    while i < len(words) and len(out) < 2:
+        for n in (4, 3, 2, 1):
+            alt = _SYN.get(" ".join(words[i:i + n])) if i + n <= len(words) else None
+            if alt:
+                if not all(w in have for w in alt) and spent + len(alt) <= min(MAX_SYN_WORDS, budget) and alt not in out:
+                    out.append(alt)
+                    spent += len(alt)
+                i += n
+                break
+        else:
+            i += 1
+    return out
 
 
 def terms(query: str) -> list[list[str]]:
@@ -87,6 +154,8 @@ def terms(query: str) -> list[list[str]]:
                 continue
             out.append(alt)
             total += len(alt)
+    if _SYN and total < MAX_ADDED:
+        out += _synonym_terms(text, have, MAX_ADDED - total)
     return out
 
 
