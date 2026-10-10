@@ -25,7 +25,8 @@ Environment (names are `BUBBLES_*`; old `COCO_*` names are still mapped by `env_
 | `BUBBLES_CLINICALLY_REVIEWED` | Leave `false` until a clinician signs `docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md`. |
 | `BUBBLES_ENABLE_RXNAV` | Leave unset (drug names are not sent to an outside service). |
 
-Run: `uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers` (see `backend/Procfile`). Python packages: `pip install -r backend/requirements.txt` (versions are pinned; use the same Python minor version you develop with). Health check: `GET /health`.
+Run: `uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'` (see `backend/Procfile`). Python packages: `pip install -r backend/requirements.txt` (versions are pinned; use the same Python minor version you develop with; test tools are in `backend/requirements-dev.txt`, which the server does not need). Health check: `GET /health` (answers HEAD too, for uptime monitors).
+- **RAG switches (all optional, defaults are the tested setting):** `RAG_EXPAND=0` turns off lay-term expansion, `RAG_EXPAND_MODE=or|embed|and`, `RAG_LINKS=0` turns off link-aware retrieval. After any new ingest run `python rag_links.py` (dry run) and `--apply` to keep the `link:` tags current, then `python eval_retrieval.py`.
 - **Run ONE instance for now.** The request rate limiter is in memory per process; several instances would each have their own counters.
 - Put it on its own address, for example `https://api.heybubbles.in`.
 
