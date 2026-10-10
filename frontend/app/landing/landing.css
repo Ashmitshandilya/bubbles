@@ -56,6 +56,9 @@
   --glass-line: rgb(34 16 29 / 0.1);
   /* deep raspberry: 4.5:1 or better on every light sky, including the dusk hero (atmosphere/contrast.test.ts) */
   --accent: #a5124d;
+  /* a solid panel (the chapter list when it has focus) and the text colour that sits on a --fg fill (a pressed toggle) */
+  --panel: rgb(255 255 255 / 0.94);
+  --on-fg: #fff7fb;
 }
 .cw[data-tone="dark"],
 .cw [data-tone="dark"] {
@@ -66,6 +69,8 @@
   --glass-line: rgb(255 255 255 / 0.12);
   /* the lighter pink holds 4.5:1 for the small memory labels on the night skies */
   --accent: #ff8cc2;
+  --panel: rgb(23 10 24 / 0.94);
+  --on-fg: #22101d;
 }
 
 .cw-ch { --p: 1; --in: 1; --out: 0; color: var(--fg); }
@@ -94,6 +99,46 @@
   font-weight: 700;
 }
 .cw-skip:focus { top: 16px; }
+/* The skip link moves focus to <main> (tabindex -1); the page area itself needs no ring, its controls have theirs. */
+.cw main[tabindex]:focus-visible { outline: none; box-shadow: none; }
+
+/* ── Pause motion ─────────────────────────────────────────── */
+/* Paused: every loop and entrance animation settles at once (an entrance lands on its final frame), so nothing keeps moving by itself. */
+.cw[data-paused],
+.cw[data-paused] *,
+.cw[data-paused] *::before,
+.cw[data-paused] *::after {
+  animation-duration: 0.001ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+}
+.cw-nav-end { display: flex; align-items: center; gap: 10px; }
+/* Hidden until the story is running: with reduced motion or without JavaScript there is nothing to pause. */
+.cw-motion { display: none; }
+.cw[data-story="on"] .cw-motion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--fg-soft);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--fg);
+  font: 600 0.9rem/1 var(--font-d);
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.cw[data-story="on"] .cw-motion:hover { border-color: var(--fg); background: rgb(255 255 255 / 0.12); }
+.cw[data-story="on"] .cw-motion[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--on-fg); }
+@media (max-width: 819px) {
+  .cw[data-story="on"] .cw-motion { width: 44px; padding: 0; justify-content: center; }
+  .cw-motion-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
+/* On the narrowest phones the nav is full: the mark stays (the link is still named "Bubbles home"), the word makes room for the pause button. */
+@media (max-width: 479.98px) {
+  .cw[data-story="on"] .cw-nav .cw-logo-word { display: none; }
+}
 
 /* ── Type ─────────────────────────────────────────────────── */
 .cw-display,
@@ -759,6 +804,23 @@
     translate: calc((1 - var(--on)) * 6px) 0;
   }
   .cw-rail a:hover .cw-rail-label, .cw-rail a:focus-visible .cw-rail-label { opacity: 0.85; translate: 0 0; }
+  /* While the list has keyboard focus it shows every chapter's name on a solid panel, so the whole list can be read. */
+  .cw-rail:focus-within { padding: 10px 14px; border-radius: var(--r-3); background: var(--panel); box-shadow: 0 18px 40px -18px rgb(10 3 10 / 0.5); }
+  .cw-rail:focus-within .cw-rail-label { opacity: 1; translate: 0 0; }
+  /* Below 1100px the ticks are not drawn, but the list is still there for keyboard and screen reader users: it shows itself while it has focus. */
+  @media (max-width: 1099.98px) {
+    .cw:not([data-story="static"]) .cw-rail {
+      display: block;
+      position: fixed;
+      right: 14px;
+      top: calc(var(--nav-h) + 8px);
+      z-index: 8;
+      color: var(--fg);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cw:not([data-story="static"]) .cw-rail:focus-within { opacity: 1; pointer-events: auto; }
+  }
 
   /* ── Enter ── */
   .cw:not([data-story="static"]) .cw-ch--enter { --dv: clamp(0, (var(--p) - 0.08) / 0.8, 1); }
@@ -936,6 +998,8 @@
   }
   .cw:not([data-story="static"]) .cw-token:nth-child(3n) { color: var(--accent); }
   .cw:not([data-story="static"]) .cw-token:nth-child(4n) { color: var(--cw-lilac); }
+  /* The back layer's chips are the far ones: out of focus, like a camera's background (the front layer stays crisp). Decorative, aria-hidden. */
+  .cw:not([data-story="static"]) .cw-ch--noise .cw-back .cw-token { filter: blur(2.4px); }
   /* Numbers is clinical noon (a light sky): the pale lilac would vanish on it, so the chips use a deeper violet */
   .cw:not([data-story="static"]) .cw-ch--noise .cw-token:nth-child(4n) { color: #6a46d0; }
   .cw:not([data-story="static"]) .cw-noise-copy {
@@ -1325,6 +1389,30 @@
 }
 @keyframes cw-flow {
   to { stroke-dashoffset: -24; }
+}
+
+/* ============================================================
+   DISPLAY PREFERENCES: reduced transparency, more contrast, forced colours
+   (reduced motion is the calm page above and the data-paused rule at the top)
+   ============================================================ */
+@media (prefers-reduced-transparency: reduce) {
+  .cw[data-tone="light"], .cw [data-tone="light"] { --glass: #fff; --panel: #fff; }
+  .cw[data-tone="dark"], .cw [data-tone="dark"] { --glass: #2a1630; --panel: #23112b; }
+  .cw, .cw * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  .cw-link-label, .cw-node, .cw-web-hint, .cw-cycle-copy { background-color: #23112b !important; }
+}
+@media (prefers-contrast: more) {
+  .cw[data-tone="light"], .cw [data-tone="light"], .cw[data-tone="dark"], .cw [data-tone="dark"] {
+    --fg-soft: var(--fg);
+    --line: color-mix(in srgb, var(--fg) 60%, transparent);
+    --glass-line: var(--line);
+  }
+  .cw-btn--ghost, .cw[data-story="on"] .cw-motion { border-width: 2px; }
+}
+@media (forced-colors: active) {
+  .cw-btn, .cw-motion, .cw-node, .cw-ask { border: 1px solid ButtonText; }
+  .cw-rail-tick { forced-color-adjust: none; background: CanvasText; }
+  .cw :is(a, button, [tabindex]):focus-visible { outline: 3px solid Highlight; outline-offset: 2px; box-shadow: none; }
 }
 
 /* ============================================================

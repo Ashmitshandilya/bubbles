@@ -8,8 +8,9 @@ import { story } from "../story/store";
 
 /**
  * The living spine: 28 vertebrae that are the recurring object of the story.
- * They stand as a spine, burst into data, gather around Bubbles, become the 28 days
- * of a cycle, a lattice of signals, a timeline of memory, and finally a halo.
+ * They stand as a spine, burst into bubbles, gather around Bubbles, become the 28 days
+ * of a cycle, the stars of a web of signals, a timeline of memory, and finally a halo.
+ * Once a bone leaves the body it is a soap pearl: iridescent, coated, and reflecting the sky on screen.
  */
 
 export const COUNT = 28;
@@ -63,11 +64,16 @@ const rand = (i: number, salt = 1) => {
 
 const UP = new THREE.Vector3(0, 1, 0);
 const PEARL = new THREE.Color("#F8EAF1");
+/** The beads of the connect chapter are stars (COLOR_SCRIPT connect accent). */
+const STAR = new THREE.Color("#FFE9F6");
+/** Each nerve breathes a little brighter and dimmer, a beat apart from its neighbour (a soft pulse along the thread). */
+const NERVE_BASE = new THREE.Color("#FF8CC2");
+const NERVE_PULSE = { period: 2.1, depth: 0.22, lag: 0.9 } as const;
 
 type Target = { p: THREE.Vector3; q: THREE.Quaternion; s: number; c: THREE.Color; form: number };
 const makeTarget = (): Target => ({ p: new THREE.Vector3(), q: new THREE.Quaternion(), s: 1, c: new THREE.Color(), form: 1 });
 
-/** 1 = a vertebra, 0 = a glossy data bead. Bones become data once they leave the body. */
+/** 1 = a vertebra, 0 = an iridescent soap pearl. Bones become bubbles once they leave the body. */
 const FORM: Record<LayoutName, number> = {
   column: 1, scatter: 0, orbit: 0, cycle: 0, lattice: 0, timeline: 0, halo: 0, wave: 0,
 };
@@ -154,8 +160,9 @@ function layoutTarget(name: LayoutName, i: number, param: number, time: number, 
       out.p.set(Math.cos(theta) * Math.sin(phi) * radius * 1.4, Math.cos(phi) * radius * 0.8, Math.sin(theta) * Math.sin(phi) * radius);
       scratch.e.set(r1 * 6, r2 * 6 + time * 0.1, r3 * 6);
       out.q.setFromEuler(scratch.e);
-      out.s = 0.24;
-      out.c.copy(PEARL).lerp(phaseColor.luteal, 0.35);
+      // Stars: each one swells and dims on its own beat (the clock is the idle clock, so Pause motion holds them still).
+      out.s = 0.2 + 0.08 * (0.5 + 0.5 * Math.sin(time * 1.6 + i * 2.1));
+      out.c.copy(PEARL).lerp(STAR, 0.6);
       return;
     }
     case "timeline": {
@@ -244,12 +251,17 @@ export function Spine({ ref }: { ref: Ref<SpineHandle> }) {
       }),
       disc: new THREE.MeshPhysicalMaterial({ color: "#C9B4FF", roughness: 0.25, transmission: 0, transparent: true, opacity: 0.85, emissive: new THREE.Color("#9C7BFF"), emissiveIntensity: 0.25 }),
       cord: new THREE.MeshBasicMaterial({ color: "#FF6FAE", transparent: true, opacity: 1 }),
-      nerve: new THREE.MeshBasicMaterial({ color: "#FF8CC2", transparent: true, opacity: 0.95 }),
+      // one material per nerve, so each can pulse on its own beat
+      nerve: NERVES.map(() => new THREE.MeshBasicMaterial({ color: NERVE_BASE, transparent: true, opacity: 0.95 })),
       twig: new THREE.MeshBasicMaterial({ color: "#C9B4FF", transparent: true, opacity: 0.8 }),
       node: new THREE.MeshBasicMaterial({ color: "#FFF1F7" }),
+      // A soap pearl: a thin film (iridescence, thickness 180 to 520 nm, a soap film's index) under a clear coat.
+      // No transmission, so it costs no extra scene pass. The sky-derived environment (Studio) is what it reflects.
       bead: new THREE.MeshPhysicalMaterial({
-        color: "#FFFFFF", roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.4, sheen: 1,
-        sheenColor: new THREE.Color("#FFE6F2"), sheenRoughness: 0.6, emissive: new THREE.Color("#FF5FA2"), emissiveIntensity: 0.05,
+        color: "#FFFFFF", roughness: 0.16, metalness: 0,
+        iridescence: 1, iridescenceIOR: 1.33, iridescenceThicknessRange: [180, 520],
+        clearcoat: 0.6, clearcoatRoughness: 0.12,
+        emissive: new THREE.Color("#FF5FA2"), emissiveIntensity: 0.05,
       }),
     }),
     [],
@@ -266,7 +278,7 @@ export function Spine({ ref }: { ref: Ref<SpineHandle> }) {
         n.main.dispose();
         n.twigs.forEach((t) => t.dispose());
       });
-      Object.values(mats).forEach((m) => m.dispose());
+      Object.values(mats).flat().forEach((m) => m.dispose());
     },
     [geo, mats],
   );
@@ -302,7 +314,8 @@ export function Spine({ ref }: { ref: Ref<SpineHandle> }) {
       nervePoint: sim.nervePoint,
       ringTop: sim.ringTop,
       update({ a, b, t, nerves, dt, time, camera, bubbles }) {
-        halo.phase += dt * 0.45 * (1 + 1.6 * story.excite);
+        // (`time` is the idle clock, which stands still while motion is paused; the halo's spin has its own phase.)
+        if (!story.paused) halo.phase += dt * 0.45 * (1 + 1.6 * story.excite);
         const g = group.current;
         const bm = bones.current;
         const dm = discs.current;
@@ -418,6 +431,9 @@ export function Spine({ ref }: { ref: Ref<SpineHandle> }) {
             node.visible = pop > 0;
           }
           if (grow > 0.05) latest = k;
+          // The soft pulse: a nerve brightens a touch and dims again, a beat after its neighbour.
+          const pulse = 1 + NERVE_PULSE.depth * Math.sin((time / NERVE_PULSE.period) * Math.PI * 2 - k * NERVE_PULSE.lag);
+          mats.nerve[k].color.copy(NERVE_BASE).multiplyScalar(pulse);
 
           const label = story.labels.get(nerve.key);
           if (label) {
@@ -453,7 +469,7 @@ export function Spine({ ref }: { ref: Ref<SpineHandle> }) {
               nerveMeshes.current[k] = el;
             }}
             geometry={nerve.main}
-            material={mats.nerve}
+            material={mats.nerve[k]}
             visible={false}
             frustumCulled={false}
           >

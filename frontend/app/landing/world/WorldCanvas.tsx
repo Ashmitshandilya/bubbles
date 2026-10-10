@@ -2,6 +2,7 @@
 
 import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
+import { Post } from "../post/Composer";
 import { World } from "./World";
 import { story } from "../story/store";
 
@@ -22,6 +23,8 @@ export default function WorldCanvas({ eventSource }: { eventSource: HTMLElement 
       }}
     >
       <World />
+      {/* full tier only: bloom and grade (post/Composer.tsx); nothing is drawn by it in lite */}
+      <Post />
     </Canvas>
   );
 }

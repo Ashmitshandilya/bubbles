@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { hexToUnit } from "../atmosphere/sky";
 import { measureKeepOut, type Rect } from "../story/keepOut";
 import { CHAPTERS, story } from "../story/store";
+import { LAYER_OVERLAY } from "../world/layers";
 import { Droplets, MAX_DROPS } from "./pop";
 import { SOAP_FRAG, SOAP_VERT } from "./soap.glsl";
 import { MAX_BUBBLES, SoapField, bubbleCount, levelAt } from "./soap";
@@ -59,6 +60,7 @@ export function SoapBubbles() {
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     mesh.frustumCulled = false;
     mesh.renderOrder = 4;
+    mesh.layers.set(LAYER_OVERLAY);
     mesh.visible = false;
     const field = new SoapField();
     for (let i = 0; i < CAP; i += 1) seed.array[i] = i < MAX_BUBBLES ? field.seed[i] : (i * 0.37) % 1;
@@ -71,6 +73,8 @@ export function SoapBubbles() {
     const addedCamera = camera.parent !== scene;
     if (addedCamera) scene.add(camera);
     camera.add(mesh);
+    // The bubbles live on their own layer (see world/layers.ts); the camera sees it, so every tier draws them.
+    camera.layers.enable(LAYER_OVERLAY);
 
     const root = document.querySelector<HTMLElement>(".cw");
     const state = live.current;
@@ -106,6 +110,7 @@ export function SoapBubbles() {
       root?.removeAttribute("data-soap");
       root?.removeAttribute("data-bubble-hover");
       state.root = null;
+      camera.layers.disable(LAYER_OVERLAY);
       camera.remove(mesh);
       if (addedCamera) scene.remove(camera);
       geometry.dispose();

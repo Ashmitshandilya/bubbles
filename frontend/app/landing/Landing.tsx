@@ -6,6 +6,8 @@ import { BubblesLogo } from "./BubblesMark";
 import { BubblesFigure } from "./BubblesFigure";
 import { SoapCss } from "./bubbles/SoapCss";
 import { ScrollDirector } from "./story/ScrollDirector";
+import { ChapterRail } from "./story/ChapterRail";
+import { PauseMotion } from "./story/PauseMotion";
 import { COLOR_SCRIPT, phaseInk } from "./atmosphere/palette";
 import { SkyMount } from "./atmosphere/SkyMount";
 import { calmBackground, skyGradient, skyVars } from "./atmosphere/sky";
@@ -32,6 +34,9 @@ import "./landing.css";
  * living spine between the back and front layers. With reduced motion (or no
  * JavaScript) the same content renders as a calm, normally scrolling page.
  */
+
+/** What the illustrated Bubbles looks like, for the calm page (the figure is drawn, so this is its text alternative). */
+const BUBBLES_ALT = "Bubbles, a baby unicorn doctor in a nurse cap and a doctor's coat, with a heart stethoscope";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-cw-display", axes: ["opsz", "wdth"], display: "swap" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-cw-mono", display: "swap" });
@@ -152,25 +157,17 @@ export function Landing() {
         <Link href="/" className="cw-nav-home" aria-label="Bubbles home">
           <BubblesLogo size={36} />
         </Link>
-        <AuthCta variant="nav" />
+        <div className="cw-nav-end">
+          <PauseMotion />
+          <AuthCta variant="nav" />
+        </div>
       </header>
 
-      <nav className="cw-rail" aria-label="Story chapters">
-        <ol>
-          {CHAPTERS.map((c, k) => (
-            <li key={c.key} style={{ "--i": k } as Vars}>
-              <a href={`#${c.id}`} data-key={c.key}>
-                <span className="cw-rail-tick" aria-hidden="true" />
-                <span className="cw-rail-label">{c.label}</span>
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
+      <ChapterRail />
 
       <SpeechBubble />
 
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         {/* ── Enter ─────────────────────────────────────────── */}
         <section {...chapter("enter")}>
           <div className="cw-layer cw-back" aria-hidden="true">
@@ -190,8 +187,8 @@ export function Landing() {
                 <p className="cw-lede">A cycle-aware health companion that listens, remembers and connects the dots over time.</p>
                 <AuthCta variant="hero" />
               </div>
-              <div className="cw-calm-bubbles cw-calm-bubbles--enter" aria-hidden="true">
-                <BubblesFigure uid="calm-enter" pose="wave" mood="happy" />
+              <div className="cw-calm-bubbles cw-calm-bubbles--enter">
+                <BubblesFigure uid="calm-enter" pose="wave" mood="happy" title={BUBBLES_ALT} />
               </div>
             </div>
           </div>

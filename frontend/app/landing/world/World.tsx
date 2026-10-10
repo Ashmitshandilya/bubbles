@@ -31,6 +31,8 @@ export function World() {
     () => ({
       init: false,
       introAt: -1,
+      /** the idle clock: seconds of ambient motion, which stands still while "Pause motion" is on */
+      idle: 0,
       camPos: new THREE.Vector3(),
       camTarget: new THREE.Vector3(),
       camGoal: new THREE.Vector3(),
@@ -78,15 +80,19 @@ export function World() {
 
   useFrame((state, rawDt) => {
     const dt = Math.min(rawDt, 1 / 20);
-    const time = state.clock.elapsedTime;
+    // Scroll still moves the camera and the spine while motion is paused; only the ambient clock stops.
+    const drift = story.paused ? 0 : dt;
+    sim.idle += drift;
+    const time = sim.idle;
+    const clock = state.clock.elapsedTime;
     if (sim.introAt < 0) {
-      sim.introAt = time;
+      sim.introAt = clock;
       story.worldReady = true;
       const root = document.querySelector<HTMLElement>(".cw");
       if (root) root.dataset.world = "ready";
     }
     const aspect = size.width / Math.max(1, size.height);
-    const env: Env = { mobile: story.mobile, aspect, time, intro: time - sim.introAt };
+    const env: Env = { mobile: story.mobile, aspect, time, intro: clock - sim.introAt };
     const i = story.current;
     const j = Math.min(i + 1, RIGS.length - 1);
     const t = easeInOut(story.blend);
@@ -133,7 +139,7 @@ export function World() {
     const kp = sim.init ? 1 - Math.exp(-(hopping ? 12 : 3.1 + 9 * stiff) * dt) : 1;
     sim.pos.lerp(sim.goal, kp);
 
-    const intro = elastic(Math.min(1, (time - sim.introAt) / 1.25));
+    const intro = elastic(Math.min(1, (clock - sim.introAt) / 1.25));
     const scaleGoal = L(A.bubbles.scale, B.bubbles.scale) * L(A.bubbles.show, B.bubbles.show) * intro;
     sim.scale += (scaleGoal - sim.scale) * (sim.init ? 1 - Math.exp(-6 * dt) : 1);
 
@@ -189,7 +195,7 @@ export function World() {
     }
 
     const lightTone = story.sky.tone === "light"; // the lead sky (includes the opening chapter's time of day)
-    motes.current?.update(L(A.motes, B.motes), lightTone, dt);
+    motes.current?.update(L(A.motes, B.motes), lightTone, dt, L(A.fireflies, B.fireflies), time, drift);
     sim.init = true;
   });
 

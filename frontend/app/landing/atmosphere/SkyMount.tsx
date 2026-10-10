@@ -30,7 +30,9 @@ export function SkyMount() {
       mobile,
       deviceMemory: nav.deviceMemory,
       hardwareConcurrency: nav.hardwareConcurrency,
-      pausedByUser: story.paused,
+      // "Pause motion" freezes the sky's own drift (the canvas stops advancing time) but keeps it painting the
+      // scroll-driven colours, so un-pausing later in the visit needs no reload; it is not the static tier.
+      pausedByUser: false,
       storedTier: stored,
     });
     story.tier = tier;

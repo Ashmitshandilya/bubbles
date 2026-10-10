@@ -2,7 +2,7 @@
  * Render quality ladder for the landing (plan section 3.2). Pure functions and one small
  * ring buffer: nothing here touches the DOM, so it is unit-tested in node.
  *
- *   static  calm document: poster, CSS sky, same copy (reduced motion, no WebGL2, Save-Data, paused)
+ *   static  calm document: poster, CSS sky, same copy (reduced motion, no WebGL2, Save-Data, a lost context)
  *   lite    relief grid 48x64, baked sky, few bubbles, 30 fps idle throttle
  *   full    live sky, refraction, composer (desktop that measures well)
  */
@@ -18,7 +18,10 @@ export type TierEnv = {
   deviceMemory?: number | null;
   /** navigator.hardwareConcurrency, when the browser reports it */
   hardwareConcurrency?: number | null;
-  /** the visitor pressed "Pause motion" */
+  /**
+   * A visitor who asked for a still page. The landing does not use this for "Pause motion", which freezes motion
+   * in place instead (story/motion.ts), so the sky and the world keep their tier and un-pausing needs no reload.
+   */
   pausedByUser: boolean;
   /** a demotion remembered from earlier in this session (sessionStorage) */
   storedTier?: Tier | null;

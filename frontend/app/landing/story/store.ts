@@ -4,9 +4,33 @@
  * outside React on purpose: scroll-rate values must never trigger re-renders.
  */
 
+import { COLOR_SCRIPT, type Grade } from "../atmosphere/palette";
 import type { Tier } from "../perf/tier";
 
 export type Tone = "light" | "dark";
+
+/**
+ * The sky on screen, written by the scroll director when it changes (`v` counts changes) and read by the sky
+ * shader, the studio lights and the post stack. Colours are hex; `dark` is the lead chapter's tone eased 0
+ * (light) to 1 (dark); `grade` and `bloom` are the colour script's values for this moment of the story.
+ */
+export type SkyState = {
+  v: number;
+  top: string;
+  mid: string;
+  horizon: string;
+  sun: string;
+  key: string;
+  rim: string;
+  accent: string;
+  tone: Tone;
+  dark: number;
+  bloom: number;
+  grade: Grade;
+};
+
+/** The opening (dawn) chapter of the colour script: where every visit starts. */
+const DAWN = COLOR_SCRIPT[0];
 
 export const CHAPTERS = [
   { id: "top", key: "enter", label: "Bubbles", len: 140, tone: "light" },
@@ -80,13 +104,22 @@ export const story = {
   worldReady: false,
   /** render quality chosen by `perf/tier.ts`; lite until the start-up measurement says otherwise */
   tier: "lite" as Tier,
-  /** the visitor pressed "Pause motion": the canvas and CSS motion are frozen */
+  /** the visitor pressed "Pause motion": ambient motion (sky drift, bubbles, spine, fireflies, CSS loops) is frozen */
   paused: false,
-  /**
-   * The sky on screen, written by the scroll director when it changes (`v` counts changes) and read by
-   * the sky shader. Colours are hex; `dark` is the lead chapter's tone eased 0 (light) to 1 (dark).
-   */
-  sky: { v: 0, top: "#E6D3FF", mid: "#FFC9E3", horizon: "#FFD9B5", sun: "#FFF0D2", tone: "light" as Tone, dark: 0 },
+  sky: {
+    v: 0,
+    top: DAWN.sky.top,
+    mid: DAWN.sky.mid,
+    horizon: DAWN.sky.horizon,
+    sun: DAWN.lights.sun,
+    key: DAWN.lights.key,
+    rim: DAWN.lights.rim,
+    accent: DAWN.accent,
+    tone: "light",
+    dark: 0,
+    bloom: DAWN.bloom,
+    grade: { ...DAWN.grade },
+  } as SkyState,
   boops: 0,
   listeners: new Set<Listener>(),
 };
@@ -94,12 +127,17 @@ export const story = {
 /** Back to the opening (dawn) sky. */
 export function resetSky() {
   const s = story.sky;
-  s.top = "#E6D3FF";
-  s.mid = "#FFC9E3";
-  s.horizon = "#FFD9B5";
-  s.sun = "#FFF0D2";
+  s.top = DAWN.sky.top;
+  s.mid = DAWN.sky.mid;
+  s.horizon = DAWN.sky.horizon;
+  s.sun = DAWN.lights.sun;
+  s.key = DAWN.lights.key;
+  s.rim = DAWN.lights.rim;
+  s.accent = DAWN.accent;
   s.tone = "light";
   s.dark = 0;
+  s.bloom = DAWN.bloom;
+  Object.assign(s.grade, DAWN.grade);
   s.v += 1;
 }
 

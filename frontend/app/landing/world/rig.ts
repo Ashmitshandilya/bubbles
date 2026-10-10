@@ -45,6 +45,8 @@ export type Rig = {
   };
   nerves: number;
   motes: number;
+  /** 0..1: how much of the drifting cells turn into warm fireflies (the night chapters) */
+  fireflies: number;
 };
 
 export type Env = { mobile: boolean; aspect: number; time: number; intro: number };
@@ -68,6 +70,15 @@ export const walkPoint = (u: number) => ({ x: lerp(-0.62, 0.3, u), y: -0.62 + 0.
 
 const rig = (r: Rig) => r;
 
+/**
+ * Every chapter has an arrive (0 to 0.15), a do (0.15 to 0.85) and a settle (0.85 to 1) phase (plan 2.7), so there
+ * are rest beats: the camera lands before the thing happens and holds still after. `doPhase` is the eased 0..1
+ * progress through the middle part; use it for moves that should not creep during the arrive and settle.
+ */
+export const ARRIVE_END = 0.15;
+export const SETTLE_START = 0.85;
+export const doPhase = (p: number) => smooth(range(p, ARRIVE_END, SETTLE_START));
+
 const enter = (p: number, e: Env): Rig => {
   const dive = smooth(range(p, 0.4, 1));
   return rig({
@@ -88,6 +99,7 @@ const enter = (p: number, e: Env): Rig => {
     },
     nerves: 0,
     motes: lerp(0.35, 0.9, dive),
+    fireflies: 0,
   });
 };
 
@@ -104,26 +116,30 @@ const body = (p: number, e: Env): Rig => {
       layout: "column",
       param: 0,
       pos: e.mobile ? [-0.1, -1.25, 0] : [0.85, -0.42, 0],
-      rot: [0, lerp(0.85, 0.3, p), 0],
+      rot: [0, lerp(0.85, 0.3, doPhase(p)), 0],
       scale: e.mobile ? 0.52 : 1,
       follow: 0,
       dim: 1,
     },
     nerves: range(p, 0.08, 0.78),
     motes: 1,
+    fireflies: 0,
   });
 };
 
-const noise = (p: number, e: Env): Rig =>
-  rig({
-    cam: [0, 0.3, lerp(9.5, 7.6, p)],
+const noise = (p: number, e: Env): Rig => {
+  const q = doPhase(p);
+  return rig({
+    cam: [0, 0.3, lerp(9.5, 7.6, q)],
     target: [0, 0.3, 0],
-    fov: lerp(35, 40, p),
+    fov: lerp(35, 40, q),
     bubbles: { mode: "screen", x: 0, y: e.mobile ? -0.72 : -0.62, z: 9, scale: e.mobile ? 0.5 : 0.62, pose: p < 0.55 ? "surprised" : "think", turn: 0, look: p < 0.55 ? "pointer" : "up", show: 1 },
-    spine: { layout: "scatter", param: p, pos: [0, 0.2, 0], rot: [0, p * 0.8, 0], scale: 1, follow: 0, dim: 1 },
+    spine: { layout: "scatter", param: q, pos: [0, 0.2, 0], rot: [0, q * 0.8, 0], scale: 1, follow: 0, dim: 1 },
     nerves: 0,
     motes: 1,
+    fireflies: 0,
   });
+};
 
 const track = (p: number, e: Env): Rig =>
   rig({
@@ -136,6 +152,7 @@ const track = (p: number, e: Env): Rig =>
     spine: { layout: "orbit", param: p, pos: [0, 0, 0], rot: [0.25, 0, -0.12], scale: e.mobile ? 0.55 : 0.85, follow: 1, dim: 1 },
     nerves: 0,
     motes: 0.8,
+    fireflies: 0,
   });
 
 const cycle = (p: number, e: Env): Rig => {
@@ -165,6 +182,7 @@ const cycle = (p: number, e: Env): Rig => {
     },
     nerves: 0,
     motes: 0.85,
+    fireflies: 0,
   });
 };
 
@@ -174,9 +192,11 @@ const connect = (p: number, e: Env): Rig =>
     target: [0, 0, 0],
     fov: 35,
     bubbles: { mode: "screen", x: 0, y: e.mobile ? -0.12 : -0.2, z: 10, scale: e.mobile ? 0.42 : 0.6, pose: "idle", turn: 0, look: "focus", show: 1 },
-    spine: { layout: "lattice", param: p, pos: [0, 0, -4], rot: [0.2, p * 0.9, 0], scale: 1, follow: 0, dim: 0.8 },
+    spine: { layout: "lattice", param: p, pos: [0, 0, -4], rot: [0.2, doPhase(p) * 0.9, 0], scale: 1, follow: 0, dim: 0.8 },
     nerves: 0,
     motes: 0.7,
+    // twilight: a few warm lights have come out among the stars
+    fireflies: 0.3,
   });
 
 const remember = (p: number, e: Env): Rig => {
@@ -203,6 +223,8 @@ const remember = (p: number, e: Env): Rig => {
     spine: { layout: "timeline", param: p, pos: [0, e.mobile ? -3.1 : -2.75, -0.5], rot: [0.12, 0, 0], scale: e.mobile ? 0.7 : 1, follow: 0, dim: 0.9 },
     nerves: 0,
     motes: 0.7,
+    // night, under the moon: the cells become fireflies
+    fireflies: 1,
   });
 };
 
@@ -217,6 +239,8 @@ const companion = (p: number, e: Env): Rig =>
     spine: { layout: "halo", param: p, pos: [0, 1.25, 0], rot: [0.18, 0, 0.06], scale: e.mobile ? 0.45 : 0.62, follow: 1, dim: 1 },
     nerves: 0,
     motes: 0.6,
+    // a warm night: some fireflies gather near the horn, which is the lamp
+    fireflies: 0.5,
   });
 
 const care = (p: number, e: Env): Rig => {
@@ -239,6 +263,7 @@ const care = (p: number, e: Env): Rig => {
     spine: { layout: "wave", param: p, pos: [0, e.mobile ? -3 : -2.5, -1.2], rot: [0, 0, 0], scale: 1, follow: 0, dim: 0.75 },
     nerves: 0,
     motes: 0.35,
+    fireflies: 0,
   });
 };
 
@@ -251,6 +276,7 @@ const bubbles = (p: number, e: Env): Rig =>
     spine: { layout: "halo", param: p, pos: [0, 0.6, 0], rot: [0.28, 0, -0.1], scale: e.mobile ? 1.0 : 1.35, follow: 1, dim: 1 },
     nerves: 0,
     motes: 0.4,
+    fireflies: 0,
   });
 
 export const RIGS: Array<(p: number, e: Env) => Rig> = [enter, body, noise, track, cycle, connect, remember, companion, care, bubbles];

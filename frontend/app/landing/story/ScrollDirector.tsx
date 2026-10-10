@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { ENTER_VARIANTS, skyAt, timeOfDay, type BlendedSky } from "../atmosphere/palette";
 import { mixSky, phaseMixAtDay, scrimCss } from "../atmosphere/sky";
+import { restorePaused } from "./motion";
 import { CHAPTERS, CHAPTER_INDEX, clamp01, range, resetStory, rotateFocus, smooth, story } from "./store";
 
 /**
@@ -33,7 +34,13 @@ export function ScrollDirector() {
     story.reduced = motion.matches;
     story.active = !story.reduced;
     root.dataset.story = story.active ? "on" : "static";
-    if (!story.active) return;
+    if (!story.active) {
+      // Reduced motion is the static tier: no canvas, no loops, the calm page (landing.css).
+      story.tier = "static";
+      return;
+    }
+    // The visitor's remembered "Pause motion" choice, restored before the sky and the world decide their tier.
+    restorePaused(root);
 
     const sections = Array.from(root.querySelectorAll<HTMLElement>("section[data-chapter]"));
     const n = sections.length;
@@ -141,6 +148,11 @@ export function ScrollDirector() {
         sk.mid = blended.mid;
         sk.horizon = blended.horizon;
         sk.sun = blended.sun;
+        sk.key = blended.key;
+        sk.rim = blended.rim;
+        sk.accent = blended.accent;
+        sk.bloom = blended.bloom;
+        Object.assign(sk.grade, blended.grade);
         sk.tone = blended.tone;
         sk.v += 1;
         // The opening chapter's own text tone follows its time-of-day variant (night is a dark sky).
