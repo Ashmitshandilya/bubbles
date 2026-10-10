@@ -153,7 +153,10 @@ def test_generate_due_skips_taken_doses(db):
     assert N.generate_due(db, U1, utc(12, 10)) == []
 
 
-def test_generate_due_water_follows_progress(db):
+def test_generate_due_water_follows_progress(db, monkeypatch):
+    # the fixed test date drifts out of load_entries' real-clock window as the calendar moves on; read the fake table directly
+    monkeypatch.setattr(N.H, "load_entries", lambda d, uid, days: [
+        {"id": r["id"], "date": r["logged_at"], "volume": r["amount_ml"], "type": r["drink_type"]} for r in d.tables.get("hydration_logs", []) if r["user_id"] == uid])
     made = N.generate_due(db, U1, utc(11, 30))
     assert [n["kind"] for n in made] == ["water"] and made[0]["dedupe_key"] == "water:2026-10-08:11:00"
     assert N.generate_due(db, U1, utc(11, 40)) == []

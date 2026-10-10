@@ -35,4 +35,4 @@ def test_next_actions_are_bounded_and_deterministic():
 def test_frontend_consumes_adaptive_action_endpoint():
     page = (ROOT.parent / "frontend/app/dashboard/dashboard/DashboardClient.tsx").read_text(encoding="utf-8")
     assert "/intelligence/brief" in page
-    assert "What matters today" in (ROOT.parent / "frontend/app/dashboard/dashboard/TodaySections.tsx").read_text(encoding="utf-8")
+    assert "Your next step" in (ROOT.parent / "frontend/app/dashboard/dashboard/TodaySections.tsx").read_text(encoding="utf-8")
