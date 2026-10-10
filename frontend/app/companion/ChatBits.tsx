@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef } from "react";
 import { BubblesMascot } from "../../components/BubblesMascot";
+import { TONE, type Tone } from "../../components/hub/HubKit";
 import {
   confidenceLabel,
   eventNote,
@@ -136,7 +137,7 @@ export function ThinkingBubble() {
     <li
       role="status"
       aria-live="polite"
-      className="bubbles-rise flex items-center gap-3 self-start rounded-3xl border-2 border-bubbles-grape/20 bg-surface px-[18px] py-3"
+      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-[18px] py-3"
     >
       <BubblesMascot size={32} mood="thinking" />
       <span className="text-body-sm font-extrabold text-bubbles-grape-deep">Checking your history and trusted sources</span>
@@ -146,6 +147,32 @@ export function ThinkingBubble() {
         <span className="bubbles-thinking-dot" />
       </span>
     </li>
+  );
+}
+
+export interface PromptCard {
+  tag: string;
+  tone: Tone;
+  text: string;
+}
+
+/** Empty-state starters. Each card sends its prompt as the user's first message. */
+export function PromptCards({ cards, disabled, onPick }: { cards: PromptCard[]; disabled: boolean; onPick: (text: string) => void }) {
+  return (
+    <div role="group" aria-label="Ways to start" className="bubbles-stagger grid w-full max-w-2xl gap-3 sm:grid-cols-3">
+      {cards.map((card) => (
+        <button
+          key={card.text}
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(card.text)}
+          className="bubbles-lift flex min-h-[44px] flex-col items-start gap-2.5 rounded-3xl border-2 border-line bg-surface p-4 text-left hover:border-bubbles-grape/40 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.75rem] font-extrabold ${TONE[card.tone].chip}`}>{card.tag}</span>
+          <span className="text-body font-bold leading-snug text-ink">{card.text}</span>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -331,11 +358,21 @@ export function BubblesReply({
   eventStatus,
   eventError,
   onDecide,
+  showAvatar = false,
+  chips = [],
+  onChip,
+  chipsDisabled = false,
 }: {
   message: ChatMessage;
   eventStatus: Record<string, EventStatus>;
   eventError?: string;
   onDecide: (ids: string[], confirmed: boolean) => void;
+  /** First reply of a run: show the small Bubbles avatar. Urgent and withdrawn replies never show it. */
+  showAvatar?: boolean;
+  /** Follow-up chips for the newest reply only. Never passed for urgent replies. */
+  chips?: string[];
+  onChip?: (text: string) => void;
+  chipsDisabled?: boolean;
 }) {
   if (message.retracted) {
     // The user corrected Bubbles: a calm card, no alert role, no red, no events or sources. The original text stays
@@ -384,7 +421,10 @@ export function BubblesReply({
 
   const unsure = message.safetyState === "POTENTIAL_REDFLAG_NEEDS_CLARIFICATION";
   return (
-    <li data-kind={message.kind} className="bubbles-rise flex w-full flex-col gap-3 self-start sm:max-w-[88%]">
+    <li data-kind={message.kind} className="bubbles-rise flex w-full items-start gap-2.5 self-start sm:max-w-[min(92%,44rem)]">
+      {/* Fixed gutter so consecutive replies line up; only the first reply of a run shows Bubbles. */}
+      <span className="mt-1 flex w-9 shrink-0 justify-center">{showAvatar && <BubblesMascot size={36} animated={false} />}</span>
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
       {message.safetyLevel === "AMBER" && (
         <div className="flex items-start gap-2.5 rounded-[18px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
           <span className="mt-0.5">
@@ -404,13 +444,29 @@ export function BubblesReply({
           )}
         </div>
       )}
-      <div className="flex flex-col gap-3 rounded-[24px_24px_24px_6px] border-2 border-bubbles-grape/20 bg-surface px-5 py-4 text-body leading-relaxed text-ink">
+      <div className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink shadow-[0_3px_0_var(--tint-grape)]">
         <MessageBody content={message.content} />
         <EvidenceRow evidence={message.evidence ?? []} confidence={message.confidence} />
       </div>
       {message.healthEvents && message.healthEvents.length > 0 && (
         <EventCard events={message.healthEvents} status={eventStatus} error={eventError} onDecide={onDecide} />
       )}
+      {chips.length > 0 && onChip && (
+        <div role="group" aria-label="Suggested follow-ups" className="flex flex-wrap gap-2">
+          {chips.map((chip, i) => (
+            <button
+              key={`${i}-${chip}`}
+              type="button"
+              disabled={chipsDisabled}
+              onClick={() => onChip(chip)}
+              className="bubbles-press min-h-[44px] rounded-full border-2 border-bubbles-grape/20 bg-surface px-4 text-left text-body-sm font-extrabold text-bubbles-grape-deep hover:border-bubbles-grape disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
+      </div>
     </li>
   );
 }

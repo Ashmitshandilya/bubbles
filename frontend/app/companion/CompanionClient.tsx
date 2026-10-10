@@ -23,14 +23,27 @@ import {
   ConversationList,
   Icon,
   ICONS,
+  PromptCards,
   ThinkingBubble,
   type ChatMessage,
   type ConversationSummary,
   type EventStatus,
+  type PromptCard,
 } from "./ChatBits";
 
 const MAX_MESSAGE = 8000; // ChatRequest.message max_length in backend/main.py
-const QUICK_PROMPTS = ["How's my sleep been lately?", "What patterns do you see this week?", "Help me prepare for a doctor visit"];
+const PROMPT_CARDS: PromptCard[] = [
+  { tag: "Sleep", tone: "grape", text: "How's my sleep been lately?" },
+  { tag: "Patterns", tone: "sun", text: "What patterns do you see this week?" },
+  { tag: "Care visit", tone: "sky", text: "Help me prepare for a doctor visit" },
+];
+// Used under a calm reply only when the backend sent no suggestions of its own. Safety-neutral on purpose.
+const FOLLOW_UPS = ["Can you explain that more simply?", "What should I keep an eye on?", "Help me prepare questions for my clinician"];
+
+/** A previous message that makes this reply a continuation of the same run (no second avatar). */
+function isReplyInRun(prev: ChatMessage | undefined) {
+  return prev?.role === "assistant" && !prev.retracted && !isUrgentMessage(prev);
+}
 
 function relativeDay(iso: unknown) {
   const date = typeof iso === "string" ? new Date(iso) : null;
@@ -396,7 +409,18 @@ export function CompanionClient() {
 
   const lastReply = [...messages].reverse().find((m) => m.role === "assistant");
   const urgent = lastReply !== undefined && isUrgentMessage(lastReply);
-  const chips = urgent ? [] : lastReply?.suggestions?.length ? lastReply.suggestions : QUICK_PROMPTS;
+  // Follow-up chips sit under the newest reply only, and only while nothing is in flight. Never under an urgent or
+  // withdrawn reply. Backend suggestions win; the static set is only for a calm, ordinary reply.
+  const tail = messages.at(-1);
+  const calmTail = tail?.role === "assistant" && !sending && !isUrgentMessage(tail) && !tail.retracted ? tail : null;
+  const chipsFor = calmTail?.id;
+  const chips = !calmTail
+    ? []
+    : calmTail.suggestions?.length
+      ? calmTail.suggestions.slice(0, 3)
+      : calmTail.safetyLevel === "GREEN" && (calmTail.kind === undefined || calmTail.kind === "reply")
+        ? FOLLOW_UPS
+        : [];
   const composerDisabled = sending || loadingConversation || conversationError !== null;
   const nearLimit = input.length > MAX_MESSAGE - 1000;
 
@@ -456,13 +480,16 @@ export function CompanionClient() {
             <div className="mx-auto flex w-full max-w-[860px] flex-col px-4 py-6 lg:px-7">
               <h2 className="sr-only">Conversation</h2>
               {messages.length === 0 && !loadingConversation && !conversationError && !sending && (
-                <div className="bubbles-rise mx-auto flex max-w-md flex-col items-center gap-3 py-8 text-center">
-                  <BubblesMascot size={96} mood="happy" />
-                  <p className="m-0 font-display text-h2 font-semibold text-ink">Hi, I&apos;m Bubbles</p>
-                  <p className="m-0 text-body text-ink-soft">
-                    Tell me how you&apos;re feeling or ask about your patterns. I connect what you share with your logs and trusted
-                    sources. I can&apos;t diagnose, but I can help you understand and prepare.
-                  </p>
+                <div className="mx-auto flex w-full flex-col items-center gap-6 py-8 text-center">
+                  <div className="bubbles-rise flex max-w-md flex-col items-center gap-3">
+                    <BubblesMascot size={96} mood="happy" />
+                    <p className="m-0 font-display text-h2 font-semibold text-ink">Hi, I&apos;m Bubbles</p>
+                    <p className="m-0 text-body text-ink-soft">
+                      Tell me how you&apos;re feeling or ask about your patterns. I connect what you share with your logs and trusted
+                      sources. I can&apos;t diagnose, but I can help you understand and prepare.
+                    </p>
+                  </div>
+                  <PromptCards cards={PROMPT_CARDS} disabled={composerDisabled} onPick={(text) => void sendMessage(text)} />
                 </div>
               )}
 
@@ -496,10 +523,10 @@ export function CompanionClient() {
               )}
 
               <ol aria-label="Messages" className="m-0 flex list-none flex-col gap-[18px] p-0">
-                {messages.map((m) =>
+                {messages.map((m, i) =>
                   m.role === "user" ? (
-                    <li key={m.clientId ?? m.id} className="bubbles-rise flex max-w-[85%] flex-col items-end gap-1 self-end sm:max-w-[72%]">
-                      <p className="m-0 whitespace-pre-wrap break-words rounded-[24px_24px_6px_24px] bg-bubbles-pink-ink px-[18px] py-3.5 text-body font-semibold leading-normal text-white">
+                    <li key={m.clientId ?? m.id} className="bubbles-rise flex max-w-[85%] flex-col items-end gap-1 self-end sm:max-w-[min(72%,34rem)]">
+                      <p className="m-0 whitespace-pre-wrap break-words rounded-[22px_22px_8px_22px] bg-bubbles-pink-ink px-[18px] py-3.5 shadow-[0_3px_0_var(--bubbles-pink-deep)] text-body font-semibold leading-normal text-white">
                         <span className="sr-only">You: </span>
                         {m.content}
                       </p>
@@ -512,6 +539,10 @@ export function CompanionClient() {
                       eventStatus={eventStatus}
                       eventError={eventErrors[m.id]}
                       onDecide={(ids, confirmed) => void decideEvents(m.id, ids, confirmed)}
+                      showAvatar={!isReplyInRun(messages[i - 1])}
+                      chips={m.id === chipsFor ? chips : undefined}
+                      onChip={(text) => void sendMessage(text)}
+                      chipsDisabled={composerDisabled}
                     />
                   )
                 )}
@@ -537,27 +568,6 @@ export function CompanionClient() {
                       Try again
                     </button>
                   )}
-                </div>
-              )}
-
-              {chips.length > 0 && (
-                <div
-                  role="group"
-                  aria-label={lastReply?.suggestions?.length ? "Suggested next questions" : "Quick prompts"}
-                  className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
-                  style={{ scrollbarWidth: "none" }}
-                >
-                  {chips.map((chip, i) => (
-                    <button
-                      key={`${i}-${chip}`}
-                      type="button"
-                      disabled={composerDisabled}
-                      onClick={() => void sendMessage(chip)}
-                      className="min-h-[44px] shrink-0 rounded-full border-2 border-bubbles-grape/20 bg-surface px-3.5 text-body-sm font-extrabold text-bubbles-grape-deep transition-colors hover:border-bubbles-grape disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {chip}
-                    </button>
-                  ))}
                 </div>
               )}
 
@@ -602,10 +612,21 @@ export function CompanionClient() {
                   <button
                     type="submit"
                     aria-label={sending ? "Sending" : "Send message"}
+                    aria-busy={sending}
                     disabled={composerDisabled || !input.trim()}
-                    className="bubbles-press flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-bubbles-pink-ink text-white shadow-[0_4px_0_var(--bubbles-pink-deep)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className={`bubbles-press flex h-12 w-12 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed ${
+                      sending || input.trim()
+                        ? "bg-bubbles-pink-ink text-white shadow-[0_4px_0_var(--bubbles-pink-deep)]"
+                        : "bg-tint-pink text-bubbles-pink-deep shadow-none"
+                    }`}
                   >
-                    <Icon d={ICONS.send} size={22} strokeWidth={2.6} />
+                    {sending ? (
+                      <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" aria-hidden="true" className="motion-safe:animate-spin">
+                        <path d="M12 3a9 9 0 1 0 9 9" />
+                      </svg>
+                    ) : (
+                      <Icon d={ICONS.send} size={22} strokeWidth={2.6} />
+                    )}
                   </button>
                 </div>
               </form>
