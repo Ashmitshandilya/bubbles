@@ -196,6 +196,11 @@ function LoginForm() {
       <p className="mt-6 text-center text-body-sm font-semibold text-ink-soft">
         Bubbles does not diagnose. <Link href="/" className="font-extrabold text-bubbles-pink-ink">Learn about Bubbles</Link>
       </p>
+      <p className="mt-2 text-center text-body-sm font-semibold text-ink-soft">
+        <Link href="/privacy" className="font-extrabold text-bubbles-pink-ink">Privacy</Link>
+        {" · "}
+        <Link href="/terms" className="font-extrabold text-bubbles-pink-ink">Terms</Link>
+      </p>
     </div>
   );
 }

@@ -664,7 +664,7 @@
 }
 .cw-footer-inner p { margin: 0; max-width: 68ch; line-height: 1.5; }
 .cw-footer-links { display: flex; gap: 18px; align-items: center; }
-.cw-footer-links a { color: #d6246f; font-weight: 650; text-decoration: none; }
+.cw-footer-links a { color: #a5124d; font-weight: 650; text-decoration: none; }
 .cw-footer .cw-logo-word { font-size: 1.4rem; color: #22101d; }
 @media (max-width: 760px) {
   .cw-footer-inner { grid-template-columns: 1fr; gap: 16px; }

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { story } from "../story/store";
 import { fadeAmount, postAllowed, postWanted } from "./grade";
-import { PostStack } from "./PostStack";
+import type { PostStack } from "./PostStack";
 
 /**
  * The single mount point of the post stack (plan step 9), inside the 3D canvas. It exists only in the full tier:
@@ -53,13 +53,19 @@ function Composer({ wanted, onGone }: { wanted: MutableRefObject<boolean>; onGon
   });
 
   useEffect(() => {
-    try {
-      stack.current = new PostStack(gl, scene, camera, latest.current.w, latest.current.h, latest.current.dpr);
-    } catch {
-      broken = true;
-      stack.current = null;
-    }
+    // The bloom code is only fetched when the full tier actually needs it (lite and static visitors never download it).
+    let cancelled = false;
+    import("./PostStack")
+      .then(({ PostStack: Stack }) => {
+        if (cancelled) return;
+        stack.current = new Stack(gl, scene, camera, latest.current.w, latest.current.h, latest.current.dpr);
+      })
+      .catch(() => {
+        broken = true;
+        stack.current = null;
+      });
     return () => {
+      cancelled = true;
       stack.current?.dispose();
       stack.current = null;
     };

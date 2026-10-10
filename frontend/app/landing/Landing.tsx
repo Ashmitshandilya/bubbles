@@ -403,6 +403,8 @@ export function Landing() {
           <p>Bubbles is a wellness companion, not a medical device, and does not diagnose. In an emergency, contact your local emergency number.</p>
           <div className="cw-footer-links">
             <Link href="/login">Sign in</Link>
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
             <span>© 2026 Bubbles</span>
           </div>
         </div>

@@ -27,7 +27,7 @@ export function SoapBubbles() {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const scene = useThree((s) => s.scene);
   /** frame-to-frame bookkeeping that must not trigger renders */
-  const live = useRef({ root: null as HTMLElement | null, lead: -1, stale: true, skySeen: -1 });
+  const live = useRef({ root: null as HTMLElement | null, lead: -1, stale: true, skySeen: -1, warm: 0 });
 
   const rig = useMemo(() => {
     const geometry = new THREE.SphereGeometry(1, 28, 20);
@@ -133,7 +133,11 @@ export function SoapBubbles() {
       mesh.visible = true;
       l.root?.setAttribute("data-soap", "gl");
     }
-    if (story.paused) return;
+    // Pause freezes the field, but a visitor who arrived with Pause remembered still gets a first settled frame (about half a second).
+    if (story.paused) {
+      if (l.warm >= 30) return;
+      l.warm += 1;
+    }
 
     // Copy blocks of the chapter on stage: measured when it changes, and after a resize or font load.
     const lead = story.blend < 0.5 ? story.current : Math.min(story.current + 1, CHAPTERS.length - 1);

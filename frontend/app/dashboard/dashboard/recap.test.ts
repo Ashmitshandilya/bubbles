@@ -54,6 +54,10 @@ describe("buildWeekRecap highlights", () => {
       "Migraine diagnosis was logged 3 times.",
       "Fever due to flu was logged 3 times.",
       "Antibiotic dose was logged 3 times.",
+      "Poor sleep may trigger headaches.",
+      "Headaches are linked to low water intake.",
+      "Walking improves your sleep.",
+      "A cramp can be a sign of an iron problem.",
     ];
     const recap = buildWeekRecap(weekly({ trend: null, insights: risky.map((description) => insight({ description })) }));
     expect(recap?.highlights).toEqual(["Bubbles recorded 8 entries this week."]);

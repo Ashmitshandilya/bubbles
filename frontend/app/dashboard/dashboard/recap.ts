@@ -35,7 +35,7 @@ const CORE: Array<{ label: string; types: string[] }> = [
 
 /** Words the recap must not repeat from free text: causation, diagnosis, dosing. Such a line is dropped, not reworded. */
 const OFF_LIMITS =
-  /\b(caus\w*|because|due to|leads? to|led to|result(?:s|ed)? (?:in|from)|diagnos\w*|prescri\w*|dos(?:e|es|ed|age|ing)|overdos\w*)\b|\b\d+(?:[.,]\d+)?\s?(?:mg|mcg|µg|iu)\b/i;
+  /\b(caus\w*|because|due to|trigger\w*|linked to|worsen\w*|improv\w*|makes?|made|brings? on|brought on|explains?|explained by|thanks to|from taking|after taking|treat\w*|cur(?:e|es|ed)|medicat\w*|symptom of|sign of|indicat\w*|suggests? (?:a|an|that)|leads? to|led to|result(?:s|ed)? (?:in|from)|diagnos\w*|prescri\w*|dos(?:e|es|ed|age|ing)|overdos\w*)\b|\b\d+(?:[.,]\d+)?\s?(?:mg|mcg|µg|iu)\b/i;
 const MAX_LINE = 160;
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
