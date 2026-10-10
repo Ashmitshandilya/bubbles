@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
+import { AuthLinkRedirect } from "../components/AuthLinkRedirect";
 
 // Self-hosted by next/font (no runtime request to Google) with size-adjusted
 // fallback metrics, so text does not jump when the web fonts arrive.
@@ -48,6 +49,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${nunito.variable} ${fredoka.variable}`}>
       <body className="bubbles-shell min-h-dvh flex flex-col">
+        <AuthLinkRedirect />
         {children}
       </body>
     </html>

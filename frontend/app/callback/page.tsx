@@ -15,6 +15,29 @@ function CallbackContent() {
     async function handleAuth() {
       // Check for access token in URL fragment (magic link redirect)
       const hash = window.location.hash;
+      const code = searchParams.get("code");
+      const tokenHash = searchParams.get("token_hash");
+      if (code || tokenHash) {
+        // Newer link styles carry a one-time code or token hash in the query string instead of the fragment.
+        try {
+          const { error } = code
+            ? await supabase.auth.exchangeCodeForSession(code)
+            : await supabase.auth.verifyOtp({ token_hash: tokenHash ?? "", type: (searchParams.get("type") as "signup" | "magiclink" | "email" | null) ?? "email" });
+          if (error) {
+            setStatus("error");
+            setMessage("Your sign-in link may have expired or been used already. Please request a new one.");
+          } else {
+            setStatus("success");
+            setMessage("Signed in! Redirecting...");
+            router.push("/dashboard");
+            router.refresh();
+          }
+        } catch {
+          setStatus("error");
+          setMessage("Bubbles couldn't confirm your sign-in. Please try again.");
+        }
+        return;
+      }
       if (hash && hash.includes("access_token")) {
         const params = new URLSearchParams(hash.replace("#", ""));
         const accessToken = params.get("access_token");
@@ -55,7 +78,11 @@ function CallbackContent() {
         const errorDescription = searchParams.get("error_description") ?? fragment.get("error_description");
         if (error) {
           setStatus("error");
-          setMessage(`${error}: ${errorDescription || "Unknown error"}`);
+          setMessage(
+            fragment.get("error_code") === "otp_expired" || /expired/i.test(errorDescription ?? "")
+              ? "That link has expired or was already used. Request a new one and open it on the same device."
+              : `${error}: ${errorDescription || "Unknown error"}`,
+          );
         } else {
           // Try to get session from Supabase (cookie-based)
           try {

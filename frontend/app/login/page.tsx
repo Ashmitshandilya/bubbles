@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useId, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
+import { authCallbackUrl } from "../../lib/auth-links";
 import { BubblesMascot } from "../../components/BubblesMascot";
 
 type Mode = "login" | "signup" | "magic";
@@ -57,15 +58,15 @@ function LoginForm() {
       if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: `${window.location.origin}/callback` },
+          options: { emailRedirectTo: authCallbackUrl(window.location.origin) },
         });
         setMessage(error ? { kind: "error", text: error.message } : { kind: "info", text: "Check your inbox. Your sign-in link is on its way." });
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          // after the email is confirmed, come back to THIS site (must also be in Supabase -> Authentication -> Redirect URLs)
-          options: { data: { display_name: displayName }, emailRedirectTo: `${window.location.origin}/callback` },
+          // after the email is confirmed, come back to THIS site (that address must also be in Supabase -> Authentication -> URL Configuration -> Redirect URLs)
+          options: { data: { display_name: displayName }, emailRedirectTo: authCallbackUrl(window.location.origin) },
         });
         if (error) {
           setMessage({ kind: "error", text: error.message });
