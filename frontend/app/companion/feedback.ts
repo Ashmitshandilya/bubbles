@@ -15,12 +15,12 @@ export const FEEDBACK_REASONS: { id: FeedbackReason; label: string }[] = [
   { id: "other", label: "Something else" },
 ];
 
-const MESSAGE_ID = /^[A-Za-z0-9_-]{8,64}$/;
+const MESSAGE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_IDS = 50;
 
-/** Only a reply the server saved can be rated: a local placeholder id (ends in "-reply") has nothing to attach to. */
+/** Only a reply the server saved (a UUID) can be rated: a local placeholder id has nothing to attach to. */
 export function isRatableId(id: string): boolean {
-  return MESSAGE_ID.test(id) && !id.endsWith("-reply");
+  return MESSAGE_ID.test(id);
 }
 
 /** The newest ids last, capped at what one request may carry. */

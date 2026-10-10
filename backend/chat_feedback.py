@@ -6,7 +6,7 @@ Bubbles reply that belongs to the signed-in user, and the latest rating replaces
 """
 from __future__ import annotations
 
-import re
+import uuid
 from datetime import datetime, timezone
 from typing import Any, Callable
 
@@ -18,9 +18,18 @@ import doc_store
 KIND = "chat_feedback"
 RATINGS = ("up", "down")
 REASONS = ("unclear", "not_helpful", "too_long", "worried_me", "other")
-MESSAGE_ID = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 MAX_IDS = 50
 BUBBLES_ROLES = ("bubbles", "assistant")
+
+
+def valid_id(value: Any) -> str | None:
+    """The canonical lower-case UUID text for a reply id, or None. chat_messages.id is a uuid column, so anything else cannot exist."""
+    if not isinstance(value, str) or len(value) > 36:
+        return None
+    try:
+        return str(uuid.UUID(value))
+    except ValueError:
+        return None
 
 
 def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
@@ -44,7 +53,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         if not isinstance(body, dict):
             raise HTTPException(status_code=422, detail="Request body must be a JSON object")
         message_id, rating, reason = body.get("message_id"), body.get("rating"), body.get("reason")
-        if not isinstance(message_id, str) or not MESSAGE_ID.match(message_id):
+        message_id = valid_id(message_id)
+        if message_id is None:
             raise HTTPException(status_code=422, detail="message_id is invalid")
         if rating not in RATINGS:
             raise HTTPException(status_code=422, detail="rating must be 'up' or 'down'")
@@ -61,7 +71,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     @router.get("/chat/feedback")
     async def my_ratings(message_ids: str = Query("", max_length=4000), authorization: str | None = Header(None)):
         uid = await uid_of(authorization)
-        wanted = [m for m in (part.strip() for part in message_ids.split(",")) if MESSAGE_ID.match(m)][:MAX_IDS]
+        wanted = list(dict.fromkeys(m for m in (valid_id(part.strip()) for part in message_ids.split(",")) if m))[:MAX_IDS]
         ratings: dict[str, dict] = {}
         for message_id in wanted:
             doc = await run_in_threadpool(doc_store.get, db, uid, KIND, message_id)

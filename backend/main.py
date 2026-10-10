@@ -179,7 +179,7 @@ async def bubbles_security_headers(request, call_next):
 
 
 # Coarse protection for the Whole-Health OS routes: a request-size cap and a per-user request budget (the chat has its own limiter).
-_GUARDED_PREFIXES = ("/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner")
+_GUARDED_PREFIXES = ("/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback")
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing

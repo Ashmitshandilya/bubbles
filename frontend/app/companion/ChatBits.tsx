@@ -391,7 +391,7 @@ function ReplyFeedback({
         {button("up", "Yes, this helped", THUMB_UP)}
         {button("down", "No, this did not help", THUMB_DOWN)}
       </div>
-      {rated === "up" && <span role="status" className="text-body-sm font-bold text-muted">Thanks, that helps Bubbles.</span>}
+      {rated === "up" && <span role="status" className="text-body-sm font-bold text-muted">Thanks, noted.</span>}
       {failed && <span role="alert" className="text-body-sm font-bold text-bubbles-urgent">Couldn&apos;t save that. Try again.</span>}
       {rated === "down" && (
         <div role="group" aria-label="What went wrong?" className="flex w-full flex-wrap gap-2 pt-1">

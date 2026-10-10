@@ -10,7 +10,7 @@ from tests.fake_db import FakeDB
 
 U1, U2 = "00000000-0000-0000-0000-000000000001", "00000000-0000-0000-0000-000000000002"
 H1, H2 = {"Authorization": "Bearer t1"}, {"Authorization": "Bearer t2"}
-REPLY, USER_MSG, OTHERS = "reply-aaaaaaaa-0001", "user-bbbbbbbb-0001", "reply-cccccccc-0002"
+REPLY, USER_MSG, OTHERS = "aaaaaaaa-aaaa-4aaa-8aaa-000000000001", "bbbbbbbb-bbbb-4bbb-8bbb-000000000001", "cccccccc-cccc-4ccc-8ccc-000000000002"
 
 
 @pytest.fixture()
@@ -65,6 +65,8 @@ def test_only_your_own_bubbles_replies_can_be_rated(env):
     {"message_id": REPLY, "rating": "meh"},
     {"message_id": REPLY, "rating": "down", "reason": "free text about my chest pain"},
     {"message_id": "x", "rating": "up"},
+    {"message_id": "abcdefgh", "rating": "up"},
+    {"message_id": REPLY + "-trailing-text-that-makes-it-too-long", "rating": "up"},
     {"rating": "up"},
     [],
 ])
@@ -80,3 +82,10 @@ def test_stores_only_the_fixed_fields(env):
     stored = [row for row in db.tables["health_events"] if row.get("event_type") == "bubbles_doc"]
     assert len(stored) == 1 and set(stored[0]["data"]["payload"]) == {"rating", "reason", "at"}
     assert "hello" not in str(stored[0]) and "secret" not in str(stored[0])
+
+
+def test_duplicate_and_junk_ids_in_the_read_are_ignored(env):
+    client, _ = env
+    client.post("/chat/feedback", json={"message_id": REPLY, "rating": "up"}, headers=H1)
+    got = client.get(f"/chat/feedback?message_ids={REPLY},{REPLY.upper()},not-a-uuid,{REPLY}", headers=H1).json()["ratings"]
+    assert list(got) == [REPLY]
