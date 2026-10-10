@@ -25,6 +25,16 @@
   --font-m: var(--font-cw-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
   --font-w: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
   --bg: #f1e6ee;
+  /* corner-radius scale: marks and bubble tails, chips, list cards, bubbles and panels, containers, pills */
+  --r-0: 6px;
+  --r-1: 10px;
+  --r-2: 16px;
+  --r-3: 22px;
+  --r-4: 28px;
+  --r-pill: 999px;
+  /* motion: a springy arrival for things that pop, a long settle for things that glide */
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --settle: cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   isolation: isolate;
   min-height: 100vh;
@@ -44,16 +54,18 @@
   --line: rgb(34 16 29 / 0.14);
   --glass: rgb(255 255 255 / 0.62);
   --glass-line: rgb(34 16 29 / 0.1);
-  --accent: #d6246f;
+  /* deep raspberry: 4.5:1 or better on every light sky, including the dusk hero (atmosphere/contrast.test.ts) */
+  --accent: #a5124d;
 }
 .cw[data-tone="dark"],
 .cw [data-tone="dark"] {
   --fg: #f8eef4;
-  --fg-soft: rgb(248 238 244 / 0.9); /* lifted from .72 now that dark chapters sit on lighter skies (4.5 for secondary copy) */
+  --fg-soft: rgb(248 238 244 / 0.94); /* lifted from .72 now that dark chapters sit on lighter skies (4.5 for secondary copy) */
   --line: rgb(248 238 244 / 0.16);
   --glass: rgb(255 255 255 / 0.06);
   --glass-line: rgb(255 255 255 / 0.12);
-  --accent: #ff73b0;
+  /* the lighter pink holds 4.5:1 for the small memory labels on the night skies */
+  --accent: #ff8cc2;
 }
 
 .cw-ch { --p: 1; --in: 1; --out: 0; color: var(--fg); }
@@ -90,20 +102,24 @@
   font-family: var(--font-d);
   font-weight: 720;
   font-variation-settings: "wdth" 84;
-  letter-spacing: -0.042em;
   color: var(--fg);
   text-wrap: balance;
 }
-.cw-display { font-size: clamp(2.5rem, 5.4vw, 5.7rem); line-height: 0.95; }
-.cw-h2 { font-size: clamp(2.1rem, 4.2vw, 4.4rem); line-height: 0.98; }
+/* Display: tight but not touching (the heavy, narrow face collides at -0.042em); h2: a little more air in the lines. */
+.cw-display { font-size: clamp(2.4rem, 5.2vw, 5.4rem); line-height: 1; letter-spacing: -0.036em; }
+.cw-h2 { font-size: clamp(2rem, 3.9vw, 4.2rem); line-height: 1.04; letter-spacing: -0.032em; }
 .cw-accent { color: var(--accent); }
+/* Over the night skies, headlines get a soft halo so they stay clear of beads, the moon and bubbles behind them. */
+.cw [data-tone="dark"] :is(.cw-display, .cw-h2) { text-shadow: 0 1px 26px rgb(8 4 28 / 0.5); }
 .cw-lede {
   margin: 0;
-  max-width: 38ch;
-  font-size: clamp(1.02rem, 1.2vw, 1.2rem);
-  line-height: 1.5;
-  font-weight: 420;
+  max-width: 40ch;
+  font-size: clamp(1.05rem, 0.45vw + 0.95rem, 1.25rem);
+  line-height: 1.55;
+  font-weight: 440;
+  letter-spacing: 0.002em;
   color: var(--fg-soft);
+  text-wrap: pretty;
 }
 .cw-mono {
   font-family: var(--font-m);
@@ -117,26 +133,55 @@
 /* ── Buttons ──────────────────────────────────────────────── */
 .cw-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .cw-btn {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   white-space: nowrap;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-family: var(--font-d);
   font-weight: 650;
+  letter-spacing: -0.005em;
   text-decoration: none;
-  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: transform 260ms var(--spring), box-shadow 240ms var(--settle), background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
-.cw-btn:hover { transform: translateY(-2px); }
-.cw-btn:active { transform: translateY(1px) scale(0.98); }
-.cw-btn:focus-visible { outline: 3px solid var(--cw-lilac); outline-offset: 3px; }
-.cw-btn--sm { min-height: 42px; padding: 0 18px; font-size: 0.95rem; }
-.cw-btn--lg { min-height: 56px; padding: 0 26px; font-size: 1.06rem; }
-.cw-btn--primary { background: var(--cw-ink-pink); color: #fff; box-shadow: 0 10px 30px -10px rgb(214 36 111 / 0.7); }
-.cw-btn--primary:hover { background: #b81a5d; }
+.cw-btn--sm { min-height: 44px; padding: 0 20px; font-size: 0.95rem; }
+.cw-btn--lg { min-height: 56px; padding: 0 28px; font-size: 1.06rem; }
+.cw-btn--primary {
+  background: var(--cw-ink-pink);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 -2px 0 rgb(0 0 0 / 0.14), 0 12px 28px -12px rgb(168 18 77 / 0.7);
+}
+.cw-btn--primary:hover { background: #bd1c60; box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -2px 0 rgb(0 0 0 / 0.16), 0 18px 34px -12px rgb(168 18 77 / 0.75); }
+.cw-btn--primary:active { box-shadow: inset 0 3px 8px rgb(0 0 0 / 0.28), 0 4px 10px -6px rgb(168 18 77 / 0.6); }
+/* a soap-film sheen that sweeps across the main button when it is hovered or focused */
+.cw-btn--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 32%, rgb(255 255 255 / 0.32) 44%, rgb(255 205 232 / 0.34) 50%, rgb(190 228 255 / 0.3) 57%, transparent 68%);
+  translate: -120% 0;
+  transition: translate 800ms var(--settle);
+}
 .cw-btn--ghost { border: 1.5px solid var(--line); color: var(--fg); background: transparent; }
-.cw-btn--ghost:hover { border-color: var(--fg); }
+.cw-btn--ghost:hover { border-color: var(--fg); background: rgb(255 255 255 / 0.12); }
+.cw-btn--ghost:active { background: rgb(255 255 255 / 0.2); }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .cw-btn:hover { transform: translateY(-2px); }
+  .cw-btn--primary:hover::after, .cw-btn--primary:focus-visible::after { translate: 120% 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cw-btn:active { transform: translateY(1px) scale(0.975); transition-duration: 90ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cw-btn { transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease; }
+  .cw-btn--primary::after { display: none; }
+}
+/* One focus ring for every control: a dark inner line (3:1 on any sky) and a lilac halo. */
+.cw :is(a, button, [tabindex]):focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; box-shadow: 0 0 0 5px rgb(180 155 255 / 0.7); }
 
 /* ── Logo / nav / rail ────────────────────────────────────── */
 .cw-logo { display: inline-flex; align-items: center; gap: 10px; }
@@ -181,9 +226,9 @@
   cursor: pointer;
   pointer-events: auto;
 }
-.cw-bubbles-hit:focus-visible { outline: 3px solid var(--cw-lilac); outline-offset: 4px; }
 .cw-bubbles-figure { width: 100%; height: 100%; transform-origin: 50% 80%; transition: transform 420ms cubic-bezier(0.34, 1.3, 0.64, 1); }
 .cw-bubbles-figure .cf { filter: drop-shadow(0 22px 26px rgb(26 8 30 / 0.28)); }
+.cw[data-bubble-hover] { cursor: pointer; }
 .cw[data-tone="dark"] .cw-bubbles-figure .cf { filter: drop-shadow(0 0 1.5px rgb(255 210 232 / 0.55)) drop-shadow(0 24px 34px rgb(0 0 0 / 0.5)); }
 
 /* ── Speech bubble ────────────────────────────────────────── */
@@ -200,7 +245,7 @@
   bottom: 36px;
   left: 40px;
   padding: 10px 15px;
-  border-radius: 18px 18px 18px 5px;
+  border-radius: var(--r-2) var(--r-2) var(--r-2) var(--r-0);
   background: #fff;
   color: #2a1430;
   font-size: 0.95rem;
@@ -214,7 +259,7 @@
   opacity: 0;
   transition: transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease;
 }
-.cw-bubble[data-flip="left"] > span { left: auto; right: 40px; border-radius: 18px 18px 5px 18px; transform-origin: bottom right; }
+.cw-bubble[data-flip="left"] > span { left: auto; right: 40px; border-radius: var(--r-2) var(--r-2) var(--r-0) var(--r-2); transform-origin: bottom right; }
 .cw-bubble[data-show] > span { transform: scale(1); opacity: 1; }
 .cw-bubble:not([data-show]) > span:empty { display: none; }
 
@@ -264,7 +309,7 @@
   gap: 4px;
   padding: 12px 16px;
   border: 1px solid var(--glass-line);
-  border-radius: 16px;
+  border-radius: var(--r-2);
   background: var(--glass);
 }
 .cw-sys strong { font-size: 1rem; font-weight: 650; }
@@ -281,14 +326,14 @@
   gap: 14px;
   min-height: 64px;
   padding: 14px 14px 14px 22px;
-  border-radius: 28px;
+  border-radius: var(--r-4);
   border: 1px solid var(--glass-line);
   background: var(--glass);
   font-size: 1.12rem;
   line-height: 1.4;
 }
 .cw-field-text { flex: 1; min-height: 1.4em; }
-.cw-mark { border-radius: 6px; padding: 0 2px; }
+.cw-mark { border-radius: var(--r-0); padding: 0 2px; }
 .cw-caret { display: none; }
 .cw:not([data-story="static"]) .cw-caret { display: inline-block; width: 2px; height: 1.1em; margin-left: 2px; vertical-align: -0.15em; background: var(--accent); }
 .cw-send { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--cw-ink-pink); box-shadow: inset 0 0 0 10px var(--cw-ink-pink), inset 0 0 0 30px #fff; }
@@ -300,7 +345,7 @@
   column-gap: 14px;
   align-items: center;
   padding: 14px 16px;
-  border-radius: 18px;
+  border-radius: var(--r-2);
   border: 1px solid var(--glass-line);
   background: var(--glass);
   border-left: 3px solid var(--rc, var(--cw-pink));
@@ -400,10 +445,10 @@
   color: var(--fg);
   font: 600 0.98rem/1 var(--font-d);
   cursor: pointer;
-  transition: background-color 180ms ease, border-color 180ms ease, transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 180ms ease;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 220ms var(--spring), box-shadow 180ms ease;
 }
+.cw-node:active { transform: scale(0.97); }
 .cw-node:hover, .cw-node[data-active] { border-color: var(--accent); background: rgb(255 115 176 / 0.16); }
-.cw-node:focus-visible { outline: 3px solid var(--cw-lilac); outline-offset: 3px; }
 .cw-near { display: none; }
 .cw-web-hint { margin: 14px 0 0; font-size: 0.9rem; color: var(--fg-soft); }
 
@@ -433,7 +478,7 @@
 .cw-tone-luteal { --tone: #cdbbff; }
 .cw-zl-week { display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 10px; height: 160px; }
 .cw-day { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; height: 100%; color: var(--fg-soft); }
-.cw-bar { width: 100%; max-width: 46px; height: calc(var(--v) * 110px); border-radius: 12px 12px 4px 4px; background: linear-gradient(180deg, #cdbbff, rgb(180 155 255 / 0.35)); }
+.cw-bar { width: 100%; max-width: 46px; height: calc(var(--v) * 110px); border-radius: var(--r-1) var(--r-1) 4px 4px; background: linear-gradient(180deg, #cdbbff, rgb(180 155 255 / 0.35)); }
 .cw-day-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--cw-apricot); box-shadow: 0 0 0 4px rgb(255 195 122 / 0.18); }
 .cw-zl-note { position: absolute; right: 0; top: -22px; color: var(--fg-soft); }
 .cw-zl-season svg { width: 100%; height: 130px; overflow: visible; }
@@ -450,7 +495,7 @@
 .cw-month i {
   display: block;
   height: 54px;
-  border-radius: 10px;
+  border-radius: var(--r-1);
   background:
     linear-gradient(90deg, rgb(232 51 111 / 0.55) 0 18%, transparent 18% 100%),
     linear-gradient(180deg, rgb(205 187 255 / 0.32), rgb(205 187 255 / 0.08));
@@ -488,18 +533,18 @@
   color: var(--fg-soft);
   font: 560 0.9rem/1.2 var(--font-d);
   cursor: pointer;
-  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease, transform 200ms var(--spring);
 }
+.cw-ask:active { transform: scale(0.96); }
 .cw-ask:hover { color: var(--fg); border-color: var(--fg-soft); }
 .cw-ask[aria-pressed="true"] { color: #fff; background: var(--cw-ink-pink); border-color: var(--cw-ink-pink); }
-.cw-ask:focus-visible { outline: 3px solid var(--cw-lilac); outline-offset: 2px; }
 .cw-question {
   justify-self: start;
   margin: 0;
   display: grid;
   gap: 6px;
   padding: 14px 18px;
-  border-radius: 22px 22px 22px 6px;
+  border-radius: var(--r-3) var(--r-3) var(--r-3) var(--r-0);
   background: #fff;
   color: #22101d;
   font-size: 1.12rem;
@@ -511,7 +556,7 @@
   display: grid;
   gap: 3px;
   padding: 11px 14px;
-  border-radius: 16px;
+  border-radius: var(--r-2);
   border: 1px solid var(--glass-line);
   background: var(--glass);
 }
@@ -523,7 +568,7 @@
   display: grid;
   gap: 12px;
   padding: 18px 20px;
-  border-radius: 22px 22px 6px 22px;
+  border-radius: var(--r-3) var(--r-3) var(--r-0) var(--r-3);
   border: 1px solid rgb(255 115 176 / 0.4);
   background: linear-gradient(160deg, rgb(255 115 176 / 0.16), rgb(180 155 255 / 0.1));
   font-size: 1.04rem;
@@ -627,13 +672,14 @@
   /* portals: dive into the body, bloom back out of Bubbles */
   .cw:not([data-story="static"]) .cw-portal { display: block; position: fixed; inset: 0; z-index: 1; pointer-events: none; }
   .cw:not([data-story="static"]) .cw-portal--rim {
-    background: radial-gradient(circle at 63% 50%, #ff8cc2, #b49bff);
-    clip-path: circle(calc(var(--dive, 0) * 150vmax + min(1, var(--dive, 0) * 60) * 14px) at 63% 50%);
+    /* the rim of the opening is a soap film: the same interference colours as the bubbles, a little wider than the old line */
+    background: conic-gradient(from 30deg at var(--dive-x, 63%) var(--dive-y, 50%), #ffb3d9, #ffe0b5, #c5f5e2, #a8d4ff, #d2bcff, #ffb3d9);
+    clip-path: circle(calc(var(--dive, 0) * 150vmax + min(1, var(--dive, 0) * 60) * 20px) at var(--dive-x, 63%) var(--dive-y, 50%));
   }
   /* the dive fills with the body's sky and the bloom with the care chapter's, so neither pops when it lets go */
   .cw:not([data-story="static"]) .cw-portal--dive {
     background: var(--sky-body, #170a14);
-    clip-path: circle(calc(var(--dive, 0) * 150vmax) at 63% 50%);
+    clip-path: circle(calc(var(--dive, 0) * 150vmax) at var(--dive-x, 63%) var(--dive-y, 50%));
   }
   .cw:not([data-story="static"]) .cw-portal--bloom {
     background: var(--sky-care, #eee5ee);
@@ -677,7 +723,8 @@
     display: block;
   }
 
-  /* rail */
+  /* rail: a column of small film ticks. --ch (written by the director) is the chapter position, fractional through a hand-over, so
+     the tick for the chapter on stage grows into a pill and shows its label, and the ones already passed stay half-lit. */
   @media (min-width: 1100px) {
     .cw:not([data-story="static"]) .cw-rail {
       display: block;
@@ -690,27 +737,28 @@
       transition: color 400ms ease;
     }
   }
-  .cw-rail a { --on: 0; }
-  .cw-rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  .cw-rail a { display: flex; flex-direction: row-reverse; align-items: center; gap: 10px; min-height: 22px; color: inherit; text-decoration: none; }
-  .cw-rail-tick { display: block; width: 12px; height: 5px; border-radius: 3px; background: currentColor; opacity: 0.28; transition: width 300ms ease, opacity 300ms ease, background-color 300ms ease; }
-  .cw-rail-label { font: 500 0.66rem var(--font-m); letter-spacing: 0.1em; text-transform: uppercase; opacity: 0; translate: 6px 0; transition: opacity 250ms ease, translate 250ms ease; }
-  .cw-rail a:hover .cw-rail-label, .cw-rail a:focus-visible .cw-rail-label { opacity: 0.8; translate: 0 0; }
-  .cw-rail a:focus-visible { outline: 2px solid var(--cw-lilac); outline-offset: 4px; border-radius: 4px; }
-  .cw[data-active="enter"] .cw-rail a[data-key="enter"],
-  .cw[data-active="body"] .cw-rail a[data-key="body"],
-  .cw[data-active="noise"] .cw-rail a[data-key="noise"],
-  .cw[data-active="track"] .cw-rail a[data-key="track"],
-  .cw[data-active="cycle"] .cw-rail a[data-key="cycle"],
-  .cw[data-active="connect"] .cw-rail a[data-key="connect"],
-  .cw[data-active="remember"] .cw-rail a[data-key="remember"],
-  .cw[data-active="companion"] .cw-rail a[data-key="companion"],
-  .cw[data-active="care"] .cw-rail a[data-key="care"],
-  .cw[data-active="bubbles"] .cw-rail a[data-key="bubbles"] {
-    --on: 1;
+  .cw-rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .cw-rail li {
+    --on: clamp(0, 1 - max(var(--ch, 0) - var(--i), var(--i) - var(--ch, 0)), 1);
+    --past: clamp(0, var(--ch, 0) - var(--i), 1);
   }
-  .cw-rail a .cw-rail-tick { width: calc(12px + var(--on, 0) * 16px); opacity: calc(0.28 + var(--on, 0) * 0.72); }
-  .cw-rail a .cw-rail-label { opacity: calc(var(--on, 0) * 0.9); translate: calc((1 - var(--on, 0)) * 6px) 0; }
+  .cw-rail a { display: flex; flex-direction: row-reverse; align-items: center; gap: 12px; min-height: 26px; color: inherit; text-decoration: none; }
+  .cw-rail-tick {
+    display: block;
+    width: calc(8px + var(--on) * 20px);
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: currentColor;
+    opacity: calc(0.26 + var(--past) * 0.26 + var(--on) * 0.48);
+  }
+  .cw-rail-label {
+    font: 600 0.78rem/1 var(--font-d);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    opacity: var(--on);
+    translate: calc((1 - var(--on)) * 6px) 0;
+  }
+  .cw-rail a:hover .cw-rail-label, .cw-rail a:focus-visible .cw-rail-label { opacity: 0.85; translate: 0 0; }
 
   /* ── Enter ── */
   .cw:not([data-story="static"]) .cw-ch--enter { --dv: clamp(0, (var(--p) - 0.08) / 0.8, 1); }
@@ -849,7 +897,7 @@
   .cw:not([data-story="static"]) .cw-body-copy .cw-lede { opacity: clamp(0, (var(--p) - 0.06) / 0.1, 1); }
   .cw:not([data-story="static"]) .cw-swap { display: grid; }
   .cw:not([data-story="static"]) .cw-swap > span { grid-area: 1 / 1; transition: none; }
-  .cw:not([data-story="static"]) .cw-ch--body .cw-swap { --sa: clamp(0, (var(--p) - 0.36) / 0.1, 1); --sb: clamp(0, (var(--p) - 0.44) / 0.1, 1); }
+  .cw:not([data-story="static"]) .cw-ch--body .cw-swap { --sa: clamp(0, (var(--p) - 0.4) / 0.1, 1); --sb: var(--sa); }
   .cw:not([data-story="static"]) .cw-swap-a { opacity: calc(1 - var(--sa)); transform: translateY(calc(var(--sa) * -0.35em)); filter: blur(calc(var(--sa) * 6px)); }
   .cw:not([data-story="static"]) .cw-swap-b { opacity: var(--sb); transform: translateY(calc((1 - var(--sb)) * 0.35em)); filter: blur(calc((1 - var(--sb)) * 6px)); }
   .cw:not([data-story="static"])[data-world="ready"] .cw-systems { position: absolute; inset: 0; display: block; }
@@ -860,7 +908,7 @@
     width: max-content;
     max-width: 240px;
     padding: 9px 13px;
-    border-radius: 14px;
+    border-radius: var(--r-2);
     opacity: 0;
     translate: 18px -50%;
     backdrop-filter: blur(8px);
@@ -900,7 +948,7 @@
     text-align: center;
   }
   .cw:not([data-story="static"]) .cw-noise-copy .cw-h2 { font-size: clamp(2.4rem, 5.2vw, 5.6rem); }
-  .cw:not([data-story="static"]) .cw-ch--noise .cw-swap { --sa: clamp(0, (var(--p) - 0.48) / 0.08, 1); --sb: clamp(0, (var(--p) - 0.55) / 0.1, 1); justify-items: center; }
+  .cw:not([data-story="static"]) .cw-ch--noise .cw-swap { --sa: clamp(0, (var(--p) - 0.5) / 0.1, 1); --sb: var(--sa); justify-items: center; }
   .cw:not([data-story="static"]) .cw-ch--noise .cw-swap-a { opacity: calc(clamp(0, (var(--p) - 0.04) / 0.08, 1) - var(--sa)); }
   .cw:not([data-story="static"]) .cw-noise-copy .cw-lede { text-align: center; opacity: clamp(0, (var(--p) - 0.62) / 0.1, 1); }
 
@@ -1006,7 +1054,7 @@
     translate: -50% -50%;
     max-width: 240px;
     padding: 10px 14px;
-    border-radius: 14px;
+    border-radius: var(--r-2);
     border: 1px solid rgb(255 115 176 / 0.45);
     background: rgb(23 10 24 / 0.72);
     backdrop-filter: blur(10px);
@@ -1033,7 +1081,7 @@
     width: max-content;
     max-width: 220px;
     padding: 8px 12px;
-    border-radius: 12px;
+    border-radius: var(--r-1);
     background: #fff;
     color: #22101d;
     font-size: 0.84rem;
@@ -1044,7 +1092,8 @@
     pointer-events: none;
   }
   .cw:not([data-story="static"]) .cw-near[data-show] { opacity: 1; transform: none; }
-  .cw:not([data-story="static"]) .cw-web-hint { position: absolute; left: 0; bottom: -2vh; margin: 0; opacity: clamp(0, (var(--p) - 0.1) / 0.1, 1); }
+  /* on its own dark glass, so it reads over the bright horizon of the connect sky */
+  .cw:not([data-story="static"]) .cw-web-hint { position: absolute; left: 0; bottom: -2vh; margin: 0; padding: 8px 14px; border-radius: var(--r-pill); background: rgb(23 10 24 / 0.62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: clamp(0, (var(--p) - 0.1) / 0.1, 1); }
 
   /* ── Memory ── */
   .cw:not([data-story="static"]) .cw-ch--remember .cw-zoom-word:nth-child(2) { --a: -0.1; --b: 0.22; }
@@ -1063,8 +1112,8 @@
     font-size: clamp(3rem, 7vw, 7.4rem);
   }
   .cw:not([data-story="static"]) .cw-zoom-word {
-    --zi: clamp(0, (var(--p) - var(--a)) / 0.04, 1);
-    --zo: clamp(0, (var(--p) - var(--b) + 0.03) / 0.04, 1);
+    --zi: clamp(0, (var(--p) - var(--a) + 0.02) / 0.04, 1);
+    --zo: clamp(0, (var(--p) - var(--b) + 0.02) / 0.04, 1);
     grid-area: 1 / 1;
     opacity: calc(var(--zi) * (1 - var(--zo)));
     transform: translateY(calc((1 - var(--zi)) * 0.25em - var(--zo) * 0.25em));
@@ -1072,8 +1121,8 @@
   .cw:not([data-story="static"]) .cw-zoom-word:last-child { color: var(--accent); }
   .cw:not([data-story="static"]) .cw-zoom { position: absolute; left: var(--pad); right: calc(var(--pad) + 340px); top: 38vh; height: 30vh; display: block; }
   .cw:not([data-story="static"]) .cw-zl {
-    --zi: clamp(0, (var(--p) - var(--a)) / 0.06, 1);
-    --zo: clamp(0, (var(--p) - var(--b) + 0.04) / 0.06, 1);
+    --zi: clamp(0, (var(--p) - var(--a) + 0.03) / 0.06, 1);
+    --zo: clamp(0, (var(--p) - var(--b) + 0.03) / 0.06, 1);
     position: absolute;
     inset: 0;
     opacity: calc(var(--zi) * (1 - var(--zo)));
@@ -1199,7 +1248,8 @@
     .cw:not([data-story="static"]) .cw-field { font-size: 0.98rem; min-height: 56px; }
     .cw:not([data-story="static"]) .cw-records li { grid-template-columns: 70px 1fr auto; padding: 10px 12px; }
 
-    .cw:not([data-story="static"]) .cw-cycle-copy { width: auto; right: var(--pad); top: auto; bottom: 5vh; }
+    /* the copy sits low on the phone, where the phase-tinted horizon is brightest: give it a panel of its own */
+    .cw:not([data-story="static"]) .cw-cycle-copy { width: auto; right: var(--pad); top: auto; bottom: 5vh; padding: 14px 16px; border-radius: var(--r-3); background: rgb(28 10 38 / 0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
     .cw:not([data-story="static"]) .cw-cycle-copy .cw-h2 { display: none; }
     .cw:not([data-story="static"]) .cw-day-num { font-size: 2.8rem; }
     .cw:not([data-story="static"]) .cw-phase h3 { font-size: 1.7rem; }
@@ -1275,6 +1325,102 @@
 }
 @keyframes cw-flow {
   to { stroke-dashoffset: -24; }
+}
+
+/* ============================================================
+   SOAP BUBBLES: the locket round Bubbles, and the CSS bubbles
+   (the whole look in the static tier, and the first paint before
+   the 3D bubbles arrive). The film colours are the same interference
+   palette as the WebGL shader (bubbles/soap.glsl.ts).
+   ============================================================ */
+/* The film: a ring of interference colour. (Written out in the rule, not in a variable, so --rot and --ring resolve per bubble.) */
+.cw-soapcss > span::before,
+.cw-locket::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from var(--rot, 0deg), #ffb3d9, #ffe0b5, #c5f5e2, #a8d4ff, #d2bcff, #ffb3d9);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring, 5%)), #000 calc(100% - var(--ring, 5%) + 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring, 5%)), #000 calc(100% - var(--ring, 5%) + 1px));
+}
+
+/* ── CSS bubbles ── */
+.cw-soapcss { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.cw-soapcss > span {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: min(calc(var(--s) * 1px), 26vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+}
+.cw-soapcss > span::before { opacity: 0.8; }
+/* a clear belly with a faint tint, a window highlight, a small glint */
+.cw-soapcss > span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse 13% 9% at 31% 25%, rgb(255 255 255 / 0.95), transparent 100%),
+    radial-gradient(ellipse 5% 3.5% at 70% 77%, rgb(255 255 255 / 0.6), transparent 100%),
+    radial-gradient(circle at 50% 50%, transparent 52%, rgb(255 255 255 / 0.12) 76%, rgb(255 255 255 / 0.3) 100%);
+}
+.cw[data-soap="gl"] .cw-soapcss { opacity: 0; transition: opacity 600ms ease; }
+/* on a phone the hero copy spans the width: keep only the first few, which sit high and to the right */
+@media (max-width: 819px) {
+  .cw-soapcss > span:nth-child(n + 4) { display: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cw-soapcss > span { animation: cw-soap-float var(--d, 9s) ease-in-out infinite alternate; }
+  .cw-soapcss > span::before { animation: cw-soap-spin calc(var(--d, 9s) * 3) linear infinite; }
+}
+@keyframes cw-soap-float { from { translate: -50% -46%; } to { translate: -50% -54%; } }
+@keyframes cw-soap-spin { to { rotate: 360deg; } }
+
+/* ── The locket (story mode): Bubbles inside a larger bubble through chapters 2 to 8 ── */
+.cw-locket {
+  display: none;
+  position: absolute;
+  left: 48.6%;
+  top: 54.5%;
+  width: 142%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.72;
+  transition: opacity 500ms ease, scale 700ms var(--spring);
+}
+.cw:not([data-story="static"]) .cw-locket { display: block; }
+.cw-bubbles[data-locket="1"] .cw-locket { opacity: 1; scale: 1; }
+.cw-locket::before { --ring: 3.2%; opacity: 0.9; }
+.cw-locket::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 46%, transparent 58%, rgb(255 255 255 / 0.08) 78%, rgb(255 255 255 / 0.22) 100%),
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.05), transparent 70%);
+  box-shadow: 0 0 46px rgb(255 190 230 / 0.2), inset 0 0 36px rgb(190 228 255 / 0.12);
+}
+.cw-locket-win {
+  position: absolute;
+  left: 17%;
+  top: 11%;
+  width: 17%;
+  height: 10%;
+  border-radius: 40% / 50%;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.12));
+  rotate: -28deg;
+}
+.cw-locket-dot { position: absolute; right: 15%; bottom: 14%; width: 4.5%; height: 3%; border-radius: 50%; background: rgb(255 255 255 / 0.6); rotate: -28deg; }
+@media (prefers-reduced-motion: no-preference) {
+  .cw-locket::before { animation: cw-soap-spin 36s linear infinite; }
 }
 
 /* ============================================================

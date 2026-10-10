@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { SoapBubbles } from "../bubbles/SoapBubbles";
 import { Motes, type MotesHandle } from "./Motes";
 import { HOP_LIFT, RIGS, type Env, type Rig } from "./rig";
 import { ringTopFor } from "./geometry";
@@ -197,6 +198,7 @@ export function World() {
       <Studio />
       <Spine ref={spine} />
       <Motes ref={motes} count={story.mobile ? 380 : 820} />
+      <SoapBubbles />
     </>
   );
 }

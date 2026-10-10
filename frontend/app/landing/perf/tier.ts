@@ -71,7 +71,10 @@ export function writeStoredTier(storage: Pick<Storage, "setItem"> | null | undef
 export const DEMOTE_FRAMES = 90;
 export const DEMOTE_P95_MS = 24;
 export const PROMOTE_FRAMES = 60;
-export const PROMOTE_P95_MS = 12;
+/** Promotion judges the display's own rhythm, not an absolute budget: a 60 Hz screen can never beat 16.7 ms. */
+export const PROMOTE_MEDIAN_MAX_MS = 17.5;
+/** p95 may be at most this multiple of the median frame interval (a steady clock, few hitches). */
+export const PROMOTE_P95_RATIO = 1.35;
 
 /**
  * Fixed-size ring buffer of frame times in ms. No allocation after construction except the
@@ -116,13 +119,29 @@ export class FrameMonitor {
     return view[Math.ceil(0.95 * len) - 1];
   }
 
+  /** Median of the newest `n` samples; 0 when there are fewer than `n`. */
+  median(n: number = DEMOTE_FRAMES): number {
+    const len = Math.min(Math.max(1, Math.floor(n)), this.buf.length);
+    if (this.count < len) return 0;
+    for (let i = 0; i < len; i += 1) {
+      this.scratch[i] = this.buf[(this.head - 1 - i + this.buf.length * 2) % this.buf.length];
+    }
+    const view = this.scratch.subarray(0, len).sort();
+    return (view[Math.ceil(len / 2) - 1] + view[Math.floor(len / 2)]) / 2;
+  }
+
   /** Slow for a full 90 frames: p95 above 24 ms. */
   shouldDemote(): boolean {
     return this.count >= DEMOTE_FRAMES && this.p95(DEMOTE_FRAMES) > DEMOTE_P95_MS;
   }
 
-  /** Fast for 60 frames on a promotable desktop: p95 at 12 ms or better. Never true for mobile. */
+  /**
+   * Smooth for 60 frames on a promotable desktop: the median frame interval is at least 57 fps
+   * (60, 120 or 144 Hz screens all qualify) and p95 stays within 1.35x of that median. Never true for mobile.
+   */
   shouldPromote(): boolean {
-    return this.promotable && this.count >= PROMOTE_FRAMES && this.p95(PROMOTE_FRAMES) <= PROMOTE_P95_MS;
+    if (!this.promotable || this.count < PROMOTE_FRAMES) return false;
+    const median = this.median(PROMOTE_FRAMES);
+    return median > 0 && median <= PROMOTE_MEDIAN_MAX_MS && this.p95(PROMOTE_FRAMES) <= median * PROMOTE_P95_RATIO;
   }
 }

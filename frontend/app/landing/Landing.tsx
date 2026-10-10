@@ -4,8 +4,9 @@ import { Bricolage_Grotesque, Geist_Mono } from "next/font/google";
 import { AuthCta } from "./AuthCta";
 import { BubblesLogo } from "./BubblesMark";
 import { BubblesFigure } from "./BubblesFigure";
+import { SoapCss } from "./bubbles/SoapCss";
 import { ScrollDirector } from "./story/ScrollDirector";
-import { COLOR_SCRIPT } from "./atmosphere/palette";
+import { COLOR_SCRIPT, phaseInk } from "./atmosphere/palette";
 import { SkyMount } from "./atmosphere/SkyMount";
 import { calmBackground, skyGradient, skyVars } from "./atmosphere/sky";
 import { CHAPTERS, MOBILE_LEN_FACTOR } from "./story/store";
@@ -156,8 +157,8 @@ export function Landing() {
 
       <nav className="cw-rail" aria-label="Story chapters">
         <ol>
-          {CHAPTERS.map((c) => (
-            <li key={c.key}>
+          {CHAPTERS.map((c, k) => (
+            <li key={c.key} style={{ "--i": k } as Vars}>
               <a href={`#${c.id}`} data-key={c.key}>
                 <span className="cw-rail-tick" aria-hidden="true" />
                 <span className="cw-rail-label">{c.label}</span>
@@ -173,6 +174,7 @@ export function Landing() {
         {/* ── Enter ─────────────────────────────────────────── */}
         <section {...chapter("enter")}>
           <div className="cw-layer cw-back" aria-hidden="true">
+            <SoapCss variant="hero" />
             <div className="cw-wordmark">
               {"bubbles".split("").map((ch, i) => (
                 <span key={i} style={{ "--i": i } as Vars}>{ch}</span>
@@ -261,7 +263,7 @@ export function Landing() {
                 <CycleDay />
                 <div className="cw-phases">
                   {PHASES.map((ph) => (
-                    <article key={ph.key} className="cw-phase" style={{ "--a": ph.a, "--b": ph.b, "--c": ph.color } as Vars}>
+                    <article key={ph.key} className="cw-phase" style={{ "--a": ph.a, "--b": ph.b, "--c": phaseInk(ph.color) } as Vars}>
                       <h3>
                         {ph.name} <span className="cw-mono">{ph.days}</span>
                       </h3>
@@ -381,6 +383,7 @@ export function Landing() {
         <section {...chapter("bubbles")}>
           <div className="cw-layer cw-back" aria-hidden="true">
             <div className="cw-final-glow" />
+            <SoapCss variant="finale" />
           </div>
           <div className="cw-layer cw-front">
             <div className="cw-stage">

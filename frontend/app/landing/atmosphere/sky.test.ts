@@ -157,9 +157,12 @@ describe("the calm (static) page keeps every pixel readable", () => {
 
   it("adds the scrim only where a chapter has one, in both gradient flavours", () => {
     const cycle = COLOR_SCRIPT.find((c) => c.key === "cycle")!;
-    expect(calmBackground(cycle, true)).toContain("rgb(28 10 38 / 0.35)");
+    expect(calmBackground(cycle, true)).toContain("rgb(28 10 38 / 0.4)");
     expect(calmBackground(cycle, false)).not.toContain("oklab");
     expect(calmBackground(COLOR_SCRIPT[0], true)).not.toContain("rgb(");
+    // the night hero has one too (its horizon is bright enough to wash out the copy), the other variants do not
+    expect(ENTER_VARIANTS.night.scrim).not.toBeNull();
+    expect(ENTER_VARIANTS.dusk.scrim).toBeNull();
   });
 });
 

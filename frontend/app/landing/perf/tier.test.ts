@@ -108,17 +108,34 @@ describe("FrameMonitor", () => {
     expect(m.p95()).toBe(8);
   });
 
-  it("promotes a desktop at 12 ms p95 over 60 frames, not before and not when slower", () => {
+  it("promotes a steady 60 Hz desktop (16.7 ms frames), not before 60 frames", () => {
     const m = new FrameMonitor({ mobile: false });
-    feed(m, 8, 59);
+    feed(m, 16.7, 59);
     expect(m.shouldPromote()).toBe(false);
-    m.push(8);
+    m.push(16.7);
+    expect(m.shouldPromote()).toBe(true);
+  });
+
+  it("promotes 120 and 144 Hz displays too, and tolerates a few hitches", () => {
+    const m = new FrameMonitor({ mobile: false });
+    feed(m, 8.3, 60);
     expect(m.shouldPromote()).toBe(true);
     m.reset();
-    feed(m, 12, 60);
+    feed(m, 6.9, 60);
     expect(m.shouldPromote()).toBe(true);
     m.reset();
-    feed(m, 13, 60);
+    feed(m, 16.7, 57);
+    for (let i = 0; i < 3; i += 1) m.push(40); // 3 of 60 is 5 percent: p95 still lands on a normal frame
+    expect(m.shouldPromote()).toBe(true);
+  });
+
+  it("does not promote a throttled or uneven loop", () => {
+    const m = new FrameMonitor({ mobile: false });
+    feed(m, 33.3, 60); // 30 fps: median too slow
+    expect(m.shouldPromote()).toBe(false);
+    m.reset();
+    feed(m, 16.7, 54);
+    feed(m, 40, 6); // 10 percent hitches: p95 above 1.35x the median
     expect(m.shouldPromote()).toBe(false);
   });
 

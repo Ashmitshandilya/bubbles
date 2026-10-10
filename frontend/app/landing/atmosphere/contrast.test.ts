@@ -1,0 +1,178 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { CHAPTERS } from "../story/store";
+import {
+  COLOR_SCRIPT,
+  ENTER_VARIANTS,
+  PHASE_COLORS,
+  PHASE_ORDER,
+  phaseInk,
+  composite,
+  contrastRatio,
+  cycleAt,
+  sampleSky,
+  type ChapterPalette,
+  type Hex,
+  type TimeVariant,
+} from "./palette";
+import { OVERLAY_CAP } from "./sky";
+
+/**
+ * The text colours the stylesheet really uses (--fg, --fg-soft, --accent, read from landing.css so the two
+ * cannot drift apart) against the sky behind each piece of copy, at the sky's worst case: the base gradient and
+ * the shader's glow, rays and haze at their cap, with the chapter scrim where there is one.
+ *
+ * palette.test.ts proves the planned INK / BLUSH text; this proves the headings, accents and secondary text
+ * that the page actually paints. Large text (headings, 24px or 19px bold and up) needs 3, the rest 4.5.
+ * Each role lists the band of the viewport height its copy occupies, so a headline at the top is not judged
+ * against the horizon glow it never touches.
+ */
+
+const css = readFileSync(new URL("../landing.css", import.meta.url), "utf8");
+
+type Tone = "light" | "dark";
+type Token = { hex: Hex; alpha: number };
+
+function tokens(tone: Tone): Record<"fg" | "fgSoft" | "accent", Token> {
+  const block = new RegExp(`\\.cw\\s+\\[data-tone="${tone}"\\]\\s*\\{([^}]*)\\}`).exec(css)?.[1];
+  if (!block) throw new Error(`no ${tone} tone block in landing.css`);
+  const read = (name: string): Token => {
+    const raw = new RegExp(`--${name}:\\s*([^;]+);`).exec(block)?.[1]?.replace(/\/\*.*?\*\//g, "").trim();
+    if (!raw) throw new Error(`--${name} missing in the ${tone} block`);
+    const hex = /^#([0-9a-f]{6})$/i.exec(raw);
+    if (hex) return { hex: `#${hex[1]}` as Hex, alpha: 1 };
+    const rgb = /^rgb\(\s*(\d+)\s+(\d+)\s+(\d+)(?:\s*\/\s*([\d.]+))?\s*\)$/.exec(raw);
+    if (!rgb) throw new Error(`cannot read --${name}: ${raw}`);
+    const to = (v: string) => Number(v).toString(16).padStart(2, "0");
+    return { hex: `#${to(rgb[1])}${to(rgb[2])}${to(rgb[3])}` as Hex, alpha: rgb[4] === undefined ? 1 : Number(rgb[4]) };
+  };
+  return { fg: read("fg"), fgSoft: read("fg-soft"), accent: read("accent") };
+}
+
+const TOKENS = { light: tokens("light"), dark: tokens("dark") };
+
+type Painted = Pick<ChapterPalette, "sky" | "scrim" | "lights" | "tone">;
+const heights = (from: number, to: number) => Array.from({ length: 5 }, (_, i) => from + ((to - from) * i) / 4);
+
+/** Lowest contrast of `text` over the sky between `band`, with and without the shader overlay at its cap. */
+function worst(p: Painted, text: Token | Hex, band: readonly [number, number]) {
+  let min = Infinity;
+  for (const h of heights(band[0], band[1])) {
+    let bg = sampleSky(p.sky, h);
+    if (p.scrim) bg = composite(bg, p.scrim.color, p.scrim.alpha);
+    for (const sky of [bg, composite(bg, p.lights.sun, OVERLAY_CAP[p.tone])]) {
+      const fg = typeof text === "string" ? text : composite(sky, text.hex, text.alpha);
+      min = Math.min(min, contrastRatio(sky, fg));
+    }
+  }
+  return min;
+}
+
+/** `strict`: a headline accent held to 4.5 on light skies, although large text only needs 3 (the hero line must pop, not just pass). */
+type Role = { what: string; use: "fg" | "fgSoft" | "accent"; large: boolean; band: readonly [number, number]; strict?: boolean };
+
+/** What each chapter paints, and where. Bands are fractions of the viewport height (desktop and phone). */
+const ROLES: Record<string, Role[]> = {
+  enter: [
+    { what: "headline", use: "fg", large: true, band: [0.4, 0.95] },
+    { what: "accent line", use: "accent", large: true, strict: true, band: [0.4, 0.95] },
+    { what: "lede", use: "fgSoft", large: false, band: [0.6, 0.95] },
+  ],
+  body: [
+    { what: "headline", use: "fg", large: true, band: [0.1, 0.45] },
+    { what: "second headline (accent)", use: "accent", large: true, band: [0.1, 0.45] },
+    { what: "lede", use: "fgSoft", large: false, band: [0.25, 0.6] },
+  ],
+  noise: [
+    { what: "headline", use: "fg", large: true, band: [0.1, 0.5] },
+    { what: "second headline (accent)", use: "accent", large: true, band: [0.1, 0.5] },
+    { what: "lede", use: "fgSoft", large: false, band: [0.3, 0.65] },
+  ],
+  track: [
+    { what: "headline", use: "fg", large: true, band: [0.08, 0.4] },
+    { what: "form text", use: "fg", large: false, band: [0.3, 0.85] },
+    { what: "notes", use: "fgSoft", large: false, band: [0.3, 0.9] },
+  ],
+  cycle: [
+    { what: "headline", use: "fg", large: true, band: [0.08, 0.4] },
+    // phones put this copy on its own glass panel (landing.css), so the band is the desktop column
+    { what: "day line and phase copy", use: "fgSoft", large: false, band: [0.3, 0.8] },
+  ],
+  connect: [
+    { what: "headline", use: "fg", large: true, band: [0.06, 0.32] },
+    // (the hint under the web sits on its own dark glass pill, so it is not judged against the sky)
+  ],
+  remember: [
+    { what: "headline", use: "fg", large: true, band: [0.08, 0.4] },
+    { what: "last headline word (accent)", use: "accent", large: true, band: [0.08, 0.4] },
+    { what: "memory level labels (accent, small)", use: "accent", large: false, band: [0.2, 0.65] },
+    { what: "layers and lede", use: "fgSoft", large: false, band: [0.2, 0.95] },
+  ],
+  companion: [
+    { what: "headline", use: "fg", large: true, band: [0.06, 0.32] },
+    { what: "steps and answer", use: "fgSoft", large: false, band: [0.2, 0.9] },
+  ],
+  care: [
+    { what: "title", use: "fgSoft", large: true, band: [0.08, 0.22] },
+    { what: "statements", use: "fg", large: true, band: [0.25, 0.7] },
+    { what: "statements (accent)", use: "accent", large: true, band: [0.25, 0.7] },
+    { what: "statement copy", use: "fgSoft", large: false, band: [0.45, 0.8] },
+  ],
+  bubbles: [
+    { what: "headline", use: "fg", large: true, band: [0.1, 0.5] },
+    { what: "lede", use: "fgSoft", large: false, band: [0.3, 0.6] },
+  ],
+};
+
+const need = (r: Role, tone: Tone) => (r.strict && tone === "light" ? 4.5 : r.large ? 3 : 4.5);
+
+function failures(label: string, p: Painted, roles: Role[]) {
+  const out: string[] = [];
+  for (const r of roles) {
+    const got = worst(p, TOKENS[p.tone][r.use], r.band);
+    if (got < need(r, p.tone)) out.push(`${label} ${r.what}: ${got.toFixed(2)} (needs ${need(r, p.tone)})`);
+  }
+  return out;
+}
+
+describe("the stylesheet's text tokens", () => {
+  it("are read from landing.css for both tones", () => {
+    expect(TOKENS.light.fg.hex.toLowerCase()).toBe("#22101d");
+    expect(TOKENS.dark.fg.hex.toLowerCase()).toBe("#f8eef4");
+    expect(TOKENS.light.fgSoft.alpha).toBeLessThan(1);
+  });
+});
+
+describe("heading, accent and secondary text hold their contrast at the sky's worst case", () => {
+  for (const c of COLOR_SCRIPT) {
+    if (c.key === "enter" || c.key === "cycle") continue;
+    it(`${c.key}`, () => {
+      expect(failures(c.key, c, ROLES[c.key])).toEqual([]);
+    });
+  }
+
+  for (const [tod, v] of Object.entries(ENTER_VARIANTS) as [string, TimeVariant][]) {
+    it(`enter at ${tod} (the hero follows the visitor's clock)`, () => {
+      expect(failures(`enter/${tod}`, v, ROLES.enter)).toEqual([]);
+    });
+  }
+
+  it("cycle, at every phase and between phases", () => {
+    const out: string[] = [];
+    for (let x = 0; x <= 3.001; x += 0.25) out.push(...failures(`cycle/${x.toFixed(2)}`, cycleAt(x), ROLES.cycle));
+    expect(out).toEqual([]);
+  });
+
+  it("cycle phase names, painted in their own colour, read as large text on their phase's sky", () => {
+    const out: string[] = [];
+    PHASE_ORDER.forEach((name, i) => {
+      const got = worst(cycleAt(i), phaseInk(PHASE_COLORS[name]), [0.4, 0.85]);
+      if (got < 3) out.push(`${name}: ${got.toFixed(2)} (needs 3)`);
+    });
+    expect(out).toEqual([]);
+  });
+
+  it("every chapter has roles listed here", () => {
+    expect(Object.keys(ROLES).sort()).toEqual(CHAPTERS.map((c) => c.key).sort());
+  });
+});

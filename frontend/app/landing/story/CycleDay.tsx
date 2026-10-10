@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
+import { phaseInk } from "../atmosphere/palette";
 import { feelAt, feelBand, type FeelBand } from "./feel";
 import { CHAPTER_INDEX, focusOn, isLead, onStoryFrame, range, say, story } from "./store";
 
-const PHASE_COLOR = (day: number) => (day <= 5 ? "#E8336F" : day <= 13 ? "#FF8A7A" : day <= 16 ? "#FFC37A" : "#B49BFF");
+// Text ink, not the raw phase colour: the day number is large type on a sky tinted by that same colour (see phaseInk).
+const INK = (["#E8336F", "#FF8A7A", "#FFC37A", "#B49BFF"] as const).map(phaseInk);
+const PHASE_COLOR = (day: number) => (day <= 5 ? INK[0] : day <= 13 ? INK[1] : day <= 16 ? INK[2] : INK[3]);
 
 type Vars = CSSProperties & Record<`--${string}`, string | number>;
 

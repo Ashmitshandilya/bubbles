@@ -56,9 +56,10 @@ const g = (warmth: number, saturation: number, contrast: number, lift: number, v
  * Adjustments made to the plan's starting values, all found by palette.test.ts (see the test for the numbers):
  *  - cycle: the sky colours are exactly as planned, but with the phase tint (45 percent of the phase
  *    colour into mid and horizon) blush text falls to about 3.3:1 at ovulation (apricot) and below
- *    4.5 at most phases except the first. A dark plum scrim (alpha 0.35, inside the plan's 25 to 40
- *    percent range) behind the copy lifts the worst case to about 6:1 at every phase. This is the
- *    plan's own remedy; no sky colour was changed. Every other chapter passes as planned.
+ *    4.5 at most phases except the first. A dark plum scrim (alpha 0.4, the top of the plan's 25 to 40
+ *    percent range) behind the copy lifts the worst case to about 4.5:1 or better at every phase, down to
+ *    the horizon end of the copy band (contrast.test.ts). This is the plan's own remedy; no sky colour was
+ *    changed. Every other chapter passes as planned.
  */
 export const COLOR_SCRIPT = [
   {
@@ -117,7 +118,7 @@ export const COLOR_SCRIPT = [
     accent: "#E8336F",
     accent2: "#FFC37A",
     text: BLUSH,
-    scrim: { color: "#1C0A26", alpha: 0.35 },
+    scrim: { color: "#1C0A26", alpha: 0.4 },
     grade: g(0.3, 0, 0, 0, 0.08),
     bloom: 0.5,
   },
@@ -195,6 +196,13 @@ export const PHASE_COLORS = {
 } as const satisfies Record<string, Hex>;
 export const PHASE_ORDER = ["period", "follicular", "ovulation", "luteal"] as const;
 
+/**
+ * How far phase colours are lifted toward white when they are TEXT (phase names, the big day number) on the
+ * cycle sky, which is tinted by those same colours: red on red-plum was 1.7:1. Rings, dots and bars keep the
+ * true colours. contrast.test.ts holds the lifted names at 3 or better (large text) at every phase.
+ */
+export const PHASE_INK_LIFT = 0.5;
+
 export type TimeOfDay = "dawn" | "day" | "dusk" | "night";
 export type TimeVariant = Pick<ChapterPalette, "tone" | "sky" | "lights" | "accent" | "accent2" | "text" | "scrim" | "grade" | "bloom">;
 
@@ -233,11 +241,16 @@ export const ENTER_VARIANTS: Record<TimeOfDay, TimeVariant> = {
     accent: "#FFE9F6",
     accent2: "#FFD98A",
     text: BLUSH,
-    scrim: null,
+    // The night horizon is bright enough to wash out the hero copy that sits down to it; the plum scrim
+    // (as in the cycle chapter) restores blush text to 5:1 and the pink accent to 3.3:1 (large text).
+    scrim: { color: "#1C0A26", alpha: 0.4 },
     grade: g(-0.2, 0, 0, 0, 0.12),
     bloom: 0.5,
   },
 };
+
+/** A phase colour as text ink on the cycle sky (see PHASE_INK_LIFT). */
+export const phaseInk = (hex: string): Hex => mixOklab(hex, "#FFFFFF", PHASE_INK_LIFT);
 
 /** Local hour (0..23) to a time-of-day variant. */
 export function timeOfDay(hour: number): TimeOfDay {

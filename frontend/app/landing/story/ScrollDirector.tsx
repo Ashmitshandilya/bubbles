@@ -163,10 +163,17 @@ export function ScrollDirector() {
       const tone = portalDive > 0.55 ? "dark" : portalBloom > 0.55 ? "light" : sk.tone;
       if (root.dataset.tone !== tone) root.dataset.tone = tone;
       if (root.dataset.active !== CHAPTERS[lead].key) root.dataset.active = CHAPTERS[lead].key;
+      // Where the story is, fractionally (4.5 = halfway from chapter 4 to 5): the rail's ticks grow and fade from it.
+      setRoot("--ch", fmt(current + story.blend));
 
       // Portal 1: the hero opens into the body.
       // (Only drawn while the hero is on stage; afterwards the base colour already matches.)
       setRoot("--dive", fmt(portalDive * portalDive));
+      // ...and it opens from the bubble Bubbles stands in (her body centre), not a fixed spot on the screen.
+      if (portalDive > 0 && story.bubbles.visible) {
+        setRoot("--dive-x", `${Math.round(story.bubbles.feet.x)}px`);
+        setRoot("--dive-y", `${Math.round((story.bubbles.y + story.bubbles.feet.y) / 2)}px`);
+      }
       // Portal 2: light blooms out of Bubbles' horn as the companion hands over to care.
       setRoot("--bloom", fmt(portalBloom * portalBloom));
       if (current === companion && story.bubbles.visible) {

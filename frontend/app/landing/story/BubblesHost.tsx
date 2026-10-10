@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties } from "react";
 import { BubblesFigure } from "../BubblesFigure";
+import { BubbleLocket } from "../bubbles/BubbleLocket";
 import { HOP_LIFT_PX, RIGS, type Env, type Rig } from "../world/rig";
 import { feelAt, feelBand, type FeelBand } from "./feel";
 import { CHAPTER_INDEX, NEVER, easeInOut, hopT, isLead, lerp, onStoryFrame, range, say, story, trackSpeed } from "./store";
@@ -85,6 +86,7 @@ export function BubblesHost() {
     let lastSleep = "";
     let lastFace = 0;
     let lastShow = "";
+    let lastLocket = "";
     let lastLive = false;
     // travel one-shots
     let lastHop = 0;
@@ -403,6 +405,13 @@ export function BubblesHost() {
         w.dataset.show = show;
         lastShow = show;
       }
+      // The locket (a soap bubble round Bubbles) holds her through chapters 2 to 8; the hero and the finale show the full painting.
+      const leadIndex = t < 0.5 ? i : j;
+      const locket = leadIndex >= 1 && leadIndex <= 7 ? "1" : "0";
+      if (locket !== lastLocket) {
+        w.dataset.locket = locket;
+        lastLocket = locket;
+      }
 
       // Publish head, horn and hooves for the bubble, the companion streams and the routes.
       story.bubbles.x = sim.x + face * 20 * scale;
@@ -463,6 +472,7 @@ export function BubblesHost() {
           ))}
         </div>
       </div>
+      <BubbleLocket />
       <div className="cw-zzz" aria-hidden="true">
         <span>z</span>
         <span>z</span>
