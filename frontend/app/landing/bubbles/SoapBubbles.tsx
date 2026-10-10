@@ -134,6 +134,7 @@ export function SoapBubbles() {
       l.root?.setAttribute("data-soap", "gl");
     }
     // Pause freezes the field, but a visitor who arrived with Pause remembered still gets a first settled frame (about half a second).
+    if (!story.paused) l.warm = 30;
     if (story.paused) {
       if (l.warm >= 30) return;
       l.warm += 1;
