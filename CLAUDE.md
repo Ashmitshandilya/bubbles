@@ -101,6 +101,7 @@ Never commit `.env` files, real health records, API keys, `node_modules`, `.next
 
 - `/health` — unauthenticated service health.
 - `/chat` — authenticated, backend-owned conversation persistence and response generation.
+- `/chat/feedback` — thumbs up/down on a saved Bubbles reply (POST to rate, GET `?message_ids=` to read back). One signed `doc_store` document per reply with a fixed reason list and no free text; owner-checked, no schema change.
 - `/profile`, `/memory/diagnostics`, `/personalization/overview` — identity and memory surfaces.
 - `/intelligence/*`, `/bubbles/intelligence`, `/intelligence/deep` — bounded health-analysis views.
 - `/insights/weekly`, `/patterns/analyze` — longitudinal summaries.
