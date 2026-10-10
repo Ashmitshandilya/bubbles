@@ -4,7 +4,7 @@ import { HealthClient } from "./HealthClient";
 
 export const metadata: Metadata = {
   title: "My health | Bubbles",
-  description: "Everything you log in one place — trackers, your logging so far, and body systems without diagnoses.",
+  description: "Everything you log in one place: trackers, your logging so far, and body systems without diagnoses.",
 };
 
 export default function HealthPage() {

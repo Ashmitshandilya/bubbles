@@ -14,7 +14,7 @@ export default function NutritionPage() {
         <GenericTrackingClient
           title="Food"
           kicker="MEALS & NUTRITION"
-          description="What you eat shapes energy, mood and digestion — meal logs let Bubbles connect the dots."
+          description="What you eat shapes energy, mood and digestion. Meal logs let Bubbles connect the dots."
           endpoint="/health/nutrition"
           signal="mint"
           icon="nutrition"

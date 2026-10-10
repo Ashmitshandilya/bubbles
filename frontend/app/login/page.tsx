@@ -59,7 +59,7 @@ function LoginForm() {
           email,
           options: { emailRedirectTo: `${window.location.origin}/callback` },
         });
-        setMessage(error ? { kind: "error", text: error.message } : { kind: "info", text: "Check your inbox — your sign-in link is on its way." });
+        setMessage(error ? { kind: "error", text: error.message } : { kind: "info", text: "Check your inbox. Your sign-in link is on its way." });
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,

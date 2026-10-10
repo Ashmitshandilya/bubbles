@@ -269,7 +269,7 @@ function GenericTracker({
       />
       <Disclaimer />
       <LogSheet open={open} onClose={() => setOpen(false)} signal={signal} icon={icon} title={sheetTitle} subtitle={today} submitLabel={submitLabel} onSubmit={submit}>
-        {requireOneOf && <p className="m-0 text-body-sm font-semibold text-muted">Add at least one reading — the rest can stay empty.</p>}
+        {requireOneOf && <p className="m-0 text-body-sm font-semibold text-muted">Add at least one reading. The rest can stay empty.</p>}
         {fields.map(renderField)}
       </LogSheet>
       <SavedToast

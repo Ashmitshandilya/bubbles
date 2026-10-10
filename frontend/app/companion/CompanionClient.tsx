@@ -341,7 +341,7 @@ export function CompanionClient() {
         const which = failedCount < ids.length ? `${failedCount} of these` : ids.length === 1 ? "this" : "these";
         setEventErrors((prev) => ({
           ...prev,
-          [messageId]: `Bubbles couldn't ${confirmed ? "save" : "discard"} ${which} just now. Nothing else changed — try again.`,
+          [messageId]: `Bubbles couldn't ${confirmed ? "save" : "discard"} ${which} just now. Nothing else changed. Try again.`,
         }));
       } else if (withdrawnCount) {
         setEventErrors((prev) => ({ ...prev, [messageId]: "Bubbles withdrew this after your correction, so it was not saved." }));

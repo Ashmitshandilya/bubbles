@@ -81,7 +81,7 @@ function Patterns() {
         <div className="min-w-0 flex-1">
           <h1 className="text-h1 text-ink">Patterns</h1>
           <p className="mt-1 text-body font-semibold text-muted">
-            What keeps showing up in your logs — in plain words, with how sure Bubbles is.
+            What keeps showing up in your logs, in plain words, with how sure Bubbles is.
           </p>
         </div>
       </header>
@@ -153,7 +153,7 @@ function Patterns() {
       </div>
 
       <p className="text-body-sm text-muted">
-        Patterns are observations from your own logs — not diagnoses, and not proof that one thing causes another.
+        Patterns are observations from your own logs, not diagnoses, and not proof that one thing causes another.
       </p>
     </div>
   );
@@ -387,7 +387,7 @@ function TrendView({ analysis, days }: { analysis: NonNullable<LongitudinalRespo
       {domains.length > 0 && (
         <div className={`${CARD} p-5`}>
           <p className="font-display text-h4 text-ink">What Bubbles can see</p>
-          <p className="text-body-sm text-muted">Gaps stay gaps — Bubbles never reads missing logs as &ldquo;fine&rdquo;.</p>
+          <p className="text-body-sm text-muted">Gaps stay gaps. Bubbles never reads missing logs as &ldquo;fine&rdquo;.</p>
           <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0">
             {domains.map(([key, domain]) => {
               const status = domain.coverage_status ?? "missing";

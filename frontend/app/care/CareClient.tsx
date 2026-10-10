@@ -98,7 +98,7 @@ function DoctorPrep() {
 
   async function copySummary() {
     const lines = [
-      `Visit summary prepared with Bubbles — ${formatWhen(new Date().toISOString(), true)}`,
+      `Visit summary prepared with Bubbles, ${formatWhen(new Date().toISOString(), true)}`,
       "Organized from my own logs. Not a diagnosis.",
       ...(concern ? [`What I want to discuss: ${concern}`] : []),
       `Logs in the last 6 months: ${eventCount}${frequent.length ? ` (most often: ${frequent.map(([t, n]) => `${humanize(t)} ${n}`).join(", ")})` : ""}`,
@@ -115,7 +115,7 @@ function DoctorPrep() {
     ];
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
-      setCopyStatus("Copied — paste it into an email or your notes.");
+      setCopyStatus("Copied. Paste it into an email or your notes.");
     } catch {
       setCopyStatus("Copying isn't allowed in this browser. Try Print instead.");
     }
@@ -139,7 +139,7 @@ function DoctorPrep() {
       <div className="flex items-start gap-3 rounded-3xl bg-tint-sky p-5 text-bubbles-sky-deep">
         <span className="shrink-0"><Icon id="shield" /></span>
         <p className="text-body font-bold">
-          Bubbles doesn&apos;t diagnose. It organizes what you&apos;ve logged and suggests questions — your clinician makes the
+          Bubbles doesn&apos;t diagnose. It organizes what you&apos;ve logged and suggests questions. Your clinician makes the
           call.
         </p>
       </div>
@@ -175,7 +175,7 @@ function DoctorPrep() {
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <div className={`${CARD} p-5 sm:p-6`}>
             <h3 className="text-h3 text-ink">Questions to ask</h3>
-            <p className="mt-1 text-body-sm text-muted">Pick the ones that fit — you don&apos;t need to ask them all.</p>
+            <p className="mt-1 text-body-sm text-muted">Pick the ones that fit. You don&apos;t need to ask them all.</p>
             {visitQuery.status === "loading" && <Skeleton className="mt-4 h-40" />}
             {visitQuery.status === "error" && (
               <div className="mt-4">
@@ -237,7 +237,7 @@ function DoctorPrep() {
                           </li>
                         ))}
                       </ul>
-                      <p className="mt-2 text-[0.8125rem] text-muted">Flagged by the lab, or outside the range you entered. Bubbles doesn&apos;t interpret results — ask your clinician.</p>
+                      <p className="mt-2 text-[0.8125rem] text-muted">Flagged by the lab, or outside the range you entered. Bubbles doesn&apos;t interpret results. Ask your clinician.</p>
                     </>
                   ) : (
                     <p className="mt-2 text-body-sm text-muted">No lab results flagged in what you&apos;ve added.</p>
@@ -260,7 +260,7 @@ function DoctorPrep() {
           )}
           {visitQuery.status === "loading" && <Skeleton className="mt-4 h-48" />}
           {visitQuery.status === "error" && (
-            <p className="mt-3 text-body-sm text-muted">Your timeline loads together with the questions above — try again there.</p>
+            <p className="mt-3 text-body-sm text-muted">Your timeline loads together with the questions above. Try again there.</p>
           )}
           {visit && events.length === 0 && (
             <div className="mt-4 flex flex-wrap items-center gap-4 rounded-3xl bg-blush p-5">

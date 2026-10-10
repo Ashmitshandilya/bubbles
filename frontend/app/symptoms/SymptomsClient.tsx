@@ -75,7 +75,7 @@ function Symptoms() {
         icon="symptoms"
         kicker="HOW YOU FEEL"
         title="Symptoms"
-        why="Symptoms often cluster around your period, poor sleep or stress — logging them lets Bubbles find your patterns."
+        why="Symptoms often cluster around your period, poor sleep or stress. Logging them lets Bubbles find your patterns."
         action={log}
       />
       {status === "loading" && entries.length === 0 && <StatSkeleton count={3} />}
@@ -137,7 +137,7 @@ function Symptoms() {
         }
       />
       <p className="m-0 rounded-2xl bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
-        If a symptom is severe, sudden or worrying, please contact a clinician or your local emergency number — don&apos;t wait for a pattern.
+        If a symptom is severe, sudden or worrying, please contact a clinician or your local emergency number. Don&apos;t wait for a pattern.
       </p>
       <Disclaimer />
       <LogSheet open={open} onClose={() => setOpen(false)} signal="pink" icon="symptoms" title="What are you feeling?" subtitle={today} submitLabel="Save symptom" onSubmit={submit}>
@@ -168,7 +168,7 @@ function Symptoms() {
         />
         <TextArea id="symptom-notes" label="Notes" value={notes} onChange={setNotes} placeholder="When it started, what helps…" maxLength={2000} optional />
       </LogSheet>
-      <SavedToast trigger={freshId} message="Symptom saved — Bubbles will look for patterns." />
+      <SavedToast trigger={freshId} message="Symptom saved. Bubbles will look for patterns." />
     </>
   );
 }

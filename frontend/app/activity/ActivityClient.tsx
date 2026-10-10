@@ -63,7 +63,7 @@ function Activity() {
         icon="activity"
         kicker="MOVEMENT"
         title="Activity"
-        why="Movement affects your sleep, mood and recovery differently through your cycle — logs help Bubbles learn what works for you."
+        why="Movement affects your sleep, mood and recovery differently through your cycle. Logs help Bubbles learn what works for you."
         action={log}
       />
       {status === "loading" && entries.length === 0 && <StatSkeleton count={4} />}

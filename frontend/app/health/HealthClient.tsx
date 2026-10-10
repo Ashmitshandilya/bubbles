@@ -16,13 +16,13 @@ interface Tracker {
 
 const DAILY: Tracker[] = [
   { id: "cycle", title: "Cycle", why: "Periods and phases, so Bubbles can see what's cycle-linked.", tone: "pink" },
-  { id: "symptoms", title: "Symptoms", why: "Aches, cramps, headaches — when and how strong.", tone: "pink" },
+  { id: "symptoms", title: "Symptoms", why: "Aches, cramps, headaches: when and how strong.", tone: "pink" },
   { id: "sleep", title: "Sleep", why: "Hours and quality, the base for energy and mood.", tone: "grape" },
   { id: "mood", title: "Mood", why: "How you feel day to day, stress included.", tone: "sun" },
-  { id: "hydration", title: "Water", why: "Quick sips add up — gaps stay visible.", tone: "sky" },
+  { id: "hydration", title: "Water", why: "Quick sips add up. Gaps stay visible.", tone: "sky" },
   { id: "nutrition", title: "Food", why: "Meals and patterns, without calorie guilt.", tone: "mint" },
   { id: "activity", title: "Activity", why: "Walks, workouts and rest days.", tone: "peach" },
-  { id: "weight", title: "Weight", why: "Only if it helps you — trends, not judgement.", tone: "peach" },
+  { id: "weight", title: "Weight", why: "Only if it helps you: trends, not judgement.", tone: "peach" },
   { id: "vitals", title: "Vitals", why: "Heart rate, blood pressure and similar readings.", tone: "grape" },
 ];
 
@@ -98,7 +98,7 @@ function Overview({ summary, onRetry }: { summary: Query<unknown>; onRetry: () =
         <div className="min-w-0 flex-1">
           <p className="font-display text-h4 text-ink">Nothing logged yet</p>
           <p className="text-body-sm text-muted">
-            Pick any tracker below — even one entry gives Bubbles something to learn from.
+            Pick any tracker below. Even one entry gives Bubbles something to learn from.
           </p>
         </div>
       </div>

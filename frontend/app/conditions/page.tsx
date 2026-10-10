@@ -14,7 +14,7 @@ export default function ConditionsPage() {
         <GenericTrackingClient
           title="Conditions"
           kicker="MEDICAL HISTORY"
-          description="Knowing your diagnoses helps Bubbles keep its suggestions relevant — and careful."
+          description="Knowing your diagnoses helps Bubbles keep its suggestions relevant, and careful."
           endpoint="/health/conditions"
           signal="sky"
           icon="conditions"

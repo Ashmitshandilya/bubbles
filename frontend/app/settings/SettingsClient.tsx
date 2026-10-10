@@ -49,7 +49,7 @@ function Settings() {
     <div className="space-y-8">
       <header className="bubbles-rise">
         <h1 className="text-h1 text-ink">Settings</h1>
-        <p className="mt-1 text-body font-semibold text-muted">Only the things that work today — nothing pretend.</p>
+        <p className="mt-1 text-body font-semibold text-muted">Only the things that work today. Nothing pretend.</p>
       </header>
 
       <div className="bubbles-stagger grid items-start gap-6 lg:grid-cols-2">

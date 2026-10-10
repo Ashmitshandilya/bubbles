@@ -447,7 +447,7 @@ export function splitBold(text: string): { text: string; bold: boolean }[] {
 export function confidenceLabel(confidence: number | null): string | null {
   if (confidence === null) return null;
   const pct = Math.round(confidence * 100);
-  if (pct >= 85) return `${pct}% — high`;
-  if (pct >= 60) return `${pct}% — moderate`;
-  return `${pct}% — low, worth checking`;
+  if (pct >= 85) return `${pct}%, high`;
+  if (pct >= 60) return `${pct}%, moderate`;
+  return `${pct}%, low, worth checking`;
 }

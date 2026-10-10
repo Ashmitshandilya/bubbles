@@ -201,7 +201,7 @@ export function StatSkeleton({ count }: { count: number }) {
 export function Disclaimer() {
   return (
     <p className="text-body-sm font-semibold text-muted">
-      Bubbles shares patterns and general guidance, not diagnoses. Missing data shows as a gap — never as &ldquo;all clear&rdquo;.
+      Bubbles shares patterns and general guidance, not diagnoses. Missing data shows as a gap, never as &ldquo;all clear&rdquo;.
     </p>
   );
 }

@@ -136,7 +136,7 @@ function Me() {
           </div>
           <ul className="m-0 mt-4 list-none space-y-3 p-0 text-body text-ink">
             <li>Bubbles may notice health details when you chat or log. They stay suggestions until you confirm them.</li>
-            <li>Only what you confirm becomes lasting memory. If Bubbles gets something wrong, correct it — your word wins.</li>
+            <li>Only what you confirm becomes lasting memory. If Bubbles gets something wrong, correct it. Your word wins.</li>
             <li>If something sounds urgent, Bubbles&apos; built-in safety check answers first and points you to real help.</li>
             <li>Bubbles never diagnoses, and never treats missing data as &ldquo;all clear&rdquo;.</li>
           </ul>

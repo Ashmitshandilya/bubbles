@@ -93,7 +93,7 @@ export function OrganTracker() {
           </h2>
           <p className="mt-2 text-body text-muted">
             Bubbles sorts your evidence by body system and shows where it is missing. It never says an organ is healthy or
-            damaged — that&apos;s for your clinician.
+            damaged. That&apos;s for your clinician.
           </p>
         </div>
         {systems.length > 0 && (
@@ -148,7 +148,7 @@ export function OrganTracker() {
           {withData.length === 0 && (
             <p className="mt-4 rounded-3xl bg-blush p-4 text-body-sm text-muted">
               No body-system evidence yet. Logging sleep, activity, vitals and lab results gives Bubbles something to work
-              with — until then every system stays &ldquo;not enough data&rdquo;, never &ldquo;fine&rdquo;.
+              with. Until then every system stays &ldquo;not enough data&rdquo;, never &ldquo;fine&rdquo;.
             </p>
           )}
 
@@ -210,7 +210,7 @@ export function OrganTracker() {
       )}
 
       <p className="mt-5 text-body-sm text-muted">
-        A pattern in your logs, not a diagnosis. Missing data lowers confidence — it is never read as &ldquo;all
+        A pattern in your logs, not a diagnosis. Missing data lowers confidence. It is never read as &ldquo;all
         clear&rdquo;.
       </p>
     </section>

@@ -14,7 +14,7 @@ export default function WeightPage() {
         <GenericTrackingClient
           title="Weight"
           kicker="BODY WEIGHT"
-          description="Weight can shift with your cycle, sleep and food — logging lets Bubbles read changes in context."
+          description="Weight can shift with your cycle, sleep and food. Logging lets Bubbles read changes in context."
           endpoint="/health/weight"
           signal="mint"
           icon="weight"

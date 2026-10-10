@@ -80,7 +80,7 @@ export function toCards(analysis: NonNullable<PatternsResponse["analysis"]>, day
         ...(linked ? [`Linked to ${linked} of your entries.`] : []),
         `Bubbles read those entries with ${Math.round(p.average_confidence * 100)}% confidence on average.`,
       ],
-      note: "Something repeating isn't a sign that anything is wrong — it's just worth noticing, and worth mentioning to a clinician if it bothers you.",
+      note: "Something repeating isn't a sign that anything is wrong. It's just worth noticing, and worth mentioning to a clinician if it bothers you.",
     };
   });
 
