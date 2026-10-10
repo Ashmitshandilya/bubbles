@@ -9,6 +9,7 @@ import {
   byNewest, dayLabel, daysAgo, formatNumber, parseWhen, present, startOfDay, toNumber,
   type Entry, type EntryValue, type LoadStatus, type StatValue,
 } from "./data";
+import { buildPulse, lastLoggedText, weekText } from "../../app/lib/track-pulse";
 
 /* ── Signal colours (literal class strings so Tailwind can see them) ─── */
 
@@ -153,7 +154,23 @@ export function TrackerHero({ signal, icon, kicker, title, why, action }: {
   );
 }
 
+/** The Track hub links here with `?log=1`: open the log sheet once, then drop the flag so a refresh does not reopen it. */
+function useOpenFromHub(open: () => void) {
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  });
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("log") !== "1") return;
+    url.searchParams.delete("log");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    openRef.current();
+  }, []);
+}
+
 export function LogButton({ signal, onClick, children, wide = false }: { signal: Signal; onClick: () => void; children: ReactNode; wide?: boolean }) {
+  useOpenFromHub(onClick);
   return (
     <button
       type="button"
@@ -185,6 +202,17 @@ export function StatGrid({ stats, signal }: { stats: StatValue[]; signal: Signal
         </div>
       ))}
     </dl>
+  );
+}
+
+/** "Logged today. Logged on 3 of the last 7 days." Nothing is shown until there is an entry to describe. */
+export function LastLogged({ entries }: { entries: Entry[] }) {
+  const pulse = buildPulse(entries);
+  if (pulse.lastAgo === null) return null;
+  return (
+    <p className="m-0 text-body-sm font-bold text-muted">
+      {lastLoggedText(pulse)}. {weekText(pulse)}.
+    </p>
   );
 }
 

@@ -6,6 +6,7 @@ import { CARD, ErrorCard, HubPage, Icon, Skeleton, TONE, useBubblesQuery, type Q
 import { readHealthSummary, type HealthSummary } from "../lib/api-adapters";
 import { formatWhen } from "../lib/dates";
 import { OrganTracker } from "./OrganTracker";
+import { QuickLog } from "./QuickLogGrid";
 
 interface Tracker {
   id: string;
@@ -59,6 +60,8 @@ function HealthHub() {
         </div>
       </header>
 
+      <QuickLog items={DAILY} />
+
       <section aria-labelledby="overview-title">
         <h2 id="overview-title" className="text-h3 text-ink">
           Your logging so far
@@ -68,7 +71,6 @@ function HealthHub() {
         </div>
       </section>
 
-      <TrackerGroup id="daily" title="Daily signals" items={DAILY} />
       <TrackerGroup id="care-records" title="Care records" items={CARE} />
 
       <OrganTracker />
@@ -98,7 +100,7 @@ function Overview({ summary, onRetry }: { summary: Query<unknown>; onRetry: () =
         <div className="min-w-0 flex-1">
           <p className="font-display text-h4 text-ink">Nothing logged yet</p>
           <p className="text-body-sm text-muted">
-            Pick any tracker below. Even one entry gives Bubbles something to learn from.
+            Tap Log on any tracker above. Even one entry gives Bubbles something to learn from.
           </p>
         </div>
       </div>
@@ -109,7 +111,7 @@ function Overview({ summary, onRetry }: { summary: Query<unknown>; onRetry: () =
     { label: "Trackers in use", value: `${data.categories} of ${DAILY.length + CARE.length}`, tone: "pink" },
     { label: "Entries logged", value: String(data.entries), tone: "grape" },
     { label: "Days with a log", value: String(data.days), tone: "mint" },
-    { label: "Last logged", value: formatWhen(data.lastUpdate), tone: "sky" },
+    { label: "Last logged", value: data.lastUpdate ? formatWhen(data.lastUpdate) : "No date", tone: "sky" },
   ];
   return (
     <dl className="bubbles-stagger m-0 grid grid-cols-2 gap-3 lg:grid-cols-4">

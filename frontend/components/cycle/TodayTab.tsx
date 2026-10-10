@@ -6,6 +6,7 @@ import { BubblesMascot } from "../BubblesMascot";
 import { BTN_PRIMARY, BTN_SECONDARY, Icon, PILL } from "../hub/HubKit";
 import { isISODate } from "../../app/lib/cycle-calendar";
 import { confidenceCopy, formatRange, nextPeriodLines, ovulationSourceText, shortDay, summarizeLog } from "../../app/lib/cycle-format";
+import { cycleDayLine, nextPeriodUncertainty, phaseSteps } from "../../app/lib/cycle-today";
 import { NOT_CONTRACEPTION, type DayResponse, type Overview } from "../../app/lib/cycle-types";
 import { useCycle } from "./CycleStore";
 import { INPUT } from "./fields";
@@ -88,6 +89,8 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
   const otherFlags = o.flags.filter((f) => f.id !== urgent?.id);
   const summary = summarizeLog(o.today_log, tempUnit);
   const np = o.next_period ? nextPeriodLines(o.next_period) : null;
+  const npNote = o.next_period ? nextPeriodUncertainty(o.next_period, o.confidence) : null;
+  const showRing = o.cycle_day !== null && o.mode !== "pregnancy";
 
   return (
     <div className="space-y-5">
@@ -103,7 +106,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
       <Card labelledBy="cycle-now-title">
         <h3 id="cycle-now-title" className="sr-only">Where you are in your cycle</h3>
         <div className="flex flex-wrap items-center gap-6">
-          {o.cycle_day !== null && o.mode !== "pregnancy" && (
+          {showRing && o.cycle_day !== null && (
             <PhaseRing day={o.cycle_day} length={ringLength} phase={o.phase?.id ?? null} phaseLabel={o.phase?.label ?? null} estimated={o.phase?.estimated ?? true} />
           )}
           <div className="min-w-[14rem] flex-1 space-y-3">
@@ -116,12 +119,16 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
                 </div>
               </div>
             )}
+            {showRing && o.cycle_day !== null && (
+              <p className="m-0 font-display text-h3 text-ink">{cycleDayLine(o.cycle_day, o.stats.average_length)}</p>
+            )}
             {o.phase && <p className="m-0 text-body text-ink"><strong>{o.phase.label}.</strong> {o.phase.summary}{o.phase.estimated ? " (an estimate)" : ""}</p>}
             {np && (
               <div>
                 <p className="m-0 text-body-sm font-extrabold uppercase tracking-wide text-muted">Next period</p>
                 <p className="m-0 font-display text-h3 text-ink">{np.range}, {np.likely}</p>
                 <p className="m-0 text-body-sm font-bold text-muted">{np.relative}</p>
+                {npNote && <p className="m-0 mt-1 text-body-sm text-muted">{npNote}</p>}
               </div>
             )}
             <div className="flex flex-wrap items-center gap-2">
@@ -130,6 +137,26 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
             </div>
           </div>
         </div>
+
+        {showRing && o.phase && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <ol aria-label="Cycle phases" className="m-0 flex list-none flex-wrap gap-2 p-0">
+              {phaseSteps(o.phase.id, hideFertility).map((step) => (
+                <li
+                  key={step.id}
+                  aria-current={step.here ? "step" : undefined}
+                  className={`${PILL} ${step.here ? "bg-bubbles-pink-ink text-white" : "border border-line bg-blush text-ink-soft"}`}
+                >
+                  {step.label}
+                  {step.here && <span className="sr-only"> (you are here, estimated)</span>}
+                </li>
+              ))}
+            </ol>
+            <a href="#insights" className="text-body-sm font-extrabold text-bubbles-grape-deep underline">
+              How you tend to feel in this phase
+            </a>
+          </div>
+        )}
 
         {!hideFertility && (o.ovulation || o.fertile_window) && (
           <ul className="m-0 mt-4 flex list-none flex-wrap gap-2 p-0">

@@ -4,6 +4,7 @@ import { BubblesMascot } from "../BubblesMascot";
 import { PILL, useBubblesQuery } from "../hub/HubKit";
 import { withToday } from "../../app/lib/cycle-api";
 import { PHASE_LABEL } from "../../app/lib/cycle-format";
+import { phaseSymptomHint } from "../../app/lib/cycle-today";
 import type { InsightMetric, InsightsResponse, SymptomByPhase } from "../../app/lib/cycle-types";
 import { useCycle, useReloadOnRev } from "./CycleStore";
 import { Card, Notice, PanelError, PanelSkeleton, TabHeading } from "./shared";
@@ -11,13 +12,14 @@ import { Card, Notice, PanelError, PanelSkeleton, TabHeading } from "./shared";
 const PATTERN_NOTE = "These are patterns in your logs, not causes. Many things affect how you feel, so talk to a clinician if something worries you.";
 
 export function InsightsTab() {
-  const { today, rev } = useCycle();
+  const { today, rev, overview } = useCycle();
   const [query, reload] = useBubblesQuery<InsightsResponse>(withToday("/cycle/insights", today));
   useReloadOnRev(reload, rev);
 
   if (query.status === "loading") return <PanelSkeleton rows={3} />;
   if (query.status === "error") return <PanelError title="Insights didn't load" message={query.message} onRetry={reload} />;
   const d = query.data;
+  const hint = d.ready ? phaseSymptomHint(d.symptoms, overview?.phase?.id ?? null) : null;
 
   return (
     <div className="space-y-5">
@@ -38,6 +40,7 @@ export function InsightsTab() {
           <div className="grid gap-5 md:grid-cols-2">
             {d.metrics.map((m) => <MetricCard key={m.id} m={m} />)}
           </div>
+          {hint && <Notice tone="grape" title="Right now">{hint}{overview?.phase?.estimated ? " Your phase is an estimate." : ""}</Notice>}
           {d.symptoms.length > 0 && (
             <Card labelledBy="cycle-symptoms-title">
               <h3 id="cycle-symptoms-title" className="m-0 font-display text-h3 text-ink">Symptoms by phase</h3>

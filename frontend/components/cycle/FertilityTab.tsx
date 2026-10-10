@@ -81,7 +81,7 @@ export function FertilityTab() {
         <button type="button" onClick={() => openLog()} className={`${BTN_SECONDARY} mt-3`}>Log your temperature</button>
       </Card>
 
-      {!birthControl && <EducationSection mode={o.mode} title="About ovulation tests" filter={isOvulationArticle} emptyText="Ovulation test guidance will appear here." />}
+      {!birthControl && <EducationSection mode={o.mode} title="About ovulation tests" filter={isOvulationArticle} emptyText="No ovulation test articles for this mode." />}
     </div>
   );
 }

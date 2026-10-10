@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useApi } from "./Providers";
 import {
-  Choices, DateField, DetailChips, Disclaimer, EmptyState, EntryNote, EntryRow, History, LogButton, LogSheet, SavedToast,
+  Choices, DateField, DetailChips, Disclaimer, EmptyState, EntryNote, EntryRow, History, LastLogged, LogButton, LogSheet, SavedToast,
   StatGrid, StatSkeleton, Stepper, TextArea, TextField, TrackerHero, TrackerShell, type IconName, type Signal,
 } from "./tracking/kit";
 import {
@@ -254,6 +254,7 @@ function GenericTracker({
   return (
     <>
       <TrackerHero signal={signal} icon={icon} kicker={kicker} title={title} why={description} action={log} />
+      {status === "ready" && <LastLogged entries={entries} />}
       {status === "loading" && entries.length === 0 && <StatSkeleton count={stats.length} />}
       {status === "ready" && entries.length > 0 && <StatGrid signal={signal} stats={stats.map((spec) => computeStat(spec, entries))} />}
       <History
