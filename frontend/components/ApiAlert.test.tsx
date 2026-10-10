@@ -51,7 +51,7 @@ describe("ApiAlert", () => {
     const out = html();
     expect(out).toContain('role="alert"');
     expect(out).toContain("Can&#x27;t connect to Bubbles");
-    expect(out).toContain("start_bubbles.bat");
+    expect(out).toContain("reach its server");
     expect(out).toMatch(/Trying again in [56]s/);
     expect(out).toContain("Try again now");
     // the ticking countdown is hidden from assistive tech so it is not re-announced every second
@@ -63,7 +63,7 @@ describe("ApiAlert", () => {
     const out = html();
     expect(out).toContain("Checking now…");
     expect(out).toMatch(/<button[^>]*disabled/);
-    expect(out).toContain("start_bubbles.bat"); // falls back to the standard offline message
+    expect(out).toContain("reach its server"); // falls back to the standard offline message
   });
 
   it("compatibility mode: a calm, dismissible status (not an alert) that points to Settings", () => {

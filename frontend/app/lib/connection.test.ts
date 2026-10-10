@@ -27,7 +27,7 @@ describe("classifyFailure: every kind", () => {
   it("backend_offline: a network error with no response", () => {
     expect(classifyFailure({ networkError: true })).toEqual({
       kind: "backend_offline",
-      message: "Bubbles' server isn't running. Start it with start_bubbles.bat (or run the backend from the backend folder). This page will reconnect by itself.",
+      message: "Bubbles can't reach its server right now. It may be waking up, which can take up to a minute. This page will reconnect by itself.",
       retryable: true,
       blocking: true,
     });
@@ -578,5 +578,19 @@ describe("corsBlockedMessage", () => {
   it("copes with an empty or enormous origin", () => {
     expect(corsBlockedMessage("")).toContain("this address");
     expect(corsBlockedMessage("x".repeat(1000)).length).toBeLessThan(400);
+  });
+});
+
+
+describe("corsBlockedMessage wording", () => {
+  it("points a local developer at the backend setting and everyone else at the real site", () => {
+    expect(corsBlockedMessage("http://localhost:3001")).toContain("BUBBLES_FRONTEND_ORIGINS");
+    const live = corsBlockedMessage("https://bubbles-7x74-hey-bubbles.vercel.app");
+    expect(live).toContain("https://heybubbles.in");
+    expect(live).not.toContain("BUBBLES_FRONTEND_ORIGINS");
+  });
+
+  it("never tells a signed-in person to run a batch file", () => {
+    expect(MESSAGES.offline).not.toMatch(/start_bubbles|backend folder/);
   });
 });

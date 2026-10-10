@@ -33,7 +33,7 @@ export type FailureInput = {
 
 export const MESSAGES = {
   offline:
-    "Bubbles' server isn't running. Start it with start_bubbles.bat (or run the backend from the backend folder). This page will reconnect by itself.",
+    "Bubbles can't reach its server right now. It may be waking up, which can take up to a minute. This page will reconnect by itself.",
   timeout: "Bubbles is taking longer than usual to answer. Please try again in a moment.",
   database:
     "Bubbles is running, but the database needs a one-time permission update. Your entries are still being saved in compatibility mode.",
@@ -55,7 +55,11 @@ export const MESSAGES = {
  */
 export function corsBlockedMessage(origin: string): string {
   const address = tidy(origin, 80) || "this address";
-  return `Bubbles' server is running, but it is refusing requests from this page (${address}). Open the app at http://localhost:3000, or add this address to BUBBLES_FRONTEND_ORIGINS in backend/.env and restart the backend.`;
+  const local = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin);
+  const fix = local
+    ? "Open the app at http://localhost:3000, or add this address to BUBBLES_FRONTEND_ORIGINS in backend/.env and restart the backend."
+    : "Please open Bubbles at https://heybubbles.in instead.";
+  return `Bubbles' server is running, but it is refusing requests from this page (${address}). ${fix}`;
 }
 
 /** The migration that permanently fixes compatibility mode (applied once, by the database owner). */

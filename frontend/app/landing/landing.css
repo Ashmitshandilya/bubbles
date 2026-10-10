@@ -1416,14 +1416,13 @@
 }
 
 /* ============================================================
-   SOAP BUBBLES: the locket round Bubbles, and the CSS bubbles
+   SOAP BUBBLES: the CSS bubbles
    (the whole look in the static tier, and the first paint before
    the 3D bubbles arrive). The film colours are the same interference
    palette as the WebGL shader (bubbles/soap.glsl.ts).
    ============================================================ */
 /* The film: a ring of interference colour. (Written out in the rule, not in a variable, so --rot and --ring resolve per bubble.) */
-.cw-soapcss > span::before,
-.cw-locket::before {
+.cw-soapcss > span::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1467,49 +1466,6 @@
 }
 @keyframes cw-soap-float { from { translate: -50% -46%; } to { translate: -50% -54%; } }
 @keyframes cw-soap-spin { to { rotate: 360deg; } }
-
-/* ── The locket (story mode): Bubbles inside a larger bubble through chapters 2 to 8 ── */
-.cw-locket {
-  display: none;
-  position: absolute;
-  left: 48.6%;
-  top: 54.5%;
-  width: 142%;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  scale: 0.72;
-  transition: opacity 500ms ease, scale 700ms var(--spring);
-}
-.cw:not([data-story="static"]) .cw-locket { display: block; }
-.cw-bubbles[data-locket="1"] .cw-locket { opacity: 1; scale: 1; }
-.cw-locket::before { --ring: 3.2%; opacity: 0.9; }
-.cw-locket::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 46%, transparent 58%, rgb(255 255 255 / 0.08) 78%, rgb(255 255 255 / 0.22) 100%),
-    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 0.05), transparent 70%);
-  box-shadow: 0 0 46px rgb(255 190 230 / 0.2), inset 0 0 36px rgb(190 228 255 / 0.12);
-}
-.cw-locket-win {
-  position: absolute;
-  left: 17%;
-  top: 11%;
-  width: 17%;
-  height: 10%;
-  border-radius: 40% / 50%;
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.85), rgb(255 255 255 / 0.12));
-  rotate: -28deg;
-}
-.cw-locket-dot { position: absolute; right: 15%; bottom: 14%; width: 4.5%; height: 3%; border-radius: 50%; background: rgb(255 255 255 / 0.6); rotate: -28deg; }
-@media (prefers-reduced-motion: no-preference) {
-  .cw-locket::before { animation: cw-soap-spin 36s linear infinite; }
-}
 
 /* ============================================================
    BUBBLES FIGURE (illustrated, CSS-posed)
