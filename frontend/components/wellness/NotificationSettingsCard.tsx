@@ -1,7 +1,7 @@
 "use client";
 
 // Settings: notification channels, reminder types, quiet hours, daily cap, time zone.
-// In-app is real. Email and browser push are shown honestly as "not set up" when the server says so, never as fake switches.
+// In-app always works. Email is offered only when the server can send it; browser push is not offered at all.
 
 import { useState } from "react";
 import { BTN_PRIMARY, BTN_SECONDARY, CARD } from "../hub/HubKit";
@@ -78,15 +78,9 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
       <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
         <legend className="mb-2 p-0 font-display text-h4 text-default">Where reminders appear</legend>
         <Switch label="In Bubbles" hint="The bell at the top of the app and the Notifications page." checked={draft.channels.in_app} onChange={(v) => patch({ channels: { ...draft.channels, in_app: v } })} />
-        <Switch
-          label="Email"
-          hint={emailOk ? "Sends the same generic text to your sign-in email." : "Not set up on this server yet, so nothing is sent."}
-          checked={emailOk && draft.channels.email}
-          disabled={!emailOk}
-          onChange={(v) => patch({ channels: { ...draft.channels, email: v } })}
-          offWord={emailOk ? "Off" : "Not set up"}
-        />
-        <Switch label="Browser push" hint="Not set up yet. In-app is used instead." checked={false} disabled onChange={() => undefined} offWord="Not set up" />
+        {emailOk && (
+          <Switch label="Email" hint="Sends the same generic text to your sign-in email." checked={draft.channels.email} onChange={(v) => patch({ channels: { ...draft.channels, email: v } })} />
+        )}
       </fieldset>
 
       <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">

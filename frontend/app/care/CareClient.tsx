@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import {
@@ -10,16 +10,33 @@ import {
   ErrorCard,
   HubPage,
   Icon,
+  PILL,
   Skeleton,
   TONE,
   humanize,
   toneFor,
   useBubblesQuery,
+  type Query,
 } from "../../components/hub/HubKit";
 import type { Entry } from "../../components/tracking/data";
 import { readEntries } from "../lib/api-adapters";
 import { formatWhen } from "../lib/dates";
-import { mergeRecords, type MedicalSummary } from "./prep";
+import {
+  QUESTION_MAX,
+  addQuestion,
+  afterDay,
+  mergeRecords,
+  questionsText,
+  recordRows,
+  summaryText,
+  typeCounts,
+  visitLabel,
+  visitSplit,
+  whenText,
+  type MedicalSummary,
+  type RangeStatus,
+  type RecordKind,
+} from "./prep";
 
 const DAYS = 180;
 
@@ -44,7 +61,22 @@ interface MedicalResponse {
   questions?: string[];
 }
 
-const RECORD_LINKS = ["visits", "medications", "conditions", "allergies", "labs", "reports"];
+type EntriesResponse = { entries?: unknown };
+
+const RANGE_BADGE: Record<Exclude<RangeStatus, "none">, { text: string; style: string }> = {
+  within: { text: "Within range entered", style: "bg-tint-mint text-bubbles-mint-deep" },
+  below: { text: "Below range entered", style: "bg-tint-sun text-bubbles-sun-deep" },
+  above: { text: "Above range entered", style: "bg-tint-sun text-bubbles-sun-deep" },
+};
+
+const RECORD_SECTIONS: Array<{ kind: RecordKind; title: string; icon: string; empty: string; add: string }> = [
+  { kind: "medications", title: "Medicines", icon: "medications", empty: "No medicines added yet.", add: "Add a medicine" },
+  { kind: "conditions", title: "Conditions", icon: "conditions", empty: "No conditions added yet.", add: "Add a condition" },
+  { kind: "allergies", title: "Allergies", icon: "allergies", empty: "No allergies added yet. That is not the same as having none.", add: "Add an allergy" },
+  { kind: "labs", title: "Lab results", icon: "labs", empty: "No lab results added yet.", add: "Add a lab result" },
+  { kind: "reports", title: "Reports", icon: "reports", empty: "No reports added yet.", add: "Add a report" },
+  { kind: "visits", title: "Visits", icon: "visits", empty: "No visits added yet.", add: "Log a visit" },
+];
 
 /** First few simple fields of an event, e.g. "Symptom: headache · Severity: 6". */
 function describe(details: Record<string, unknown> | undefined): string {
@@ -54,6 +86,19 @@ function describe(details: Record<string, unknown> | undefined): string {
     .map(([key, value]) => `${humanize(key)}: ${String(value)}`)
     .join(" · ");
 }
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+async function copyText(value: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const noSubscribe = () => () => undefined;
 
 export function CareClient() {
   return (
@@ -68,138 +113,314 @@ function DoctorPrep() {
   const [concern, setConcern] = useState("");
   const [visitQuery, reloadVisit] = useBubblesQuery<VisitResponse>("/doctor/prepare", { days: DAYS, concern: concern || undefined });
   const [medicalQuery, reloadMedical] = useBubblesQuery<MedicalResponse>("/medical/summary", { days: DAYS });
-  // The Labs and Reports pages' own lists: /medical/summary cannot see entries saved in compatibility mode.
-  const [labsQuery, reloadLabs] = useBubblesQuery<{ entries?: unknown }>("/health/labs?days=730");
-  const [reportsQuery, reloadReports] = useBubblesQuery<{ entries?: unknown }>("/health/reports?days=730");
+  // The tracker pages' own lists: /medical/summary cannot see entries saved in compatibility mode.
+  const [labsQuery, reloadLabs] = useBubblesQuery<EntriesResponse>("/health/labs?days=730");
+  const [reportsQuery, reloadReports] = useBubblesQuery<EntriesResponse>("/health/reports?days=730");
+  const [visitsQuery, reloadVisits] = useBubblesQuery<EntriesResponse>("/health/visits?days=730");
+  const [medsQuery, reloadMeds] = useBubblesQuery<EntriesResponse>("/health/medications?days=730");
+  const [conditionsQuery, reloadConditions] = useBubblesQuery<EntriesResponse>("/health/conditions?days=730");
+  const [allergiesQuery, reloadAllergies] = useBubblesQuery<EntriesResponse>("/health/allergies?days=730");
   const [showAll, setShowAll] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
+  const [skipped, setSkipped] = useState<ReadonlySet<string>>(new Set());
+  const [own, setOwn] = useState<string[]>([]);
+  const [ownDraft, setOwnDraft] = useState("");
+  const [questionStatus, setQuestionStatus] = useState("");
+  const canShare = useSyncExternalStore(noSubscribe, () => typeof navigator.share === "function", () => false);
 
   const visit = visitQuery.status === "ready" ? visitQuery.data.visit ?? {} : null;
   const medical = medicalQuery.status === "ready" ? medicalQuery.data : null;
-  const labEntries = labsQuery.status === "ready" ? readEntries<Entry>(labsQuery.data.entries) : null;
-  const reportEntries = reportsQuery.status === "ready" ? readEntries<Entry>(reportsQuery.data.entries) : null;
-  const records = medical || labEntries || reportEntries ? mergeRecords(medical?.summary, labEntries, reportEntries) : null;
-  const recordsLoading = [medicalQuery, labsQuery, reportsQuery].some((q) => q.status === "loading");
-  const reloadRecords = () => {
-    reloadMedical();
-    reloadLabs();
-    reloadReports();
+  const entriesOf = (q: Query<EntriesResponse>) => (q.status === "ready" ? readEntries<Entry>(q.data.entries) : null);
+  const labEntries = entriesOf(labsQuery);
+  const reportEntries = entriesOf(reportsQuery);
+  const visitEntries = entriesOf(visitsQuery);
+  const lists: Record<RecordKind, Entry[] | null> = {
+    medications: entriesOf(medsQuery),
+    conditions: entriesOf(conditionsQuery),
+    allergies: entriesOf(allergiesQuery),
+    labs: labEntries,
+    reports: reportEntries,
+    visits: visitEntries,
   };
-  const questions = [...new Set([...(visit?.questions ?? []), ...(medical?.questions ?? [])])];
+  const queries: Record<RecordKind, [Query<EntriesResponse>, () => void]> = {
+    medications: [medsQuery, reloadMeds],
+    conditions: [conditionsQuery, reloadConditions],
+    allergies: [allergiesQuery, reloadAllergies],
+    labs: [labsQuery, reloadLabs],
+    reports: [reportsQuery, reloadReports],
+    visits: [visitsQuery, reloadVisits],
+  };
+  const records = medical || labEntries || reportEntries ? mergeRecords(medical?.summary, labEntries, reportEntries) : null;
+  const flagged = records?.flagged ?? [];
+
+  const serverQuestions = [...new Set([...(visit?.questions ?? []), ...(medical?.questions ?? [])])];
+  const allQuestions = [...serverQuestions, ...own.filter((q) => !serverQuestions.includes(q))];
+  const picked = allQuestions.filter((q) => !skipped.has(q));
   const events = visit?.timeline?.events ?? [];
   const eventCount = visit?.visit_summary?.event_count ?? visit?.timeline?.count ?? events.length;
   const frequent = (visit?.visit_summary?.frequent_event_types ?? []).slice(0, 4);
-  const flagged = records?.flagged ?? [];
+
+  const { last, next } = visitEntries ? visitSplit(visitEntries) : { last: null, next: null };
+  const sinceEvents = last ? afterDay(events, last.date) : events;
+  const sinceTypes = typeCounts(sinceEvents).slice(0, 5);
+  const added = last
+    ? ([
+        ["medicine", "medicines", lists.medications],
+        ["condition", "conditions", lists.conditions],
+        ["allergy", "allergies", lists.allergies],
+        ["lab result", "lab results", lists.labs],
+        ["report", "reports", lists.reports],
+      ] as const).flatMap(([one, many, list]) => {
+        const n = list ? afterDay(list, last.date).length : 0;
+        return n ? [plural(n, one, many)] : [];
+      })
+    : [];
+  const visitText = (v: Entry | null) => (v ? [whenText(v.date), visitLabel(v)].filter(Boolean).join(" · ") : null);
 
   function submitConcern(event: FormEvent) {
     event.preventDefault();
     setConcern(draft.trim());
   }
 
-  async function copySummary() {
-    const lines = [
-      `Visit summary prepared with Bubbles, ${formatWhen(new Date().toISOString(), true)}`,
-      "Organized from my own logs. Not a diagnosis.",
-      ...(concern ? [`What I want to discuss: ${concern}`] : []),
-      `Logs in the last 6 months: ${eventCount}${frequent.length ? ` (most often: ${frequent.map(([t, n]) => `${humanize(t)} ${n}`).join(", ")})` : ""}`,
-      "",
-      "Questions:",
-      ...questions.map((q, i) => `${i + 1}. ${q}`),
-      ...(visit?.bring?.length ? ["", "To bring:", ...visit.bring.map((b) => `- ${b}`)] : []),
-      ...(flagged.length
-        ? ["", "Lab results outside the reference range (flagged by the lab, or against the range entered; not interpreted by Bubbles):", ...flagged.map((l) => `- ${l.label}: ${l.flag}${l.value != null ? ` (${l.value}${l.unit ? ` ${l.unit}` : ""})` : ""}`)]
-        : []),
-      ...(events.length
-        ? ["", "Recent timeline:", ...events.slice(0, 20).map((e) => `- ${formatWhen(e.date, true)} · ${humanize(e.event_type ?? "entry")}${describe(e.details) ? ` · ${describe(e.details)}` : ""}`)]
-        : []),
-    ];
+  function toggleQuestion(question: string) {
+    setQuestionStatus("");
+    setSkipped((prev) => {
+      const next = new Set(prev);
+      if (next.has(question)) next.delete(question);
+      else next.add(question);
+      return next;
+    });
+  }
+
+  function submitOwn(event: FormEvent) {
+    event.preventDefault();
+    setOwn((prev) => addQuestion(prev, ownDraft));
+    setOwnDraft("");
+    setQuestionStatus("");
+  }
+
+  async function share(body: string, title: string, setStatus: (s: string) => void) {
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
-      setCopyStatus("Copied. Paste it into an email or your notes.");
-    } catch {
-      setCopyStatus("Copying isn't allowed in this browser. Try Print instead.");
+      await navigator.share({ title, text: body });
+    } catch (error) {
+      // Closing the share sheet is a choice, not a failure.
+      if (!(error instanceof DOMException && error.name === "AbortError")) setStatus("Sharing didn't work here. Use Copy instead.");
     }
   }
+
+  const summary = () =>
+    summaryText({
+      generatedOn: formatWhen(new Date().toISOString(), true),
+      concern,
+      lastVisit: visitText(last),
+      nextVisit: visitText(next),
+      logLine: `Logs in the last 6 months: ${eventCount}${frequent.length ? ` (most often: ${frequent.map(([t, n]) => `${humanize(t)} ${n}`).join(", ")})` : ""}`,
+      sinceLine: last ? `Since that visit: ${[plural(sinceEvents.length, "log"), ...added.map((a) => `${a} added`)].join(", ")}` : null,
+      questions: picked,
+      bring: visit?.bring?.map(humanize) ?? [],
+      flagged: flagged.map((l) => `${l.label}: ${l.flag}${l.value != null ? ` (${l.value}${l.unit ? ` ${l.unit}` : ""})` : ""}`),
+      lists: (
+        [
+          ["Medicines I log (as I entered them)", "medications"],
+          ["Conditions I log", "conditions"],
+          ["Allergies I log", "allergies"],
+        ] as const
+      ).map(([heading, kind]) => ({ heading, rows: recordRows(kind, lists[kind] ?? []).map((r) => [r.title, r.meta].filter(Boolean).join(" · ")) })),
+      timeline: events.slice(0, 20).map((e) => `${whenText(e.date)} · ${humanize(e.event_type ?? "entry")}${describe(e.details) ? ` · ${describe(e.details)}` : ""}`),
+    });
+
+  async function copySummary() {
+    setCopyStatus((await copyText(summary())) ? "Summary copied. Paste it into an email or your notes." : "Copying isn't allowed in this browser. Try Print instead.");
+  }
+
+  async function copyQuestions() {
+    setQuestionStatus((await copyText(questionsText(picked))) ? `Copied ${plural(picked.length, "question")}.` : "Copying isn't allowed in this browser. Select the text and copy it by hand.");
+  }
+
+  const visitsLoading = visitsQuery.status === "loading";
 
   return (
     <div className="space-y-8">
       {/* Print only the prepared summary, not the app chrome. */}
       <style>{`@media print{body *{visibility:hidden!important}#care-print,#care-print *{visibility:visible!important}#care-print{position:absolute;left:0;top:0;width:100%}}`}</style>
 
-      <header className="bubbles-rise flex flex-wrap items-center gap-4">
-        <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-tint-sky">
-          <BubblesMascot size={60} mood="calm" animated={false} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-h1 text-ink">Doctor prep</h1>
-          <p className="mt-1 text-body font-semibold text-muted">Walk into your next appointment with your story organized.</p>
-        </div>
-      </header>
-
-      <div className="flex items-start gap-3 rounded-3xl bg-tint-sky p-5 text-bubbles-sky-deep">
-        <span className="shrink-0"><Icon id="shield" /></span>
-        <p className="text-body font-bold">
-          Bubbles doesn&apos;t diagnose. It organizes what you&apos;ve logged and suggests questions. Your clinician makes the
-          call.
-        </p>
-      </div>
-
-      <form onSubmit={submitConcern} className={`${CARD} flex flex-wrap items-end gap-3 p-5`}>
-        <div className="min-w-[220px] flex-1">
-          <label htmlFor="concern" className="block text-body-sm font-extrabold text-ink">
-            What would you like to talk about? <span className="font-semibold text-muted">(optional)</span>
-          </label>
-          <input
-            id="concern"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            maxLength={200}
-            placeholder="e.g. headaches before my period"
-            className="mt-2 min-h-[48px] w-full rounded-2xl border-2 border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none"
-          />
-        </div>
-        <button type="submit" className={BTN_PRIMARY}>
-          {concern && concern === draft.trim() ? "Updated" : "Prepare"}
-        </button>
-      </form>
-
-      <section id="care-print" aria-labelledby="prep-title" className="space-y-6">
-        <h2 id="prep-title" className="sr-only">
-          Your visit summary
-        </h2>
+      <div id="care-print" className="space-y-6">
         <div className="hidden print:block">
           <p className="text-h3">Visit summary prepared with Bubbles · {formatWhen(new Date().toISOString(), true)}</p>
           <p>Organized from my own logs over the last 6 months. Not a diagnosis.{concern ? ` Topic: ${concern}.` : ""}</p>
         </div>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
-          <div className={`${CARD} p-5 sm:p-6`}>
-            <h3 className="text-h3 text-ink">Questions to ask</h3>
-            <p className="mt-1 text-body-sm text-muted">Pick the ones that fit. You don&apos;t need to ask them all.</p>
+        {/* Visit-ready summary: what changed since the last visit, from data already on file. */}
+        <section aria-labelledby="ready-title" className="bubbles-rise rounded-[32px] bg-tint-sky p-5 text-ink sm:p-8">
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-body-sm font-extrabold uppercase tracking-wide text-bubbles-sky-deep">Doctor prep</p>
+              <h1 id="ready-title" className="mt-1 text-h1 text-ink">
+                Your visit-ready summary
+              </h1>
+              <p className="mt-1 text-body font-semibold text-bubbles-sky-deep">
+                Organized from your own logs. Bubbles doesn&apos;t diagnose; your clinician makes the call.
+              </p>
+            </div>
+            <BubblesMascot size={64} mood="calm" animated={false} />
+          </div>
+
+          <dl className="m-0 mt-6 grid gap-3 sm:grid-cols-3">
+            <VisitTile label="Last visit" value={visitText(last)} loading={visitsLoading} failed={visitsQuery.status === "error"} onRetry={reloadVisits} gap="No visit logged yet" />
+            <VisitTile label="Next visit" value={visitText(next)} loading={visitsLoading} failed={false} onRetry={reloadVisits} gap="No upcoming visit logged" />
+            <div className="rounded-2xl bg-surface p-4">
+              <dt className="text-body-sm font-extrabold text-ink-soft">{last ? "Logged since last visit" : "Logged in the last 6 months"}</dt>
+              <dd className="m-0 mt-1">
+                {visitQuery.status === "loading" ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : visit ? (
+                  <span className="font-display text-h3 text-ink">{plural(sinceEvents.length, "log")}</span>
+                ) : (
+                  <span className="text-body-sm text-muted">Didn&apos;t load</span>
+                )}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="mt-5">
+            <h2 className="text-h4 text-ink">{last ? "What changed since then" : "What you logged lately"}</h2>
+            {!last && !visitsLoading && (
+              <p className="mt-1 text-body-sm text-bubbles-sky-deep">
+                No visit is logged, so there is no &ldquo;since&rdquo; yet. This shows the last 6 months.{" "}
+                <Link href="/visits" className="font-extrabold text-bubbles-sky-deep underline">
+                  Log a visit
+                </Link>
+              </p>
+            )}
+            {visit && sinceTypes.length === 0 && added.length === 0 ? (
+              <p className="mt-2 text-body text-ink-soft">{last ? "Nothing new logged since that visit." : "No logs in the last 6 months."}</p>
+            ) : (
+              <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0">
+                {sinceTypes.map(([type, n]) => (
+                  <li key={type} className={`${PILL} ${TONE[toneFor(type)].chip}`}>
+                    {humanize(type)} · {n}
+                  </li>
+                ))}
+                {added.map((a) => (
+                  <li key={a} className={`${PILL} bg-surface text-ink`}>
+                    {a} added
+                  </li>
+                ))}
+              </ul>
+            )}
+            {flagged.length > 0 && (
+              <p className="mt-3 text-body-sm font-bold text-ink">
+                {plural(flagged.length, "lab result")} outside the range entered. Bubbles doesn&apos;t interpret results. Ask your clinician.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3 print:hidden">
+            <button type="button" onClick={copySummary} disabled={!visit} className={BTN_PRIMARY}>
+              Copy summary
+            </button>
+            {canShare && (
+              <button type="button" onClick={() => share(summary(), "Visit summary from Bubbles", setCopyStatus)} disabled={!visit} className={BTN_SECONDARY}>
+                Share
+              </button>
+            )}
+            <button type="button" onClick={() => window.print()} disabled={!visit} className={BTN_SECONDARY}>
+              Print
+            </button>
+            <p role="status" className="text-body-sm font-bold text-bubbles-sky-deep">
+              {copyStatus}
+            </p>
+          </div>
+        </section>
+
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          {/* Questions */}
+          <section aria-labelledby="questions-title" className={`${CARD} p-5 sm:p-6`}>
+            <h2 id="questions-title" className="text-h3 text-ink">
+              Questions to ask
+            </h2>
+            <p className="mt-1 text-body-sm text-muted">Untick the ones you don&apos;t need. Copy and Share send only the ticked questions.</p>
             {visitQuery.status === "loading" && <Skeleton className="mt-4 h-40" />}
             {visitQuery.status === "error" && (
               <div className="mt-4">
                 <ErrorCard title="Questions didn't load" message={visitQuery.message} onRetry={reloadVisit} inset />
               </div>
             )}
-            {questions.length > 0 && (
-              <ol className="bubbles-stagger m-0 mt-4 list-none space-y-3 p-0">
-                {questions.map((question, i) => (
-                  <li key={question} className="flex gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tint-sun font-display font-semibold text-bubbles-sun-deep">
-                      {i + 1}
-                    </span>
-                    <span className="pt-1 text-body text-ink">{question}</span>
-                  </li>
-                ))}
-              </ol>
+            {allQuestions.length > 0 && (
+              <ul className="m-0 mt-4 list-none space-y-2 p-0">
+                {allQuestions.map((question, i) => {
+                  const on = !skipped.has(question);
+                  return (
+                    <li key={question}>
+                      <label className={`flex min-h-[48px] cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 ${on ? "bg-tint-sun" : "bg-blush"}`}>
+                        <input type="checkbox" checked={on} onChange={() => toggleQuestion(question)} className="mt-1 h-6 w-6 shrink-0 accent-[var(--bubbles-grape)]" />
+                        <span className={`pt-0.5 text-body ${on ? "text-ink" : "text-muted"}`}>
+                          <span className="sr-only">Question {i + 1}: </span>
+                          {question}
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
-          </div>
+
+            <form onSubmit={submitOwn} className="mt-4 flex flex-wrap items-end gap-3 print:hidden">
+              <div className="min-w-[200px] flex-1">
+                <label htmlFor="own-question" className="block text-body-sm font-extrabold text-ink">
+                  Add your own question
+                </label>
+                <input
+                  id="own-question"
+                  value={ownDraft}
+                  onChange={(e) => setOwnDraft(e.target.value)}
+                  maxLength={QUESTION_MAX}
+                  className="mt-2 min-h-[48px] w-full rounded-2xl border-2 border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none"
+                />
+              </div>
+              <button type="submit" disabled={!ownDraft.trim()} className={BTN_SECONDARY}>
+                Add
+              </button>
+            </form>
+
+            <div className="mt-5 flex flex-wrap items-center gap-3 print:hidden">
+              <button type="button" onClick={copyQuestions} disabled={picked.length === 0} className={BTN_PRIMARY}>
+                Copy questions
+              </button>
+              {canShare && (
+                <button type="button" onClick={() => share(questionsText(picked), "Questions for my visit", setQuestionStatus)} disabled={picked.length === 0} className={BTN_SECONDARY}>
+                  Share
+                </button>
+              )}
+              <p role="status" className="text-body-sm font-bold text-muted">
+                {questionStatus}
+              </p>
+            </div>
+          </section>
 
           <div className="space-y-6">
-            {visit?.bring?.length ? (
-              <div className={`${CARD} p-5 sm:p-6`}>
-                <h3 className="text-h3 text-ink">What to bring</h3>
+            <form onSubmit={submitConcern} className={`${CARD} space-y-3 p-5 print:hidden`}>
+              <label htmlFor="concern" className="block text-body-sm font-extrabold text-ink">
+                What would you like to talk about? <span className="font-semibold text-muted">(optional)</span>
+              </label>
+              <input
+                id="concern"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                maxLength={200}
+                placeholder="e.g. headaches before my period"
+                className="min-h-[48px] w-full rounded-2xl border-2 border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none"
+              />
+              <button type="submit" className={BTN_PRIMARY}>
+                {concern && concern === draft.trim() ? "Updated" : "Prepare"}
+              </button>
+            </form>
+
+            <section aria-labelledby="bring-title" className={`${CARD} p-5 sm:p-6`}>
+              <h2 id="bring-title" className="text-h3 text-ink">
+                What to bring
+              </h2>
+              {visit?.bring?.length ? (
                 <ul className="m-0 mt-3 list-none space-y-2 p-0">
                   {visit.bring.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-body text-ink">
@@ -208,67 +429,45 @@ function DoctorPrep() {
                     </li>
                   ))}
                 </ul>
-              </div>
-            ) : null}
-
-            <div className={`${CARD} p-5 sm:p-6`}>
-              <h3 className="text-h3 text-ink">Records on file</h3>
-              {recordsLoading && <Skeleton className="mt-3 h-20" />}
-              {!recordsLoading && !records && (
-                <div className="mt-3">
-                  <ErrorCard title="Records didn't load" message={medicalQuery.status === "error" ? medicalQuery.message : "Bubbles can't reach the server right now."} onRetry={reloadRecords} inset />
-                </div>
+              ) : (
+                <p className="mt-2 text-body-sm text-muted">{visit ? "Nothing suggested yet. Bring a list of your medicines and any recent results." : "Loads together with the questions."}</p>
               )}
-              {!recordsLoading && records && (
-                <>
-                  <p className="mt-1 text-body text-muted">
-                    {records.reportCount} reports · {records.labCount} lab results
-                  </p>
-                  {flagged.length > 0 ? (
-                    <>
-                      <ul className="m-0 mt-3 list-none space-y-2 p-0">
-                        {flagged.map((lab, i) => (
-                          <li key={`${lab.label}-${i}`} className="rounded-2xl bg-blush px-3 py-2 text-body-sm">
-                            <span className="font-bold text-ink">{lab.label}</span>{" "}
-                            <span className="text-muted">
-                              flagged {lab.flag}
-                              {lab.value != null ? ` · ${lab.value}${lab.unit ? ` ${lab.unit}` : ""}` : ""}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      <p className="mt-2 text-[0.8125rem] text-muted">Flagged by the lab, or outside the range you entered. Bubbles doesn&apos;t interpret results. Ask your clinician.</p>
-                    </>
-                  ) : (
-                    <p className="mt-2 text-body-sm text-muted">No lab results flagged in what you&apos;ve added.</p>
-                  )}
-                </>
-              )}
-            </div>
+            </section>
           </div>
         </div>
 
-        <div className={`${CARD} p-5 sm:p-6`}>
+        {/* Records on file: each one scannable, each one a gap when empty. */}
+        <section aria-labelledby="records-title" className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h3 className="text-h3 text-ink">Your recent timeline</h3>
-            {visit && <p className="text-body-sm font-bold text-muted">{eventCount} logs · last 6 months</p>}
+            <h2 id="records-title" className="text-h3 text-ink">
+              Records on file
+            </h2>
+            <p className="text-body-sm text-muted">Shown as you entered them. Range badges compare against the range you typed in, nothing more.</p>
           </div>
-          {frequent.length > 0 && (
-            <p className="mt-1 text-body-sm text-muted">
-              Most often: {frequent.map(([type, n]) => `${humanize(type)} (${n})`).join(", ")}
-            </p>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {RECORD_SECTIONS.map((section) => (
+              <RecordCard key={section.kind} section={section} entries={lists[section.kind]} query={queries[section.kind][0]} onRetry={queries[section.kind][1]} />
+            ))}
+          </div>
+          {medicalQuery.status === "error" && labEntries === null && reportEntries === null && (
+            <ErrorCard title="Record counts didn't load" message={medicalQuery.message} onRetry={reloadMedical} inset />
           )}
+        </section>
+
+        <section aria-labelledby="timeline-title" className={`${CARD} p-5 sm:p-6`}>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="timeline-title" className="text-h3 text-ink">
+              Your recent timeline
+            </h2>
+            {visit && <p className="text-body-sm font-bold text-muted">{plural(eventCount, "log")} · last 6 months</p>}
+          </div>
+          {frequent.length > 0 && <p className="mt-1 text-body-sm text-muted">Most often: {frequent.map(([type, n]) => `${humanize(type)} (${n})`).join(", ")}</p>}
           {visitQuery.status === "loading" && <Skeleton className="mt-4 h-48" />}
-          {visitQuery.status === "error" && (
-            <p className="mt-3 text-body-sm text-muted">Your timeline loads together with the questions above. Try again there.</p>
-          )}
+          {visitQuery.status === "error" && <p className="mt-3 text-body-sm text-muted">Your timeline loads together with the questions above. Try again there.</p>}
           {visit && events.length === 0 && (
             <div className="mt-4 flex flex-wrap items-center gap-4 rounded-3xl bg-blush p-5">
               <BubblesMascot size={52} mood="resting" animated={false} />
-              <p className="min-w-0 flex-1 text-body text-muted">
-                No logs in the last 6 months yet. As you log symptoms, sleep or your cycle, Bubbles builds this timeline for
-                you.
-              </p>
+              <p className="min-w-0 flex-1 text-body text-muted">No logs in the last 6 months yet. As you log symptoms, sleep or your cycle, Bubbles builds this timeline for you.</p>
             </div>
           )}
           {events.length > 0 && (
@@ -279,7 +478,7 @@ function DoctorPrep() {
                 return (
                   <li key={event.id ?? i} className={`relative pb-4 ${i >= 10 && !showAll ? "hidden print:block" : ""}`}>
                     <span className={`absolute -left-[27px] top-1.5 h-3 w-3 rounded-full ring-4 ring-white ${tone.dot}`} aria-hidden="true" />
-                    <p className="text-[0.8125rem] font-bold text-muted">{formatWhen(event.date, true)}</p>
+                    <p className="text-[0.8125rem] font-bold text-muted">{whenText(event.date)}</p>
                     <p className="font-extrabold text-ink">{humanize(event.event_type ?? "Entry")}</p>
                     {detail && <p className="break-words text-body-sm text-muted">{detail}</p>}
                   </li>
@@ -292,39 +491,96 @@ function DoctorPrep() {
               {showAll ? "Show fewer" : `Show all ${events.length}`}
             </button>
           )}
-        </div>
-      </section>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={copySummary} disabled={!visit} className={BTN_PRIMARY}>
-          Copy summary
-        </button>
-        <button type="button" onClick={() => window.print()} disabled={!visit} className={BTN_SECONDARY}>
-          Print
-        </button>
-        <p role="status" className="text-body-sm font-bold text-muted">
-          {copyStatus}
-        </p>
+        </section>
       </div>
-
-      <section aria-labelledby="records-title">
-        <h2 id="records-title" className="text-h3 text-ink">
-          Keep your records up to date
-        </h2>
-        <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0">
-          {RECORD_LINKS.map((id) => (
-            <li key={id}>
-              <Link
-                href={`/${id}`}
-                className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 border-line bg-surface px-4 text-body-sm font-extrabold text-bubbles-sky-deep no-underline hover:border-line-strong"
-              >
-                <Icon id={id} size={18} />
-                {id === "labs" ? "Lab results" : humanize(id)}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
     </div>
+  );
+}
+
+function VisitTile({ label, value, loading, failed, onRetry, gap }: { label: string; value: string | null; loading: boolean; failed: boolean; onRetry: () => void; gap: string }) {
+  return (
+    <div className="rounded-2xl bg-surface p-4">
+      <dt className="text-body-sm font-extrabold text-ink-soft">{label}</dt>
+      <dd className="m-0 mt-1 break-words">
+        {loading ? (
+          <Skeleton className="h-8 w-32" />
+        ) : failed ? (
+          <button type="button" onClick={onRetry} className="text-body-sm font-extrabold text-bubbles-sky-deep underline print:hidden">
+            Didn&apos;t load. Try again
+          </button>
+        ) : value ? (
+          <span className="font-bold text-ink">{value}</span>
+        ) : (
+          <span className="text-body-sm text-muted">{gap}</span>
+        )}
+      </dd>
+    </div>
+  );
+}
+
+function RecordCard({
+  section,
+  entries,
+  query,
+  onRetry,
+}: {
+  section: (typeof RECORD_SECTIONS)[number];
+  entries: Entry[] | null;
+  query: Query<EntriesResponse>;
+  onRetry: () => void;
+}) {
+  const rows = entries ? recordRows(section.kind, entries) : [];
+  const shown = rows.slice(0, 4);
+  return (
+    <section aria-labelledby={`rec-${section.kind}`} className={`${CARD} flex flex-col p-5`}>
+      <div className="flex items-center gap-2 text-bubbles-sky-deep">
+        <span className="shrink-0">
+          <Icon id={section.icon} />
+        </span>
+        <h3 id={`rec-${section.kind}`} className="text-h4 text-ink">
+          {section.title}
+        </h3>
+        {entries && <span className="ml-auto text-body-sm font-bold text-muted">{rows.length}</span>}
+      </div>
+      <div className="mt-3 flex-1">
+        {query.status === "loading" && <Skeleton className="h-20" />}
+        {query.status === "error" && (
+          <p className="text-body-sm text-muted">
+            Didn&apos;t load.{" "}
+            <button type="button" onClick={onRetry} className="font-extrabold text-bubbles-sky-deep underline">
+              Try again
+            </button>
+          </p>
+        )}
+        {entries && rows.length === 0 && <p className="text-body-sm text-muted">{section.empty}</p>}
+        {shown.length > 0 && (
+          <ul className="m-0 list-none divide-y-2 divide-line p-0">
+            {shown.map((row) => (
+              <li key={row.id} className="py-2">
+                <p className="break-words font-bold text-ink">{row.title}</p>
+                {row.meta && <p className="break-words text-body-sm text-muted">{row.meta}</p>}
+                {row.range && row.range.status !== "none" && (
+                  <p className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className={`${PILL} ${RANGE_BADGE[row.range.status].style}`}>{RANGE_BADGE[row.range.status].text}</span>
+                    <span className="text-[0.8125rem] text-muted">Range entered: {row.range.range}</span>
+                  </p>
+                )}
+                {row.range && row.range.status === "none" && <p className="mt-1 text-[0.8125rem] text-muted">No range entered, so nothing to compare.</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+      <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-body-sm font-extrabold print:hidden">
+        <Link href={`/${section.kind}`} className="inline-flex min-h-[44px] items-center text-bubbles-sky-deep underline">
+          {rows.length > shown.length ? `See all ${rows.length}` : section.add}
+        </Link>
+        {rows.length > shown.length && (
+          <Link href={`/${section.kind}`} className="inline-flex min-h-[44px] items-center text-muted underline">
+            {section.add}
+          </Link>
+        )}
+      </p>
+    </section>
   );
 }
