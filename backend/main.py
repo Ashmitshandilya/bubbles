@@ -73,6 +73,7 @@ from digital_twin import build_digital_twin
 from health_agent import plan_agent_actions
 from memory_manager import extract_explicit_personal_facts, persist_explicit_facts, memory_diagnostics
 from response_formatter import normalize_response, response_style_instruction
+from response_quality import lint, scrub_doses
 from personalization_engine import build_personalization
 from habit_intelligence import analyze_habits
 from mental_wellness_intelligence import assess_wellbeing
@@ -684,6 +685,13 @@ def chat(
             response_text = ai_failed_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         else:
             response_text = normalize_response(ai_result.response)
+            # Output guard: a medicine amount or schedule never reaches the user, whatever the model wrote (the no-dosing rule).
+            response_text, _dose_removed = scrub_doses(response_text)
+            _issues = lint(response_text, user_message=user_message, has_evidence=bool(evidence_results)) + (["dose_removed"] if _dose_removed else [])
+            if _issues:
+                from logging_util import logger
+                logger.warning(component="CHAT", operation="reply_lint", error=None, user_id=user_id, context={"issues": _issues},
+                               fallback_action="reply_sent")
             note = contradiction_note(turn.conflicts)
             if note:
                 response_text += "\n\n" + note

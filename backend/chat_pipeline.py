@@ -304,10 +304,24 @@ def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> s
     note = contradiction_note(turn.conflicts)
     if note:
         parts.append(note)
-    parts.append("Since this is only one day, I won't read a pattern into it yet. I'll compare it with your upcoming days.")
+    pick = int(hashlib.sha256(parts[0].encode("utf-8")).hexdigest(), 16)   # stable per message, so a retried message gets the same words
+    parts.append(_ONE_DAY[pick % len(_ONE_DAY)])
     if saved_events:
-        parts.append("I've saved these as notes you can review. Confirm anything you'd like kept in your records.")
+        parts.append(_SAVED_NOTES[(pick // 7) % len(_SAVED_NOTES)])
     return "\n\n".join(parts)
+
+
+# Same meaning every time (one day is not a pattern; saved items are suggestions until confirmed), in a few warmer wordings.
+_ONE_DAY = (
+    "That's one day, so I won't read a pattern into it yet. I'll keep it alongside your next few days.",
+    "One day on its own doesn't tell us much. Keep logging and I'll start comparing.",
+    "It's early for patterns, since this is a single day. I'll watch how the next days line up.",
+    "No pattern to point at yet, because this is just one day. A few more and I can compare.",
+)
+_SAVED_NOTES = (
+    "I've saved these as notes you can review. Confirm anything you'd like kept in your records.",
+    "These are saved as notes for you to look over. Nothing becomes a lasting record until you confirm it.",
+)
 
 
 def ai_failed_reply(turn: Turn, *, name: str | None, saved_events: int) -> str:
@@ -318,7 +332,7 @@ def ai_failed_reply(turn: Turn, *, name: str | None, saved_events: int) -> str:
         text = summarize_log(turn.log, turn.facts, name=name)
         extra = " I can't reach my AI helper right now, so I'm not adding any interpretation."
         return text + extra + (" I've saved what you told me." if saved_events else "")
-    return "I'm having trouble reaching my AI services right now. Please try again in a moment."
+    return "I couldn't reach my AI helper just now, so I can't answer this properly. Please try again in a moment."
 
 
 # --------------------------------------------------------------------------
