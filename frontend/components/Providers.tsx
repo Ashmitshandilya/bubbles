@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { isSupabaseConfigured, supabase } from "../lib/supabase";
+import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
 import {
   classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth,
   type DatabaseStatus, type HealthPayload,
@@ -77,6 +77,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let subscription: { unsubscribe: () => void } | null = null;
 
     async function initializeAuth() {
+      if (uiPreview) {   // dev-only: a fixed demo person, no Supabase (see lib/supabase.ts)
+        const created_at = "2026-08-01T09:00:00.000Z";
+        setSession({ access_token: "preview", user: { id: "preview-user", email: "riya@example.test", user_metadata: { display_name: "Riya" }, created_at } });
+        setUser({ id: "preview-user", email: "riya@example.test", display_name: "Riya", created_at });
+        if (mounted) setLoading(false);
+        return;
+      }
       if (!isSupabaseConfigured) {
         if (mounted) setLoading(false);
         return;

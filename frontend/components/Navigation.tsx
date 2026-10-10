@@ -59,66 +59,74 @@ function NavIcon({ id, size = 18 }: { id: string; size?: number }) {
   );
 }
 
-type NavItem = {
+type SectionTab = { label: string; href: string; /** Active only on this exact path. */ exact?: boolean };
+type Section = {
   id: string;
-  /** Icon key in ICON_PATHS (defaults to the id). */
-  icon?: string;
   label: string;
+  /** Icon key in ICON_PATHS. */
+  icon: string;
   href: string;
-  /** A link shown indented under the item above it. */
-  sub?: boolean;
-  /** Active only on this exact path (a hub whose children have their own links). */
-  exact?: boolean;
+  /** Every path prefix that belongs to this section, so it stays lit on all of its pages. */
+  match: readonly string[];
+  tabs?: readonly SectionTab[];
 };
 
-const NAV_ITEMS: readonly NavItem[] = [
-  { id: "dashboard", label: "Today", href: "/dashboard" },
-  { id: "companion", label: "Talk to Bubbles", href: "/companion" },
-  { id: "insights", label: "Patterns", href: "/insights" },
-  { id: "health", label: "My health", href: "/health" },
-  { id: "fitness", label: "Fitness", href: "/fitness", exact: true },
-  { id: "fitness-diet", icon: "nutrition", label: "Diet", href: "/fitness/diet", sub: true },
-  { id: "fitness-workouts", icon: "activity", label: "Workouts", href: "/fitness/workouts", sub: true },
-  { id: "fitness-calories", icon: "nutrition", label: "Calories", href: "/fitness/calories", sub: true },
-  { id: "fitness-transform", icon: "insights", label: "Transform", href: "/fitness/transform", sub: true },
-  { id: "fitness-progress", icon: "weight", label: "Progress", href: "/fitness/progress", sub: true },
-  { id: "nutrition", label: "Food log", href: "/nutrition", sub: true },
-  { id: "weight", label: "Weight", href: "/weight", sub: true },
-  { id: "activity", label: "Activity", href: "/activity", sub: true },
-  { id: "cycle", label: "Cycle", href: "/cycle" },
-  { id: "sleep", label: "Sleep", href: "/sleep" },
-  { id: "hydration", label: "Water", href: "/hydration" },
-  { id: "mood", label: "Mood", href: "/mood" },
-  { id: "symptoms", label: "Symptoms", href: "/symptoms" },
-  { id: "vitals", label: "Vitals", href: "/vitals" },
-  { id: "care", label: "Doctor prep", href: "/care" },
-  { id: "partner", label: "Partner sharing", href: "/partner" },
-  { id: "medications", label: "Medications", href: "/medications" },
-  { id: "conditions", label: "Conditions", href: "/conditions" },
-  { id: "allergies", label: "Allergies", href: "/allergies" },
-  { id: "labs", label: "Lab results", href: "/labs" },
-  { id: "reports", label: "Reports", href: "/reports" },
-  { id: "visits", label: "Visits", href: "/visits" },
-  { id: "profile", label: "Me", href: "/profile" },
-  { id: "settings", label: "Settings", href: "/settings" },
+/**
+ * Seven places, not twenty-nine links. Each section groups the pages that belong together and shows its sibling pages as a
+ * tab bar at the top of the page (SectionTabs), so every page is still one tap away and every URL is unchanged.
+ */
+export const SECTIONS: readonly Section[] = [
+  { id: "today", label: "Today", icon: "dashboard", href: "/dashboard", match: ["/dashboard"] },
+  { id: "talk", label: "Talk", icon: "companion", href: "/companion", match: ["/companion"] },
+  {
+    id: "patterns", label: "Patterns", icon: "insights", href: "/insights", match: ["/insights", "/health"],
+    tabs: [{ label: "Patterns", href: "/insights" }, { label: "My health", href: "/health" }],
+  },
+  {
+    id: "track", label: "Track", icon: "activity", href: "/sleep",
+    match: ["/sleep", "/hydration", "/mood", "/mind", "/symptoms", "/vitals", "/weight", "/activity", "/nutrition"],
+    tabs: [
+      { label: "Sleep", href: "/sleep" }, { label: "Water", href: "/hydration" }, { label: "Mood", href: "/mood" }, { label: "Mind", href: "/mind" },
+      { label: "Symptoms", href: "/symptoms" }, { label: "Vitals", href: "/vitals" }, { label: "Weight", href: "/weight" },
+      { label: "Activity", href: "/activity" }, { label: "Food", href: "/nutrition" },
+    ],
+  },
+  {
+    id: "cycle", label: "Cycle", icon: "cycle", href: "/cycle", match: ["/cycle", "/partner"],
+    tabs: [{ label: "Cycle", href: "/cycle" }, { label: "Partner sharing", href: "/partner" }],
+  },
+  {
+    id: "fitness", label: "Fitness", icon: "fitness", href: "/fitness", match: ["/fitness"],
+    tabs: [
+      { label: "Overview", href: "/fitness", exact: true }, { label: "Diet", href: "/fitness/diet" }, { label: "Workouts", href: "/fitness/workouts" },
+      { label: "Calories", href: "/fitness/calories" }, { label: "Transform", href: "/fitness/transform" }, { label: "Progress", href: "/fitness/progress" },
+    ],
+  },
+  {
+    id: "care", label: "Care", icon: "care", href: "/care",
+    match: ["/care", "/medications", "/conditions", "/allergies", "/labs", "/reports", "/visits"],
+    tabs: [
+      { label: "Doctor prep", href: "/care" }, { label: "Medications", href: "/medications" }, { label: "Conditions", href: "/conditions" },
+      { label: "Allergies", href: "/allergies" }, { label: "Lab results", href: "/labs" }, { label: "Reports", href: "/reports" }, { label: "Visits", href: "/visits" },
+    ],
+  },
 ];
 
-const NAV_GROUPS: readonly { label: string; items: readonly string[] }[] = [
-  { label: "Bubbles", items: ["dashboard", "companion", "insights", "health"] },
-  { label: "Fitness", items: ["fitness", "fitness-diet", "fitness-workouts", "fitness-calories", "fitness-transform", "fitness-progress", "nutrition", "weight", "activity"] },
-  { label: "Cycle", items: ["cycle", "partner"] },
-  { label: "Track", items: ["sleep", "hydration", "mood", "symptoms", "vitals"] },
-  { label: "Care", items: ["care", "medications", "conditions", "allergies", "labs", "reports", "visits"] },
-  { label: "You", items: ["profile", "settings"] },
-];
+/** Account pages: reached from the bottom of the menu and the profile button, not a main place. */
+const ME: Section = {
+  id: "me", label: "Me", icon: "profile", href: "/profile", match: ["/profile", "/settings", "/notifications"],
+  tabs: [{ label: "Me", href: "/profile" }, { label: "Settings", href: "/settings" }, { label: "Reminders", href: "/notifications" }],
+};
 
 function isActive(pathname: string, href: string, exact = false) {
   return pathname === href || (!exact && pathname.startsWith(`${href}/`));
 }
 
-function itemActive(pathname: string, item: NavItem) {
-  return isActive(pathname, item.href, item.exact);
+function sectionFor(pathname: string): Section | undefined {
+  return [...SECTIONS, ME].find((section) => section.match.some((prefix) => isActive(pathname, prefix)));
 }
+
+const tabActive = (pathname: string, tab: SectionTab) => isActive(pathname, tab.href, tab.exact);
 
 function StatusLine({ apiStatus }: { apiStatus: "checking" | "online" | "offline" }) {
   const label = apiStatus === "online" ? "Bubbles is here" : apiStatus === "offline" ? "Can't reach Bubbles" : "Connecting…";
@@ -131,8 +139,27 @@ function StatusLine({ apiStatus }: { apiStatus: "checking" | "online" | "offline
   );
 }
 
+function SidebarLink({ section, current }: { section: Section; current?: Section }) {
+  const active = current?.id === section.id;
+  return (
+    <li>
+      <Link
+        href={section.href}
+        aria-current={active ? "page" : undefined}
+        className={`flex min-h-[48px] items-center gap-3 rounded-2xl px-3 text-nav font-extrabold no-underline transition-colors ${
+          active ? "bg-tint-pink text-bubbles-pink-ink" : "text-muted hover:bg-blush hover:text-default"
+        }`}
+      >
+        <NavIcon id={section.icon} size={20} />
+        {section.label}
+      </Link>
+    </li>
+  );
+}
+
 export function Sidebar({ apiStatus }: { apiStatus: "checking" | "online" | "offline" }) {
   const pathname = usePathname() ?? "";
+  const current = sectionFor(pathname);
 
   return (
     <aside className="hidden lg:flex w-[248px] shrink-0 border-r border-soft bg-surface min-h-dvh flex-col sticky top-0 h-dvh" aria-label="Bubbles navigation">
@@ -141,33 +168,17 @@ export function Sidebar({ apiStatus }: { apiStatus: "checking" | "online" | "off
         <span className="font-display text-[1.625rem] font-bold tracking-tight">bubbles</span>
       </Link>
       <nav className="flex-1 overflow-y-auto px-3 pb-4" style={{ scrollbarWidth: "thin" }}>
-        {NAV_GROUPS.map((group) => (
-          <div className="mb-5" key={group.label}>
-            <span className="block px-3 pb-2 text-label font-extrabold uppercase tracking-wide text-subtle">{group.label}</span>
-            <ul className="m-0 flex list-none flex-col gap-1 p-0">
-              {group.items.map((id) => {
-                const item = NAV_ITEMS.find((entry) => entry.id === id);
-                if (!item) return null;
-                const active = itemActive(pathname, item);
-                return (
-                  <li key={item.id} className={item.sub ? "ml-5 border-l-2 border-line pl-2" : undefined}>
-                    <Link
-                      href={item.href}
-                      aria-current={active ? "page" : undefined}
-                      className={`flex min-h-[44px] items-center gap-3 rounded-2xl px-3 font-extrabold no-underline transition-colors ${
-                        item.sub ? "text-body-sm" : "text-nav"
-                      } ${active ? "bg-tint-pink text-bubbles-pink-ink" : "text-muted hover:bg-blush hover:text-default"}`}
-                    >
-                      {!item.sub && <NavIcon id={item.icon ?? item.id} size={20} />}
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+        <ul className="m-0 flex list-none flex-col gap-1 p-0">
+          {SECTIONS.map((section) => (
+            <SidebarLink key={section.id} section={section} current={current} />
+          ))}
+        </ul>
       </nav>
+      <div className="border-t border-soft px-3 py-3">
+        <ul className="m-0 flex list-none flex-col gap-1 p-0">
+          <SidebarLink section={ME} current={current} />
+        </ul>
+      </div>
       <div className="border-t border-soft px-5 py-4">
         <StatusLine apiStatus={apiStatus} />
       </div>
@@ -175,11 +186,45 @@ export function Sidebar({ apiStatus }: { apiStatus: "checking" | "online" | "off
   );
 }
 
+/**
+ * The pages of the current section as a row of pills at the top of the page. Rendered by the page shells, so no page has to
+ * know about it. Hidden when a section has only one page. Scrolls sideways on a phone instead of wrapping.
+ */
+export function SectionTabs() {
+  const pathname = usePathname() ?? "";
+  const section = sectionFor(pathname);
+  if (!section?.tabs || section.tabs.length < 2) return null;
+  return (
+    <nav aria-label={`${section.label} pages`} className="-mx-4 mb-1 sm:mx-0">
+      <ul className="m-0 flex list-none gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {section.tabs.map((tab) => {
+          const active = tabActive(pathname, tab);
+          return (
+            <li key={tab.href} className="shrink-0">
+              <Link
+                href={tab.href}
+                aria-current={active ? "page" : undefined}
+                className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full border-2 px-4 text-body-sm font-extrabold no-underline transition-colors ${
+                  active
+                    ? "border-bubbles-pink-ink bg-bubbles-pink-ink text-white"
+                    : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink"
+                }`}
+              >
+                {tab.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 const MOBILE_TABS = [
-  { id: "dashboard", label: "Today", href: "/dashboard" },
-  { id: "fitness", label: "Fitness", href: "/fitness" },
-  { id: "companion", label: "Talk", href: "/companion" },
-  { id: "cycle", label: "Cycle", href: "/cycle" },
+  { id: "today", label: "Today", href: "/dashboard", icon: "dashboard" },
+  { id: "cycle", label: "Cycle", href: "/cycle", icon: "cycle" },
+  { id: "talk", label: "Talk", href: "/companion", icon: "companion" },
+  { id: "track", label: "Track", href: "/sleep", icon: "activity" },
 ] as const;
 
 /**
@@ -244,25 +289,22 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
               </svg>
             </button>
           </div>
-          {NAV_GROUPS.map((group) => (
-            <section key={group.label} aria-label={group.label} className="mb-3">
-              <h3 className="m-0 px-1 pb-1 text-label font-extrabold uppercase tracking-wide text-subtle">{group.label}</h3>
+          {[...SECTIONS, ME].map((section) => (
+            <section key={section.id} aria-label={section.label} className="mb-3">
+              <h3 className="m-0 px-1 pb-1 text-label font-extrabold uppercase tracking-wide text-subtle">{section.label}</h3>
               <ul className="m-0 grid list-none grid-cols-2 gap-1 p-0">
-                {group.items.map((id) => {
-                  const item = NAV_ITEMS.find((entry) => entry.id === id);
-                  if (!item) return null;
-                  const active = itemActive(pathname, item);
+                {(section.tabs ?? [{ label: section.label, href: section.href }]).map((tab) => {
+                  const active = tabActive(pathname, tab);
                   return (
-                    <li key={item.id}>
+                    <li key={tab.href}>
                       <Link
-                        href={item.href}
+                        href={tab.href}
                         aria-current={active ? "page" : undefined}
                         className={`flex min-h-[44px] items-center gap-2 rounded-2xl px-3 text-body-sm font-extrabold no-underline ${
                           active ? "bg-tint-pink text-bubbles-pink-ink" : "text-default hover:bg-blush"
                         }`}
                       >
-                        <NavIcon id={item.icon ?? item.id} size={18} />
-                        {item.label}
+                        {tab.label}
                       </Link>
                     </li>
                   );
@@ -285,9 +327,10 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
   const pathname = usePathname() ?? "";
   const [moreOpen, setMoreOpen] = useState(false);
   const closeMore = useCallback(() => setMoreOpen(false), []);
-  const onTab = MOBILE_TABS.some((tab) => isActive(pathname, tab.href));
+  const current = sectionFor(pathname);
+  const onTab = MOBILE_TABS.some((tab) => tab.id === current?.id);
   const tabLink = (item: (typeof MOBILE_TABS)[number]) => {
-    const active = isActive(pathname, item.href);
+    const active = current?.id === item.id;
     return (
       <li key={item.id}>
         <Link
@@ -297,7 +340,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
             active ? "text-bubbles-pink-ink" : "text-muted"
           }`}
         >
-          <NavIcon id={item.id} size={22} />
+          <NavIcon id={item.icon} size={22} />
           {item.label}
         </Link>
       </li>
@@ -317,7 +360,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
             <Link
               href={talk.href}
               aria-label="Talk to Bubbles"
-              aria-current={isActive(pathname, talk.href) ? "page" : undefined}
+              aria-current={current?.id === "talk" ? "page" : undefined}
               className="bubbles-press -mt-7 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-bubbles-pink-ink text-white no-underline shadow-[0_5px_0_var(--bubbles-pink-deep)]"
             >
               <NavIcon id="companion" size={26} />

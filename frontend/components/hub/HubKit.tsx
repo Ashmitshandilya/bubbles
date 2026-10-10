@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Header, Sidebar, MobileNav, ApiAlert } from "../Navigation";
+import { Header, Sidebar, MobileNav, ApiAlert, SectionTabs } from "../Navigation";
 import { useAuth, useApi } from "../Providers";
 import { BubblesMascot } from "../BubblesMascot";
 import { classifyFailure, failureFromError } from "../../app/lib/connection";
@@ -41,6 +41,7 @@ export function HubPage({ title, children }: { title: string; children: ReactNod
         <Header apiStatus={apiStatus} currentPage={title} />
         <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
         <main id="main" className="mx-auto w-full max-w-content flex-1 px-4 pb-12 pt-6 sm:px-8 sm:pt-7">
+          <SectionTabs />
           {children}
         </main>
         <MobileNav />

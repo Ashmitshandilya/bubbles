@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ApiAlert, Header, MobileNav, Sidebar } from "../Navigation";
+import { ApiAlert, Header, MobileNav, SectionTabs, Sidebar } from "../Navigation";
 import { BubblesMascot } from "../BubblesMascot";
 import { useApi, useAuth } from "../Providers";
 import {
@@ -118,7 +118,10 @@ export function TrackerShell({ title, children }: { title: string; children: Rea
       <div className="flex flex-1">
         <Sidebar apiStatus={apiStatus} />
         <main className="min-w-0 flex-1 px-4 pb-10 pt-5 sm:px-6 lg:px-10 lg:pt-8">
-          <div className="mx-auto flex w-full max-w-[920px] flex-col gap-6">{children}</div>
+          <div className="mx-auto flex w-full max-w-[920px] flex-col gap-6">
+            <SectionTabs />
+            {children}
+          </div>
         </main>
       </div>
       <MobileNav />
