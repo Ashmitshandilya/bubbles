@@ -17,13 +17,13 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "Bubbles — your personal health companion",
+  title: "Bubbles | Your personal health companion",
   description:
     "Bubbles remembers your health so you don't have to. Talk to Bubbles, connect your cycle, sleep, mood and symptoms, and understand what matters today.",
   // The public address of the site (set NEXT_PUBLIC_SITE_URL in the host; falls back to the production domain).
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://heybubbles.in"),
   openGraph: {
-    title: "Bubbles — your personal health companion",
+    title: "Bubbles | Your personal health companion",
     description: "An intelligent, private health companion with long-term memory. Women's health first.",
     type: "website",
   },
