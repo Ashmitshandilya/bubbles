@@ -22,8 +22,7 @@ Work branch: `ui-intelligence-overhaul-2026-10-10`. `main` deploys automatically
 - Contact mailbox the founder chose: hey@heybubbles.in (add to footer and privacy pages ONLY after the founder confirms it exists).
 
 ## Task list (tick as done, newest status at the top of each item)
-- [x] Landing v2 built (frontend/app/landing/v2). Verify visually desktop and mobile, fix issues, then switch off the old landing code (frontend/app/landing/story, world, Landing.tsx, landing.css; keep BubblesMark, BubblesHead, BubblesFigure because the app uses BubblesMark).
-- [ ] Landing polish: real hero image swap, Lighthouse pass (LCP under 2.5s on mobile), accessibility pass (axe), reduced-motion check, dark-mode stance documented (app is light-only).
+- [ ] LANDING RENOVATION (top priority, founder feedback 2026-10-10): the founder LOVES the existing scroll-story landing (frontend/app/landing: React Three Fiber world, 3D spine, moving 3D Bubbles host, 10 chapters, dark space theme) and called my 2D replacement (frontend/app/landing/v2) "basic and AI-generated". DO NOT DELETE OR REPLACE THE STORY LANDING. app/page.tsx must keep rendering <Landing/> from ./landing/Landing. v2 is an archived experiment (reuse ideas only, delete later). Goal: a PREMIUM, HIGH-BUDGET renovation of the existing story: cinematic realistic atmosphere and backgrounds, richer lighting and materials (iridescent real-refraction bubbles, volumetric light, bloom, film grain, depth of field), a bigger and more present moving 3D Bubbles host (including in the hero, which today is flat text on pink), smoother scroll choreography, more purposeful animation, the latest techniques with graceful mobile and reduced-motion fallbacks. Follow docs/autonomy/LANDING_PREMIUM_PLAN.md (written by LIXIE) step by step; SIR NOAH reviews before merge. A realistic animated portrait of the approved art (concept 2) can be a "living portrait" element once the hi-res file exists; a real .glb replaces the procedural host later.
 - [ ] Navigation: reduce about 29 entries to 7 primary entries with section tab bars; keep every URL working (redirects). Files: frontend/components/Navigation.tsx, components/hub/*.
 - [ ] Dashboard and inner pages: remove the generic "AI-made" look. Specialist pass per area: dashboard, chat (companion), trackers, cycle, care, profile/settings. Realistic, calm, premium, consistent. Every button must do something visible; remove placeholders ("not available yet").
 - [ ] Fitness: minimise (one Today screen, 3-step setup, advanced mode behind a disclosure; old routes redirect).
@@ -39,4 +38,7 @@ Work branch: `ui-intelligence-overhaul-2026-10-10`. `main` deploys automatically
 - Pass `model: "sonnet"` when starting these two agents.
 
 ## Log (append one line per chunk: date time, what changed, gates result, commit)
-- 2026-10-10 06:50 plan created; landing v2 files written, not yet verified.
+- 2026-10-10 06:50 plan created.
+- 2026-10-10 07:03 RAG: lay-term synonyms (800), ~35 more Hinglish phrases, per-page cap, 43 harder eval cases (108 total, recall@5 0.99). Committed 7874e30 on the work branch (not merged to main yet).
+- 2026-10-10 07:06 Replies: new style guide, dose-scrub output guard, reply linter, warmer fixed replies. Committed 6ac2810 (not merged yet).
+- 2026-10-10 07:10 Founder feedback: keep and upgrade the story landing. Plan corrected. LIXIE writing LANDING_PREMIUM_PLAN.md; engineering agent building the dev-only preview stack (backend/preview_server.py, preview_seed.py, frontend preview mode).
