@@ -43,6 +43,17 @@ export function formatDay(value: string): string {
   return toLocalDate(value).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
+/** Plain words for an internal metric id ("sleep_hours" is "sleep", "water_ml" is "water intake"), same table as backend/metric_names.py. */
+const METRIC_PLAIN: Record<string, string> = {
+  sleep_hours: "sleep", sleep_duration: "sleep", sleep_quality: "sleep quality", water_ml: "water intake", hydration_ml: "water intake",
+  water: "water intake", hydration: "water intake", mood_score: "mood", weight_kg: "weight", heart_rate: "heart rate",
+  resting_hr: "resting heart rate", activity_minutes: "activity", calories: "food intake", calories_kcal: "food intake",
+};
+export function plainMetric(metric: string): string {
+  const key = metric.trim().toLowerCase();
+  return METRIC_PLAIN[key] ?? (key.replace(/_(ml|hours?|minutes?|mins?|kg|lbs?|bpm|score|count|level)$/, "").replaceAll("_", " ") || "this");
+}
+
 export function greeting(now: Date): string {
   const h = now.getHours();
   return h < 5 ? "Hi" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
@@ -296,13 +307,13 @@ export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | nul
     const metric = action.id.slice("review-".length);
     const slug = STATE_METRIC_SLUG[metric] ?? null;
     if (slug && items.some((i) => i.slug === slug)) continue;
-    const label = metric.replaceAll("_", " ");
+    const label = plainMetric(metric);
     items.push({
       id: action.id,
       slug,
       label: slug ? SIGNAL_META[slug].label : label.charAt(0).toUpperCase() + label.slice(1),
       pill: { text: "Low confidence · from chat", kind: "low" },
-      headline: `Something changed in your ${label} compared with your recent baseline.`,
+      headline: `Your ${label} has moved compared with your usual.`,
       body: action.detail,
       whyHref: "/insights",
       primary: { label: "Ask Bubbles about it", href: `/companion?ask=${encodeURIComponent(`What changed in my ${label} recently?`)}` },

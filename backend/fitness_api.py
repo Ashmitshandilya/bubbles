@@ -363,7 +363,9 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         profile, rec, ep = engine(uid)
         gap = missing_fields(ep)
         if gap:
-            return None, profile, rec, ep, "Add your " + ", ".join(g.replace("_", " ") for g in gap) + " to see your targets."
+            names = [{"birth_date": "birth date", "height_cm": "height", "weight_kg": "weight", "sex": "sex"}.get(g, g.replace("_", " ")) for g in gap]
+            listed = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+            return None, profile, rec, ep, f"Add your {listed} to see your targets."
         try:
             return plan_engine.build_targets(ep, extra_exercise_min_per_week=extra_minutes), profile, rec, ep, None
         except N.CalcError as err:

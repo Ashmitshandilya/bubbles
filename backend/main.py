@@ -74,6 +74,7 @@ from health_agent import plan_agent_actions
 from memory_manager import extract_explicit_personal_facts, persist_explicit_facts, memory_diagnostics
 from response_formatter import normalize_response, response_style_instruction
 from response_quality import lint, scrub_doses
+from metric_names import plain_metric
 from personalization_engine import build_personalization
 from habit_intelligence import analyze_habits
 from mental_wellness_intelligence import assess_wellbeing
@@ -1391,8 +1392,8 @@ def intelligence_brief(
         if isinstance(deviation, dict) and isinstance(deviation.get("delta"), (int, float)):
             add(
                 f"review-{metric}",
-                f"Review {str(metric).replace('_', ' ')}",
-                "Bubbles observed a change relative to the available personal baseline; inspect the underlying observations.",
+                f"Review {plain_metric(metric)}",
+                f"Your {plain_metric(metric)} moved compared with your usual. Open it to see the entries behind it.",
                 "intelligence",
                 "high",
             )
@@ -1473,8 +1474,8 @@ def intelligence_next_actions(
             if isinstance(delta, (int, float)) and abs(delta) > 0:
                 add(
                     f"review-{metric}",
-                    f"Review {str(metric).replace('_', ' ')}",
-                    "Bubbles observed a change relative to your available personal baseline; review the underlying observations before drawing conclusions.",
+                    f"Review {plain_metric(metric)}",
+                    f"Your {plain_metric(metric)} moved compared with your usual. Look at the entries behind it before drawing any conclusion.",
                     "intelligence",
                     "high" if abs(delta) >= 1 else "normal",
                 )
