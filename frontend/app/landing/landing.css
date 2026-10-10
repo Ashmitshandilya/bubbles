@@ -49,7 +49,7 @@
 .cw[data-tone="dark"],
 .cw [data-tone="dark"] {
   --fg: #f8eef4;
-  --fg-soft: rgb(248 238 244 / 0.72);
+  --fg-soft: rgb(248 238 244 / 0.9); /* lifted from .72 now that dark chapters sit on lighter skies (4.5 for secondary copy) */
   --line: rgb(248 238 244 / 0.16);
   --glass: rgb(255 255 255 / 0.06);
   --glass-line: rgb(255 255 255 / 0.12);
@@ -222,8 +222,12 @@
    CALM MODE LAYOUT (default; also reduced motion / no JS)
    ============================================================ */
 .cw-ch { position: relative; }
-.cw-ch[data-tone="dark"] { background: #170b19; }
-.cw-ch[data-tone="light"] { background: #f1e6ee; }
+/* Each chapter sits on its own sky (Landing.tsx writes --calm-sky): a plain sRGB gradient first, OKLab where supported. */
+.cw-ch { background: var(--calm-sky, #f1e6ee); }
+.cw-ch[data-tone="dark"] { background: var(--calm-sky, #170b19); }
+@supports (background: linear-gradient(in oklab, red, blue)) {
+  .cw-ch, .cw-ch[data-tone="dark"] { background: var(--calm-sky-ok, var(--calm-sky, #f1e6ee)); }
+}
 .cw-layer { position: relative; }
 .cw-back { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .cw-stage {
@@ -580,20 +584,45 @@
    STORY MODE
    ============================================================ */
 @media (prefers-reduced-motion: no-preference) {
-  .cw:not([data-story="static"]) .cw-ch { --p: 0; --in: 0; --out: 0; height: calc(var(--len) * 1vh); background: none; }
+  /* chapter length: --len vh, times --lenk (phones scroll through shorter chapters, MOBILE_LEN_FACTOR) */
+  .cw { --lenk: 1; }
+  @media (max-width: 819px) { .cw { --lenk: var(--lenk-m, 0.8); } }
+  .cw:not([data-story="static"]) .cw-ch { --p: 0; --in: 0; --out: 0; height: calc(var(--len) * var(--lenk, 1) * 1vh); background: none; }
   .cw:not([data-story="static"]) .cw-ch:first-of-type { --in: 1; }
 
   .cw:not([data-story="static"]) .cw-nav { position: fixed; }
-  .cw:not([data-story="static"]) .cw-bg { display: block; position: fixed; inset: 0; z-index: 0; background: var(--bg); }
+  /*
+   * The sky. The CSS gradient (colours written by the scroll director) is the whole sky in the static tier and
+   * the first paint; the shader canvas (.cw-sky) covers it when it runs. The chapter scrim (a soft wash behind
+   * copy, cycle only) and the vignette sit over both.
+   */
+  .cw:not([data-story="static"]) .cw-bg {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-color: var(--bg);
+    background-image: linear-gradient(var(--sky-top), var(--sky-mid) 50%, var(--sky-hor));
+  }
+  @supports (background: linear-gradient(in oklab, red, blue)) {
+    .cw:not([data-story="static"]) .cw-bg { background-image: linear-gradient(in oklab, var(--sky-top) 0%, var(--sky-mid) 50%, var(--sky-hor) 100%); }
+  }
+  .cw-sky { position: absolute; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; }
+  .cw-sky[hidden] { display: none; }
+  .cw:not([data-story="static"]) .cw-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(130% 110% at 36% 52%, var(--scrim, transparent) 0 62%, transparent 100%);
+  }
   .cw:not([data-story="static"]) .cw-bg::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgb(10 3 10 / 0.35));
-    opacity: 0;
-    transition: opacity 600ms ease;
+    z-index: 2;
+    background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgb(10 3 10 / calc(var(--vig, 0) * 3)));
   }
-  .cw:not([data-story="static"])[data-tone="dark"] .cw-bg::after { opacity: 1; }
 
   /* portals: dive into the body, bloom back out of Bubbles */
   .cw:not([data-story="static"]) .cw-portal { display: block; position: fixed; inset: 0; z-index: 1; pointer-events: none; }
@@ -601,13 +630,19 @@
     background: radial-gradient(circle at 63% 50%, #ff8cc2, #b49bff);
     clip-path: circle(calc(var(--dive, 0) * 150vmax + min(1, var(--dive, 0) * 60) * 14px) at 63% 50%);
   }
+  /* the dive fills with the body's sky and the bloom with the care chapter's, so neither pops when it lets go */
   .cw:not([data-story="static"]) .cw-portal--dive {
-    background: radial-gradient(circle at 63% 50%, #2b0e24, #170a14 60%);
+    background: var(--sky-body, #170a14);
     clip-path: circle(calc(var(--dive, 0) * 150vmax) at 63% 50%);
   }
   .cw:not([data-story="static"]) .cw-portal--bloom {
-    background: #eee5ee;
+    background: var(--sky-care, #eee5ee);
     clip-path: circle(calc(var(--bloom, 0) * 170vmax) at var(--bloom-x, 70%) var(--bloom-y, 35%));
+  }
+
+  @supports (background: linear-gradient(in oklab, red, blue)) {
+    .cw:not([data-story="static"]) .cw-portal--dive { background: var(--sky-body-ok, var(--sky-body, #170a14)); }
+    .cw:not([data-story="static"]) .cw-portal--bloom { background: var(--sky-care-ok, var(--sky-care, #eee5ee)); }
   }
 
   .cw:not([data-story="static"]) .cw-world { display: block; position: fixed; inset: 0; z-index: 3; pointer-events: none; }
@@ -853,6 +888,8 @@
   }
   .cw:not([data-story="static"]) .cw-token:nth-child(3n) { color: var(--accent); }
   .cw:not([data-story="static"]) .cw-token:nth-child(4n) { color: var(--cw-lilac); }
+  /* Numbers is clinical noon (a light sky): the pale lilac would vanish on it, so the chips use a deeper violet */
+  .cw:not([data-story="static"]) .cw-ch--noise .cw-token:nth-child(4n) { color: #6a46d0; }
   .cw:not([data-story="static"]) .cw-noise-copy {
     position: absolute;
     left: 50%;

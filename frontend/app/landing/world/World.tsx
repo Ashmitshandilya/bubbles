@@ -8,7 +8,7 @@ import { HOP_LIFT, RIGS, type Env, type Rig } from "./rig";
 import { ringTopFor } from "./geometry";
 import { Spine, type SpineHandle } from "./Spine";
 import { Studio } from "./Studio";
-import { CHAPTERS, CHAPTER_INDEX, easeInOut, story } from "../story/store";
+import { CHAPTER_INDEX, easeInOut, story } from "../story/store";
 
 /**
  * The director of the 3D scene. Every frame it evaluates the current and next
@@ -187,7 +187,7 @@ export function World() {
       hop.live = false;
     }
 
-    const lightTone = CHAPTERS[t < 0.5 ? i : j].tone === "light";
+    const lightTone = story.sky.tone === "light"; // the lead sky (includes the opening chapter's time of day)
     motes.current?.update(L(A.motes, B.motes), lightTone, dt);
     sim.init = true;
   });

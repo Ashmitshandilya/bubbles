@@ -294,6 +294,9 @@ function toOklab(rgb: Rgb): Lab {
   ];
 }
 
+/** A hex colour as OKLab [L, a, b]: what the sky shader mixes in. */
+export const hexToOklab = (hex: string): Lab => toOklab(hexToRgb(hex));
+
 /** OKLab to sRGB (0..255), clamped to gamut. */
 function fromOklab(lab: Lab): Rgb {
   const l = Math.pow(lab[0] + 0.3963377774 * lab[1] + 0.2158037573 * lab[2], 3);

@@ -9,17 +9,17 @@ import type { Tier } from "../perf/tier";
 export type Tone = "light" | "dark";
 
 export const CHAPTERS = [
-  { id: "top", key: "enter", label: "Bubbles", len: 140, tone: "light", bg: "#F1E6EE" },
-  { id: "body", key: "body", label: "Body", len: 200, tone: "dark", bg: "#170A14" },
-  { id: "noise", key: "noise", label: "Numbers", len: 140, tone: "dark", bg: "#120814" },
-  { id: "how", key: "track", label: "Track", len: 190, tone: "dark", bg: "#170B1A" },
-  { id: "cycle", key: "cycle", label: "Cycle", len: 300, tone: "dark", bg: "#240A1B" },
-  { id: "connect", key: "connect", label: "Connect", len: 160, tone: "dark", bg: "#110A18" },
-  { id: "memory", key: "remember", label: "Memory", len: 230, tone: "dark", bg: "#120C1C" },
-  { id: "companion", key: "companion", label: "Companion", len: 230, tone: "dark", bg: "#160C1D" },
-  { id: "trust", key: "care", label: "Care", len: 160, tone: "light", bg: "#EEE5EE" },
-  { id: "start", key: "bubbles", label: "Start", len: 140, tone: "light", bg: "#F4E3EE" },
-] as const satisfies ReadonlyArray<{ id: string; key: string; label: string; len: number; tone: Tone; bg: string }>;
+  { id: "top", key: "enter", label: "Bubbles", len: 140, tone: "light" },
+  { id: "body", key: "body", label: "Body", len: 200, tone: "dark" },
+  { id: "noise", key: "noise", label: "Numbers", len: 140, tone: "light" },
+  { id: "how", key: "track", label: "Track", len: 190, tone: "light" },
+  { id: "cycle", key: "cycle", label: "Cycle", len: 300, tone: "dark" },
+  { id: "connect", key: "connect", label: "Connect", len: 160, tone: "dark" },
+  { id: "memory", key: "remember", label: "Memory", len: 230, tone: "dark" },
+  { id: "companion", key: "companion", label: "Companion", len: 230, tone: "dark" },
+  { id: "trust", key: "care", label: "Care", len: 160, tone: "light" },
+  { id: "start", key: "bubbles", label: "Start", len: 140, tone: "light" },
+] as const satisfies ReadonlyArray<{ id: string; key: string; label: string; len: number; tone: Tone }>;
 
 /** Phones scroll through shorter chapters: 1890vh on desktop becomes about 1510vh. */
 export const MOBILE_LEN_FACTOR = 0.8;
@@ -82,9 +82,26 @@ export const story = {
   tier: "lite" as Tier,
   /** the visitor pressed "Pause motion": the canvas and CSS motion are frozen */
   paused: false,
+  /**
+   * The sky on screen, written by the scroll director when it changes (`v` counts changes) and read by
+   * the sky shader. Colours are hex; `dark` is the lead chapter's tone eased 0 (light) to 1 (dark).
+   */
+  sky: { v: 0, top: "#E6D3FF", mid: "#FFC9E3", horizon: "#FFD9B5", sun: "#FFF0D2", tone: "light" as Tone, dark: 0 },
   boops: 0,
   listeners: new Set<Listener>(),
 };
+
+/** Back to the opening (dawn) sky. */
+export function resetSky() {
+  const s = story.sky;
+  s.top = "#E6D3FF";
+  s.mid = "#FFC9E3";
+  s.horizon = "#FFD9B5";
+  s.sun = "#FFF0D2";
+  s.tone = "light";
+  s.dark = 0;
+  s.v += 1;
+}
 
 /**
  * Put the shared state back to a fresh visit. `story` is a module singleton, so it
@@ -106,6 +123,7 @@ export function resetStory() {
   story.boops = 0;
   story.tier = "lite";
   story.paused = false;
+  resetSky();
   // (worldReady and the anchor belong to the 3D world, which resets them when it unmounts.)
   for (const c of story.chapters) {
     c.p = 0;

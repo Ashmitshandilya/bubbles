@@ -5,7 +5,10 @@ import { AuthCta } from "./AuthCta";
 import { BubblesLogo } from "./BubblesMark";
 import { BubblesFigure } from "./BubblesFigure";
 import { ScrollDirector } from "./story/ScrollDirector";
-import { CHAPTERS } from "./story/store";
+import { COLOR_SCRIPT } from "./atmosphere/palette";
+import { SkyMount } from "./atmosphere/SkyMount";
+import { calmBackground, skyGradient, skyVars } from "./atmosphere/sky";
+import { CHAPTERS, MOBILE_LEN_FACTOR } from "./story/store";
 import { SpeechBubble } from "./story/SpeechBubble";
 import { BubblesHost } from "./story/BubblesHost";
 import { TravelRoutes } from "./story/TravelRoutes";
@@ -34,6 +37,21 @@ const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-cw-mono", displa
 
 type Vars = CSSProperties & Record<`--${string}`, string | number>;
 
+/*
+ * The server-rendered sky: the opening (dawn) colours, the mobile chapter-length factor, and the
+ * skies the two portals open onto (the body for the dive, the care chapter for the bloom), so a
+ * portal's fill matches the sky it reveals.
+ */
+const CHAPTER_SKY = (key: (typeof CHAPTERS)[number]["key"]) => COLOR_SCRIPT[CHAPTERS.findIndex((c) => c.key === key)].sky;
+const ROOT_VARS = {
+  ...skyVars(COLOR_SCRIPT[0]),
+  "--lenk-m": MOBILE_LEN_FACTOR,
+  "--sky-body": skyGradient(CHAPTER_SKY("body"), false),
+  "--sky-body-ok": skyGradient(CHAPTER_SKY("body"), true),
+  "--sky-care": skyGradient(CHAPTER_SKY("care"), false),
+  "--sky-care-ok": skyGradient(CHAPTER_SKY("care"), true),
+} as Vars;
+
 const chapter = (key: (typeof CHAPTERS)[number]["key"]) => {
   const index = CHAPTERS.findIndex((c) => c.key === key);
   const c = CHAPTERS[index];
@@ -42,7 +60,12 @@ const chapter = (key: (typeof CHAPTERS)[number]["key"]) => {
     "data-chapter": c.key,
     "data-tone": c.tone,
     className: `cw-ch cw-ch--${c.key}`,
-    style: { "--len": c.len } as Vars,
+    // --calm-sky: this chapter's sky as its background on the calm page (OKLab, with a plain sRGB fallback).
+    style: {
+      "--len": c.len,
+      "--calm-sky": calmBackground(COLOR_SCRIPT[index], false),
+      "--calm-sky-ok": calmBackground(COLOR_SCRIPT[index], true),
+    } as Vars,
     "aria-labelledby": `cw-h-${c.key}`,
     ...(index === 0 ? { "data-on": "" } : {}),
   };
@@ -104,7 +127,7 @@ const STATEMENTS = [
 
 export function Landing() {
   return (
-    <div className={`cw ${display.variable} ${mono.variable}`} data-tone="light" data-active="enter">
+    <div className={`cw ${display.variable} ${mono.variable}`} data-tone="light" data-active="enter" style={ROOT_VARS}>
       <a href="#main" className="cw-skip">Skip to content</a>
       <noscript
         dangerouslySetInnerHTML={{
@@ -113,7 +136,9 @@ export function Landing() {
       />
       <ScrollDirector />
 
-      <div className="cw-bg" aria-hidden="true" />
+      <div className="cw-bg" aria-hidden="true">
+        <SkyMount />
+      </div>
       <div className="cw-portal cw-portal--rim" aria-hidden="true" />
       <div className="cw-portal cw-portal--dive" aria-hidden="true" />
       <div className="cw-portal cw-portal--bloom" aria-hidden="true" />
