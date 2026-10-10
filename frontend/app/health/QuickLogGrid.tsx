@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useApi } from "../../components/Providers";
 import { BTN_PRIMARY, BTN_SECONDARY, CARD, Icon, Skeleton, TONE, type Tone } from "../../components/hub/HubKit";
 import { readEntries } from "../lib/api-adapters";
-import { PULSE_WINDOW_DAYS, buildPulse, checkIns, lastLoggedText, rollupToday, streakText, weekText, type Pulse } from "../lib/track-pulse";
+import { PULSE_WINDOW_DAYS, buildPulse, checkIns, lastLoggedText, recentText, rollupToday, streakText, weekText, type Pulse } from "../lib/track-pulse";
 
 export interface QuickItem {
   id: string;
@@ -89,7 +89,8 @@ export function QuickLog({ items }: { items: QuickItem[] }) {
 /** Calm check-in days: filled dot = something was logged, dashed = a gap. The sentence carries the meaning, the dots are decoration. */
 function CheckInRow({ pulses }: { pulses: Array<Pulse | null> }) {
   const c = checkIns(pulses);
-  const text = streakText(c);
+  const partial = c.readable < pulses.length;
+  const text = streakText(c, partial);
   if (!text) return null;
   return (
     <div data-private className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -102,7 +103,7 @@ function CheckInRow({ pulses }: { pulses: Array<Pulse | null> }) {
           />
         ))}
       </span>
-      <span className="sr-only">{`Something was logged on ${c.recentDays} of the last 14 days.`}</span>
+      <span className="sr-only">{recentText(c, partial)}</span>
     </div>
   );
 }

@@ -103,10 +103,16 @@ export function checkIns(pulses: Array<Pulse | null>): CheckIns {
   return { streak, recent, recentDays: recent.filter(Boolean).length, readable: readable.length };
 }
 
-/** One calm sentence about the streak; never a number of missed days, never blame. */
-export function streakText(c: CheckIns): string {
+/** One calm sentence about the streak; never a number of missed days, never blame. `partial` = some tracker could not be read. */
+export function streakText(c: CheckIns, partial = false): string {
   if (c.readable === 0) return "";
-  if (c.streak >= 2) return `${c.streak} days in a row with something logged.`;
+  if (c.streak >= 2) return `${partial ? "At least " : ""}${c.streak} days in a row with something logged.`;
   if (c.streak === 1) return "You logged something recently. One more day makes a run.";
   return "Every day is a fresh start. One entry is enough.";
+}
+
+/** Screen-reader sentence for the dots, gentle when nothing was logged. */
+export function recentText(c: CheckIns, partial = false): string {
+  if (c.recentDays === 0) return partial ? "Nothing found in the last 14 days from the trackers that could be read." : "Nothing logged in the last 14 days yet.";
+  return `${partial ? "At least " : ""}${c.recentDays} of the last 14 days had something logged.`;
 }

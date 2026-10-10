@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPulse, lastLoggedText, rollupToday, weekText, checkIns, streakText } from "./track-pulse";
+import { buildPulse, lastLoggedText, rollupToday, weekText, checkIns, recentText, streakText } from "./track-pulse";
 
 const NOW = new Date(2026, 9, 10, 15, 0); // 10 Oct 2026, local
 
@@ -90,5 +90,22 @@ describe("check-in days across trackers", () => {
     const c = checkIns([buildPulse([{ date: new Date(2026, 9, 12).toISOString() }, day(45)], now)]);
     expect(c.streak).toBe(0);
     expect(c.recentDays).toBe(0);
+  });
+
+  it("softens the wording when a tracker could not be read, and keeps the zero case friendly", () => {
+    const some = checkIns([buildPulse([day(0), day(1), day(2)], now), null]);
+    expect(streakText(some, true)).toBe("At least 3 days in a row with something logged.");
+    expect(recentText(some, true)).toBe("At least 3 of the last 14 days had something logged.");
+    expect(recentText(checkIns([buildPulse([], now)]))).toBe("Nothing logged in the last 14 days yet.");
+    expect(recentText(checkIns([buildPulse([], now), null]), true)).toMatch(/could be read/);
+  });
+
+  it("counts the oldest day inside the 30 day window and skips the one just outside it", () => {
+    const edge = checkIns([buildPulse([day(29)], now)]);
+    expect(edge.streak).toBe(0); // not connected to today or yesterday, so it is not a run
+    const inside = buildPulse([day(29)], now);
+    const outside = buildPulse([day(30)], now);
+    expect(inside.active[0]).toBe(true);
+    expect(outside.active.some(Boolean)).toBe(false);
   });
 });
