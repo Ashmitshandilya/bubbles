@@ -46,7 +46,6 @@ function Hub() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeading kicker="Fitness" title="Your day, gently" text="Everything here is an estimate that moves with you. Close is good enough." />
-      <ClinicalNote review={s.review} />
 
       {t === null && (
         <section className={`${CARD} flex flex-wrap items-center gap-5 bg-tint-pink p-5 sm:p-6`} aria-labelledby="onboard">
@@ -94,25 +93,28 @@ function Hub() {
         </Section>
       )}
 
-      <ul className="m-0 grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2" aria-label="Fitness tools">
-        {cards.map((c) => {
-          const st = cardState(c.kind, state);
-          return (
-            <li key={c.kind}>
-              <Link href={c.href} className={`${CARD} bubbles-press flex h-full flex-col gap-3 p-5 text-ink no-underline hover:border-line-strong`}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className={`flex h-12 w-12 items-center justify-center rounded-2xl ${TONE[c.tone].bubble}`}>
-                    <Icon id={c.icon} size={24} />
+      <section aria-labelledby="fit-tools">
+        <h2 id="fit-tools" className="m-0 mb-2 text-label font-extrabold uppercase tracking-wide text-subtle">Plan and log</h2>
+        <ul className={`${CARD} m-0 list-none divide-y divide-line overflow-hidden p-0`} aria-label="Fitness tools">
+          {cards.map((c) => {
+            const st = cardState(c.kind, state);
+            return (
+              <li key={c.kind}>
+                <Link href={c.href} className="bubbles-press flex items-center gap-4 px-4 py-3.5 text-ink no-underline hover:bg-tint-grape/40 sm:px-5">
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${TONE[c.tone].bubble}`}>
+                    <Icon id={c.icon} size={20} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-display text-body font-bold">{c.title}</span>
+                    <span className="block truncate text-body-sm text-muted">{c.text}</span>
                   </span>
                   <Pill tone={st === "Active" ? "mint" : st === "Plan ready" ? "sky" : "plain"}>{st}</Pill>
-                </div>
-                <h2 className="m-0 font-display text-h3">{c.title}</h2>
-                <p className="m-0 text-body-sm text-muted">{c.text}</p>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
       <Section title="Progress">
         <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
@@ -125,6 +127,7 @@ function Hub() {
           <Link href="/fitness/progress" className="inline-flex min-h-[44px] items-center text-body-sm font-extrabold text-bubbles-grape-deep">See weight trend and measurements</Link>
         </p>
       </Section>
+      <ClinicalNote review={s.review} />
       <Disclaimer />
     </div>
   );

@@ -75,10 +75,10 @@ export function SubNav() {
   );
 }
 
-export function FitnessPage({ title, children, subnav = true }: { title: string; children: ReactNode; subnav?: boolean }) {
+export function FitnessPage({ title, children }: { title: string; children: ReactNode; subnav?: boolean }) {
   return (
     <HubPage title={title}>
-      {subnav && <SubNav />}
+      {/* Section tabs now come from the shared SectionTabs bar in HubPage; the old in-page bar was a duplicate. */}
       {children}
     </HubPage>
   );
