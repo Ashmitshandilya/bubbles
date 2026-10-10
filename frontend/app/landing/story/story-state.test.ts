@@ -1,7 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { bubbleFit } from "./SpeechBubble";
 import { FEEL, feelAt, feelBand } from "./feel";
-import { NEVER, resetStory, rotateFocus, story, trackSpeed } from "./store";
+import { CHAPTERS, MOBILE_LEN_FACTOR, NEVER, chapterLen, resetStory, rotateFocus, story, totalLen, trackSpeed } from "./store";
+
+describe("chapter lengths", () => {
+  it("keeps every key and id, in order, with the retimed lengths (plan 2.7)", () => {
+    expect(CHAPTERS.map((c) => c.key)).toEqual([
+      "enter", "body", "noise", "track", "cycle", "connect", "remember", "companion", "care", "bubbles",
+    ]);
+    expect(CHAPTERS.map((c) => c.id)).toEqual([
+      "top", "body", "noise", "how", "cycle", "connect", "memory", "companion", "trust", "start",
+    ]);
+    expect(CHAPTERS.map((c) => c.len)).toEqual([140, 200, 140, 190, 300, 160, 230, 230, 160, 140]);
+  });
+
+  it("totals 1890vh on desktop and about 1510vh on phones (factor 0.8)", () => {
+    expect(totalLen(false)).toBe(1890);
+    expect(MOBILE_LEN_FACTOR).toBe(0.8);
+    expect(totalLen(true)).toBeCloseTo(1512, 6);
+    expect(chapterLen(300, true)).toBeCloseTo(240, 6);
+    expect(chapterLen(300, false)).toBe(300);
+  });
+});
 
 describe("resetStory", () => {
   it("returns the shared story to a fresh visit (nothing left over from the last one)", () => {
@@ -16,6 +36,8 @@ describe("resetStory", () => {
     story.hop.head = 0.5;
     story.excite = 1;
     story.boops = 7;
+    story.tier = "full";
+    story.paused = true;
     story.chapters[2] = { p: 0.9, enter: 1, exit: 0.4 };
 
     resetStory();
@@ -31,6 +53,8 @@ describe("resetStory", () => {
     expect(story.hop.head).toBe(0);
     expect(story.excite).toBe(0);
     expect(story.boops).toBe(0);
+    expect(story.tier).toBe("lite");
+    expect(story.paused).toBe(false);
     expect(story.chapters.every((c) => c.p === 0 && c.enter === 0 && c.exit === 0)).toBe(true);
   });
 

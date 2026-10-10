@@ -4,20 +4,29 @@
  * outside React on purpose: scroll-rate values must never trigger re-renders.
  */
 
+import type { Tier } from "../perf/tier";
+
 export type Tone = "light" | "dark";
 
 export const CHAPTERS = [
-  { id: "top", key: "enter", label: "Bubbles", len: 170, tone: "light", bg: "#F1E6EE" },
-  { id: "body", key: "body", label: "Body", len: 280, tone: "dark", bg: "#170A14" },
-  { id: "noise", key: "noise", label: "Numbers", len: 210, tone: "dark", bg: "#120814" },
-  { id: "how", key: "track", label: "Track", len: 240, tone: "dark", bg: "#170B1A" },
-  { id: "cycle", key: "cycle", label: "Cycle", len: 400, tone: "dark", bg: "#240A1B" },
-  { id: "connect", key: "connect", label: "Connect", len: 260, tone: "dark", bg: "#110A18" },
-  { id: "memory", key: "remember", label: "Memory", len: 330, tone: "dark", bg: "#120C1C" },
-  { id: "companion", key: "companion", label: "Companion", len: 300, tone: "dark", bg: "#160C1D" },
-  { id: "trust", key: "care", label: "Care", len: 250, tone: "light", bg: "#EEE5EE" },
-  { id: "start", key: "bubbles", label: "Start", len: 180, tone: "light", bg: "#F4E3EE" },
+  { id: "top", key: "enter", label: "Bubbles", len: 140, tone: "light", bg: "#F1E6EE" },
+  { id: "body", key: "body", label: "Body", len: 200, tone: "dark", bg: "#170A14" },
+  { id: "noise", key: "noise", label: "Numbers", len: 140, tone: "dark", bg: "#120814" },
+  { id: "how", key: "track", label: "Track", len: 190, tone: "dark", bg: "#170B1A" },
+  { id: "cycle", key: "cycle", label: "Cycle", len: 300, tone: "dark", bg: "#240A1B" },
+  { id: "connect", key: "connect", label: "Connect", len: 160, tone: "dark", bg: "#110A18" },
+  { id: "memory", key: "remember", label: "Memory", len: 230, tone: "dark", bg: "#120C1C" },
+  { id: "companion", key: "companion", label: "Companion", len: 230, tone: "dark", bg: "#160C1D" },
+  { id: "trust", key: "care", label: "Care", len: 160, tone: "light", bg: "#EEE5EE" },
+  { id: "start", key: "bubbles", label: "Start", len: 140, tone: "light", bg: "#F4E3EE" },
 ] as const satisfies ReadonlyArray<{ id: string; key: string; label: string; len: number; tone: Tone; bg: string }>;
+
+/** Phones scroll through shorter chapters: 1890vh on desktop becomes about 1510vh. */
+export const MOBILE_LEN_FACTOR = 0.8;
+/** Scroll length of one chapter in vh, for the given viewport class. */
+export const chapterLen = (len: number, mobile: boolean) => (mobile ? len * MOBILE_LEN_FACTOR : len);
+/** Total story length in vh. */
+export const totalLen = (mobile: boolean) => CHAPTERS.reduce((sum, c) => sum + chapterLen(c.len, mobile), 0);
 
 export type ChapterKey = (typeof CHAPTERS)[number]["key"];
 export const CHAPTER_INDEX = Object.fromEntries(CHAPTERS.map((c, i) => [c.key, i])) as Record<ChapterKey, number>;
@@ -69,6 +78,10 @@ export const story = {
   /** HTML labels the world positions over 3D anchors */
   labels: new Map<string, HTMLElement>(),
   worldReady: false,
+  /** render quality chosen by `perf/tier.ts`; lite until the start-up measurement says otherwise */
+  tier: "lite" as Tier,
+  /** the visitor pressed "Pause motion": the canvas and CSS motion are frozen */
+  paused: false,
   boops: 0,
   listeners: new Set<Listener>(),
 };
@@ -91,6 +104,8 @@ export function resetStory() {
   story.hop.head = 0;
   story.excite = 0;
   story.boops = 0;
+  story.tier = "lite";
+  story.paused = false;
   // (worldReady and the anchor belong to the 3D world, which resets them when it unmounts.)
   for (const c of story.chapters) {
     c.p = 0;
