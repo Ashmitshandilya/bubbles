@@ -18,3 +18,48 @@
 {"id": "R18", "query": "vitamin D deficiency", "expect_title_regex": "vitamin d"}
 {"id": "R19", "query": "thyroid test TSH", "expect_title_regex": "thyroid|tsh"}
 {"id": "R20", "query": "contraception options", "expect_title_regex": "contracepti|pill"}
+{"id": "R21", "query": "sugar ki bimari ke lakshan", "expect_title_regex": "diabetes"}
+{"id": "R22", "query": "BP high rehta hai kya karun", "expect_title_regex": "blood pressure|hypertension"}
+{"id": "R23", "query": "pet me gas aur acidity", "expect_title_regex": "indigestion|heartburn|reflux|gas|bloating"}
+{"id": "R24", "query": "loose motion since morning", "expect_title_regex": "diarrh"}
+{"id": "R25", "query": "kabz ki problem", "expect_title_regex": "constipation"}
+{"id": "R26", "query": "bukhar hai 3 din se", "expect_title_regex": "fever|temperature"}
+{"id": "R27", "query": "sar dard bahut hai", "expect_title_regex": "headache"}
+{"id": "R28", "query": "pet dard", "expect_title_regex": "stomach|abdominal|tummy"}
+{"id": "R29", "query": "ulti aa rahi hai", "expect_title_regex": "vomit|nausea|sick"}
+{"id": "R30", "query": "khansi aur zukam", "expect_title_regex": "cough|cold"}
+{"id": "R31", "query": "chakkar aana", "expect_title_regex": "dizz"}
+{"id": "R32", "query": "ghabrahat hoti hai", "expect_title_regex": "anxiety|panic"}
+{"id": "R33", "query": "kamzori aur thakan", "expect_title_regex": "tired|fatigue"}
+{"id": "R34", "query": "peeliya ho gaya", "expect_title_regex": "jaundice"}
+{"id": "R35", "query": "khoon ki kami", "expect_title_regex": "anaemia|anemia|iron"}
+{"id": "R36", "query": "thyroid ki problem", "expect_title_regex": "thyroid"}
+{"id": "R37", "query": "piles ka ilaaj", "expect_title_regex": "piles|haemorrhoid|hemorrhoid"}
+{"id": "R38", "query": "safed paani ki problem", "expect_title_regex": "discharge|thrush"}
+{"id": "R39", "query": "periods late ho gaye", "expect_title_regex": "period|menstru"}
+{"id": "R40", "query": "neend nahi aati", "expect_title_regex": "insomnia|sleep"}
+{"id": "R41", "query": "dhadkan tez chalti hai", "expect_title_regex": "palpitation|heart"}
+{"id": "R42", "query": "saans phoolna", "expect_title_regex": "breath"}
+{"id": "R43", "query": "jodon ka dard", "expect_title_regex": "joint|arthritis"}
+{"id": "R44", "query": "pathri kidney stone", "expect_title_regex": "kidney stone"}
+{"id": "R45", "query": "khujli aur daad", "expect_title_regex": "itch|ringworm|fungal"}
+{"id": "R46", "query": "does lack of sleep affect my mood", "expect_title_regex": "bidirectionally linked|Insomnia"}
+{"id": "R47", "query": "does exercise help with low mood and anxiety", "expect_title_regex": "Exercise for depression|Benefits of exercise|Low mood"}
+{"id": "R48", "query": "does exercise help me sleep better", "expect_title_regex": "Regular exercise improves sleep|Benefits of exercise"}
+{"id": "R49", "query": "why do I get headaches when I do not drink enough water", "expect_title_regex": "Dehydration"}
+{"id": "R50", "query": "does caffeine or alcohol affect my sleep", "expect_title_regex": "caffeine|Alcohol may hasten|sleep habits"}
+{"id": "R51", "query": "can stress delay my period", "expect_title_regex": "Acute stress can delay"}
+{"id": "R52", "query": "PMS mood swings and poor sleep before my period", "expect_title_regex": "luteal|Mood changes before|PMS"}
+{"id": "R53", "query": "does poor sleep affect my weight or blood pressure", "expect_title_regex": "Adults need 7"}
+{"id": "R54", "query": "can anxiety or lack of sleep cause a fast heartbeat", "expect_title_regex": "Heart palpitations"}
+{"id": "R55", "query": "why am I always tired and pale", "expect_title_regex": "Iron deficiency anaemia|Fatigue: definition|Heavy periods"}
+{"id": "R56", "query": "heavy periods and feeling tired all the time", "expect_title_regex": "Heavy periods|Iron deficiency|Fatigue"}
+{"id": "R57", "query": "does stress make me gain weight", "expect_title_regex": "Chronic stress can increase appetite"}
+{"id": "R58", "query": "does being overweight cause sleep apnoea", "expect_title_regex": "Sleep apnoea"}
+{"id": "R59", "query": "pani kam peene se sar dard hota hai kya", "expect_title_regex": "Dehydration|headache"}
+{"id": "R60", "query": "sleeping in late gives me a headache", "expect_title_regex": "10 headache triggers"}
+{"id": "R61", "query": "does screen time at night affect my sleep", "expect_title_regex": "Evening screen use"}
+{"id": "R62", "query": "why is my sleep worse before my period", "expect_title_regex": "luteal|Women's sleep"}
+{"id": "R63", "query": "does menopause affect sleep and mood", "expect_title_regex": "[Mm]enopause|Women's sleep"}
+{"id": "R64", "query": "is low energy linked to thyroid or anaemia", "expect_title_regex": "Fatigue: definition|Iron deficiency|Underactive thyroid"}
+{"id": "R65", "query": "does alcohol before bed ruin sleep", "expect_title_regex": "Alcohol may hasten"}

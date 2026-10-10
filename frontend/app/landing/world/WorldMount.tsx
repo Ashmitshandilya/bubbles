@@ -40,7 +40,13 @@ export function WorldMount() {
     } catch {
       webgl = false;
     }
-    if (reduced || !webgl) {
+    // Low-end phones, Save-Data and few cores: the illustrated Bubbles is enough.
+    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
+    const weak =
+      nav.connection?.saveData === true ||
+      (typeof nav.deviceMemory === "number" && nav.deviceMemory < 4) ||
+      (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4);
+    if (reduced || !webgl || weak) {
       root.dataset.world = "off";
       return;
     }

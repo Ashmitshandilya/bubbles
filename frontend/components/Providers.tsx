@@ -196,6 +196,10 @@ export type FetchBubblesOptions = { timeoutMs?: number; retries?: number };
 
 /** /health is a cheap probe: one attempt, a short timeout. It must not hold the offline banner up for 30 seconds. */
 const HEALTH_LIMITS: FetchBubblesOptions = { timeoutMs: 8000, retries: 0 };
+/** The very first /health after load may hit a sleeping free-plan host (up to about a minute to start). */
+const FIRST_HEALTH_LIMITS: FetchBubblesOptions = { timeoutMs: 65000, retries: 0 };
+/** Show "waking up" instead of nothing once the first probe has been quiet this long. */
+const WAKING_AFTER_MS = 5000;
 
 type ApiContextType = {
   apiStatus: "checking" | "online" | "offline";
@@ -208,6 +212,8 @@ type ApiContextType = {
   databaseStatus: DatabaseStatus;
   /** Epoch ms of the next automatic reconnect attempt while offline; null otherwise (or while the tab is hidden). */
   nextRetryAt: number | null;
+  /** The first /health is slow (the host is starting up); not an error. */
+  waking: boolean;
   /** A reconnect probe is in flight. */
   retrying: boolean;
   /** Counts offline-to-online transitions; data hooks reload failed queries when it changes. */
@@ -223,6 +229,9 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const [nextRetryAt, setNextRetryAt] = useState<number | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [reconnects, setReconnects] = useState(0);
+  const [waking, setWaking] = useState(false);
+  const firstProbeDone = useRef(false);
+  const wasWaking = useRef(false);
   const { session } = useAuth();
 
   const fetchBubbles = useCallback(async (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) => {
@@ -284,7 +293,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     // A browser reports CORS refusal and a stopped server alike, so ask the server whether it is actually up.
     const corsOrigin = !timedOut && (await answersDespiteCors()) ? window.location.origin : undefined;
     const message = classifyFailure({ timedOut, networkError: !timedOut, corsOrigin }).message;
-    if (!(timedOut && slowCall)) {
+    // Until the first /health has answered, a slow or failed call says nothing yet: the probe decides offline.
+    if (!(timedOut && slowCall) && firstProbeDone.current) {
       setApiStatus("offline");
       setConnectionError(message);
     }
@@ -293,14 +303,28 @@ export function ApiProvider({ children }: { children: ReactNode }) {
 
   /** Any HTTP answer means the server is up (even a 5xx); only a rejected request means offline. */
   const probe = useCallback(async (): Promise<boolean> => {
+    const first = !firstProbeDone.current;
+    const wakeTimer = first
+      ? window.setTimeout(() => {
+          wasWaking.current = true;
+          setWaking(true);
+        }, WAKING_AFTER_MS)
+      : undefined;
     try {
-      const response = await fetchBubbles("/health", {}, HEALTH_LIMITS);
+      const response = await fetchBubbles("/health", {}, first ? FIRST_HEALTH_LIMITS : HEALTH_LIMITS);
       setHealth(parseHealth(await response.json().catch(() => null)));
+      // Calls that ran while the host slept failed quietly; tell the data hooks to load again.
+      if (wasWaking.current) setReconnects((n) => n + 1);
       return true;
     } catch (error) {
       setApiStatus("offline");
       setConnectionError(classifyFailure(failureFromError(error)).message);
       return false;
+    } finally {
+      window.clearTimeout(wakeTimer);
+      firstProbeDone.current = true;
+      wasWaking.current = false;
+      setWaking(false);
     }
   }, [fetchBubbles]);
 
@@ -349,7 +373,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     <ApiContext.Provider
       value={{
         apiStatus, connectionError, fetchBubbles, checkApiHealth, health, databaseStatus: databaseStatusOf(health),
-        nextRetryAt, retrying, reconnects,
+        nextRetryAt, retrying, reconnects, waking,
       }}
     >
       {children}

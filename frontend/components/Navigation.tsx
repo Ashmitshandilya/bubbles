@@ -106,7 +106,7 @@ const NAV_ITEMS: readonly NavItem[] = [
 const NAV_GROUPS: readonly { label: string; items: readonly string[] }[] = [
   { label: "Bubbles", items: ["dashboard", "companion", "insights", "health"] },
   { label: "Fitness", items: ["fitness", "fitness-diet", "fitness-workouts", "fitness-calories", "fitness-transform", "fitness-progress", "nutrition", "weight", "activity"] },
-  { label: "Cycle", items: ["cycle"] },
+  { label: "Cycle", items: ["cycle", "partner"] },
   { label: "Track", items: ["sleep", "hydration", "mood", "symptoms", "vitals"] },
   { label: "Care", items: ["care", "medications", "conditions", "allergies", "labs", "reports", "visits"] },
   { label: "You", items: ["profile", "settings"] },
@@ -135,7 +135,7 @@ export function Sidebar({ apiStatus }: { apiStatus: "checking" | "online" | "off
   const pathname = usePathname() ?? "";
 
   return (
-    <aside className="hidden lg:flex w-[248px] shrink-0 border-r border-soft bg-surface min-h-screen flex-col sticky top-0 h-dvh" aria-label="Bubbles navigation">
+    <aside className="hidden lg:flex w-[248px] shrink-0 border-r border-soft bg-surface min-h-dvh flex-col sticky top-0 h-dvh" aria-label="Bubbles navigation">
       <Link href="/dashboard" className="flex items-center gap-3 px-5 pt-5 pb-4 no-underline text-default">
         <BubblesMascot size={40} animated={false} />
         <span className="font-display text-[1.625rem] font-bold tracking-tight">bubbles</span>
@@ -293,7 +293,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
         <Link
           href={item.href}
           aria-current={active ? "page" : undefined}
-          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.6875rem] font-extrabold no-underline ${
+          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.8125rem] font-extrabold no-underline ${
             active ? "text-bubbles-pink-ink" : "text-muted"
           }`}
         >
@@ -330,7 +330,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
               aria-haspopup="dialog"
               aria-expanded={moreOpen}
               onClick={() => setMoreOpen(true)}
-              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.6875rem] font-extrabold ${
+              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.8125rem] font-extrabold ${
                 !onTab ? "text-bubbles-pink-ink" : "text-muted"
               }`}
             >
@@ -462,9 +462,9 @@ function OfflineBanner({ title, message, onRetry }: { title: string; message: st
   );
 }
 
-function NoticeBanner({ kind, title, message }: { kind: string; title: string; message: string }) {
+function NoticeBanner({ kind, title, message, plain = false }: { kind: string; title: string; message: string; plain?: boolean }) {
   const pathname = usePathname() ?? "";
-  const [dismissed, setDismissed] = useState(() => readDismissed(kind));
+  const [dismissed, setDismissed] = useState(() => !plain && readDismissed(kind));
   if (dismissed) return null;
 
   return (
@@ -473,7 +473,7 @@ function NoticeBanner({ kind, title, message }: { kind: string; title: string; m
         <strong className="block text-body font-extrabold text-bubbles-sky-deep">{title}</strong>
         <span className="block text-body-sm text-muted">{message}</span>
       </div>
-      <div className="flex items-center gap-2">
+      {!plain && <div className="flex items-center gap-2">
         {!pathname.startsWith("/settings") && (
           <Link href="/settings" className={`${BANNER_BUTTON} border-2 border-ink bg-surface text-ink no-underline`}>
             Open Settings
@@ -490,7 +490,7 @@ function NoticeBanner({ kind, title, message }: { kind: string; title: string; m
           Dismiss
           <span className="sr-only"> this notice</span>
         </button>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -506,8 +506,10 @@ export function ApiAlert({ connectionError, onRetry }: { connectionError?: strin
     apiStatus: api.apiStatus,
     connectionError: connectionError ?? api.connectionError,
     health: api.health,
+    waking: api.waking,
   });
   if (!banner) return null;
+  if (banner.kind === "waking") return <NoticeBanner key="waking" kind="waking" title={banner.title} message={banner.message} plain />;
   if (banner.kind === "offline") {
     return <OfflineBanner title={banner.title} message={banner.message} onRetry={onRetry ?? api.checkApiHealth} />;
   }

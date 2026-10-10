@@ -109,3 +109,20 @@ export function WholeHealthCards() {
     </>
   );
 }
+
+/** A quiet pointer to Partner sharing. Never an error card: if the API is slow or down, it shows the plain link. */
+export function PartnerCard() {
+  const [q] = useBubblesQuery<{ shares: unknown[] }>("/partner-sharing/shared-with-me");
+  const n = q.status === "ready" && Array.isArray(q.data.shares) ? q.data.shares.length : 0;
+  return (
+    <p className="m-0 px-1 text-body-sm text-muted">
+      {n > 0 ? (
+        <Link href="/partner" className="font-extrabold text-bubbles-pink-ink underline">
+          {n === 1 ? "1 person shares" : `${n} people share`} with you
+        </Link>
+      ) : (
+        <Link href="/partner" className="font-bold text-muted underline">Share with someone you trust</Link>
+      )}
+    </p>
+  );
+}

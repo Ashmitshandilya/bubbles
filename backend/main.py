@@ -4,7 +4,7 @@ import env_compat  # noqa: F401  (loads .env and maps legacy COCO_* names to BUB
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +35,7 @@ from wellness_api import build_router as build_wellness_router
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
+import association_loader
 from context_engine import build_user_context, format_user_context
 from safety_engine import assess_safety, safety_instruction
 from chat_pipeline import (
@@ -160,12 +161,14 @@ async def bubbles_security_headers(request, call_next):
         response = blocked if blocked is not None else await call_next(request)
     except Exception as error:  # noqa: BLE001
         from logging_util import logger
+        request_id = uuid4().hex[:8]       # lets a user-reported "something went wrong" be tied to one log line (no health text is logged)
         logger.error(component="API", operation="unhandled_exception", error=error,
-                     context={"path": request.url.path, "method": request.method, "error_class": type(error).__name__}, fallback_action="returning_json_500")
+                     context={"path": request.url.path, "method": request.method, "error_class": type(error).__name__, "request_id": request_id}, fallback_action="returning_json_500")
         if is_permission_denied(error):  # a permission error wrapped in some other exception type
             response = database_permission_response(error)
         else:
-            response = JSONResponse(status_code=500, content={"detail": "Something went wrong on Bubbles' side. Please try again.", "code": "server_error"})
+            response = JSONResponse(status_code=500, content={"detail": "Something went wrong on Bubbles' side. Please try again.", "code": "server_error", "request_id": request_id},
+                                    headers={"X-Request-Id": request_id})
     REQUEST_TZ.reset(tz_token)
     for key, value in security_headers().items():
         response.headers[key] = value
@@ -177,6 +180,18 @@ _GUARDED_PREFIXES = ("/fitness", "/wellness", "/cycle", "/notifications", "/impo
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing
+
+
+def client_ip(request) -> str:
+    """Caller address for rate limits. Behind Render/Cloudflare X-Forwarded-For can carry client-supplied hops on its left, so
+    trust CF-Connecting-IP (set by Cloudflare) first, then only the rightmost hop (added by the nearest proxy)."""
+    cf = (request.headers.get("cf-connecting-ip") or "").strip()
+    if cf:
+        return cf
+    hops = [h.strip() for h in (request.headers.get("x-forwarded-for") or "").split(",") if h.strip()]
+    if hops:
+        return hops[-1]
+    return request.client.host if request.client else "?"
 
 
 def _guard_request(request):
@@ -191,7 +206,7 @@ def _guard_request(request):
         return JSONResponse(status_code=413, content={"detail": "That request is too large.", "code": "too_large"})
     auth = request.headers.get("authorization")
     public = path.startswith(("/cycle/partner/", "/partner/"))
-    key = ("ip:" + (request.client.host if request.client else "?")) if (public or not auth) else "t:" + auth[-32:]
+    key = ("ip:" + client_ip(request)) if (public or not auth) else "t:" + auth[-32:]
     if not (_public_limiter if public else _route_limiter).allow(key):
         return JSONResponse(status_code=429, content={"detail": "You're going a little fast. Please wait a moment and try again.", "code": "rate_limited"}, headers={"Retry-After": "30"})
     return None
@@ -207,10 +222,10 @@ app.add_middleware(
         ).split(",")
         if origin.strip()
     ],
-    # Any loopback port is allowed too: when port 3000 is busy Next.js starts on 3001, and a browser on a
+    # Any loopback port is allowed too (not on Render): when port 3000 is busy Next.js starts on 3001, and a browser on a
     # port that is not in the list above blocks every request, which looks exactly like a dead backend.
-    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d{2,5})?$",
-    allow_credentials=True,
+    allow_origin_regex=None if os.getenv("RENDER") else r"^http://(localhost|127\.0\.0\.1)(:\d{2,5})?$",
+    allow_credentials=False,       # Bearer tokens in a header, no cookies
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Tz-Offset-Minutes"],
 )
@@ -611,6 +626,12 @@ def chat(
             from logging_util import logger
             logger.warning(component="CHAT", operation="health_state_retrieval", error=error, user_id=user_id,
                            fallback_action="continuing_without_metrics")
+
+        try:  # the user's own log patterns (cached; never waits on a computation)
+            memory_context += association_loader.chat_block(supabase, user_id)
+        except Exception as error:  # noqa: BLE001
+            from logging_util import logger
+            logger.warning(component="CHAT", operation="association_block", error=error, fallback_action="continuing_without_patterns")
 
         # Evidence is retrieved only after the safety gate, and only for topics the user actually raised
         # (never for denied or other people's symptoms).

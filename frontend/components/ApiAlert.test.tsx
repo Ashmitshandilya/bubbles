@@ -39,6 +39,13 @@ describe("ApiAlert", () => {
     expect(html()).toBe("");
   });
 
+  it("waking: a calm status with no dismiss or settings buttons", () => {
+    api = { ...online, apiStatus: "checking", health: null, waking: true };
+    const out = html();
+    expect(out).toMatch(/waking up/);
+    expect(out).not.toMatch(/Dismiss|Settings|Try again/);
+  });
+
   it("offline: a blocking alert with the plain message, the countdown, and a retry button", () => {
     api = { ...online, apiStatus: "offline", connectionError: MESSAGES.offline, health: null, nextRetryAt: Date.now() + 6000 };
     const out = html();

@@ -603,6 +603,17 @@ def _partner_status(settings: dict) -> dict:
             "shares": PARTNER_SHARES if share.get("enabled") else []}
 
 
+LEGACY_PARTNER_MAX_DAYS = 30
+
+
+def _parse_utc(raw: Any) -> datetime | None:
+    try:
+        d = datetime.fromisoformat(str(raw))
+    except (TypeError, ValueError):
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+
+
 def partner_create(db: Any, uid: str) -> dict:
     settings = _settings(db, uid)
     if settings["privacy"].get("local_only"):
@@ -645,6 +656,9 @@ def partner_public(db: Any, token: str) -> dict:
         raise gone
     owner = doc_store.get(db, str(uid), PARTNER_OWNER_KIND, "main")
     if not owner or owner.get("key") != _partner_key(token):
+        raise gone
+    created = _parse_utc(owner.get("created_at"))        # legacy links never expired: they now die 30 days after creation
+    if not created or datetime.now(timezone.utc) - created > timedelta(days=LEGACY_PARTNER_MAX_DAYS):
         raise gone
     ctx = _context(db, str(uid), _utc_today())
     if not ctx["settings"]["partner_share"].get("enabled") or ctx["settings"]["privacy"].get("local_only"):
@@ -821,7 +835,9 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         action = body.get("action")
         if set(body) - {"action"} or action not in ("create", "revoke"):
             raise _bad("action must be create or revoke")
-        return await run_in_threadpool(partner_create if action == "create" else partner_revoke, db, uid)
+        if action == "create":
+            raise HTTPException(status_code=410, detail="This kind of link is retired. Use the Partner sharing page to choose what to share and for how long.")
+        return await run_in_threadpool(partner_revoke, db, uid)
 
     @router.get("/cycle/partner/{token}")
     def partner_view(token: str):

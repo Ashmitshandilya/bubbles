@@ -22,6 +22,7 @@ Q_MAX = 0.10            # false-discovery rate across the batch of comparisons e
 MIN_HALF = 6            # pairs needed in each half to check that the pattern repeats
 HALF_EFFECT = 0.20      # |rho| needed in each half, same sign as overall
 PERMUTATIONS = 2000
+EARLY_STOP = 200        # after this many shuffles a pair that already looks null (p > ~0.5) is not shuffled further
 VERSION = "1.0"
 NOT_CAUSAL = "An association in your own logs; it does not show that one thing causes the other."
 CONFOUNDERS = "Other things that changed on the same days (illness, stress, travel, cycle phase, medication) are not accounted for."
@@ -78,11 +79,13 @@ def perm_p(x: list[float], y: list[float], rho: float, seed: int = 20261009) -> 
     rng = random.Random(seed)
     rx, ry = _ranks(x), _ranks(y)
     hits = 0
-    for _ in range(PERMUTATIONS):
+    for i in range(PERMUTATIONS):
         rng.shuffle(ry)
         r = _pearson(rx, ry)
         if r is not None and abs(r) >= abs(rho) - 1e-12:
             hits += 1
+        if i == EARLY_STOP - 1 and hits * 2 >= EARLY_STOP:   # clearly null (p > ~0.5): the exact value cannot change a verdict
+            return (hits + 1) / (EARLY_STOP + 1)
     return (hits + 1) / (PERMUTATIONS + 1)
 
 

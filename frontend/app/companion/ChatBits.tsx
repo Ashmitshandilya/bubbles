@@ -163,7 +163,7 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
           </>
         );
         const chip =
-          "inline-flex min-h-[32px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-[0.8125rem] font-extrabold text-bubbles-grape-deep no-underline";
+          "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-[0.8125rem] font-extrabold text-bubbles-grape-deep no-underline";
         return ev.sourceUrl ? (
           <a key={ev.chunkId ?? `${ev.title}-${idx}`} href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" className={`${chip} hover:bg-bubbles-grape/15`}>
             {label}

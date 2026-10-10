@@ -99,16 +99,26 @@ def available() -> list[dict]:
     return [{"key": k, **v} for k, v in CATEGORIES.items()]
 
 
+def _drop_ghost_connection(db: Any, uid: str, cfg: dict) -> dict:
+    """The partner may have deleted their data or left: if their side of the connection is gone, clear ours too."""
+    conn = cfg.get("connection")
+    if conn and not doc_store.get(db, conn["uid"], WITH_KIND, _owner_id(uid)):
+        cfg["connection"] = None
+        _save(db, uid, cfg)
+    return cfg
+
+
 def status(db: Any, uid: str) -> dict:
-    cfg = _load(db, uid)
+    cfg = _drop_ghost_connection(db, uid, _load(db, uid))
     link, invite, conn = cfg.get("link"), cfg.get("invite"), cfg.get("connection")
     link_on, invite_on = bool(link and _future(link.get("expires_at"))), bool(invite and _future(invite.get("expires_at")))
     cats = list(cfg.get("categories", []))
+    views = (doc_store.get(db, uid, LINK_KIND, link["key"]) or {}).get("views") if link_on else None
     return {
         "status": "success", "available": available(), "categories": cats, "note": cfg.get("note", ""), "owner_name": cfg.get("owner_name", ""),
         "configured": bool(cats),
         "link": {"active": link_on, "expired": bool(link and not link_on), "expires_at": link.get("expires_at") if link_on else None,
-                 "views": cfg.get("views") or {"count": 0, "last_at": None}},
+                 "views": views or {"count": 0, "last_at": None}},
         "invite": {"active": invite_on, "expires_at": invite.get("expires_at") if invite_on else None},
         "connection": {"name": conn.get("name"), "since": conn.get("since")} if conn else None,
         "sharing": bool(cats and (link_on or conn)),
@@ -165,9 +175,8 @@ def create_link(db: Any, uid: str, body: dict) -> dict:
     token = secrets.token_urlsafe(24)
     key = _hash(token)
     now = _now()
-    doc_store.put(db, uid, LINK_KIND, key, {"uid": uid, "enabled": True})
+    doc_store.put(db, uid, LINK_KIND, key, {"uid": uid, "enabled": True, "views": {"count": 0, "last_at": None}})
     cfg["link"] = {"key": key, "created_at": _iso(now), "expires_at": _iso(now + timedelta(days=days))}
-    cfg["views"] = {"count": 0, "last_at": None}
     _save(db, uid, cfg)
     return {**status(db, uid), "token": token, "share_path": f"/partner/{token}"}
 
@@ -189,7 +198,7 @@ def _new_code() -> str:
 
 
 def create_invite(db: Any, uid: str) -> dict:
-    cfg = _load(db, uid)
+    cfg = _drop_ghost_connection(db, uid, _load(db, uid))
     _need_settings(cfg)
     if cfg.get("connection"):
         raise _bad("Someone is already connected. Disconnect them first to invite another person.")
@@ -253,8 +262,9 @@ def _signed_payload(db: Any, kind: str, key: str) -> dict | None:
 
 def _throttle(uid: str) -> None:
     now = time.time()
-    recent = [t for t in _attempts.get(uid, []) if now - t < ATTEMPT_WINDOW]
-    _attempts[uid] = recent
+    for k in [k for k, v in _attempts.items() if not v or now - v[-1] >= ATTEMPT_WINDOW]:   # drop stale people so the dict cannot grow forever
+        del _attempts[k]
+    recent = _attempts[uid] = [t for t in _attempts.get(uid, []) if now - t < ATTEMPT_WINDOW]
     if len(recent) >= MAX_ATTEMPTS:
         raise _bad("Too many wrong codes. Please wait an hour and ask for a new code.", 429)
 
@@ -286,8 +296,13 @@ def connect(db: Any, partner_uid: str, body: dict) -> dict:
     doc_store.delete(db, owner, INVITE_KIND, h)                      # single use
     cfg["invite"] = None
     cfg["connection"] = {"uid": str(partner_uid), "name": name, "since": _iso(_now())}
-    _save(db, owner, cfg)
+    # The partner's side first: if saving the owner's side then fails, nothing claims a connection the owner does not have.
     doc_store.put(db, str(partner_uid), WITH_KIND, _owner_id(owner), {"owner_uid": owner, "since": _iso(_now())})
+    try:
+        _save(db, owner, cfg)
+    except Exception:
+        doc_store.delete(db, str(partner_uid), WITH_KIND, _owner_id(owner))
+        raise
     return {"status": "success", "connected": True, "from_name": cfg.get("owner_name") or "Your partner"}
 
 
@@ -322,11 +337,9 @@ def leave(db: Any, partner_uid: str, share_id: str) -> dict:
 def _section_cycle(db: Any, uid: str) -> dict | None:
     import cycle_api
     ctx = cycle_api._context(db, uid, cycle_api._utc_today())
-    if ctx["settings"]["privacy"].get("local_only"):
-        return None
     state = ctx["state"]
     show = state["mode"] in ("track", "conceive", "birth_control", "perimenopause") and state["next_period"]
-    if not show:
+    if ctx["settings"]["privacy"].get("local_only") or not show:   # same words either way: a partner cannot infer a mode change
         return {"key": "cycle", "title": "Next period, estimated", "range": None, "text": "No estimate is available right now.", "detail": None}
     nxt = state["next_period"]
     tips = TIPS.get(state["phase"] or "", []) if state["mode"] == "track" else []
@@ -371,11 +384,11 @@ def public(db: Any, token: str) -> dict:
     if link.get("key") != _hash(token) or not _future(link.get("expires_at")) or not cfg.get("categories"):
         raise gone
     sections = _sections(db, uid, cfg)
-    try:  # best effort: how many times the link was opened (a count and a time; never who or where from)
-        views = dict(cfg.get("views") or {"count": 0, "last_at": None})
+    try:  # best effort: a count and a time in the LINK's own document (never who or where from); the owner's settings are never re-saved here
+        views = dict(payload.get("views") or {"count": 0, "last_at": None})
         views["count"] = int(views.get("count", 0)) + 1
         views["last_at"] = _iso(_now())
-        _save(db, uid, {**cfg, "views": views})
+        doc_store.put(db, uid, LINK_KIND, _hash(token), {**payload, "views": views})
     except Exception:  # noqa: BLE001
         pass
     return {"status": "success", "label": "Shared with you", "expires_at": link["expires_at"], "sections": sections, "notice": NOTICE}

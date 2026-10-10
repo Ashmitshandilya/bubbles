@@ -37,6 +37,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
@@ -46,7 +47,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${nunito.variable} ${fredoka.variable}`}>
-      <body className="bubbles-shell min-h-screen flex flex-col">
+      <body className="bubbles-shell min-h-dvh flex flex-col">
         {children}
       </body>
     </html>

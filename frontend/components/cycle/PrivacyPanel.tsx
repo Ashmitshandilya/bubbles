@@ -2,9 +2,9 @@
 
 // Privacy: local-only switch, partner share link (token shown once) and a two-step "delete everything".
 
+import Link from "next/link";
 import { useState } from "react";
 import { BTN_PRIMARY, BTN_SECONDARY, useBubblesQuery } from "../hub/HubKit";
-import { fmtDay } from "../../app/lib/cycle-format";
 import type { DeleteResponse, PartnerViewResponse } from "../../app/lib/cycle-types";
 import { useCycle } from "./CycleStore";
 import { INPUT } from "./fields";
@@ -68,69 +68,38 @@ function LocalOnly() {
 function PartnerShare() {
   const { call, announce } = useCycle();
   const [query, reload] = useBubblesQuery<PartnerViewResponse>("/cycle/partner-view");
-  const [override, setOverride] = useState<PartnerViewResponse | null>(null);
-  const [link, setLink] = useState("");
+  const [off, setOff] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState("");
   const [busy, setBusy] = useState(false);
-  const view = override ?? (query.status === "ready" ? query.data : null);
+  // Only an old cycle-only link needs a control here; new sharing lives on the Partner sharing page.
+  const legacyOn = !off && query.status === "ready" && query.data.enabled;
 
-  async function act(action: "create" | "revoke") {
+  async function revoke() {
     setBusy(true);
     setError("");
-    setCopied("");
-    const result = await call<PartnerViewResponse>("/cycle/partner-view", { method: "POST", body: JSON.stringify({ action }) });
+    const result = await call<PartnerViewResponse>("/cycle/partner-view", { method: "POST", body: JSON.stringify({ action: "revoke" }) });
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
       return;
     }
-    setOverride({ ...result.data, token: undefined });
-    setLink(action === "create" && result.data.token ? `${window.location.origin}/cycle/partner/${result.data.token}` : "");
-    announce(action === "create" ? "Partner link created." : "Partner link turned off.");
-  }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied("Link copied.");
-    } catch {
-      setCopied("Copying is not allowed here. Select the link and copy it by hand.");
-    }
+    setOff(true);
+    announce("Old partner link turned off.");
   }
 
   return (
     <div>
-      <p className="m-0 text-body font-extrabold text-ink">Share with a partner</p>
+      <p className="m-0 text-body font-extrabold text-ink">Share with someone you trust</p>
       <p className="m-0 mt-1 text-body-sm text-muted">
-        A private link shows the next-period range only: no logs, symptoms or notes. Anyone with the link can see it, so share it carefully. You can turn it off any time.
+        Share your cycle estimate, sleep or a note with one person. You choose exactly what they see, and you can stop any time.
       </p>
-      {query.status === "loading" && !view && <p role="status" className="m-0 mt-2 text-body-sm text-muted">Loading…</p>}
-      {query.status === "error" && !view && <div className="mt-3"><PanelError title="Sharing settings didn't load" message={query.message} onRetry={reload} /></div>}
-      {view && (
-        <div className="mt-3 space-y-3">
-          {view.shares.length > 0 && (
-            <p className="m-0 text-body-sm text-ink">Your partner can see: {view.shares.join(", ")}.</p>
-          )}
-          {link && (
-            <div className="rounded-3xl bg-tint-sun p-4 text-bubbles-sun-deep">
-              <label htmlFor="cycle-partner-link" className="block text-body-sm font-extrabold">Your link. It is shown only once, so copy it now.</label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <input id="cycle-partner-link" readOnly value={link} onFocus={(e) => e.currentTarget.select()} className={`${INPUT} min-w-[12rem] flex-1 text-ink`} />
-                <button type="button" onClick={copy} className={BTN_SECONDARY}>Copy link</button>
-              </div>
-              {copied && <p role="status" className="m-0 mt-2 text-body-sm font-bold">{copied}</p>}
-            </div>
-          )}
-          {view.enabled ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="m-0 text-body-sm font-bold text-bubbles-mint-deep">Sharing is on{view.created_at ? ` since ${fmtDay(view.created_at.slice(0, 10))}` : ""}.</p>
-              <button type="button" disabled={busy} onClick={() => act("revoke")} className={BTN_SECONDARY}>Turn off sharing</button>
-              <button type="button" disabled={busy} onClick={() => act("create")} className="min-h-[44px] rounded-full px-3 text-body-sm font-bold text-bubbles-pink-ink underline">Make a new link</button>
-            </div>
-          ) : (
-            <button type="button" disabled={busy} onClick={() => act("create")} className={BTN_PRIMARY}>{busy ? "Working…" : "Create a private link"}</button>
-          )}
+      <Link href="/partner" className={`${BTN_PRIMARY} mt-3 no-underline`}>Open Partner sharing</Link>
+      {query.status === "error" && <div className="mt-3"><PanelError title="Old link settings didn't load" message={query.message} onRetry={reload} /></div>}
+      {legacyOn && (
+        <div className="mt-4 space-y-2 rounded-3xl bg-tint-sun p-4 text-bubbles-sun-deep">
+          <p className="m-0 text-body-sm font-extrabold">An older cycle-only link is still on.</p>
+          <p className="m-0 text-body-sm">Anyone with it can see your next-period range. Turn it off, then use Partner sharing instead.</p>
+          <button type="button" disabled={busy} onClick={revoke} className={BTN_SECONDARY}>{busy ? "Working…" : "Turn off the old link"}</button>
         </div>
       )}
       {error && <div className="mt-2"><InlineError message={error} /></div>}

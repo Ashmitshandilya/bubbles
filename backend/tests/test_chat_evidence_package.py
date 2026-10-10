@@ -44,3 +44,13 @@ def test_a_failure_in_the_package_never_breaks_the_reply(env):
     res = send(env, "Is it normal to have a headache before my period?")
     assert res.status_code == 200 and res.json()["response"]
     assert "evidence_package" not in bubbles_meta(env)
+
+
+def test_audit_evidence_count_matches_results_and_retrieved_text_never_reaches_safety(env):
+    rows = [dict(ROW), dict(ROW, chunk_id="c2", content="SECRET-RETRIEVED-TEXT")]
+    env.main.hybrid_search = lambda **k: [dict(r) for r in rows]
+    send(env, "Is it normal to have a headache before my period?")
+    pkg = bubbles_meta(env)["evidence_package"]
+    assert [e["chunk_id"] for e in pkg["evidence"]] == ["c1", "c2"]
+    assert "SECRET-RETRIEVED-TEXT" not in json.dumps(pkg)
+    assert "SECRET-RETRIEVED-TEXT" not in json.dumps(bubbles_meta(env).get("safety", {}))

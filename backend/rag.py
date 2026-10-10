@@ -22,6 +22,9 @@ from typing import Any
 import requests
 from dotenv import load_dotenv
 
+from query_expand import expand, lexical
+from rag_links import detect as detect_links
+
 load_dotenv()
 
 
@@ -310,28 +313,63 @@ def hybrid_search(
     if not query:
         return []
 
-    embedding = embed_text(query)
+    # A/B switches (deterministic; English words are added for lay/Hinglish terms only):
+    #   RAG_EXPAND=0 -> off.  RAG_EXPAND_MODE: "or" (default) meaning search gets the words, keyword search gets them as
+    #   extra OR-alternatives; "embed" meaning search only; "and" both legs (old behaviour, keyword leg gets stricter).
+    embed_query = lexical_query = query
+    if os.environ.get("RAG_EXPAND", "1") != "0":
+        mode = os.environ.get("RAG_EXPAND_MODE", "or")
+        embed_query = expand(query)
+        lexical_query = {"embed": query, "and": embed_query}.get(mode) or lexical(query)
 
-    result = _db().rpc(
-        "rag_hybrid_search",
-        {
-            "query_text": query,
-            "query_embedding": embedding,
-            "match_count": max(1, min(limit, 30)),
-            "request_user_id": user_id,
-            "topic_filter": topic,
-            "country_filter": country,
-        },
-    ).execute()
+    embedding = embed_text(embed_query)
+    limit = max(1, min(limit, 30))
 
-    rows = result.data or []
+    def search(topic_filter: str | None, count: int) -> list[dict[str, Any]]:
+        return _db().rpc(
+            "rag_hybrid_search",
+            {
+                "query_text": lexical_query,
+                "query_embedding": embedding,
+                "match_count": count,
+                "request_user_id": user_id,
+                "topic_filter": topic_filter,
+                "country_filter": country,
+            },
+        ).execute().data or []
+
+    rows = search(topic, min(limit * 2, 30))  # over-fetch: dropped BYPASS_LLM rows must not leave a short list
+
+    # A question about how two areas affect each other ("does lack of sleep affect my mood") also pulls the stored sources
+    # tagged for that link (see rag_links.py), ahead of the general matches. RAG_LINKS=0 switches it off.
+    if topic is None and os.environ.get("RAG_LINKS", "1") != "0":
+        try:
+            linked = [dict(r, linked=True) for pid in detect_links(query) for r in search(f"link:{pid}", 3)[:2]]
+            seen = {r["chunk_id"] for r in linked}
+            rows = linked + [r for r in rows if r["chunk_id"] not in seen]
+        except Exception:  # noqa: BLE001 - the plain results above are still good
+            pass
     try:
         policy, default = _policies({r["document_id"] for r in rows if r.get("document_id")}), "standard"
     except Exception:  # fail closed: unknown handling is stricter than 'standard'
         policy, default = {}, "unknown"
     for r in rows:
         r["policy"] = policy.get(r.get("document_id"), default)
-    return [r for r in rows if not r["policy"].startswith("BYPASS_LLM")]
+    rows = [r for r in rows if not r["policy"].startswith("BYPASS_LLM")]
+    rows.sort(key=lambda r: (not r.get("linked"), -(_score(r) + EVIDENCE_BONUS.get(str(r.get("evidence_level")), 0.0))))  # stable
+    return rows[:limit]
+
+
+# Smaller than one RRF rank step (1/(60+r) - 1/(61+r) is about 0.0003 at the top, 0.0002 at rank 10), so it can
+# only reorder near-ties, never lift a weak match over a clearly better one.
+EVIDENCE_BONUS = {"guideline": 0.0002, "systematic_review": 0.00015, "high": 0.00015, "moderate": 0.0001}
+
+
+def _score(row: dict[str, Any]) -> float:
+    try:
+        return float(row.get("fused_score") or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 # Handling rules for documents loaded by rag_bulk_ingest.py (tag policy:<key>). Fixed text only: the key is

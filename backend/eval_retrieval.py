@@ -1,6 +1,7 @@
 """Retrieval baseline against the LIVE RAG store (read-only; needs backend/.env). Not part of pytest.
 
     ./venv/Scripts/python.exe eval_retrieval.py            # prints recall@1/@5 and misses, writes the report JSON
+    RAG_EXPAND=0 ./venv/Scripts/python.exe eval_retrieval.py   # A/B: same run without lay/Hinglish query expansion
 
 Case file: tests/eval/retrieval_cases.jsonl. A hit = any of the top-k titles matches expect_title_regex.
 Cases come from the public-facing question types, not from the engine's output. Re-run after every ingest/ranking change.

@@ -12,7 +12,7 @@ export default function WorldCanvas({ eventSource }: { eventSource: HTMLElement 
       className="cw-canvas"
       eventSource={eventSource}
       eventPrefix="client"
-      dpr={[1, story.mobile ? 1.5 : 1.75]}
+      dpr={story.mobile ? [1, 1] : [1, 1.75]}
       gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
       camera={{ fov: 35, near: 0.1, far: 80, position: [0, 0.55, 10] }}
       onCreated={({ gl }) => {

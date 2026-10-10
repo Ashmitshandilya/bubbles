@@ -69,6 +69,20 @@ function Settings() {
           </div>
         </section>
 
+        <section aria-labelledby="partner-title" className={`${CARD} p-5 sm:p-6`}>
+          <h2 id="partner-title" className="text-h3 text-ink">
+            Partner sharing
+          </h2>
+          <p className="mt-1 text-body text-muted">
+            Choose what a partner can see, connect with an invite code or a link, and stop sharing any time. Nothing is shared until you switch it on.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Link href="/partner" className={`${BTN_SECONDARY} no-underline`}>
+              Manage partner sharing
+            </Link>
+          </div>
+        </section>
+
         <section aria-labelledby="connection-title" className={`${CARD} p-5 sm:p-6`}>
           <h2 id="connection-title" className="text-h3 text-ink">
             Connection

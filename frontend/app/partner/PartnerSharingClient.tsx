@@ -35,7 +35,13 @@ function PartnerSharing() {
   const [status, reloadStatus] = useWellnessQuery<PartnerSharingStatus>("/partner-sharing", { tz: false });
   const [mine, reloadMine] = useWellnessQuery<SharedWithMe>("/partner-sharing/shared-with-me", { tz: false });
   const reload = () => { reloadStatus(); reloadMine(); };
+  const hasShares = mine.status === "ready" && mine.data.shares.length > 0;
   const skeleton = <div className="space-y-3"><Skeleton className="h-40 rounded-3xl" /><Skeleton className="h-40 rounded-3xl" /></div>;
+  const withYou = (
+    <QueryView query={mine} onRetry={reloadMine} what="what is shared with you" skeleton={skeleton}>
+      {(data) => <SharedWithYou data={data} reload={reload} />}
+    </QueryView>
+  );
   return (
     <div className="space-y-6">
       <header className="bubbles-rise">
@@ -45,13 +51,12 @@ function PartnerSharing() {
         </p>
       </header>
 
-      <QueryView query={mine} onRetry={reloadMine} what="what is shared with you" skeleton={skeleton}>
-        {(data) => <SharedWithYou data={data} reload={reload} />}
-      </QueryView>
-
+      {/* Your own settings come first unless someone is already sharing with you. */}
+      {hasShares && withYou}
       <QueryView query={status} onRetry={reloadStatus} what="your sharing settings" skeleton={skeleton}>
         {(data) => <YourSharing data={data} reload={reload} />}
       </QueryView>
+      {!hasShares && withYou}
     </div>
   );
 }
@@ -78,7 +83,7 @@ function SharedWithYou({ data, reload }: { data: SharedWithMe; reload: () => voi
   }
 
   async function leave(id: string) {
-    if (!window.confirm("Stop seeing what they share? They will be told you left only if they look at their settings.")) return;
+    if (!window.confirm("Stop seeing their summary? They can see in their settings that you left.")) return;
     setBusy(true);
     const result = await send(`/partner-sharing/shared-with-me/${id}`, "DELETE", undefined, { tz: false });
     setBusy(false);
@@ -177,7 +182,7 @@ function YourSharing({ data, reload }: { data: PartnerSharingStatus; reload: () 
 
       <section aria-labelledby="what-share" className={`${CARD} space-y-4 p-5`}>
         <h2 id="what-share" className="m-0 font-display text-h3 text-ink">What you share</h2>
-        <Chooser data={data} busy={busy} onSubmit={saveSettings} />
+        <Chooser key={`${data.categories.join()}|${data.note}|${data.owner_name}`} data={data} busy={busy} onSubmit={saveSettings} />
       </section>
 
       {data.configured && (
@@ -193,7 +198,7 @@ function YourSharing({ data, reload }: { data: PartnerSharingStatus; reload: () 
             <h3 className="m-0 text-body font-extrabold text-ink">Connect their Bubbles account (recommended)</h3>
             {data.connection ? (
               <>
-                <p className="m-0 text-body-sm text-muted">Connected with <strong>{data.connection.name}</strong> since {new Date(data.connection.since).toLocaleDateString()}. They see exactly what you chose above.</p>
+                <p className="m-0 text-body-sm text-muted">Connected with <strong>{data.connection.name}</strong> (the name they typed) since {new Date(data.connection.since).toLocaleDateString()}. They see exactly what you chose above.</p>
                 <button type="button" className={BTN_SECONDARY} disabled={busy} onClick={() => void confirmThen(`Disconnect ${data.connection?.name}? They stop seeing your summary straight away.`, "/partner-sharing/connection", "Disconnected. They no longer see anything.")}>Disconnect</button>
               </>
             ) : (
@@ -295,6 +300,7 @@ function Chooser({ data, busy, onSubmit }: {
 
       <div className="flex flex-wrap items-center gap-2">
         <button type="submit" className={BTN_PRIMARY} disabled={busy || !ok}>{busy ? "Saving…" : data.configured ? "Save changes" : "Save my choices"}</button>
+        {picked.length === 0 && <span className="text-body-sm text-muted">Tick at least one thing to share.</span>}
         {!ok && picked.length > 0 && <span className="text-body-sm text-muted">Add your note, or untick “A note from you”.</span>}
       </div>
     </form>

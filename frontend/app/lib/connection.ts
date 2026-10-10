@@ -286,6 +286,7 @@ export function reconnectStatus(nextRetryAt: number | null, now: number, retryin
 
 export type Banner =
   | { kind: "offline"; title: string; message: string; dismissible: false }
+  | { kind: "waking"; title: string; message: string; dismissible: false }
   | { kind: "compat" | "database_down"; title: string; message: string; dismissible: true }
   | null;
 
@@ -294,7 +295,12 @@ export function connectionBanner(state: {
   apiStatus: "checking" | "online" | "offline";
   connectionError: string | null;
   health: HealthPayload | null;
+  /** The first /health is taking long: a free host is starting up. Not a failure. */
+  waking?: boolean;
 }): Banner {
+  if (state.apiStatus === "checking" && state.waking) {
+    return { kind: "waking", title: "Bubbles is waking up", message: "This can take up to a minute the first time. Hang tight, it will load by itself.", dismissible: false };
+  }
   if (state.apiStatus === "offline") {
     return { kind: "offline", title: "Can't connect to Bubbles", message: state.connectionError || MESSAGES.offline, dismissible: false };
   }

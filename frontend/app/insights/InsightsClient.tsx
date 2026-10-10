@@ -102,6 +102,8 @@ function Patterns() {
         ))}
       </div>
 
+      <LinksSection />
+
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section aria-labelledby="pattern-list-title" aria-busy={patterns.status === "loading"}>
           <h2 id="pattern-list-title" className="sr-only">
@@ -154,6 +156,113 @@ function Patterns() {
         Patterns are observations from your own logs — not diagnoses, and not proof that one thing causes another.
       </p>
     </div>
+  );
+}
+
+/* ── Links between the things you log (association engine) ── */
+
+interface AssociationSource {
+  title?: string | null;
+  source_name?: string | null;
+  source_url?: string | null;
+  snippet?: string | null;
+}
+interface Association {
+  id: string;
+  status: string;
+  strength: "weak" | "moderate" | "strong";
+  n_days: number;
+  text: string;
+  sources?: AssociationSource[];
+}
+interface AssociationGap {
+  id: string;
+  text: string;
+}
+interface AssociationsResponse {
+  insights?: Association[];
+  gaps?: AssociationGap[];
+  message?: string;
+}
+
+const STRENGTH_PILL = {
+  weak: "bg-tint-sun text-bubbles-sun-deep",
+  moderate: "bg-tint-grape text-bubbles-grape-deep",
+  strong: "bg-tint-mint text-bubbles-mint-deep",
+} as const;
+
+// The server sends "<sentence> (N days logged). <caveats>": show the sentence, keep the caveats one tap away.
+const sentence = (text: string) => text.split(" (")[0];
+const caveats = (text: string) => text.slice(text.indexOf(". ") + 2);
+
+function LinksSection() {
+  const [links, reload] = useBubblesQuery<AssociationsResponse>("/wellness/associations?days=90");
+  const insights = links.status === "ready" ? links.data.insights ?? [] : [];
+  const gaps = links.status === "ready" ? links.data.gaps ?? [] : [];
+
+  return (
+    <section aria-labelledby="links-title" aria-busy={links.status === "loading"} className="space-y-3">
+      <div>
+        <h2 id="links-title" className="text-h3 text-ink">
+          Links between what you log
+        </h2>
+        <p className="mt-1 text-body-sm text-muted">
+          Bubbles compares your sleep, mood, activity, drinks, food, symptoms and cycle over the last 90 days. A link only shows when it is clear and repeated enough to trust.
+        </p>
+      </div>
+      {links.status === "loading" && <Skeleton className="h-28 rounded-3xl" />}
+      {links.status === "error" && <ErrorCard title="Links didn't load" message={links.message} onRetry={reload} />}
+      {links.status === "ready" && insights.length > 0 && (
+        <ul className="bubbles-stagger m-0 grid list-none gap-3 p-0 md:grid-cols-2">
+          {insights.map((item) => (
+            <li key={item.id} className={`${CARD} p-5`}>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`${PILL} ${STRENGTH_PILL[item.strength] ?? STRENGTH_PILL.weak}`}>{item.strength} link</span>
+                {item.status === "repeated_pattern" && <span className={`${PILL} bg-tint-mint text-bubbles-mint-deep`}>seen in two periods</span>}
+                <span className="text-[0.8125rem] font-bold text-muted">{item.n_days} days</span>
+              </div>
+              <p className="mt-3 text-body font-bold text-ink">{sentence(item.text)}.</p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-body-sm font-extrabold text-bubbles-grape-deep">Things to keep in mind</summary>
+                <p className="mt-1 text-body-sm text-muted">{caveats(item.text)}</p>
+              </details>
+              {item.sources && item.sources.length > 0 && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-body-sm font-extrabold text-bubbles-grape-deep">What published sources say</summary>
+                  <ul className="m-0 mt-1 list-none space-y-2 p-0">
+                    {item.sources.map((source, i) => (
+                      <li key={`${source.source_url ?? source.title}-${i}`} className="text-body-sm text-muted">
+                        {source.snippet}
+                        {source.source_url?.startsWith("https://") && (
+                          <>
+                            {" "}
+                            <a href={source.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-bubbles-grape-deep">
+                              {source.source_name ?? "Source"}
+                            </a>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {links.status === "ready" && insights.length === 0 && (
+        <div className={`${CARD} p-5`}>
+          <p className="m-0 text-body text-muted">{links.data.message ?? "No reliable link between the things you log yet."}</p>
+          {gaps.length > 0 && (
+            <ul className="m-0 mt-3 list-disc space-y-1 pl-5 text-body-sm text-ink-soft">
+              {gaps.map((gap) => (
+                <li key={gap.id}>{gap.text}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

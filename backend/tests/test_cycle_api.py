@@ -460,21 +460,25 @@ def test_education_is_labelled_general_knowledge(env):
 
 # ---- partner view --------------------------------------------------------------------------------------------------------------
 
-def test_partner_link_shows_predictions_only_and_can_be_revoked(env):
-    client, _ = env
+def legacy_link(db, uid=A):
+    """Legacy links can no longer be created over HTTP (410), so tests mint one directly."""
+    return cycle_api.partner_create(db, uid)["token"]
+
+
+def test_legacy_partner_link_shows_predictions_only_and_can_be_revoked(env):
+    client, db = env
     start_periods(client, HA, [28] * 4)
     client.put(f"/cycle/day/{iso(TODAY)}", json={"notes": "private", "pain_level": 6}, headers=HA)
-    r = client.post("/cycle/partner-view", json={"action": "create"}, headers=HA).json()
-    token = r["token"]
-    assert r["enabled"] and r["share_path"] == f"/cycle/partner/{token}" and len(token) >= 30
+    gone = client.post("/cycle/partner-view", json={"action": "create"}, headers=HA)
+    assert gone.status_code == 410 and "Partner sharing" in gone.json()["detail"]
+    token = legacy_link(db)
     assert "token" not in client.get("/cycle/partner-view", headers=HA).json()
     public = client.get(f"/cycle/partner/{token}")           # no Authorization header at all
     body = public.json()
     assert public.status_code == 200 and public.headers["cache-control"] == "no-store"
     assert set(body) == {"status", "label", "next_period", "phase_hint", "notice"} and set(body["next_period"]) == {"earliest", "latest"}
     assert "private" not in public.text and "fertile" not in public.text.lower() and "ovulation" not in public.text.lower()
-    # rotating invalidates the old link
-    new = client.post("/cycle/partner-view", json={"action": "create"}, headers=HA).json()["token"]
+    new = legacy_link(db)                                      # rotating invalidates the old link
     assert new != token and client.get(f"/cycle/partner/{token}").status_code == 404 and client.get(f"/cycle/partner/{new}").status_code == 200
     r = client.post("/cycle/partner-view", json={"action": "revoke"}, headers=HA).json()
     assert r["enabled"] is False and r["shares"] == []
@@ -482,28 +486,37 @@ def test_partner_link_shows_predictions_only_and_can_be_revoked(env):
     assert gone.status_code == 404 and gone.json()["detail"] == "This link is no longer active."
 
 
+def test_legacy_partner_link_dies_after_30_days(env):
+    client, db = env
+    token = legacy_link(db)
+    assert client.get(f"/cycle/partner/{token}").status_code == 200
+    doc = doc_store.get(db, A, cycle_api.PARTNER_OWNER_KIND, "main")
+    old = (datetime.now(timezone.utc) - td(days=31)).isoformat()
+    doc_store.put(db, A, cycle_api.PARTNER_OWNER_KIND, "main", {**doc, "created_at": old})
+    assert client.get(f"/cycle/partner/{token}").status_code == 404
+
+
 def test_partner_link_edge_cases(env):
-    client, _ = env
+    client, db = env
     for token in ("short", "x" * 30, "a" * 200, "../etc/passwd"):
         assert client.get(f"/cycle/partner/{token}").status_code in (404, 405)
     assert client.post("/cycle/partner-view", json={"action": "explode"}, headers=HA).status_code == 422
     assert client.post("/cycle/partner-view", json={}, headers=HA).status_code == 422
-    # local-only blocks creating and silences existing links
-    token = client.post("/cycle/partner-view", json={"action": "create"}, headers=HA).json()["token"]
+    # local-only silences existing links
+    token = legacy_link(db)
     client.put("/cycle/settings", json={"privacy": {"local_only": True}}, headers=HA)
     assert client.get(f"/cycle/partner/{token}").status_code == 404
     assert client.get("/cycle/partner-view", headers=HA).json()["enabled"] is False
-    assert client.post("/cycle/partner-view", json={"action": "create"}, headers=HA).status_code == 422
     # user B's revoke does not touch A's link
     client.put("/cycle/settings", json={"privacy": {"local_only": False}}, headers=HA)
-    token = client.post("/cycle/partner-view", json={"action": "create"}, headers=HA).json()["token"]
+    token = legacy_link(db)
     client.post("/cycle/partner-view", json={"action": "revoke"}, headers=HB)
     assert client.get(f"/cycle/partner/{token}").status_code == 200
 
 
 def test_partner_view_hides_pregnancy_and_postpartum(env):
-    client, _ = env
-    token = client.post("/cycle/partner-view", json={"action": "create"}, headers=HA).json()["token"]
+    client, db = env
+    token = legacy_link(db)
     client.put("/cycle/settings", json={"mode": "pregnancy"}, headers=HA)
     assert client.get(f"/cycle/partner/{token}").json()["next_period"] is None
 
@@ -514,7 +527,7 @@ def test_delete_requires_confirmation_and_removes_everything(env):
     client, db = env
     start_periods(client, HA, [28] * 3)
     client.put("/cycle/settings", json={"mode": "conceive"}, headers=HA)
-    client.post("/cycle/partner-view", json={"action": "create"}, headers=HA)
+    legacy_link(db)
     start_periods(client, HB, [28] * 2)
     r = client.delete("/cycle/data", headers=HA)
     assert r.status_code == 422

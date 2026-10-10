@@ -64,6 +64,16 @@ def test_rate_limiter_window():
     assert rl.allow("a")
 
 
+def test_rate_limiter_drops_stale_keys_so_memory_stays_bounded():
+    clock = SimpleNamespace(t=0.0)
+    rl = cp.RateLimiter(limit=2, window=10, clock=lambda: clock.t)
+    for i in range(5001):
+        rl.allow(f"ip{i}")
+    clock.t = 100
+    rl.allow("fresh")
+    assert len(rl._hits) <= 4002 and "fresh" in rl._hits  # 1000 stale keys evicted per sweep, none live
+
+
 # ------------------------------------------------------------------ context
 def test_conversation_block_hides_retracted_warning_and_is_bounded():
     history = [
@@ -94,7 +104,8 @@ def test_state_block_later_statement_wins():
 def test_evidence_query_never_searches_denied_or_other_peoples_symptoms():
     assert cp.evidence_query(analyze("No chest pain, my sister has a headache."), "No chest pain, my sister has a headache. " + "x " * 200) == ""
     assert cp.evidence_query(analyze("Can chest pain happen during anxiety?"), "Can chest pain happen during anxiety?") == "chest pain anxiety"
-    assert cp.evidence_query(analyze("How much water should I drink?"), "How much water should I drink?").startswith("How much water")
+    assert cp.evidence_query(analyze("How much water should I drink?"), "How much water should I drink?")== "much water drink?"
+    assert cp.evidence_query([], "kya mujhe bukhar hai?") == "bukhar"
 
 
 # ------------------------------------------------------------------ rule-built events

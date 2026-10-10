@@ -63,3 +63,63 @@ def insights(sleep_rows: list[dict], mood_by_day: dict[str, dict]) -> dict[str, 
     if not shown:
         out["message"] = "Not enough reliable data to identify a pattern between your sleep and mood yet."
     return out
+
+
+# --- general engine: every curated link between the things a person logs --------------------------------------------------
+# (x, y, lag_days, sentence when higher x goes with higher y, sentence when higher x goes with lower y, extra caveat)
+# lag 1 means "x on day d against y on day d+1" (sleep is logged the morning after, so it belongs to the next day).
+# Keep this list CURATED and short: every pair added is one more comparison the false-discovery correction must pay for.
+PAIRS: list[tuple[str, str, int, str, str, str]] = [
+    ("sleep_hours", "mood", 0, "On days after you slept longer, your logged mood tended to be higher", "On days after you slept longer, your logged mood tended to be lower", ""),
+    ("sleep_quality", "mood", 0, "On days after better-rated sleep, your logged mood tended to be higher", "On days after better-rated sleep, your logged mood tended to be lower", ""),
+    ("activity_minutes", "mood", 0, "On days you were active for longer, your logged mood tended to be higher", "On days you were active for longer, your logged mood tended to be lower", "Only days you logged activity are compared."),
+    ("activity_minutes", "sleep_quality", 1, "After days you were active for longer, your next sleep rating tended to be better", "After days you were active for longer, your next sleep rating tended to be worse", "Only days you logged activity are compared."),
+    ("activity_minutes", "sleep_hours", 1, "After days you were active for longer, you tended to sleep longer", "After days you were active for longer, you tended to sleep less", "Only days you logged activity are compared."),
+    ("hydration_ml", "mood", 0, "On days you logged more drinks, your logged mood tended to be higher", "On days you logged more drinks, your logged mood tended to be lower", "Only drinks you logged are counted."),
+    ("hydration_ml", "symptom_severity", 0, "On days you logged more drinks, your logged symptoms tended to be more severe", "On days you logged more drinks, your logged symptoms tended to be milder", "Only days you logged a symptom are compared."),
+    ("sleep_hours", "symptom_severity", 0, "After longer sleep, your logged symptoms tended to be more severe", "After longer sleep, your logged symptoms tended to be milder", "Only days you logged a symptom are compared."),
+    ("mood", "sleep_quality", 1, "On days your mood was higher, your next sleep rating tended to be better", "On days your mood was higher, your next sleep rating tended to be worse", ""),
+    ("calories", "sleep_quality", 1, "After days you logged more food, your next sleep rating tended to be better", "After days you logged more food, your next sleep rating tended to be worse", "Only meals you logged are counted, so a day with a missed log looks lighter than it was."),
+    ("sleep_hours", "resting_hr", 0, "After longer sleep, your logged heart rate tended to be higher", "After longer sleep, your logged heart rate tended to be lower", "Heart rate depends heavily on when and how it was measured."),
+    ("luteal", "mood", 0, "In the luteal phase of your cycle, your logged mood tended to be higher", "In the luteal phase of your cycle, your logged mood tended to be lower", "Cycle phase is an estimate, not a measurement."),
+    ("luteal", "sleep_quality", 0, "In the luteal phase of your cycle, your sleep rating tended to be better", "In the luteal phase of your cycle, your sleep rating tended to be worse", "Cycle phase is an estimate, not a measurement."),
+]
+TOPIC = {"sleep_hours": "sleep", "sleep_quality": "sleep ratings", "mood": "mood", "activity_minutes": "activity", "hydration_ml": "drinks",
+         "symptom_severity": "symptoms", "calories": "meals", "resting_hr": "heart rate", "luteal": "cycle phase"}
+_LOG_MORE = "Log {x} and {y} on the same days to check this link (you have {n} of the {need} days needed)."
+
+
+def _strength(rho: float) -> str:
+    a = abs(rho)
+    return "weak" if a < 0.4 else "moderate" if a < 0.6 else "strong"
+
+
+def analyze(series: dict[str, dict[date, float | None]], pairs: list[tuple[str, str, int, str, str, str]] | None = None) -> dict[str, Any]:
+    """series: {'sleep_hours': {date: value}, ...}. Returns {'insights': [...reliable only], 'gaps': [...what to log next],
+    'data_days': {series: n}, 'message'?: ...}. One false-discovery correction covers every pair, so adding pairs gets stricter."""
+    pairs = pairs if pairs is not None else PAIRS
+    specs = [(f"{x}->{y}", cc.paired(series.get(x, {}), series.get(y, {}), lag)) for x, y, lag, *_ in pairs]
+    findings = cc.analyze_batch(specs)
+    shown: list[dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
+    for (x, y, lag, up, down, caveat), f in zip(pairs, findings):
+        if f.status in ("candidate_association", "repeated_pattern"):
+            shown.append({"id": f.label, "domains": [x, y], "lag_days": lag, "status": f.status, "strength": _strength(f.rho),
+                          "direction": "up" if f.rho > 0 else "down", "n_days": f.n, "rho": f.rho, "q": f.q,
+                          "text": (up if f.rho > 0 else down) + f" ({f.n} days logged). " + " ".join(([caveat] if caveat else []) + f.limitations)})
+        elif f.status == "insufficient_data" and f.n >= 1 and series.get(x) and series.get(y):
+            gaps.append({"id": f.label, "domains": [x, y], "n_days": f.n, "need": cc.MIN_PAIRS,
+                         "text": _LOG_MORE.format(x=TOPIC.get(x, x), y=TOPIC.get(y, y), n=f.n, need=cc.MIN_PAIRS)})
+    shown.sort(key=lambda s: (s["status"] != "repeated_pattern", -abs(s["rho"])))
+    gaps.sort(key=lambda g: -g["n_days"])
+    out: dict[str, Any] = {"insights": shown, "gaps": gaps[:4], "pairs_checked": len(pairs), "version": cc.VERSION,
+                           "data_days": {k: sum(1 for v in s.values() if v is not None) for k, s in series.items() if s}}
+    if not shown:
+        out["message"] = ("Not enough reliable data to find a pattern yet. Logging sleep, mood, activity and drinks on the same days "
+                          "unlocks them." if not out["data_days"] else "No reliable pattern between the things you log yet. That is a normal result, not a problem.")
+    return out
+
+
+def chat_lines(result: dict[str, Any], k: int = 3) -> list[str]:
+    """Short sentences for the assistant's context. Derived text only, never raw values."""
+    return [f"{i['text'].split(' (')[0]} ({i['n_days']} days; an association in their logs, not a cause)" for i in result.get("insights", [])[:k]]

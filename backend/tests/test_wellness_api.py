@@ -69,7 +69,22 @@ def test_every_route_requires_authentication(env):
             r = client.request(method, path, json={} if method in ("POST", "PUT") else None)
             assert r.status_code == 401, (method, path, r.status_code)
             n += 1
-    assert n == 30
+    assert n == 31
+
+
+def test_associations_endpoint_reports_gaps_without_zero_filling_and_is_per_user(env):
+    import association_loader as AL
+    AL._cache.clear()
+    client, _db = env
+    empty = client.get("/wellness/associations", headers=H1).json()
+    assert empty["status"] == "success" and empty["insights"] == [] and empty["data_days"] == {} and empty["message"]
+    for i in range(12):
+        assert log_sleep(client, H1, i + 1, 6 + i % 3).status_code in (200, 201)
+    out = client.get("/wellness/associations?days=60&refresh=true", headers=H1).json()
+    assert out["data_days"]["sleep_hours"] == 12 and out["insights"] == [] and out["window_days"] == 60
+    assert client.get("/wellness/associations?days=3", headers=H1).status_code == 422                     # window is bounded (14-365)
+    assert client.get("/wellness/associations", headers=H2).json()["data_days"] == {}                      # another user sees none of it
+    AL._cache.clear()
 
 
 # --- sleep -------------------------------------------------------------------------------------------------------------------------------

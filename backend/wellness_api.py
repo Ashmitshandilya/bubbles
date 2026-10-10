@@ -15,6 +15,7 @@ from typing import Any, Callable
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from starlette.concurrency import run_in_threadpool
 
+import association_loader as AL
 import clinical_constants as K
 import doc_store
 import hydration_engine as H
@@ -489,6 +490,13 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                                   authorization: str | None = Header(default=None)):
         uid, _ = await auth(authorization)
         return await run(mind_insights, uid, days, tz_offset_minutes)
+
+    @router.get("/wellness/associations")
+    async def associations_route(days: int = Query(default=90, ge=14, le=365), refresh: bool = False, tz_offset_minutes: int | None = TZ,
+                                 authorization: str | None = Header(default=None)):
+        """Patterns between the things the signed-in user logs (sleep, mood, activity, drinks, food, symptoms, heart rate, cycle)."""
+        uid, _ = await auth(authorization)
+        return await run(lambda: ok(**AL.get(db, uid, days, tz_offset_minutes, refresh)))
 
     # ======================================================== NOTIFICATIONS ================================================
     def notif_list(uid: str, user: Any, limit: int, unread_only: bool, refresh: bool) -> dict:

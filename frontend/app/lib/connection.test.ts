@@ -345,6 +345,12 @@ describe("connectionBanner", () => {
     expect(connectionBanner({ apiStatus: "checking", connectionError: null, health: compat })).toBeNull();
   });
 
+  it("a slow first answer shows a friendly waking-up notice, not the offline banner", () => {
+    expect(connectionBanner({ apiStatus: "checking", connectionError: null, health: null, waking: true })).toMatchObject({ kind: "waking", dismissible: false });
+    expect(connectionBanner({ apiStatus: "checking", connectionError: null, health: null, waking: false })).toBeNull();
+    expect(connectionBanner({ apiStatus: "offline", connectionError: null, health: null, waking: true })?.kind).toBe("offline");
+  });
+
   it("a stale connection error never shows a banner while online and healthy", () => {
     expect(connectionBanner({ apiStatus: "online", connectionError: "old failure", health: healthy })).toBeNull();
   });

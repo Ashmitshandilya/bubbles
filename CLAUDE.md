@@ -146,9 +146,17 @@ The event pipeline is split across focused modules:
 
 The LLM proposes health events; the backend validates and persists them. User confirmation controls promotion from extracted events to persistent memory. Missing data must be surfaced as a gap, not interpreted as healthy.
 
+**Association engine** (links between what a person logs): `correlation_core.py` (Spearman, permutation p, Benjamini-Hochberg, never causal) -> `association_insights.py` (`PAIRS` is a short curated list of links with fixed wording; one false-discovery correction covers all of them, so every added pair makes the engine stricter) -> `association_loader.py` (loads sleep, mood, activity, drinks, food, symptoms, heart rate and cycle phase as daily series; missing is never zero; 30-minute in-process cache). It serves `GET /wellness/associations` and feeds at most three derived sentences into chat context via `chat_block()`, which never waits: a cold cache is warmed in the background for the next message. To add a link: add a row to `PAIRS` (and a series to the loader if needed), then a test.
+
 ### RAG and evidence
 
 `supabase/migrations/20260915_rag.sql` defines the global/private RAG document and chunk model, source metadata, FTS, pgvector, and `rag_hybrid_search`. Retrieval uses lexical and semantic ranks with reciprocal-rank fusion. The search function is callable by authenticated users but is not a trust boundary: application code must still enforce document scope and user ownership. Clients read evidence; they do not ingest or mutate the corpus.
+
+Retrieval layers in `rag.hybrid_search` (each deterministic, each with an off switch, all measured by `backend/eval_retrieval.py` against the live store, 65 cases in `tests/eval/retrieval_cases.jsonl`; re-run it after any ingest or ranking change):
+
+- `query_expand.py` (`RAG_EXPAND=0` off; `RAG_EXPAND_MODE=or|embed|and`, default `or`): adds the English medical word for lay / Hinglish / Hindi terms. The meaning search gets the words; the keyword search gets them as extra OR alternatives so it never gets stricter. Ambiguous words (sugar, gas) expand only with a health cue; no diagnosis words are invented.
+- `rag_links.py` (`RAG_LINKS=0` off): `LINK_DOCS` names stored, verified documents that explain how two areas affect each other (sleep and mood, exercise and sleep, cycle and mood...). `python rag_links.py --apply` adds a `link:<a>-<b>` topic tag to them (additive, idempotent; no new text is written). A question that names both areas pulls those documents first, and `/wellness/associations` shows them as "what published sources say" under each pattern. To cover a new link: add it to `LINK_DOCS` and `LINK_QUERY`, run the tagging, add an eval case.
+- Last measured: recall@5 1.00, recall@1 0.85 (65 cases); with expansion but without links: 0.94 / 0.74 on the same set.
 
 ### Database ownership model
 

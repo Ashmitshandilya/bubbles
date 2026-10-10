@@ -14,11 +14,15 @@ type State = { status: "loading" } | { status: "error"; message: string; gone: b
 
 export function PartnerClient({ token }: { token: string }) {
   const [state, setState] = useState<State>({ status: "loading" });
+  // A sleeping free host can take about a minute to start; say so instead of looking stuck.
+  const [slow, setSlow] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setState({ status: "loading" });
+    setSlow(false);
+    const slowTimer = window.setTimeout(() => setSlow(true), 4000);
     const timer = new AbortController();
-    const timeout = window.setTimeout(() => timer.abort(), 15000);
+    const timeout = window.setTimeout(() => timer.abort(), 65000);
     signal?.addEventListener("abort", () => timer.abort());
     try {
       const response = await fetch(partnerEndpoint(token), { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: timer.signal });
@@ -31,6 +35,7 @@ export function PartnerClient({ token }: { token: string }) {
       if (!signal?.aborted) setState({ status: "error", message: partnerErrorMessage(null), gone: false });
     } finally {
       window.clearTimeout(timeout);
+      window.clearTimeout(slowTimer);
     }
   }, [token]);
 
@@ -46,7 +51,7 @@ export function PartnerClient({ token }: { token: string }) {
         {state.status === "loading" && (
           <div role="status">
             <BubblesMascot size={80} mood="thinking" className="mx-auto" />
-            <p className="mb-0 mt-4 text-body font-bold text-muted">Opening the shared link…</p>
+            <p className="mb-0 mt-4 text-body font-bold text-muted">{slow ? "Waking up Bubbles… this can take a moment." : "Opening the shared link…"}</p>
           </div>
         )}
 

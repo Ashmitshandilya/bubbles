@@ -114,6 +114,8 @@ def test_cors_is_not_wildcarded():
     # explicit list, never "*"; X-Tz-Offset-Minutes carries the user's clock so "today" is their day, not UTC
     assert 'allow_headers=["Authorization", "Content-Type", "X-Tz-Offset-Minutes"]' in source
     assert 'allow_headers=["*"]' not in source
+    assert "allow_credentials=False" in source           # Bearer tokens, no cookies
+    assert 'None if os.getenv("RENDER")' in source        # the localhost regex is development-only
 
 
 def test_living_map_is_get_not_post():

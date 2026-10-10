@@ -155,6 +155,18 @@ def test_wrong_guesses_are_limited(env):
     assert results[:10] == [404] * 10 and results[10:] == [429] * 2
 
 
+def test_a_failed_save_leaves_no_half_connection_on_the_partner_side(env, monkeypatch):
+    client, db = env
+    settings(client)
+    code = invite(client).json()["code"]
+    real_save = ps._save
+    monkeypatch.setattr(ps, "_save", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("database hiccup")))
+    assert client.post("/partner-sharing/connect", json={"code": code}, headers=HB).status_code == 500
+    monkeypatch.setattr(ps, "_save", real_save)
+    assert client.get("/partner-sharing/shared-with-me", headers=HB).json()["shares"] == []         # the partner sees nothing half-made
+    assert client.get("/partner-sharing", headers=HA).json()["connection"] is None
+
+
 def test_one_partner_at_a_time(env):
     client, _ = env
     settings(client)
@@ -283,4 +295,41 @@ def test_cycle_section_has_phase_tips_for_the_partner_and_respects_local_only(en
     assert sec["key"] == "cycle" and sec["range"] and sec["tips"] and "ask them" in sec["tips_caveat"].lower()
     assert "fertile" not in str(sec).lower() and "ovulation" not in str(sec).lower().replace("ovulatory", "")
     client.put("/cycle/settings", json={"privacy": {"local_only": True}}, headers=HA)
-    assert client.get(f"/partner/{token}").json()["sections"] == []                        # silenced, not leaked
+    assert client.get(f"/partner/{token}").json()["sections"][0]["text"] == "No estimate is available right now."   # silenced, and same words as pregnancy
+
+
+# ---- ghost connection, view counter isolation, attempt pruning -------------------------------------------------------------
+
+def test_ghost_connection_is_cleared_when_the_partner_side_is_gone(env):
+    client, db = env
+    settings(client)
+    code = invite(client).json()["code"]
+    assert client.post("/partner-sharing/connect", json={"code": code, "name": "Arjun"}, headers=HB).status_code == 200
+    doc_store.delete_everything(db, B)                        # the partner deleted all their data
+    assert client.get("/partner-sharing", headers=HA).json()["connection"] is None
+    assert invite(client).status_code == 200                  # can invite someone new
+
+
+def test_public_view_does_not_resave_owner_settings(env):
+    client, db = env
+    settings(client)
+    token = link(client).json()["token"]
+    before = doc_store.get_doc(db, A, ps.SHARE_KIND, "main")["version"]
+    client.get(f"/partner/{token}")
+    assert doc_store.get_doc(db, A, ps.SHARE_KIND, "main")["version"] == before
+
+
+def test_local_only_cycle_section_matches_no_estimate_text(env):
+    client, db = env
+    settings(client, categories=["cycle"], note="")
+    client.put("/cycle/settings", json={"privacy": {"local_only": True}}, headers=HA)
+    sec = ps._section_cycle(db, A)
+    assert sec and sec["text"] == "No estimate is available right now."
+
+
+def test_stale_attempt_entries_are_pruned():
+    ps._attempts.clear()
+    ps._attempts["old"] = [0.0]
+    ps._attempts["empty"] = []
+    ps._throttle("someone")
+    assert "old" not in ps._attempts and "empty" not in ps._attempts

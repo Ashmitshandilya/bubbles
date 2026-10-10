@@ -159,7 +159,7 @@ export function PixelGrid({ pixels }: { pixels: Pixels }) {
           <tbody>
             {table.rows.map((row, d) => (
               <tr key={d}>
-                <th scope="row" className="p-0 pr-1 text-right text-[0.6875rem] font-bold text-ink-faint">
+                <th scope="row" className="p-0 pr-1 text-right text-[0.75rem] font-bold text-ink-faint">
                   <span className="sr-only">Day </span>
                   {d + 1}
                 </th>
@@ -167,7 +167,7 @@ export function PixelGrid({ pixels }: { pixels: Pixels }) {
                   cell ? (
                     <td
                       key={m}
-                      className={`relative h-[22px] rounded-md p-0 text-center align-middle text-[0.6875rem] font-extrabold leading-[22px] text-ink ${cell.level ? LEVEL_FILL[cell.level] : "border border-dashed border-line-strong bg-surface"}`}
+                      className={`relative h-[22px] rounded-md p-0 text-center align-middle text-[0.75rem] font-extrabold leading-[22px] text-ink ${cell.level ? LEVEL_FILL[cell.level] : "border border-dashed border-line-strong bg-surface"}`}
                     >
                       <span aria-hidden="true">{cell.level ?? ""}</span>
                       <span className="sr-only">{cell.label}</span>
@@ -184,7 +184,7 @@ export function PixelGrid({ pixels }: { pixels: Pixels }) {
       <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-2 p-0" aria-label="Key">
         {[1, 2, 3, 4, 5].map((l) => (
           <li key={l} className="flex items-center gap-2 text-body-sm font-bold text-ink-soft">
-            <span aria-hidden="true" className={`flex h-[22px] w-[22px] items-center justify-center rounded-md text-[0.6875rem] font-extrabold text-ink ${LEVEL_FILL[l]}`}>
+            <span aria-hidden="true" className={`flex h-[22px] w-[22px] items-center justify-center rounded-md text-[0.75rem] font-extrabold text-ink ${LEVEL_FILL[l]}`}>
               {l}
             </span>
             {MOOD_WORDS[l]}

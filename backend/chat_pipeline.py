@@ -74,7 +74,7 @@ class RateLimiter:
             return False
         hits.append(now)
         if len(self._hits) > 5000:  # bound memory
-            for k in [k for k, v in self._hits.items() if not v][:1000]:
+            for k in [k for k, v in self._hits.items() if not v or now - v[-1] > self.window][:1000]:
                 self._hits.pop(k, None)
         return True
 
@@ -160,6 +160,11 @@ def state_block(current: list[Fact], history_facts: list[Fact]) -> str:
     return "\n".join(out)
 
 
+_QUERY_STOPWORDS = frozenset(
+    "what is are was how can could should would do does i me my mujhe mera meri mere a an the to of in on for it "
+    "this that kya hai hain ho hoga karna chahiye please tell about".split())
+
+
 def evidence_query(facts: list[Fact], message: str) -> str:
     """What to look up in the evidence base: topics the user raised, never denied or other people's symptoms."""
     topics = [_name(f.concept) for f in facts
@@ -167,7 +172,11 @@ def evidence_query(facts: list[Fact], message: str) -> str:
     if topics:
         return " ".join(dict.fromkeys(topics))[:200]
     text = " ".join(message.split())
-    return text[:300] if text.endswith("?") or len(text) <= 160 else ""
+    if not (text.endswith("?") or len(text) <= 160):
+        return ""
+    # Filler words dilute both the keyword and the embedding query; keep the content words.
+    kept = [w for w in text.split() if w.lower().strip("?.,!") not in _QUERY_STOPWORDS]
+    return " ".join(kept)[:300]
 
 
 # --------------------------------------------------------------------------

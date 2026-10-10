@@ -421,7 +421,7 @@ export function Chip({ on, onClick, children, onRemove, removeLabel }: { on?: bo
     return (
       <span className="inline-flex min-h-[44px] items-center gap-1 rounded-full border-2 border-bubbles-grape bg-tint-grape pl-4 pr-1 text-body-sm font-extrabold text-bubbles-grape-deep">
         {children}
-        <button type="button" onClick={onRemove} aria-label={removeLabel ?? "Remove"} className="bubbles-press flex h-9 w-9 items-center justify-center rounded-full hover:bg-surface">
+        <button type="button" onClick={onRemove} aria-label={removeLabel ?? "Remove"} className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
             <path d="M6 6l12 12M18 6 6 18" />
           </svg>

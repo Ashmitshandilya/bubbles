@@ -196,6 +196,9 @@ function Me() {
         <h2 id="account-title" className="sr-only">
           Account
         </h2>
+        <Link href="/partner" className={`${BTN_SECONDARY} no-underline`}>
+          Partner sharing
+        </Link>
         <Link href="/settings" className={`${BTN_SECONDARY} no-underline`}>
           Settings
         </Link>

@@ -13,7 +13,7 @@ import {
   BodyMapCard, ComingUp, Greeting, Patterns, QuickLog, SignalTiles, WhatMatters,
   tileFromCycle, tileFromSignal, type HeroState, type Tile,
 } from "./TodaySections";
-import { WholeHealthCards } from "./WholeHealthCards";
+import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
 import {
   WINDOW_DAYS, buildPatterns, buildTodayItems, greeting, readTracker, summarizeCycle, summarizeSignal, upcomingVisits,
   type SignalSummary,
@@ -221,6 +221,7 @@ export function DashboardClient() {
           <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
 
           <WholeHealthCards />
+          <PartnerCard />
 
           <div className="flex flex-wrap items-start gap-6">
             <SignalTiles tiles={tiles} />
