@@ -6,6 +6,7 @@ import { useApi, useAuth } from "../../components/Providers";
 import { BTN_SECONDARY, CARD, HubPage, Icon, PILL, SignOutButton, Skeleton, useBubblesQuery } from "../../components/hub/HubKit";
 import { COMPAT_FIX_FILE, MESSAGES, databaseSummary } from "../lib/connection";
 import type { PartnerSharingStatus } from "../lib/partner-sharing";
+import { VeilSwitch } from "../../components/PrivacyVeil";
 import { NotificationSettingsCard } from "../../components/wellness/NotificationSettingsCard";
 import { YourDataCard } from "../../components/wellness/YourDataCard";
 import { partnerSummary } from "./summary";
@@ -166,6 +167,17 @@ function Settings() {
             <div className={ROW}>
               <dt className="font-bold text-ink">Reduce motion</dt>
               <dd className="m-0 text-body-sm text-muted">{reducedMotion ? "On, following your device" : "Off, following your device"}</dd>
+            </div>
+            <div className={ROW}>
+              <dt className="min-w-0 max-w-[26rem] font-bold text-ink">
+                <span id="veil-label">Privacy veil</span>
+                <span id="veil-hint" className="block text-body-sm font-normal text-muted">
+                  Blurs health values and chats when you switch tabs or press Hide in the top bar. Tap a blurred area to show it. Off by default, saved on this device only.
+                </span>
+              </dt>
+              <dd className="m-0">
+                <VeilSwitch labelledBy="veil-label" describedBy="veil-hint" />
+              </dd>
             </div>
           </dl>
 

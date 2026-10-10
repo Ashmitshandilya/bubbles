@@ -65,6 +65,10 @@ export interface InsightItem {
 export interface WeeklyInsights {
   insights: InsightItem[];
   disclaimer: string;
+  /** Entries Bubbles recorded in the last 7 days; `sufficient_for_pattern_detection` is true from 3 entries. */
+  data_quality?: { event_count?: number; sufficient_for_pattern_detection?: boolean } | null;
+  /** Event types recorded in the same window, most frequent first. */
+  trend?: { signals?: Array<{ event_type: string; count: number }> } | null;
 }
 
 export interface CorrelationItem {

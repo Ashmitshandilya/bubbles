@@ -526,7 +526,7 @@ export function CompanionClient() {
                 {messages.map((m, i) =>
                   m.role === "user" ? (
                     <li key={m.clientId ?? m.id} className="bubbles-rise flex max-w-[85%] flex-col items-end gap-1 self-end sm:max-w-[min(72%,34rem)]">
-                      <p className="m-0 whitespace-pre-wrap break-words rounded-[22px_22px_8px_22px] bg-bubbles-pink-ink px-[18px] py-3.5 shadow-[0_3px_0_var(--bubbles-pink-deep)] text-body font-semibold leading-normal text-white">
+                      <p data-private className="m-0 whitespace-pre-wrap break-words rounded-[22px_22px_8px_22px] bg-bubbles-pink-ink px-[18px] py-3.5 shadow-[0_3px_0_var(--bubbles-pink-deep)] text-body font-semibold leading-normal text-white">
                         <span className="sr-only">You: </span>
                         {m.content}
                       </p>

@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { useRouter } from "next/navigation";
 import { ApiAlert, Header, MobileNav, SectionTabs, Sidebar } from "../Navigation";
 import { BubblesMascot } from "../BubblesMascot";
+import { SoapPop } from "../SoapPop";
 import { useApi, useAuth } from "../Providers";
 import {
   byNewest, dayLabel, daysAgo, formatNumber, parseWhen, present, startOfDay, toNumber,
@@ -195,7 +196,7 @@ export function StatGrid({ stats, signal }: { stats: StatValue[]; signal: Signal
             {st.value === null ? (
               <span className="font-display text-h4 text-muted">{st.gap ?? "Not logged yet"}</span>
             ) : (
-              <span className="font-display text-metric text-default">{st.value}</span>
+              <span data-private className="font-display text-metric text-default">{st.value}</span>
             )}
           </dd>
           {st.note && <dd className="m-0 text-body-sm font-semibold text-muted">{st.note}</dd>}
@@ -675,7 +676,7 @@ export function EntryRow({ signal, icon, title, time, children }: { signal: Sign
       <span className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${s.tint} ${s.ink}`}>
         <Icon name={icon} size={20} />
       </span>
-      <div className="min-w-0 flex-1">
+      <div data-private className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
           <p className="m-0 min-w-0 break-words font-display text-h4 text-default">{title}</p>
           {time && <span className="shrink-0 text-body-sm font-bold text-muted">{time}</span>}
@@ -721,7 +722,10 @@ export function SavedToast({ trigger, message }: { trigger: string | null; messa
     <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-28 z-[70] flex justify-center px-4 lg:bottom-8">
       {shown && (
         <div key={shown} className="bubbles-pop-in flex max-w-full items-center gap-3 rounded-full border-2 border-line bg-surface py-2 pl-2 pr-5 shadow-lg">
-          <BubblesMascot size={40} mood="happy" />
+          <span className="relative flex shrink-0">
+            <SoapPop />
+            <BubblesMascot size={40} mood="happy" />
+          </span>
           <span className="text-body-sm font-extrabold text-default">{message}</span>
         </div>
       )}
@@ -751,7 +755,7 @@ export function WeekBars({ title, entries, field, unit, signal, minScale, decima
       <h2 id={headingId} className="m-0 font-display text-h3 text-default">
         {title}
       </h2>
-      <ul className="m-0 mt-4 grid list-none grid-cols-7 gap-1.5 p-0 sm:gap-3">
+      <ul data-private className="m-0 mt-4 grid list-none grid-cols-7 gap-1.5 p-0 sm:gap-3">
         {totals.map((total, i) => {
           const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
           const name = i === 6 ? "Today" : day.toLocaleDateString(undefined, { weekday: "short" });

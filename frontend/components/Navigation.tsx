@@ -1,5 +1,6 @@
 "use client";
 
+import { VeilToggle } from "./PrivacyVeil";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -410,6 +411,7 @@ export function Header({
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <span className="hidden sm:inline-flex"><StatusLine apiStatus={apiStatus} /></span>
+            <VeilToggle />
             <NotificationBell />
             <Link
               href="/profile"

@@ -274,6 +274,28 @@ input::placeholder, textarea::placeholder { color: var(--bubbles-ink-faint); opa
 .bubbles-lift { transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-standard); }
 .bubbles-lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
 
+/* Privacy veil. components/PrivacyVeil.tsx sets data-privacy-veil on <html> while values should be hidden.
+   Put data-private on any health value or chat text; a tap on it shows everything again. */
+[data-private] { transition: filter 160ms var(--ease-standard); }
+html[data-privacy-veil="on"] [data-private] {
+  filter: blur(7px);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Soap pop: a tiny bubble burst behind the mascot in the Saved toast (components/SoapPop.tsx).
+   Everything starts invisible and only the animation shows it, so it stays hidden if animations are off. */
+.soap-pop { position: absolute; inset: 0; display: block; pointer-events: none; }
+.soap-pop-ring, .soap-pop-drop { position: absolute; left: 50%; top: 50%; border-radius: 9999px; opacity: 0; }
+.soap-pop-ring { width: 36px; height: 36px; margin: -18px 0 0 -18px; border: 2px solid var(--bubbles-sky); animation: soap-ring 420ms var(--ease-out) both; }
+.soap-pop-drop { width: var(--size); height: var(--size); margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2); background: var(--bubbles-pink); animation: soap-drop 520ms var(--ease-out) both; }
+.soap-pop-drop:nth-child(4n+3) { background: var(--bubbles-sky); }
+.soap-pop-drop:nth-child(4n+4) { background: var(--bubbles-sun); }
+.soap-pop-drop:nth-child(4n+5) { background: var(--bubbles-mint); }
+@keyframes soap-drop { 0% { opacity: 0; transform: translate(0, 0) scale(.3); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
+@keyframes soap-ring { 0% { opacity: .9; transform: scale(.55); } 100% { opacity: 0; transform: scale(1.7); } }
+
 /* Reserve room under the floating Ask Bubbles button so the last rows of any page
    can scroll clear of it instead of hiding beneath it. */
 body:has(.bubbles-ask-fab) main { padding-bottom: 7rem; }
@@ -285,4 +307,6 @@ body:has(.bubbles-ask-fab) main { padding-bottom: 7rem; }
   .bubbles-skeleton, .bubbles-pulse-dot, .petal-decoration, .sparkle-dot { animation: none !important; }
   .bubbles-press, .bubbles-lift { transition: none; }
   .bubbles-press:hover:not(:disabled), .bubbles-lift:hover { transform: none; }
+  [data-private] { transition: none; }
+  .soap-pop { display: none; }
 }

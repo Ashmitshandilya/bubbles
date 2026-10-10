@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
+import { PrivacyVeilProvider } from "../components/PrivacyVeil";
 import { AuthLinkRedirect } from "../components/AuthLinkRedirect";
 
 // Self-hosted by next/font (no runtime request to Google) with size-adjusted
@@ -50,7 +51,7 @@ export default function RootLayout({
     <html lang="en" className={`${nunito.variable} ${fredoka.variable}`}>
       <body className="bubbles-shell min-h-dvh flex flex-col">
         <AuthLinkRedirect />
-        {children}
+        <PrivacyVeilProvider>{children}</PrivacyVeilProvider>
       </body>
     </html>
   );

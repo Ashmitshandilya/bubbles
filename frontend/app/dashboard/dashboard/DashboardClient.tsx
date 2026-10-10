@@ -14,6 +14,8 @@ import {
   tileFromCycle, tileFromSignal, type HeroState, type Tile,
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
+import { WeekRecapCard } from "./WeekRecapCard";
+import { buildWeekRecap } from "./recap";
 import {
   WINDOW_DAYS, buildPatterns, buildTodayItems, greeting, readTracker, summarizeCycle, summarizeSignal, upcomingVisits,
   type SignalSummary,
@@ -234,6 +236,8 @@ export function DashboardClient() {
               />
             </aside>
           </div>
+
+          <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} />
 
           <WholeHealthCards />
           <PartnerCard />

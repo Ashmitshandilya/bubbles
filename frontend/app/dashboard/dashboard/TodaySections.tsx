@@ -262,7 +262,7 @@ function NextStep({ item, onAddWater, waterBusy }: { item: TodayItem } & WaterPr
         <span className={`text-label font-extrabold ${tone.ink}`}>{item.label}</span>
         <EvidenceChip pill={item.pill} />
       </div>
-      <div className="relative flex max-w-[44rem] flex-col gap-2.5">
+      <div data-private className="relative flex max-w-[44rem] flex-col gap-2.5">
         <strong className="font-display text-[1.5rem] font-semibold leading-snug sm:text-[2rem]">{item.headline}</strong>
         <p className="m-0 text-base leading-relaxed text-ink-soft">{item.body}</p>
       </div>
@@ -284,8 +284,8 @@ function AlsoCard({ item, onAddWater, waterBusy }: { item: TodayItem } & WaterPr
         <span className={`text-sm font-extrabold ${tone.ink}`}>{item.label}</span>
         <EvidenceChip pill={item.pill} />
       </div>
-      <strong className="font-display text-lg font-semibold leading-snug">{item.headline}</strong>
-      <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">{item.body}</p>
+      <strong data-private className="font-display text-lg font-semibold leading-snug">{item.headline}</strong>
+      <p data-private className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">{item.body}</p>
       <div className="mt-auto flex flex-wrap items-start gap-2">
         <PrimaryAction item={item} onAddWater={onAddWater} waterBusy={waterBusy} quiet />
         {item.secondary && <Link href={item.secondary.href} className={BTN_QUIET}>{item.secondary.label}</Link>}
@@ -419,11 +419,11 @@ function SignalTile({ tile }: { tile: Tile }) {
         </>
       ) : (
         <>
-          <span className="flex items-center justify-between gap-3">
+          <span data-private className="flex items-center justify-between gap-3">
             <span className="font-display text-[1.625rem] font-semibold leading-tight sm:text-[1.875rem]">{tile.value}</span>
             {tile.bars && <Spark bars={tile.bars} slug={tile.slug} />}
           </span>
-          <span className="mt-auto flex items-center gap-2.5 text-[0.8125rem] font-semibold text-ink-soft">
+          <span data-private className="mt-auto flex items-center gap-2.5 text-[0.8125rem] font-semibold text-ink-soft">
             {tile.trend && <TrendGlyph trend={tile.trend} slug={tile.slug} />}
             {tile.detail}
           </span>
@@ -460,8 +460,8 @@ export function Patterns({ state, items, note, onRetry }: { state: "loading" | "
           {items.map((item) => (
             <li key={item.id} className={CARD}>
               <EvidenceChip pill={item.pill} />
-              <strong className="text-base leading-snug">{item.title}</strong>
-              {item.detail && <p className="m-0 text-sm leading-relaxed text-ink-soft">{item.detail}</p>}
+              <strong data-private className="text-base leading-snug">{item.title}</strong>
+              {item.detail && <p data-private className="m-0 text-sm leading-relaxed text-ink-soft">{item.detail}</p>}
               <Link href="/insights" className={TEXT_LINK}>See the evidence</Link>
             </li>
           ))}
@@ -491,7 +491,7 @@ export function ComingUp({ cycle, visits, loading, failed }: { cycle: CycleInfo 
         <>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {rows.map((row) => (
-              <li key={row.id} className="flex items-center gap-3 text-[0.9375rem] font-bold">
+              <li key={row.id} data-private className="flex items-center gap-3 text-[0.9375rem] font-bold">
                 <span className={`h-3 w-3 shrink-0 rounded-full ${row.dot}`} aria-hidden="true" />
                 {row.text}
               </li>

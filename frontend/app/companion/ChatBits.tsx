@@ -288,7 +288,7 @@ function EventCard({
           const struck = state === "retracted" ? "line-through" : "";
           return (
             <li key={event.id ?? `${event.eventType}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-line bg-surface px-3 py-2">
-              <div className="min-w-0 text-body-sm">
+              <div data-private className="min-w-0 text-body-sm">
                 {denied ? (
                   <>
                     <strong className="font-extrabold">Not present</strong>
@@ -386,7 +386,7 @@ export function BubblesReply({
           </div>
           <details className="text-body-sm text-ink-soft">
             <summary className="flex min-h-[44px] cursor-pointer items-center font-extrabold">Show the original message</summary>
-            <div className="pt-2 text-body leading-relaxed opacity-80">
+            <div data-private className="pt-2 text-body leading-relaxed opacity-80">
               <MessageBody content={message.content} />
             </div>
           </details>
@@ -444,7 +444,7 @@ export function BubblesReply({
           )}
         </div>
       )}
-      <div className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink shadow-[0_3px_0_var(--tint-grape)]">
+      <div data-private className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink shadow-[0_3px_0_var(--tint-grape)]">
         <MessageBody content={message.content} />
         <EvidenceRow evidence={message.evidence ?? []} confidence={message.confidence} />
       </div>
