@@ -113,7 +113,7 @@ export const SECTIONS: readonly Section[] = [
 ];
 
 /** Account pages: reached from the bottom of the menu and the profile button, not a main place. */
-const ME: Section = {
+export const ME: Section = {
   id: "me", label: "Me", icon: "profile", href: "/profile", match: ["/profile", "/settings", "/notifications"],
   tabs: [{ label: "Me", href: "/profile" }, { label: "Settings", href: "/settings" }, { label: "Reminders", href: "/notifications" }],
 };

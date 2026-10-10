@@ -1,10 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth, useApi } from "./Providers";
 import { BubblesMascot } from "./BubblesMascot";
 import { askHref } from "../app/lib/ask-handoff";
+import { ME, SECTIONS } from "./Navigation";
+import { buildItems, buildRows, loadRecents, recordRecent, type PaletteRow } from "./commandPalette";
 
 const FALLBACK_SUGGESTIONS = [
   "How's my sleep this week?",
@@ -19,9 +22,10 @@ const chip =
   "min-h-[44px] rounded-full border-2 border-bubbles-grape/20 bg-surface px-3.5 text-left text-body-sm font-extrabold text-bubbles-grape-deep transition-colors hover:border-bubbles-grape";
 
 /**
- * Floating quick-ask on every app page. A native modal <dialog> provides the
- * focus containment, Esc-to-close and focus return; questions open in /companion. Long text is handed over
- * through sessionStorage (see askHref) so health details never sit in the URL.
+ * "Ask or jump": a keyboard-first command palette on every app page (Ctrl+K or Cmd+K, or the floating button).
+ * Typing filters pages and quick actions; free text still asks Bubbles in /companion. A native modal <dialog>
+ * provides focus containment and Esc-to-close. Long questions are handed over through sessionStorage (see
+ * askHref) so health details never sit in the URL. Only route ids are remembered, never what was typed.
  */
 export function AskBubbles() {
   const router = useRouter();
@@ -32,9 +36,26 @@ export function AskBubbles() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>(FALLBACK_SUGGESTIONS);
   const [recentQueries, setRecentQueries] = useState<string[]>([]);
+  const [recentIds, setRecentIds] = useState<string[]>([]);
+  const [active, setActive] = useState(0);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const listId = useId();
+
+  const items = useMemo(() => buildItems([...SECTIONS, ME]), []);
+  const rows = useMemo(() => buildRows(items, query, recentIds), [items, query, recentIds]);
+  const activeIndex = Math.min(active, rows.length - 1);
+  const optionId = (i: number) => `${listId}-opt-${i}`;
+
+  const openPalette = useCallback(() => {
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setRecentIds(loadRecents());
+    setQuery("");
+    setActive(0);
+    setIsOpen(true);
+  }, []);
 
   const loadSuggestions = useCallback(async () => {
     try {
@@ -86,6 +107,26 @@ export function AskBubbles() {
     };
   }, [isOpen]);
 
+  // Ctrl+K / Cmd+K toggles the palette from anywhere in the app (not while another dialog, like the menu sheet, is open).
+  useEffect(() => {
+    if (!session) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.key.toLowerCase() !== "k") return;
+      const other = document.querySelector("dialog[open]");
+      if (other && other !== dialogRef.current) return;
+      e.preventDefault();
+      if (isOpen) setIsOpen(false);
+      else openPalette();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [session, isOpen, openPalette]);
+
+  // Keep the highlighted row in view while arrowing through a long list.
+  useEffect(() => {
+    if (isOpen) document.getElementById(`${listId}-opt-${activeIndex}`)?.scrollIntoView({ block: "nearest" });
+  }, [isOpen, activeIndex, listId, rows]);
+
   function ask(text: string) {
     const question = text.trim();
     if (!question) return;
@@ -95,32 +136,86 @@ export function AskBubbles() {
     router.push(askHref(question));
   }
 
-  // The Today dashboard has its own inline Ask Bubbles box, so the floating button would only cover content there.
-  if (!session || pathname === "/dashboard") return null;
+  function activate(row: PaletteRow | undefined) {
+    if (!row) return;
+    if (row.kind === "ask") return ask(row.question);
+    setRecentIds(recordRecent(row.id, items));
+    setQuery("");
+    setIsOpen(false);
+    router.push(row.href);
+  }
+
+  function onInputKeyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
+    const el = e.currentTarget;
+    const atStart = el.selectionStart === 0 && el.selectionEnd === 0;
+    const atEnd = el.selectionStart === el.value.length && el.selectionEnd === el.value.length;
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setActive((activeIndex + 1) % rows.length);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setActive((activeIndex - 1 + rows.length) % rows.length);
+        break;
+      // Home/End jump the list only when the caret has nowhere to go, so editing a long question still works.
+      case "Home":
+        if (atStart) {
+          e.preventDefault();
+          setActive(0);
+        }
+        break;
+      case "End":
+        if (atEnd) {
+          e.preventDefault();
+          setActive(rows.length - 1);
+        }
+        break;
+      case "Enter":
+        if (e.nativeEvent.isComposing) break;
+        e.preventDefault();
+        activate(rows[activeIndex]);
+        break;
+    }
+  }
+
+  if (!session) return null;
+
+  const pages = rows.filter((r) => r.kind !== "ask").length;
+  const hasAsk = rows[0]?.kind === "ask";
+  const status = !query.trim()
+    ? `${pages} shortcuts`
+    : pages === 0
+      ? "No matching pages. Press Enter to ask Bubbles."
+      : `${pages} ${pages === 1 ? "page" : "pages"}${hasAsk ? ", or ask Bubbles" : ""}`;
 
   return (
     <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setIsOpen(true)}
-        aria-label="Ask Bubbles"
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        className="bubbles-ask-fab bubbles-press fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-sticky flex h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 text-white shadow-[0_5px_0_var(--bubbles-grape-deep)] lg:bottom-6 lg:right-6 lg:pr-5"
-      >
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
-          <BubblesMascot size={40} />
-        </span>
-        <span className="hidden text-body font-extrabold lg:inline">Ask Bubbles</span>
-      </button>
+      {/* The Today dashboard has its own inline Ask Bubbles box, so the floating button would only cover content there. */}
+      {pathname !== "/dashboard" && (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={openPalette}
+          aria-label="Ask Bubbles"
+          aria-haspopup="dialog"
+          aria-keyshortcuts="Control+K Meta+K"
+          aria-expanded={isOpen}
+          className="bubbles-ask-fab bubbles-press fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-sticky flex h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 text-white shadow-[0_5px_0_var(--bubbles-grape-deep)] lg:bottom-6 lg:right-6 lg:pr-5"
+        >
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
+            <BubblesMascot size={40} />
+          </span>
+          <span className="hidden text-body font-extrabold lg:inline">Ask Bubbles</span>
+        </button>
+      )}
 
       <dialog
         ref={dialogRef}
         aria-labelledby="ask-bubbles-title"
         onClose={() => {
           setIsOpen(false);
-          triggerRef.current?.focus();
+          (openerRef.current?.isConnected ? openerRef.current : triggerRef.current)?.focus();
         }}
         onClick={(e) => {
           if (e.target === e.currentTarget) setIsOpen(false);
@@ -134,9 +229,11 @@ export function AskBubbles() {
                 <BubblesMascot size={48} />
                 <div>
                   <h2 id="ask-bubbles-title" className="m-0 font-display text-h3 font-semibold">
-                    Ask Bubbles
+                    Ask or jump
                   </h2>
-                  <p className="m-0 text-body-sm text-ink-soft">Quick question? Bubbles answers in your chat.</p>
+                  <p className="m-0 text-body-sm text-ink-soft">
+                    Find a page, or ask Bubbles. <span className="hidden sm:inline">Shortcut: Ctrl K or Cmd K.</span>
+                  </p>
                 </div>
               </div>
               <button
@@ -151,41 +248,72 @@ export function AskBubbles() {
               </button>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                ask(query);
-              }}
-              className="flex flex-col gap-1.5"
-            >
+            <div className="flex flex-col gap-1.5">
               <label htmlFor="ask-bubbles-input" className="text-body-sm font-extrabold">
-                Your question
+                Search pages or ask a question
               </label>
               <div className="flex items-center gap-2 rounded-full border-2 border-ink bg-surface py-1.5 pl-4 pr-1.5 focus-within:border-bubbles-grape">
                 <input
                   ref={inputRef}
                   id="ask-bubbles-input"
                   type="text"
+                  role="combobox"
+                  aria-expanded="true"
+                  aria-controls={listId}
+                  aria-autocomplete="list"
+                  aria-activedescendant={rows.length ? optionId(activeIndex) : undefined}
                   value={query}
                   maxLength={8000}
                   autoComplete="off"
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="e.g. How's my sleep this week?"
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setActive(0);
+                  }}
+                  onKeyDown={onInputKeyDown}
+                  placeholder="e.g. sleep, log water, or How's my sleep this week?"
                   className="min-h-[44px] min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-none focus-visible:outline-none"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => ask(query)}
                   disabled={!query.trim()}
                   className="bubbles-press min-h-[44px] shrink-0 rounded-full bg-bubbles-grape px-5 text-body-sm font-extrabold text-white shadow-[0_4px_0_var(--bubbles-grape-deep)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Ask
                 </button>
               </div>
-            </form>
+            </div>
 
-            {recentQueries.length > 0 && (
+            <div role="status" aria-live="polite" className="sr-only">
+              {status}
+            </div>
+            <ul
+              id={listId}
+              role="listbox"
+              aria-label={query.trim() ? "Results" : "Shortcuts"}
+              className="m-0 flex max-h-[min(38dvh,19rem)] list-none flex-col gap-1 overflow-y-auto overscroll-contain p-0"
+            >
+              {rows.map((row, i) => (
+                <li
+                  key={row.id}
+                  id={optionId(i)}
+                  role="option"
+                  aria-selected={i === activeIndex}
+                  onMouseMove={() => i !== activeIndex && setActive(i)}
+                  onClick={() => activate(row)}
+                  className={`flex min-h-[44px] cursor-pointer items-center justify-between gap-3 rounded-2xl px-3 text-body-sm font-extrabold ${
+                    i === activeIndex ? "bg-tint-pink text-bubbles-pink-ink outline outline-2 -outline-offset-2 outline-bubbles-grape" : "text-ink"
+                  }`}
+                >
+                  <span className="min-w-0 truncate">{row.label}</span>
+                  <span className="shrink-0 text-label font-bold text-ink-soft">{row.hint}</span>
+                </li>
+              ))}
+            </ul>
+
+            {!query.trim() && recentQueries.length > 0 && (
               <div className="flex flex-col gap-2">
-                <h3 className="m-0 text-label font-extrabold uppercase tracking-wide text-ink-soft">Recent</h3>
+                <h3 className="m-0 text-label font-extrabold uppercase tracking-wide text-ink-soft">Recent questions</h3>
                 <div className="flex flex-wrap gap-2">
                   {recentQueries.map((q) => (
                     <button key={q} type="button" onClick={() => ask(q)} className={chip}>
@@ -196,16 +324,18 @@ export function AskBubbles() {
               </div>
             )}
 
-            <div className="flex flex-col gap-2">
-              <h3 className="m-0 text-label font-extrabold uppercase tracking-wide text-ink-soft">Try asking</h3>
-              <div className="flex flex-wrap gap-2">
-                {suggestions.slice(0, 6).map((s) => (
-                  <button key={s} type="button" onClick={() => ask(s)} className={chip}>
-                    {s}
-                  </button>
-                ))}
+            {!query.trim() && (
+              <div className="flex flex-col gap-2">
+                <h3 className="m-0 text-label font-extrabold uppercase tracking-wide text-ink-soft">Try asking</h3>
+                <div className="flex flex-wrap gap-2">
+                  {suggestions.slice(0, 6).map((s) => (
+                    <button key={s} type="button" onClick={() => ask(s)} className={chip}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <p className="m-0 text-[0.8125rem] font-bold text-ink-soft">Not a diagnosis · for emergencies call your local number</p>
           </div>
