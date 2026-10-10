@@ -4,7 +4,9 @@ import type { NextConfig } from "next";
 // site: the API only accepts requests from heybubbles.in, so the app cannot work from these addresses. A redirect keeps the path, the
 // query and (in the browser) the #fragment, so sign-in links still complete. Preview deployments are not listed and stay reachable.
 const LEGACY_HOSTS = ["bubbles-7x74.vercel.app", "bubbles-7x74-hey-bubbles.vercel.app"];
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://heybubbles.in").replace(/\/+$/, "");
+const CONFIGURED = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/+$/, "");
+// A site address that is itself one of the legacy hosts would redirect to itself forever, so it is ignored.
+const SITE = CONFIGURED && !LEGACY_HOSTS.some((host) => CONFIGURED.includes(host)) ? CONFIGURED : "https://heybubbles.in";
 
 const nextConfig: NextConfig = {
   // Lets a second local server (e.g. a dev server used for testing) build into its
