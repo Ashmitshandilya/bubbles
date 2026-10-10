@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import {
@@ -16,6 +16,19 @@ import {
   useBubblesQuery,
 } from "../../components/hub/HubKit";
 import { formatWhen } from "../lib/dates";
+import {
+  caveats,
+  closestGap,
+  directionInfo,
+  emptyProgressLine,
+  loggedDaysLine,
+  sentence,
+  strengthSteps,
+  topic,
+  whatToTry,
+  type Association,
+  type AssociationsResponse,
+} from "./associations";
 import {
   CARD_LIMIT,
   toCards,
@@ -44,10 +57,11 @@ const DOMAIN_LABEL: Record<string, string> = {
   nutrition: "Food",
 };
 
+// `?log=1` opens the tracker with its log sheet ready; the Cycle page has no such flag.
 const LOG_LINKS = [
-  { href: "/symptoms", label: "Log a symptom", tone: "pink" },
-  { href: "/sleep", label: "Log sleep", tone: "grape" },
-  { href: "/mood", label: "Log mood", tone: "sun" },
+  { href: "/symptoms?log=1", label: "Log a symptom", tone: "pink" },
+  { href: "/sleep?log=1", label: "Log sleep", tone: "grape" },
+  { href: "/mood?log=1", label: "Log mood", tone: "sun" },
   { href: "/cycle", label: "Log your cycle", tone: "pink" },
 ] as const;
 
@@ -161,44 +175,176 @@ function Patterns() {
 
 /* ── Links between the things you log (association engine) ── */
 
-interface AssociationSource {
-  title?: string | null;
-  source_name?: string | null;
-  source_url?: string | null;
-  snippet?: string | null;
-}
-interface Association {
-  id: string;
-  status: string;
-  strength: "weak" | "moderate" | "strong";
-  n_days: number;
-  text: string;
-  sources?: AssociationSource[];
-}
-interface AssociationGap {
-  id: string;
-  text: string;
-}
-interface AssociationsResponse {
-  insights?: Association[];
-  gaps?: AssociationGap[];
-  message?: string;
+const ARROWS = { up: "M7 17 17 7M9 7h8v8", down: "M7 7l10 10M17 9v8H9" } as const;
+
+function Disclosure({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-2xl bg-blush">
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-4 text-body-sm font-extrabold text-bubbles-grape-deep [&::-webkit-details-marker]:hidden">
+        {title}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-180">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </summary>
+      <div className="px-4 pb-4">{children}</div>
+    </details>
+  );
 }
 
-const STRENGTH_PILL = {
-  weak: "bg-tint-sun text-bubbles-sun-deep",
-  moderate: "bg-tint-grape text-bubbles-grape-deep",
-  strong: "bg-tint-mint text-bubbles-mint-deep",
-} as const;
+function StrengthBar({ strength }: { strength: string }) {
+  const steps = strengthSteps(strength);
+  return (
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <div role="img" aria-label={`${strength} link, ${steps} of 3`} className="flex gap-1">
+        {[1, 2, 3].map((n) => (
+          <span key={n} className={`h-2.5 flex-1 rounded-full ${n <= steps ? "bg-bubbles-grape" : "bg-line"}`} />
+        ))}
+      </div>
+      <span className="text-body-sm font-extrabold capitalize text-ink">{strength} link</span>
+    </div>
+  );
+}
 
-// The server sends "<sentence> (N days logged). <caveats>": show the sentence, keep the caveats one tap away.
-const sentence = (text: string) => text.split(" (")[0];
-const caveats = (text: string) => text.slice(text.indexOf(". ") + 2);
+function DirectionRow({ direction }: { direction: string | undefined }) {
+  const info = directionInfo(direction);
+  if (!info) return null;
+  return (
+    <div className="flex min-w-0 items-start gap-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tint-grape text-bubbles-grape-deep">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d={ARROWS[info.arrow]} />
+        </svg>
+      </span>
+      <span className="text-body-sm font-bold leading-snug text-ink-soft">{info.text}</span>
+    </div>
+  );
+}
+
+function AssociationCard({ item }: { item: Association }) {
+  const note = caveats(item.text);
+  const sources = item.sources ?? [];
+  return (
+    <article className={`${CARD} flex h-full flex-col gap-4 p-5 sm:p-6`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`${PILL} bg-tint-grape text-bubbles-grape-deep`}>May be linked</span>
+        {item.status === "repeated_pattern" && <span className={`${PILL} bg-tint-mint text-bubbles-mint-deep`}>Seen in two periods</span>}
+      </div>
+
+      {item.domains && item.domains.length > 1 && (
+        <ul className="m-0 flex list-none flex-wrap items-center gap-2 p-0" aria-label="What was compared">
+          {item.domains.slice(0, 2).map((key, i) => {
+            const tone = TONE[toneFor(`${key} ${topic(key)}`)];
+            return (
+              <li key={key} className="flex items-center gap-2">
+                {i > 0 && <span className="text-body-sm font-extrabold text-muted" aria-hidden="true">+</span>}
+                <span className={`${PILL} ${tone.chip}`}>
+                  <span className={`h-2 w-2 rounded-full ${tone.dot}`} aria-hidden="true" />
+                  {humanize(topic(key))}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      <p className="m-0 font-display text-h4 text-ink">{sentence(item.text)}.</p>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <StrengthBar strength={item.strength} />
+        <DirectionRow direction={item.direction} />
+      </div>
+
+      <p className="m-0 text-body-sm text-muted">Based on {item.n_days} days where both were logged. An association in your logs, not a cause.</p>
+
+      <div className="rounded-2xl border-2 border-dashed border-line-strong p-4">
+        <p className="m-0 text-label font-extrabold text-ink-soft">What to try</p>
+        <p className="m-0 mt-1 text-body-sm text-ink">{whatToTry(item)}</p>
+      </div>
+
+      <div className="mt-auto flex flex-col gap-2">
+        {note && (
+          <Disclosure title="Things to keep in mind">
+            <p className="m-0 text-body-sm text-muted">{note}</p>
+          </Disclosure>
+        )}
+        {sources.length > 0 && (
+          <Disclosure title={`Sources (${sources.length})`}>
+            <ul className="m-0 list-none space-y-2 p-0">
+              {sources.map((source, i) => (
+                <li key={`${source.source_url ?? source.title}-${i}`} className="text-body-sm text-muted">
+                  {source.snippet}
+                  {source.source_url?.startsWith("https://") && (
+                    <>
+                      {" "}
+                      <a href={source.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-bubbles-grape-deep">
+                        {source.source_name ?? "Source"}
+                      </a>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Disclosure>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function AssociationsEmpty({ data, days }: { data: AssociationsResponse; days: number }) {
+  const gaps = data.gaps ?? [];
+  const progress = closestGap(gaps);
+  const logged = loggedDaysLine(data.data_days);
+  const others = gaps.filter((gap) => gap.id !== progress?.id).slice(0, 3);
+  return (
+    <div className={`${CARD} flex flex-col gap-4 p-5 sm:p-6`}>
+      <div className="flex flex-wrap items-center gap-4">
+        <BubblesMascot size={64} mood="resting" animated={false} />
+        <div className="min-w-[12rem] flex-1">
+          <p className="m-0 font-display text-h4 text-ink">No link to show yet</p>
+          <p className="m-0 mt-1 text-body-sm text-muted">{data.message ?? "No reliable link between the things you log yet."}</p>
+        </div>
+      </div>
+
+      {progress && (
+        <div
+          role="progressbar"
+          aria-label={`${progress.pair}, days logged together`}
+          aria-valuemin={0}
+          aria-valuemax={progress.need}
+          aria-valuenow={Math.min(progress.have, progress.need)}
+          className="h-3 overflow-hidden rounded-full bg-line"
+        >
+          <div className="h-full rounded-full bg-bubbles-grape" style={{ width: `${Math.round(progress.fraction * 100)}%` }} />
+        </div>
+      )}
+      <p className="m-0 text-body text-ink">{emptyProgressLine(progress)}</p>
+      {logged && <p className="m-0 text-body-sm text-muted">{logged} The last {days} days are checked.</p>}
+
+      {others.length > 0 && (
+        <ul className="m-0 list-disc space-y-1 pl-5 text-body-sm text-ink-soft">
+          {others.map((gap) => (
+            <li key={gap.id}>{gap.text}</li>
+          ))}
+        </ul>
+      )}
+
+      <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+        {LOG_LINKS.map((link) => (
+          <li key={link.href}>
+            <Link href={link.href} className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full px-4 text-body-sm font-extrabold no-underline ${TONE[link.tone].chip}`}>
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function LinksSection() {
   const [links, reload] = useBubblesQuery<AssociationsResponse>("/wellness/associations?days=90");
   const insights = links.status === "ready" ? links.data.insights ?? [] : [];
-  const gaps = links.status === "ready" ? links.data.gaps ?? [] : [];
 
   return (
     <section aria-labelledby="links-title" aria-busy={links.status === "loading"} className="space-y-3">
@@ -213,55 +359,15 @@ function LinksSection() {
       {links.status === "loading" && <Skeleton className="h-28 rounded-3xl" />}
       {links.status === "error" && <ErrorCard title="Links didn't load" message={links.message} onRetry={reload} />}
       {links.status === "ready" && insights.length > 0 && (
-        <ul className="bubbles-stagger m-0 grid list-none gap-3 p-0 md:grid-cols-2">
+        <ul className="bubbles-stagger m-0 grid list-none gap-4 p-0 md:grid-cols-2">
           {insights.map((item) => (
-            <li key={item.id} className={`${CARD} p-5`}>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`${PILL} ${STRENGTH_PILL[item.strength] ?? STRENGTH_PILL.weak}`}>{item.strength} link</span>
-                {item.status === "repeated_pattern" && <span className={`${PILL} bg-tint-mint text-bubbles-mint-deep`}>seen in two periods</span>}
-                <span className="text-[0.8125rem] font-bold text-muted">{item.n_days} days</span>
-              </div>
-              <p className="mt-3 text-body font-bold text-ink">{sentence(item.text)}.</p>
-              <details className="mt-2">
-                <summary className="cursor-pointer text-body-sm font-extrabold text-bubbles-grape-deep">Things to keep in mind</summary>
-                <p className="mt-1 text-body-sm text-muted">{caveats(item.text)}</p>
-              </details>
-              {item.sources && item.sources.length > 0 && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-body-sm font-extrabold text-bubbles-grape-deep">What published sources say</summary>
-                  <ul className="m-0 mt-1 list-none space-y-2 p-0">
-                    {item.sources.map((source, i) => (
-                      <li key={`${source.source_url ?? source.title}-${i}`} className="text-body-sm text-muted">
-                        {source.snippet}
-                        {source.source_url?.startsWith("https://") && (
-                          <>
-                            {" "}
-                            <a href={source.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-bubbles-grape-deep">
-                              {source.source_name ?? "Source"}
-                            </a>
-                          </>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
+            <li key={item.id}>
+              <AssociationCard item={item} />
             </li>
           ))}
         </ul>
       )}
-      {links.status === "ready" && insights.length === 0 && (
-        <div className={`${CARD} p-5`}>
-          <p className="m-0 text-body text-muted">{links.data.message ?? "No reliable link between the things you log yet."}</p>
-          {gaps.length > 0 && (
-            <ul className="m-0 mt-3 list-disc space-y-1 pl-5 text-body-sm text-ink-soft">
-              {gaps.map((gap) => (
-                <li key={gap.id}>{gap.text}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
+      {links.status === "ready" && insights.length === 0 && <AssociationsEmpty data={links.data} days={90} />}
     </section>
   );
 }

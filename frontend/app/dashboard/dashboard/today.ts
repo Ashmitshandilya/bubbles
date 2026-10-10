@@ -75,6 +75,9 @@ const METRICS: Record<DailySlug, { pick: (e: TrackerEntry) => number | undefined
   nutrition: { pick: () => 1, perDay: "sum", week: "total", format: (n) => plural(n, "meal") },
 };
 
+/** Direction of this week against the user's own previous weeks. Only set when there are enough logged days on both sides. */
+export type Trend = "up" | "down" | "steady";
+
 export interface Change {
   direction: "up" | "down";
   percent: number;
@@ -95,6 +98,8 @@ export interface SignalSummary {
   bars: number[];
   lastLogged?: string;
   change?: Change;
+  /** up/down = a 15% or larger move, steady = within 15%; undefined = not enough logged days to compare (a gap, not "steady"). */
+  trend?: Trend;
 }
 
 const average = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -135,6 +140,7 @@ export function summarizeSignal(slug: DailySlug, entries: TrackerEntry[], now: D
     const usual = average(base);
     const percent = usual ? Math.round(((current - usual) / usual) * 100) : 0;
     const usualText = metric.format(usual);
+    summary.trend = Math.abs(percent) >= 15 ? (percent > 0 ? "up" : "down") : "steady";
     if (Math.abs(percent) >= 15) {
       summary.change = {
         direction: percent > 0 ? "up" : "down",
@@ -230,15 +236,18 @@ export interface TodayItem {
   whyHref?: string;
   primary: { label: string; href: string } | "add-water";
   secondary?: { label: string; href: string };
+  /** Set for "this week vs your usual" cards; absent when there is nothing to compare. */
+  trend?: Trend;
 }
 
-export const SIGNAL_META: Record<SignalSlug, { label: string; href: string; noun: string }> = {
-  cycle: { label: "Cycle", href: "/cycle", noun: "period" },
-  sleep: { label: "Sleep", href: "/sleep", noun: "sleep" },
-  mood: { label: "Mood", href: "/mood", noun: "mood" },
-  activity: { label: "Activity", href: "/activity", noun: "movement" },
-  hydration: { label: "Hydration", href: "/hydration", noun: "water" },
-  nutrition: { label: "Nutrition", href: "/nutrition", noun: "meals" },
+/** `log` opens the tracker with its log sheet ready (`?log=1`, see useOpenFromHub in components/tracking/kit.tsx). The Cycle page has no such flag. */
+export const SIGNAL_META: Record<SignalSlug, { label: string; href: string; log: string; noun: string }> = {
+  cycle: { label: "Cycle", href: "/cycle", log: "/cycle", noun: "period" },
+  sleep: { label: "Sleep", href: "/sleep", log: "/sleep?log=1", noun: "sleep" },
+  mood: { label: "Mood", href: "/mood", log: "/mood?log=1", noun: "mood" },
+  activity: { label: "Activity", href: "/activity", log: "/activity?log=1", noun: "movement" },
+  hydration: { label: "Hydration", href: "/hydration", log: "/hydration?log=1", noun: "water" },
+  nutrition: { label: "Nutrition", href: "/nutrition", log: "/nutrition?log=1", noun: "meals" },
 };
 
 const CHANGE_HEADLINE: Record<"sleep" | "mood" | "hydration", Record<"up" | "down", string>> = {
@@ -298,6 +307,7 @@ export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | nul
       headline: CHANGE_HEADLINE[s.slug][s.change.direction],
       body: `About ${s.value} compared with your usual ${s.change.usual}. Worth keeping an eye on, not a cause for alarm on its own.`,
       evidence: s.change.evidence,
+      trend: s.change.direction,
       primary: { label: `Open ${SIGNAL_META[s.slug].noun} tracker`, href: SIGNAL_META[s.slug].href },
     });
   }
@@ -335,8 +345,8 @@ export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | nul
       headline: s.lastLogged ? `No ${meta.noun} logged since ${formatDay(s.lastLogged)}.` : `No ${meta.noun} logged in the last 4 weeks.`,
       body: "Bubbles can't tell how you're doing here yet. A quick log keeps your picture complete.",
       evidence: ["Bubbles only uses what you log. Days without a log stay blank instead of counting as fine."],
-      primary: slug === "hydration" ? "add-water" : { label: `Log ${meta.noun}`, href: meta.href },
-      secondary: slug === "hydration" ? { label: "Log another amount", href: meta.href } : undefined,
+      primary: slug === "hydration" ? "add-water" : { label: `Log ${meta.noun}`, href: meta.log },
+      secondary: slug === "hydration" ? { label: "Log another amount", href: meta.log } : undefined,
     });
   }
 

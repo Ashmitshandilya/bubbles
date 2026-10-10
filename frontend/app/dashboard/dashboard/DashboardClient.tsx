@@ -10,7 +10,7 @@ import { isSupabaseConfigured } from "../../../lib/supabase";
 import { SafetyBanner, type SafetyLevel } from "./SafetyBanner";
 import { LivingSignalMap } from "./LivingSignalMap";
 import {
-  BodyMapCard, ComingUp, Greeting, Patterns, QuickLog, SignalTiles, WhatMatters,
+  BodyMapCard, ComingUp, Greeting, Patterns, QuickLog, SignalTiles, TodayBrief,
   tileFromCycle, tileFromSignal, type HeroState, type Tile,
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
@@ -195,10 +195,7 @@ export function DashboardClient() {
   const showMascot = safety.level !== "RED";
 
   const name = (profile?.display_name ?? user?.display_name ?? "").trim().split(/\s+/)[0]?.slice(0, 40);
-  const context = [
-    now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }),
-    ...(cycle?.day ? [`Cycle day ${cycle.day}`] : []),
-  ].join(" · ");
+  const date = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   const waterStatus =
     water === "saving" || water === "saved" ? { text: "Added 250 ml of water. Nice one!", tone: "ok" as const }
     : water === "error" ? { text: "Couldn't save your water. Please try again.", tone: "error" as const }
@@ -212,16 +209,13 @@ export function DashboardClient() {
         <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
 
         <main id="main" className="bubbles-stagger mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-6 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
-          <Greeting title={name ? `${greeting(now)}, ${name}` : greeting(now)} context={context} mood={mood} showMascot={showMascot} />
+          <Greeting title={name ? `${greeting(now)}, ${name}` : greeting(now)} date={date} cycleDay={cycle?.day} mood={mood} showMascot={showMascot} />
 
           {safety.level !== "GREEN" && <SafetyBanner level={safety.level} reasons={safety.reasons} />}
 
-          <WhatMatters state={heroState} items={items} showMascot={showMascot} onRetry={reload} onAddWater={addWater} waterBusy={water === "saving"} />
+          <TodayBrief state={heroState} items={items} showMascot={showMascot} onRetry={reload} onAddWater={addWater} waterBusy={water === "saving"} />
 
           <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
-
-          <WholeHealthCards />
-          <PartnerCard />
 
           <div className="flex flex-wrap items-start gap-6">
             <SignalTiles tiles={tiles} />
@@ -240,6 +234,9 @@ export function DashboardClient() {
               />
             </aside>
           </div>
+
+          <WholeHealthCards />
+          <PartnerCard />
 
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <LivingSignalMap state={livingMap.status} map={livingMap.status === "ready" ? livingMap.data : null} onRetry={reload} />
