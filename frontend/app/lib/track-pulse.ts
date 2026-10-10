@@ -13,6 +13,8 @@ export interface Pulse {
   daysLogged: number;
   /** Whole days since the newest entry (0 = today); null when nothing is in the window. */
   lastAgo: number | null;
+  /** True for each day in the whole window that has an entry, oldest first; the last item is today. */
+  active: boolean[];
 }
 
 const DAY_MS = 86_400_000;
@@ -23,6 +25,7 @@ function startOfDay(d: Date): number {
 
 export function buildPulse(entries: Array<{ date: string }>, now = new Date()): Pulse {
   const week = Array<number>(7).fill(0);
+  const active = Array<boolean>(PULSE_WINDOW_DAYS).fill(false);
   let lastAgo: number | null = null;
   for (const entry of entries) {
     const when = parseWhen(entry.date);
@@ -31,8 +34,9 @@ export function buildPulse(entries: Array<{ date: string }>, now = new Date()): 
     if (ago < 0) continue; // a future date is not something that was logged yet
     if (lastAgo === null || ago < lastAgo) lastAgo = ago;
     if (ago <= 6) week[6 - ago] += 1;
+    if (ago < PULSE_WINDOW_DAYS) active[PULSE_WINDOW_DAYS - 1 - ago] = true;
   }
-  return { week, daysLogged: week.filter((n) => n > 0).length, lastAgo };
+  return { week, daysLogged: week.filter((n) => n > 0).length, lastAgo, active };
 }
 
 export function lastLoggedText(p: Pulse): string {
@@ -67,4 +71,42 @@ export function rollupToday(pulses: Array<{ label: string; pulse: Pulse | null }
     }
   }
   return out;
+}
+
+export interface CheckIns {
+  /** Whole days in a row with at least one entry in any readable tracker. Today being empty yet never breaks it. */
+  streak: number;
+  /** The last 14 days, oldest first; the last item is today. */
+  recent: boolean[];
+  /** Days with an entry among those 14. */
+  recentDays: number;
+  /** How many trackers could be read. Zero means there is nothing to say. */
+  readable: number;
+}
+
+/**
+ * Check-in days across trackers: a day counts when ANY readable tracker has an entry. An unreadable tracker is skipped, so the
+ * result can only undercount, never invent a day. Today being unfinished never breaks a streak.
+ */
+export function checkIns(pulses: Array<Pulse | null>): CheckIns {
+  const readable = pulses.filter((p): p is Pulse => p !== null);
+  const days = Array<boolean>(PULSE_WINDOW_DAYS).fill(false);
+  for (const p of readable) p.active.forEach((on, i) => { if (on) days[i] = true; });
+  let i = PULSE_WINDOW_DAYS - 1;
+  if (!days[i]) i -= 1; // today not logged yet: count back from yesterday
+  let streak = 0;
+  while (i >= 0 && days[i]) {
+    streak += 1;
+    i -= 1;
+  }
+  const recent = days.slice(-14);
+  return { streak, recent, recentDays: recent.filter(Boolean).length, readable: readable.length };
+}
+
+/** One calm sentence about the streak; never a number of missed days, never blame. */
+export function streakText(c: CheckIns): string {
+  if (c.readable === 0) return "";
+  if (c.streak >= 2) return `${c.streak} days in a row with something logged.`;
+  if (c.streak === 1) return "You logged something recently. One more day makes a run.";
+  return "Every day is a fresh start. One entry is enough.";
 }

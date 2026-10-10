@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPulse, lastLoggedText, rollupToday, weekText } from "./track-pulse";
+import { buildPulse, lastLoggedText, rollupToday, weekText, checkIns, streakText } from "./track-pulse";
 
 const NOW = new Date(2026, 9, 10, 15, 0); // 10 Oct 2026, local
 
@@ -50,5 +50,45 @@ describe("rollupToday", () => {
       { label: "Water", pulse: null },
     ]);
     expect(r).toEqual({ checked: 2, done: ["Sleep"], open: ["Mood"], unknown: ["Water"] });
+  });
+});
+
+describe("check-in days across trackers", () => {
+  const now = new Date(2026, 9, 10, 12, 0, 0);
+  const day = (ago: number) => ({ date: new Date(2026, 9, 10 - ago, 9, 0, 0).toISOString() });
+
+  it("counts a day when any readable tracker has an entry", () => {
+    const sleep = buildPulse([day(0), day(1)], now);
+    const water = buildPulse([day(1), day(2), day(3)], now);
+    const c = checkIns([sleep, water, null]);
+    expect(c.streak).toBe(4);
+    expect(c.readable).toBe(2);
+    expect(c.recent).toHaveLength(14);
+    expect(c.recentDays).toBe(4);
+  });
+
+  it("does not break the streak when today is still empty", () => {
+    const c = checkIns([buildPulse([day(1), day(2), day(3)], now)]);
+    expect(c.streak).toBe(3);
+  });
+
+  it("stops at the first missed day and never counts a gap as a day", () => {
+    const c = checkIns([buildPulse([day(0), day(1), day(3), day(4)], now)]);
+    expect(c.streak).toBe(2);
+    expect(c.recent.slice(-5)).toEqual([true, true, false, true, true]);
+  });
+
+  it("says nothing when no tracker could be read and stays gentle otherwise", () => {
+    expect(streakText(checkIns([null, null]))).toBe("");
+    expect(streakText(checkIns([buildPulse([], now)]))).toBe("Every day is a fresh start. One entry is enough.");
+    expect(streakText(checkIns([buildPulse([day(0)], now)]))).toMatch(/One more day/);
+    expect(streakText(checkIns([buildPulse([day(0), day(1), day(2)], now)]))).toBe("3 days in a row with something logged.");
+    expect(streakText(checkIns([buildPulse([day(0)], now)]))).not.toMatch(/—|missed|lost|broke/i);
+  });
+
+  it("ignores future dates and entries older than the window", () => {
+    const c = checkIns([buildPulse([{ date: new Date(2026, 9, 12).toISOString() }, day(45)], now)]);
+    expect(c.streak).toBe(0);
+    expect(c.recentDays).toBe(0);
   });
 });

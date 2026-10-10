@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
 import { useApi } from "../../components/Providers";
 import { BTN_PRIMARY, BTN_SECONDARY, CARD, Icon, Skeleton, TONE, type Tone } from "../../components/hub/HubKit";
 import { readEntries } from "../lib/api-adapters";
-import { PULSE_WINDOW_DAYS, buildPulse, lastLoggedText, rollupToday, weekText, type Pulse } from "../lib/track-pulse";
+import { PULSE_WINDOW_DAYS, buildPulse, checkIns, lastLoggedText, rollupToday, streakText, weekText, type Pulse } from "../lib/track-pulse";
 
 export interface QuickItem {
   id: string;
@@ -86,6 +86,27 @@ export function QuickLog({ items }: { items: QuickItem[] }) {
   );
 }
 
+/** Calm check-in days: filled dot = something was logged, dashed = a gap. The sentence carries the meaning, the dots are decoration. */
+function CheckInRow({ pulses }: { pulses: Array<Pulse | null> }) {
+  const c = checkIns(pulses);
+  const text = streakText(c);
+  if (!text) return null;
+  return (
+    <div data-private className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <p className="m-0 text-body-sm font-bold text-ink-soft">{text}</p>
+      <span className="flex items-center gap-1" aria-hidden="true">
+        {c.recent.map((on, i) => (
+          <span
+            key={i}
+            className={`h-2.5 w-2.5 rounded-full ${on ? "bg-bubbles-grape" : "border border-dashed border-line-strong"} ${i === c.recent.length - 1 ? "ring-2 ring-bubbles-grape/30 ring-offset-1" : ""}`}
+          />
+        ))}
+      </span>
+      <span className="sr-only">{`Something was logged on ${c.recentDays} of the last 14 days.`}</span>
+    </div>
+  );
+}
+
 function TodayStrip({ items, pulses, onRetry }: { items: QuickItem[]; pulses: PulseMap | null; onRetry: () => void }) {
   if (!pulses) {
     return <Skeleton className="h-[112px] rounded-3xl" />;
@@ -114,6 +135,7 @@ function TodayStrip({ items, pulses, onRetry }: { items: QuickItem[]; pulses: Pu
       <p className="m-0 mt-1 font-display text-h4 text-ink">
         {roll.done.length} of {roll.checked} daily signals logged
       </p>
+      <CheckInRow pulses={items.map((i) => pulses[i.id] ?? null)} />
       {openItems.length > 0 ? (
         <div className="mt-3">
           <p className="m-0 text-body-sm font-bold text-muted">Still open today. Tap one to log it.</p>
