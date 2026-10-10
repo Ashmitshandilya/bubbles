@@ -32,6 +32,7 @@ from health_logs import build_router as build_health_logs_router
 from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
+from chat_feedback import build_router as build_chat_feedback_router
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -374,6 +375,7 @@ app.include_router(build_fitness_router(get_authenticated_user, supabase))
 app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 # Sleep, hydration, medications, mind check-ins and notifications.
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
+app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_import_router(get_authenticated_user, supabase))
 # Cycle: calendar, daily log, predictions with ranges, modes, insights, report, partner view.
 app.include_router(build_cycle_router(get_authenticated_user, supabase))

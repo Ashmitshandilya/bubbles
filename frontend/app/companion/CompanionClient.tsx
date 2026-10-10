@@ -18,6 +18,7 @@ import {
 } from "../lib/bubbles-events";
 import { askHandle, readAsk } from "../lib/ask-handoff";
 import { CHAT_TIMEOUT_MS, chatErrorMessage, isTimeoutError, needsFreshMessageId, resetsConversation } from "../lib/chat-flow";
+import { parseRatings, ratingsPath, type Feedback, type FeedbackReason, type Rating } from "./feedback";
 import {
   BubblesReply,
   ConversationList,
@@ -74,6 +75,9 @@ export function CompanionClient() {
   const [memoryLine, setMemoryLine] = useState("Checking memory…");
   const [eventStatus, setEventStatus] = useState<Record<string, EventStatus>>({});
   const [eventErrors, setEventErrors] = useState<Record<string, string>>({});
+  const [ratings, setRatings] = useState<Record<string, Feedback>>({});
+  const [ratingBusy, setRatingBusy] = useState<Record<string, boolean>>({});
+  const [ratingFailed, setRatingFailed] = useState<Record<string, boolean>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
 
@@ -294,6 +298,19 @@ export function CompanionClient() {
             };
           })
         );
+        // Thumbs already given in this conversation (best effort: a failure just means no highlighted thumbs).
+        const replyIds = rows.filter((m) => m.role !== "user" && typeof m.id === "string").map((m) => m.id as string);
+        if (replyIds.length > 0) {
+          try {
+            const r = await fetchBubbles(ratingsPath(replyIds));
+            if (r.ok) {
+              const found = parseRatings(await r.json());
+              if (view === viewRef.current) setRatings((prev) => ({ ...prev, ...found }));
+            }
+          } catch {
+            /* ratings are optional */
+          }
+        }
       } catch {
         if (view === viewRef.current) setConversationError("Bubbles couldn't open this conversation.");
       } finally {
@@ -315,6 +332,26 @@ export function CompanionClient() {
     if (drawerOpen) setDrawerOpen(false);
     else inputRef.current?.focus();
   }
+
+  const rateReply = useCallback(
+    async (messageId: string, rating: Rating, reason?: FeedbackReason) => {
+      setRatingBusy((prev) => ({ ...prev, [messageId]: true }));
+      setRatingFailed((prev) => ({ ...prev, [messageId]: false }));
+      try {
+        const response = await fetchBubbles("/chat/feedback", {
+          method: "POST",
+          body: JSON.stringify({ message_id: messageId, rating, reason: reason ?? null }),
+        });
+        if (!response.ok) throw new Error(`feedback ${response.status}`);
+        setRatings((prev) => ({ ...prev, [messageId]: { rating, reason: rating === "down" ? reason ?? null : null } }));
+      } catch {
+        setRatingFailed((prev) => ({ ...prev, [messageId]: true }));
+      } finally {
+        setRatingBusy((prev) => ({ ...prev, [messageId]: false }));
+      }
+    },
+    [fetchBubbles]
+  );
 
   const decideEvents = useCallback(
     async (messageId: string, ids: string[], confirmed: boolean) => {
@@ -543,6 +580,10 @@ export function CompanionClient() {
                       chips={m.id === chipsFor ? chips : undefined}
                       onChip={(text) => void sendMessage(text)}
                       chipsDisabled={composerDisabled}
+                      feedback={ratings[m.id]}
+                      feedbackBusy={ratingBusy[m.id] === true}
+                      feedbackFailed={ratingFailed[m.id] === true}
+                      onRate={(rating, reason) => void rateReply(m.id, rating, reason)}
                     />
                   )
                 )}

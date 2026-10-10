@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useId, useRef } from "react";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import { TONE, type Tone } from "../../components/hub/HubKit";
 import {
@@ -18,6 +18,7 @@ import {
   type SafetyLevel,
   type SafetyState,
 } from "../lib/bubbles-events";
+import { FEEDBACK_REASONS, isRatableId, type Feedback, type FeedbackReason, type Rating } from "./feedback";
 
 export type { SafetyLevel };
 export type EventStatus = "busy" | "saved" | "dismissed" | "retracted";
@@ -352,6 +353,68 @@ function EventCard({
   );
 }
 
+const THUMB_UP = "M7 11v9H4v-9zM7 11l4-8a2 2 0 0 1 2 2v4h6a2 2 0 0 1 2 2.3l-1.2 7a2 2 0 0 1-2 1.7H7";
+const THUMB_DOWN = "M17 13V4h3v9zM17 13l-4 8a2 2 0 0 1-2-2v-4H5a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 6.2 5H17";
+
+/** "Was this helpful?" under a calm reply. The server stores a rating and one fixed reason, never the text. */
+function ReplyFeedback({
+  feedback,
+  busy,
+  failed,
+  onRate,
+}: {
+  feedback?: Feedback;
+  busy: boolean;
+  failed: boolean;
+  onRate: (rating: Rating, reason?: FeedbackReason) => void;
+}) {
+  const labelId = useId();
+  const rated = feedback?.rating;
+  const button = (rating: Rating, label: string, d: string) => (
+    <button
+      type="button"
+      aria-pressed={rated === rating}
+      aria-label={label}
+      disabled={busy}
+      onClick={() => onRate(rating)}
+      className={`bubbles-press inline-flex h-11 w-11 items-center justify-center rounded-full border-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+        rated === rating ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
+      }`}
+    >
+      <Icon d={d} size={18} strokeWidth={2} />
+    </button>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <span className="text-body-sm font-bold text-muted" id={labelId}>Was this helpful?</span>
+      <div role="group" aria-labelledby={labelId} className="flex gap-1.5">
+        {button("up", "Yes, this helped", THUMB_UP)}
+        {button("down", "No, this did not help", THUMB_DOWN)}
+      </div>
+      {rated === "up" && <span role="status" className="text-body-sm font-bold text-muted">Thanks, that helps Bubbles.</span>}
+      {failed && <span role="alert" className="text-body-sm font-bold text-bubbles-urgent">Couldn&apos;t save that. Try again.</span>}
+      {rated === "down" && (
+        <div role="group" aria-label="What went wrong?" className="flex w-full flex-wrap gap-2 pt-1">
+          {FEEDBACK_REASONS.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              aria-pressed={feedback?.reason === r.id}
+              disabled={busy}
+              onClick={() => onRate("down", r.id)}
+              className={`bubbles-press min-h-[44px] rounded-full border-2 px-4 text-body-sm font-extrabold disabled:opacity-60 ${
+                feedback?.reason === r.id ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft hover:border-line-strong"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** One Bubbles reply: safety banner, the answer, sources, and the save-to-record card. */
 export function BubblesReply({
   message,
@@ -362,6 +425,10 @@ export function BubblesReply({
   chips = [],
   onChip,
   chipsDisabled = false,
+  feedback,
+  feedbackBusy = false,
+  feedbackFailed = false,
+  onRate,
 }: {
   message: ChatMessage;
   eventStatus: Record<string, EventStatus>;
@@ -373,6 +440,11 @@ export function BubblesReply({
   chips?: string[];
   onChip?: (text: string) => void;
   chipsDisabled?: boolean;
+  /** Thumbs: shown only on calm replies the server has saved. */
+  feedback?: Feedback;
+  feedbackBusy?: boolean;
+  feedbackFailed?: boolean;
+  onRate?: (rating: Rating, reason?: FeedbackReason) => void;
 }) {
   if (message.retracted) {
     // The user corrected Bubbles: a calm card, no alert role, no red, no events or sources. The original text stays
@@ -450,6 +522,9 @@ export function BubblesReply({
       </div>
       {message.healthEvents && message.healthEvents.length > 0 && (
         <EventCard events={message.healthEvents} status={eventStatus} error={eventError} onDecide={onDecide} />
+      )}
+      {onRate && message.role === "assistant" && isRatableId(message.id) && (
+        <ReplyFeedback feedback={feedback} busy={feedbackBusy} failed={feedbackFailed} onRate={onRate} />
       )}
       {chips.length > 0 && onChip && (
         <div role="group" aria-label="Suggested follow-ups" className="flex flex-wrap gap-2">
