@@ -51,3 +51,14 @@ Last reviewed 2026-10-11. This is an honest list: what is in place, what was add
 5. **Render:** move from the free plan (it sleeps, and the in-memory limits reset when it restarts); keep one instance while the limiters are in memory.
 6. **Legal:** a lawyer's review of Privacy and Terms; trademark check; clinical review of the safety rules.
 7. **Database drift:** about 219 tables on the live database have no definition in the repo, and the migration files do not replay in filename order. Export the live schema as the new baseline before anyone else sets up a copy.
+
+## Live verification (2026-10-11, after release c7e5c7a)
+
+Checked on https://heybubbles.in and https://bubbles-dk3v.onrender.com:
+- Website headers present: Content-Security-Policy, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy (microphone allowed for Bubbles only), Cross-Origin-Opener-Policy, HSTS with includeSubDomains.
+- Landing page and sign-in page load with no CSP violations and no console errors; no cookies are set; the sign-in session is not in localStorage. An outside script (the accessibility checker from a CDN) was refused by the browser, which shows the policy is enforced.
+- `/sitemap.xml`, `/robots.txt` (still `Disallow: /`), `/opengraph-image` and `/twitter-image` return 200.
+- API `/docs`, `/redoc` and `/openapi.json` now return 404; `/health` GET and HEAD return 200; CORS still allows only https://heybubbles.in.
+- Bad-token block: 30 requests with a made-up token answered 401, the next ones 429 with `Retry-After: 60`, `/health` stayed 200, and the block cleared by itself after a minute. This also shows Cloudflare supplies the visitor address to the server, so the address limits are active.
+
+Not verified live (needs a real account or dashboard access): sign-in and the authenticator-app setup on the live site, the share preview in WhatsApp or another app, and the Supabase dashboard settings.
