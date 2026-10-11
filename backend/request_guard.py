@@ -39,22 +39,42 @@ class BodyLimitMiddleware:
             await self._refuse(send)
             return
         received = 0
+        exceeded = False
+        answered = False
 
         async def limited_receive() -> dict:
-            nonlocal received
+            nonlocal received, exceeded
             message = await receive()
             if message.get("type") == "http.request":
                 received += len(message.get("body", b""))
                 if received > self.max_bytes:
+                    exceeded = True
                     raise _too_large()
             return message
 
-        await self.app(scope, limited_receive, send)
+        async def answering_send(message: dict) -> None:
+            # Some layers between here and the route (Starlette's function middleware, FastAPI's body parser) turn the exception above into
+            # a generic 400. Whatever they answer, the client is told what really happened: the body was too large.
+            nonlocal answered
+            if not exceeded:
+                await send(message)
+                return
+            if not answered:
+                answered = True
+                await self._refuse(send)
+
+        await self.app(scope, limited_receive, answering_send)
 
     @staticmethod
     async def _refuse(send: Any) -> None:
         body = b'{"detail":"That request is too large.","code":"too_large"}'
-        await send({"type": "http.response.start", "status": 413, "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]})
+        headers = [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]
+        try:  # this answer is sent from outside the layer that normally adds the security headers, so it adds them itself
+            from privacy_security import security_headers
+            headers += [(k.lower().encode(), v.encode()) for k, v in security_headers().items()]
+        except Exception:  # noqa: BLE001 - a missing header set must never turn a refusal into an error
+            pass
+        await send({"type": "http.response.start", "status": 413, "headers": headers})
         await send({"type": "http.response.body", "body": body})
 
 

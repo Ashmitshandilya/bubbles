@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
+from pydantic import BaseModel
 
 import request_guard as G
 
@@ -128,3 +129,42 @@ def test_operational_routes_are_for_administrators_only(main_module, monkeypatch
         assert refused.value.status_code == 403
     monkeypatch.setenv("BUBBLES_ADMIN_USER_IDS", "ordinary-user")
     assert main_module.privacy_security_baseline(authorization="Bearer x")["status"] == "success"
+
+
+def test_the_cap_holds_through_the_real_app_for_a_chunked_body(main_module):
+    client = TestClient(main_module.app, raise_server_exceptions=False)
+
+    def chunks():
+        for _ in range(30):          # 30 x 100 KB = 3 MB, with no Content-Length header
+            yield b"x" * 100_000
+
+    refused = client.post("/chat", content=chunks(), headers={"content-type": "application/json", "Origin": "https://heybubbles.in"})
+    assert refused.status_code == 413
+    assert refused.headers.get("access-control-allow-origin") == "https://heybubbles.in"   # the browser can read the answer
+    assert refused.headers.get("x-content-type-options") == "nosniff"                       # and the security headers are still added
+
+
+class Message(BaseModel):   # module level: this file uses postponed annotations, so FastAPI must be able to find the type by name
+    message: str
+
+
+def test_the_413_survives_function_middleware_too():
+    app = FastAPI()
+
+    @app.post("/m")
+    async def m(body: Message):
+        return {"ok": True}
+
+    @app.middleware("http")
+    async def passthrough(request, call_next):
+        return await call_next(request)
+
+    app.add_middleware(G.BodyLimitMiddleware, max_bytes=1000)
+    client = TestClient(app, raise_server_exceptions=False)
+
+    def chunks():
+        for _ in range(30):
+            yield b"x" * 100
+
+    assert client.post("/m", content=chunks(), headers={"content-type": "application/json"}).status_code == 413
+    assert client.post("/m", json={"message": "hi"}).status_code == 200
