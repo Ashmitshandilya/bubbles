@@ -51,7 +51,7 @@ export function AiConsentRow() {
         <p id={hintId} className="m-0 mt-1 text-body-sm text-muted">
           {state === "error"
             ? "Bubbles couldn't check this just now."
-            : "When on, Bubbles sends your message, your recent messages in the chat and a short summary of your own notes to an outside AI model to write its answer. When off, nothing is sent: logging, patterns and emergency help still work."}
+            : "When on, Bubbles sends your message, your recent messages in the chat and a short summary of your profile and notes (such as your date of birth, gender and recent entries) to an outside AI model to write its answer. When off, nothing is sent: logging, patterns and emergency help still work."}
         </p>
       </div>
       <button

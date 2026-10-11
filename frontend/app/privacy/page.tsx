@@ -41,8 +41,8 @@ export default function PrivacyPage() {
         <p>
           A message that sounds like an emergency is handled by fixed, tested rules and is never sent to an AI model. Logging, patterns and fitness questions are also
           answered by Bubbles itself. Only open-ended questions go to an AI provider, and only after you say yes: Bubbles asks you the first time, the server checks your
-          answer before anything is sent, and you can take it back at any time in Settings, under Privacy and data. When you say yes, Bubbles sends your message and a
-          small amount of context from your own notes to a provider from an approved list, on its free tier, and nothing more than is needed. Each provider handles data under
+          answer before anything is sent, and you can take it back at any time in Settings, under Privacy and data. When you say yes, Bubbles sends your message, your
+          recent messages in that chat and a short summary of your profile and notes (such as your date of birth, gender and recent entries) to a provider from an approved list, on its free tier, and nothing more than is needed. Each provider handles data under
           its own terms.
         </p>
         <p>Bubbles never diagnoses. It can be wrong, so please check anything important with a clinician.</p>

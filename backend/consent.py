@@ -14,7 +14,7 @@ import doc_store
 
 KIND = "consent"
 KEY = "ai_chat"
-VERSION = "2026-10"
+VERSION = "2026-10b"   # b: the ask now names the profile details that are sent too (date of birth, gender)
 """Bump this when what is sent, or to whom, changes: everyone is then asked again."""
 
 
@@ -40,7 +40,8 @@ def consent_needed_reply(name: str | None = None) -> str:
     who = f"{name}, to" if name else "To"
     return (
         f"{who} answer this I'd use an outside AI model. It would get your message, your recent messages here and a short summary "
-        "of your notes. Nothing is sent unless you say yes, and you can change it any time in Settings.\n\n"
+        "of your profile and notes (such as your date of birth, gender and recent entries). Nothing is sent unless you say yes, "
+        "and you can change it any time in Settings.\n\n"
         "Without it I can still log things and answer questions about your cycle, sleep and fitness. "
         "If something feels urgent, call your local emergency number."
     )

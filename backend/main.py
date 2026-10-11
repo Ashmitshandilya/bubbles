@@ -650,7 +650,7 @@ def chat(
     package_audit_meta: dict | None = None
     sentiment = "neutral"
     persisted: list[dict] = []
-    deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk"}
+    deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup"}
     # Only open-ended replies go to an outside AI model, and only after a clear yes (consent.py). Everything else, including every
     # emergency, is answered here and never depends on it.
     consent_required = turn.route not in deterministic_routes and not has_ai_consent(supabase, user_id)

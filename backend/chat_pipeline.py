@@ -30,7 +30,7 @@ from conversation_correction import (
 from daily_log_parser import DailyLog, _estimate_nutrition, parse_daily_log, summarize_log
 from event_filters import DEAD_STATUSES, clean_data
 from health_event_pipeline import prepare_db_row
-from health_semantics import Fact, analyze, concept_for_text, display_name, net_state
+from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state
 from safety_engine import (
     POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
 )
@@ -217,10 +217,9 @@ def evidence_query(facts: list[Fact], message: str) -> str:
     if topics:
         return " ".join(dict.fromkeys(topics))[:200]
     text = " ".join(message.split())
-    # Without a health topic, only a real question is looked up: a greeting or a remark would otherwise pull whatever pages sit
-    # nearest in meaning ("hey bubbles" -> colposcopy, a dance video), and those would be shown as sources.
-    from evidence_package import _KNOWLEDGE
-    if small_talk_kind(text) or not (text.endswith("?") or _KNOWLEDGE.search(text)):
+    # Small talk is never looked up: it would pull whatever pages sit nearest in meaning ("hey bubbles" -> colposcopy).
+    # Other short messages still are ("tell me about iron"); shown_evidence() keeps unrelated pages off the screen.
+    if small_talk_kind(text) or not (text.endswith("?") or len(text) <= 160):
         return ""
     # Filler words dilute both the keyword and the embedding query; keep the content words.
     kept = [w for w in text.split() if w.lower().strip("?.,!") not in _QUERY_STOPWORDS]
@@ -243,6 +242,7 @@ class Turn:
     route: str = "ai"
     timings_ms: dict[str, float] = field(default_factory=dict)
     pause_strict_plan: bool = False
+    last_reply: dict[str, Any] | None = None   # the newest Bubbles message in this conversation (content + metadata)
 
 
 def history_user_facts(history: list[dict[str, Any]]) -> list[Fact]:
@@ -283,6 +283,7 @@ def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | No
         _log_failure("parse_daily_log", error)
         log = DailyLog(log_date=(now or datetime.now(timezone.utc)).date().isoformat())
     turn = Turn(text, facts, safety, correction, conflicts, log, history_facts)
+    turn.last_reply = next((r for r in reversed(history) if r.get("role") == "bubbles"), None)
     turn.route = route_turn(turn)
     turn.timings_ms = {"semantics_ms": round((t1 - t0) * 1000, 1), "turn_ms": round((time.perf_counter() - t0) * 1000, 1)}
     return turn
@@ -304,9 +305,48 @@ def route_turn(turn: Turn) -> str:
         return fitness
     if turn.log.is_daily_log and state != "URGENT":
         return "daily_log"
-    if not fitness and state != "URGENT" and not turn.facts and small_talk_kind(turn.text):
+    kind = None if fitness or state == "URGENT" or turn.facts else small_talk_kind(turn.text)
+    if kind:
+        # "bye" or "ok" right after a safety reply must not get cheerful small talk: the concern is not settled by a goodbye.
+        if standing_safety_reply(turn.last_reply):
+            return "safety_followup"
+        # "ok" after Bubbles asked something means yes: the real reply answers it.
+        if kind == "ack" and "?" in str((turn.last_reply or {}).get("content") or ""):
+            return "ai"
         return "small_talk"   # "hey bubbles", "thanks": answered here, no outside model and no consent question
     return fitness or "ai"
+
+
+_SAFETY_KINDS = frozenset({"emergency", "clarification"})
+_SAFETY_STATES = frozenset({"EMERGENCY", "URGENT", POTENTIAL})
+
+
+def standing_safety_reply(reply: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The reply's metadata when it was a safety reply that still stands (not retracted by a correction), else None."""
+    meta = (reply or {}).get("metadata") or {}
+    safety = meta.get("safety") or {}
+    if not isinstance(safety, dict) or safety.get("retracted"):
+        return None
+    return meta if (meta.get("kind") in _SAFETY_KINDS or safety.get("state") in _SAFETY_STATES) else None
+
+
+def safety_followup_reply(reply: dict[str, Any] | None, *, name: str | None) -> str:
+    """Fixed text for small talk right after a safety reply (no model): the earlier concern is restated, never waved off."""
+    meta = standing_safety_reply(reply) or {}
+    safety = meta.get("safety") or {}
+    comma = f", {name}" if name else ""
+    if any(c in CRISIS for c in safety.get("concepts") or []):
+        return (f"I'm still here{comma}. If you might act on these thoughts or you are in immediate danger, please call your local emergency "
+                "number now. In the US you can call or text 988; elsewhere, findahelpline.com lists free local lines. "
+                "Would you tell me how you're feeling right now?")
+    if meta.get("kind") == "emergency" or safety.get("state") == "EMERGENCY":
+        return (f"I'm still here{comma}. If what you told me is still happening, or it feels severe, please contact your local emergency "
+                "service now, and ask someone nearby to stay with you. How are you feeling right now?")
+    if meta.get("kind") == "clarification" or safety.get("state") == POTENTIAL:
+        return ("Before we move on, I want to check what you told me earlier: is it still happening right now, and how strong is it from "
+                "0 to 10? If it's happening now and it's severe, call your local emergency number.")
+    return (f"Before you go{comma}: what you mentioned earlier deserves prompt attention, so please speak to a clinician or an "
+            "urgent-care service today. If it gets worse, go to emergency care.")
 
 
 def shown_evidence(rows: list[dict[str, Any]], limit: int = 3) -> list[dict[str, Any]]:
@@ -329,12 +369,14 @@ def shown_evidence(rows: list[dict[str, Any]], limit: int = 3) -> list[dict[str,
     return out
 
 
-_GREET = frozenset("hi hii hiii hey heyy heyyy hello helo hiya namaste namaskar yo".split())
+_GREET = frozenset("hi hii hiii hey heyy heyyy hello helo hiya namaste namaskar yo sup".split())
+_DISTRESS = frozenset("😭😢💔🤕😞😔🥺😣😖😩😫🤒🤢🤮😰😨😥")   # a crying face is not small talk
 _THANKS = frozenset("thanks thank thx ty thankyou shukriya dhanyavad".split())
 _BYE = frozenset("bye byee goodbye later tc gn".split())
 _ACK = frozenset("ok okay okk cool alright great nice".split())   # not "sure"/"yes": after an offer they mean yes, and that needs the real reply
 _FILLER = frozenset("there bubbles bubble buddy dear ji again you so much a lot very good morning afternoon evening night see ya got it".split())
-_HOW_ARE_YOU = ("how are you", "how r u", "how are u", "how r you", "kaise ho", "kaisi ho", "kya haal hai", "kya haal")
+_HOW_ARE_YOU = ("how are you doing", "how are you", "how r u", "how are u", "how r you", "hru", "how s it going", "hows it going",
+                "kaise ho", "kaisi ho", "kya haal hai", "kya haal")
 
 
 def _words(text: str) -> list[str]:
@@ -343,6 +385,8 @@ def _words(text: str) -> list[str]:
 
 def small_talk_kind(text: str) -> str | None:
     """'greeting' | 'how_are_you' | 'thanks' | 'bye' | 'ack' when the whole message is small talk (a few words, nothing about health), else None."""
+    if any(ch in _DISTRESS for ch in text or ""):
+        return None
     words = _words(text)
     joined = " ".join(words)
     for phrase in _HOW_ARE_YOU:   # "hey bubbles, how are you?" is small talk too, not a question for an outside model
@@ -423,6 +467,8 @@ def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> s
         return emergency_response(safety)
     if route == "small_talk":
         return small_talk_reply(turn.text, name=name)
+    if route == "safety_followup":
+        return safety_followup_reply(turn.last_reply, name=name)
     if route in ("fitness_support", "fitness_answer"):
         return ""   # filled in by main._fitness_text (needs the database)
     if route == "correction":

@@ -58,7 +58,7 @@ def test_red_safety_path_has_hard_llm_gate():
     lives only in the final else-branch.
     """
     source = _read_main()
-    routes = 'deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk"}'
+    routes = 'deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup"}'
     assert routes in source          # emergency is on the list of routes that never reach a model
     gate = 'if turn.route in deterministic_routes or consent_required:'
     assert gate in source
