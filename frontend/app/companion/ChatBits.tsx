@@ -18,6 +18,7 @@ import {
   type SafetyLevel,
   type SafetyState,
 } from "../lib/bubbles-events";
+import { pickSources } from "./evidence";
 import { FEEDBACK_REASONS, isRatableId, type Feedback, type FeedbackReason, type Rating } from "./feedback";
 
 export type { SafetyLevel };
@@ -180,31 +181,41 @@ export function PromptCards({ cards, disabled, onPick }: { cards: PromptCard[]; 
 }
 
 function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confidence?: string | null }) {
-  if (!evidence.length && !confidence) return null;
+  const headingId = useId();
+  const sources = pickSources(evidence);
+  if (!sources.length && !confidence) return null;
   return (
     <div className="flex flex-wrap gap-2 pt-1">
-      {evidence.map((ev, idx) => {
-        const label = (
-          <>
-            <Icon d={ICONS.book} size={14} />
-            <span className="truncate">
-              {ev.title} · {ev.publisher ?? ev.sourceName}
-            </span>
-          </>
-        );
-        const chip =
-          "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-[0.8125rem] font-extrabold text-bubbles-grape-deep no-underline";
-        return ev.sourceUrl ? (
-          <a key={ev.chunkId ?? `${ev.title}-${idx}`} href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" className={`${chip} hover:bg-bubbles-grape/15`}>
-            {label}
-            <span className="sr-only">(opens in a new tab)</span>
-          </a>
-        ) : (
-          <span key={ev.chunkId ?? `${ev.title}-${idx}`} className={chip}>
-            {label}
-          </span>
-        );
-      })}
+      {sources.length > 0 && (
+        <div role="group" aria-labelledby={headingId} className="flex w-full flex-wrap gap-2">
+          {/* Retrieved reading on the topic, not a statement about this person. */}
+          <p id={headingId} className="m-0 w-full text-[0.75rem] font-extrabold text-ink-soft">
+            General reading
+          </p>
+          {sources.map((ev, idx) => {
+            const label = (
+              <>
+                <Icon d={ICONS.book} size={14} />
+                <span className="line-clamp-2 min-w-0">
+                  {ev.title} · {ev.publisher ?? ev.sourceName}
+                </span>
+              </>
+            );
+            const chip =
+              "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-left text-[0.8125rem] font-extrabold leading-snug text-bubbles-grape-deep no-underline";
+            return ev.sourceUrl ? (
+              <a key={ev.chunkId ?? `${ev.title}-${idx}`} href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" className={`${chip} hover:bg-bubbles-grape/15`}>
+                {label}
+                <span className="sr-only">(opens in a new tab)</span>
+              </a>
+            ) : (
+              <span key={ev.chunkId ?? `${ev.title}-${idx}`} className={chip}>
+                {label}
+              </span>
+            );
+          })}
+        </div>
+      )}
       {confidence && (
         <span className="inline-flex min-h-[32px] items-center rounded-full bg-tint-mint px-3 py-1.5 text-[0.8125rem] font-extrabold text-bubbles-mint-deep">
           Confidence {confidence}
@@ -355,25 +366,24 @@ function EventCard({
   );
 }
 
-/** The one question Bubbles asks before it sends a message to an outside AI model. The yes is stored on the server and can be undone in Settings. */
+/**
+ * The one question Bubbles asks before it sends a message to an outside AI model. The yes is stored on the server and can be undone in Settings.
+ * The reply text above it already says what is sent, so the card only asks and says where to undo it.
+ */
 function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
   return (
     <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[18px] bg-tint-sky p-4">
-      <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
-        If you say yes, Bubbles sends this message, your recent messages in this chat and a short summary of your own notes to an outside AI model to write its answer. Emergencies, logging and
-        patterns never need it. You can change this any time in Settings, under Privacy and data.
-      </p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onAllow}
           disabled={busy}
-          className="bubbles-press inline-flex min-h-[44px] items-center rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white disabled:cursor-wait disabled:opacity-70"
+          className="bubbles-press inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white disabled:cursor-wait disabled:opacity-70 sm:w-auto"
         >
           {busy ? "Saving..." : "Yes, allow and continue"}
         </button>
       </div>
-      <p className="m-0 text-caption font-semibold text-bubbles-sky-deep">If you do not want this, just keep logging and using the other pages. Nothing is sent.</p>
+      <p className="m-0 text-caption font-semibold text-bubbles-sky-deep">You can change this any time in Settings.</p>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { isSupabaseConfigured, supabase } from "../../lib/supabase";
 import { authCallbackUrl } from "../../lib/auth-links";
 import { RESEND_COOLDOWN_SECONDS, friendlyAuthError } from "../../lib/auth-errors";
 import { keepSignedInChoice, setKeepSignedIn } from "../../lib/auth-storage";
+import { warmApi } from "../../lib/warm-api";
 import { cleanCode, friendlyMfaError, isValidCode, needsSecondStep, verifiedTotp, type FactorLike } from "../../lib/mfa";
 import { BubblesMascot } from "../../components/BubblesMascot";
 
@@ -46,6 +47,7 @@ function LoginForm() {
 
   useEffect(() => {
     setKeepSignedInChoice(keepSignedInChoice());
+    warmApi(); // start waking a sleeping API while the person signs in
   }, []);
 
   useEffect(() => {

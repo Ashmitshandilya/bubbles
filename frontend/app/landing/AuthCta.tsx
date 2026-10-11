@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
+import { warmApi } from "../../lib/warm-api";
 
 /**
  * Auth-aware call to action. Renders the signed-out version on the server and
@@ -13,6 +14,7 @@ export function AuthCta({ variant }: { variant: "nav" | "hero" | "final" }) {
   const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
+    warmApi(); // start waking a sleeping API before sign-in
     if (!isSupabaseConfigured) return;
     let active = true;
     supabase.auth

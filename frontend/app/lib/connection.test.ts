@@ -15,6 +15,7 @@ import {
   reconnectDelay,
   reconnectStatus,
   saveFailureMessage,
+  shareInFlight,
   type FailureKind,
   type HealthPayload,
 } from "./connection";
@@ -592,5 +593,34 @@ describe("corsBlockedMessage wording", () => {
 
   it("never tells a signed-in person to run a batch file", () => {
     expect(MESSAGES.offline).not.toMatch(/start_bubbles|backend folder/);
+  });
+});
+
+describe("shareInFlight: many failed calls start one /health probe", () => {
+  it("callers that arrive while it runs share one run, and the next call after it settles starts a new one", async () => {
+    const slot = { current: null as Promise<boolean> | null };
+    let release!: (v: boolean) => void;
+    const task = vi.fn(() => new Promise<boolean>((r) => (release = r)));
+    const a = shareInFlight(slot, task);
+    const b = shareInFlight(slot, task);
+    const c = shareInFlight(slot, task);
+    expect(task).toHaveBeenCalledTimes(1);
+    release(true);
+    expect(await Promise.all([a, b, c])).toEqual([true, true, true]);
+    expect(slot.current).toBeNull();
+    task.mockImplementation(() => Promise.resolve(false));
+    expect(await shareInFlight(slot, task)).toBe(false);
+    expect(task).toHaveBeenCalledTimes(2);
+  });
+
+  it("a failed run is shared too and does not block the next one", async () => {
+    const slot = { current: null as Promise<boolean> | null };
+    const task = vi.fn((): Promise<boolean> => Promise.reject(new Error("down")));
+    const runs = [shareInFlight(slot, task), shareInFlight(slot, task)];
+    for (const run of runs) await expect(run).rejects.toThrow("down");
+    expect(task).toHaveBeenCalledTimes(1);
+    expect(slot.current).toBeNull();
+    task.mockImplementation(() => Promise.resolve(true));
+    expect(await shareInFlight(slot, task)).toBe(true);
   });
 });

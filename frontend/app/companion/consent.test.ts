@@ -16,10 +16,13 @@ describe("the outside AI model question", () => {
     expect(reply).toContain("!message.consentRequired && isRatableId(message.id)");
   });
 
-  it("says plainly what is sent and that it can be undone, without an em-dash", () => {
+  it("names the outside AI model and where to undo it, without repeating the reply or an em-dash", () => {
     const card = chatBits.slice(chatBits.indexOf("function ConsentCard"), chatBits.indexOf("const THUMB_UP"));
     expect(card).toContain("outside AI model");
-    expect(card).toContain("Settings");
+    expect(card).toContain("You can change this any time in Settings.");
+    // What is sent is said once, in the reply text from the server, not again in the card.
+    expect(card).not.toContain("short summary of your own notes");
+    expect(card).toContain("w-full");
     expect(card).not.toContain("—");
   });
 });

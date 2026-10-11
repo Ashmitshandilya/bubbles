@@ -280,6 +280,13 @@ export function mayReplayAfterTimeout(method?: string): boolean {
   return ["GET", "HEAD", "OPTIONS"].includes((method ?? "GET").toUpperCase());
 }
 
+/** Callers that arrive while `task` is running share its promise, so many failed calls at once start one /health probe. */
+export function shareInFlight<T>(slot: { current: Promise<T> | null }, task: () => Promise<T>): Promise<T> {
+  return (slot.current ??= task().finally(() => {
+    slot.current = null;
+  }));
+}
+
 export function reconnectStatus(nextRetryAt: number | null, now: number, retrying: boolean): string {
   if (retrying) return "Checking now…";
   if (nextRetryAt === null) return "Reconnecting…";

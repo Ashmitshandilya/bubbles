@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
 import { needsSecondStep } from "../lib/mfa";
 import {
-  classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth,
+  classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth, shareInFlight,
   type DatabaseStatus, type HealthPayload,
 } from "../app/lib/connection";
 
@@ -252,6 +252,9 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const [waking, setWaking] = useState(false);
   const firstProbeDone = useRef(false);
   const wasWaking = useRef(false);
+  // The latest probe (set below) and the one in flight, so many failed calls at once share one /health check.
+  const probeRef = useRef<() => Promise<boolean>>(async () => false);
+  const probing = useRef<Promise<boolean> | null>(null);
   const { session } = useAuth();
 
   const fetchBubbles = useCallback(async (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) => {
@@ -314,9 +317,9 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     const corsOrigin = !timedOut && (await answersDespiteCors()) ? window.location.origin : undefined;
     const message = classifyFailure({ timedOut, networkError: !timedOut, corsOrigin }).message;
     // Until the first /health has answered, a slow or failed call says nothing yet: the probe decides offline.
-    if (!(timedOut && slowCall) && firstProbeDone.current) {
-      setApiStatus("offline");
-      setConnectionError(message);
+    // After that one failed call is no proof either (a slow endpoint on a slow host), so ask /health to decide.
+    if (!(timedOut && slowCall) && firstProbeDone.current && path !== "/health") {
+      void shareInFlight(probing, () => probeRef.current());
     }
     throw Object.assign(new Error(message), { timedOut, networkError: !timedOut, corsOrigin });
   }, [session]);
@@ -331,7 +334,17 @@ export function ApiProvider({ children }: { children: ReactNode }) {
         }, WAKING_AFTER_MS)
       : undefined;
     try {
-      const response = await fetchBubbles("/health", {}, first ? FIRST_HEALTH_LIMITS : HEALTH_LIMITS);
+      let response: Response;
+      try {
+        response = await fetchBubbles("/health", {}, first ? FIRST_HEALTH_LIMITS : HEALTH_LIMITS);
+      } catch (error) {
+        // A later probe running out of time usually means the host fell asleep: show "waking up" and wait once, longer.
+        if (first || !failureFromError(error).timedOut) throw error;
+        wasWaking.current = true;
+        setWaking(true);
+        setApiStatus("checking");
+        response = await fetchBubbles("/health", {}, FIRST_HEALTH_LIMITS);
+      }
       setHealth(parseHealth(await response.json().catch(() => null)));
       // Calls that ran while the host slept failed quietly; tell the data hooks to load again.
       if (wasWaking.current) setReconnects((n) => n + 1);
@@ -352,7 +365,6 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     await probe();
   }, [probe]);
 
-  const probeRef = useRef(probe);
   useEffect(() => {
     probeRef.current = probe;
   }, [probe]);
@@ -367,7 +379,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (apiStatus !== "offline") return;
     const loop = createReconnectLoop({
-      probe: () => probeRef.current(),
+      probe: () => shareInFlight(probing, () => probeRef.current()),
       isHidden: () => document.hidden,
       onNextAttempt: setNextRetryAt,
       onProbing: setRetrying,
