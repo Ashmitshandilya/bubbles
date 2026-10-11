@@ -5,7 +5,7 @@ import { useThree } from "@react-three/fiber";
 import { shouldDrawWorld, worldDprCap } from "../perf/tier";
 import { onStoryFrame, story } from "../story/store";
 
-const INPUTS = ["pointermove", "pointerdown", "wheel", "touchstart", "keydown"] as const;
+const INPUTS = ["pointermove", "pointerdown", "wheel", "touchstart", "keydown", "resize"] as const;
 
 /**
  * Paces the 3D world from the scroll director's frame loop (the canvas uses frameloop="demand", so the page runs one
@@ -28,6 +28,8 @@ export function Governor() {
     for (const name of INPUTS) window.addEventListener(name, touch, { passive: true });
 
     const off = onStoryFrame(() => {
+      // The intro (Bubbles growing in) must finish however long the first frame takes, so the idle clock starts once the world is ready.
+      if (!story.worldReady) inputAt = performance.now();
       // The damped scroll position keeps moving until it settles, so a glide after the last wheel tick still counts as input.
       if (story.y !== lastY) {
         lastY = story.y;
