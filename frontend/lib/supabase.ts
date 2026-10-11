@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { authStorage } from "./auth-storage";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -17,5 +18,7 @@ export const isSupabaseConfigured = uiPreview || Boolean(
 // resolve, so nothing can silently contact a placeholder project.
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || "https://supabase-not-configured.invalid",
-  supabasePublishableKey || "not-configured"
+  supabasePublishableKey || "not-configured",
+  // The session lives in sessionStorage unless the person chose to stay signed in (see lib/auth-storage.ts).
+  { auth: { storage: authStorage, persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
 );

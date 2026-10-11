@@ -4,6 +4,17 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 import { BubblesMascot } from "../../components/BubblesMascot";
+import { needsSecondStep } from "../../lib/mfa";
+
+/** Where to go once the link has signed the person in: the code step first when the account has two-step sign-in on. */
+async function nextPath(): Promise<string> {
+  try {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    return needsSecondStep(data) ? "/login?mfa=1" : "/dashboard";
+  } catch {
+    return "/dashboard";
+  }
+}
 
 function CallbackContent() {
   const router = useRouter();
@@ -29,7 +40,7 @@ function CallbackContent() {
           } else {
             setStatus("success");
             setMessage("Signed in! Redirecting...");
-            router.push("/dashboard");
+            router.push(await nextPath());
             router.refresh();
           }
         } catch {
@@ -53,13 +64,13 @@ function CallbackContent() {
 
             if (error) {
               setStatus("error");
-              setMessage(`Session error: ${error.message}`);
+              setMessage("That sign-in link could not be used. It may have expired. Please request a new one.");
             } else {
               setStatus("success");
               setMessage("Signed in! Redirecting...");
               // Clean up URL and redirect
               window.history.replaceState({}, document.title, window.location.pathname);
-              router.push("/dashboard");
+              router.push(await nextPath());
               router.refresh();
             }
           } catch {
@@ -90,7 +101,7 @@ function CallbackContent() {
             if (session && !error) {
               setStatus("success");
               setMessage("Signed in! Redirecting...");
-              router.push("/dashboard");
+              router.push(await nextPath());
               router.refresh();
             } else {
               setStatus("error");

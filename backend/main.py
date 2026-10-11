@@ -20,6 +20,7 @@ from auth_errors import (
     invalid_token_response,
     invalid_scope_response,
 )
+from auth_assurance import requires_second_step
 from memory_retrieval import get_relevant_memories, format_memory_context
 from supabase_client import supabase
 from bubbles_ai import BubblesAIResponse, ask_bubbles, is_degraded
@@ -148,7 +149,15 @@ from schemas import (
     ErrorResponse,
 )
 
-app = FastAPI(title="Bubbles API")
+# The interactive API docs and the machine-readable schema list every route and field: useful while developing, a map for attackers once live.
+# On Render (and anywhere BUBBLES_ENABLE_DOCS is not "1") they are switched off.
+_DOCS_ON = os.getenv("BUBBLES_ENABLE_DOCS") == "1" or not os.getenv("RENDER")
+app = FastAPI(
+    title="Bubbles API",
+    docs_url="/docs" if _DOCS_ON else None,
+    redoc_url="/redoc" if _DOCS_ON else None,
+    openapi_url="/openapi.json" if _DOCS_ON else None,
+)
 register_db_error_handlers(app)
 
 
@@ -339,6 +348,10 @@ def get_authenticated_user(authorization: str | None):
 
         if not response.user:
             raise invalid_token_response()
+
+        # Two-step sign-in is enforced here, not only in the browser: a password-only session cannot use the API once the account turned it on.
+        if requires_second_step(response.user, token):
+            raise unauthorized_response("Two-step sign-in is required. Please sign in again and enter your authenticator code.")
 
         return response.user
 

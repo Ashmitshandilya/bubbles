@@ -7,6 +7,7 @@ import { BTN_SECONDARY, CARD, HubPage, Icon, PILL, SignOutButton, Skeleton, useB
 import { COMPAT_FIX_FILE, MESSAGES, databaseSummary } from "../lib/connection";
 import type { PartnerSharingStatus } from "../lib/partner-sharing";
 import { VeilSwitch } from "../../components/PrivacyVeil";
+import { KeepSignedInRow, TwoStepCard } from "../../components/settings/SignInSecurity";
 import { NotificationSettingsCard } from "../../components/wellness/NotificationSettingsCard";
 import { YourDataCard } from "../../components/wellness/YourDataCard";
 import { partnerSummary } from "./summary";
@@ -118,6 +119,9 @@ function Settings() {
             <SignOutButton />
           </li>
         </ul>
+        <div className="mt-4">
+          <TwoStepCard />
+        </div>
       </Group>
 
       <Group id="partner" title="Partner sharing">
@@ -167,6 +171,17 @@ function Settings() {
             <div className={ROW}>
               <dt className="font-bold text-ink">Reduce motion</dt>
               <dd className="m-0 text-body-sm text-muted">{reducedMotion ? "On, following your device" : "Off, following your device"}</dd>
+            </div>
+            <div className={ROW}>
+              <dt className="min-w-0 max-w-[26rem] font-bold text-ink">
+                <span id="keep-label">Keep me signed in on this device</span>
+                <span id="keep-hint" className="block text-body-sm font-normal text-muted">
+                  Off by default: you sign in again after closing the tab, and your sign-in is not kept on this device. Takes effect the next time you sign in.
+                </span>
+              </dt>
+              <dd className="m-0">
+                <KeepSignedInRow labelledBy="keep-label" describedBy="keep-hint" />
+              </dd>
             </div>
             <div className={ROW}>
               <dt className="min-w-0 max-w-[26rem] font-bold text-ink">

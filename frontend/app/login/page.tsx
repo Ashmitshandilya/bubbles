@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
 import { authCallbackUrl } from "../../lib/auth-links";
 import { RESEND_COOLDOWN_SECONDS, friendlyAuthError } from "../../lib/auth-errors";
+import { keepSignedInChoice, setKeepSignedIn } from "../../lib/auth-storage";
+import { cleanCode, friendlyMfaError, isValidCode, needsSecondStep, verifiedTotp, type FactorLike } from "../../lib/mfa";
 import { BubblesMascot } from "../../components/BubblesMascot";
 
 type Mode = "login" | "signup" | "magic";
@@ -36,6 +38,15 @@ function LoginForm() {
   /** Offer "send the confirmation email again" (after sign-up, or when sign-in says the email is not confirmed). */
   const [canResend, setCanResend] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  /** "Keep me signed in on this device": off by default, so the session is not written to localStorage. */
+  const [keepSignedIn, setKeepSignedInChoice] = useState(false);
+  /** Set once the password is right but the account also needs its authenticator code. */
+  const [secondStep, setSecondStep] = useState<{ factorId: string } | null>(null);
+  const [code, setCode] = useState("");
+
+  useEffect(() => {
+    setKeepSignedInChoice(keepSignedInChoice());
+  }, []);
 
   useEffect(() => {
     const requested = searchParams?.get("mode");
@@ -69,6 +80,62 @@ function LoginForm() {
     }
   }
 
+  /** True when the account has two-step sign-in on and its code is still needed; the code form is shown instead of going on. */
+  async function askForSecondStepIfNeeded(): Promise<boolean> {
+    try {
+      const { data: level } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (!needsSecondStep(level)) return false;
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totp = verifiedTotp(factors?.all as FactorLike[] | undefined);
+      if (!totp) return false;
+      setSecondStep({ factorId: totp.id });
+      setMessage(null);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Coming back from an email link (or a refreshed tab) with the password step done but the code still missing.
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (alive && data.session) await askForSecondStepIfNeeded();
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSecondStep(e: React.FormEvent) {
+    e.preventDefault();
+    if (!secondStep || !isValidCode(code)) {
+      setMessage({ kind: "error", text: "Enter the 6 digit code from your authenticator app." });
+      return;
+    }
+    setLoading(true);
+    setMessage(null);
+    try {
+      const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: secondStep.factorId, code: cleanCode(code) });
+      if (error) setMessage({ kind: "error", text: friendlyMfaError(error.message) });
+      else router.push("/dashboard");
+    } catch {
+      setMessage({ kind: "error", text: friendlyMfaError("Failed to fetch") });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function cancelSecondStep() {
+    setSecondStep(null);
+    setCode("");
+    setMessage(null);
+    await supabase.auth.signOut();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -79,6 +146,8 @@ function LoginForm() {
 
     setLoading(true);
     setMessage(null);
+    // Decide where the new session is kept before it is created (sessionStorage unless the box is ticked).
+    setKeepSignedIn(keepSignedIn);
 
     try {
       if (mode === "magic") {
@@ -108,7 +177,7 @@ function LoginForm() {
           const friendly = friendlyAuthError(error.message, (error as { code?: string }).code);
           setMessage({ kind: "error", text: friendly.text });
           setCanResend(friendly.needsConfirmation);
-        } else {
+        } else if (!(await askForSecondStepIfNeeded())) {
           router.push("/dashboard");
         }
       }
@@ -132,6 +201,38 @@ function LoginForm() {
       </div>
 
       <div className="rounded-[32px] border-2 border-line bg-surface p-6 shadow-md sm:p-8">
+        {secondStep ? (
+          <form onSubmit={handleSecondStep} className="flex flex-col gap-4">
+            <p className="m-0 text-body font-semibold text-ink-soft">
+              Open your authenticator app and type the 6 digit code for Bubbles.
+            </p>
+            <label className="flex flex-col gap-2 text-body-sm font-extrabold">
+              Code
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className={`${inputClass} tracking-[0.3em]`}
+                maxLength={9}
+                required
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bubbles-press inline-flex min-h-[56px] items-center justify-center rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)] disabled:cursor-wait disabled:opacity-70"
+            >
+              {loading ? "Checking…" : "Continue"}
+            </button>
+            <button type="button" onClick={() => void cancelSecondStep()} className="min-h-[44px] text-body-sm font-extrabold text-bubbles-pink-ink underline">
+              Use a different account
+            </button>
+          </form>
+        ) : (
+        <>
         <div role="tablist" aria-label="How would you like to continue?" className="mb-6 grid grid-cols-3 gap-1 rounded-full bg-blush p-1">
           {MODES.map((item) => (
             <button
@@ -187,6 +288,19 @@ function LoginForm() {
             </label>
           )}
 
+          <label className="flex min-h-[44px] items-start gap-3 text-body-sm font-bold text-ink-soft">
+            <input
+              type="checkbox"
+              checked={keepSignedIn}
+              onChange={(e) => setKeepSignedInChoice(e.target.checked)}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--bubbles-pink-ink)]"
+            />
+            <span>
+              Keep me signed in on this device
+              <span className="block text-caption font-semibold">Leave this off on a shared computer. Otherwise you sign in again after closing the tab.</span>
+            </span>
+          </label>
+
           <button
             type="submit"
             disabled={loading}
@@ -211,6 +325,8 @@ function LoginForm() {
           </button>
         </form>
         </div>
+        </>
+        )}
 
         {message && (
           <p
