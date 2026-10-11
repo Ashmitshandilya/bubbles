@@ -61,3 +61,7 @@ Checked on https://heybubbles.in and https://bubbles-dk3v.onrender.com:
 - Bad-token block: 30 requests with a made-up token answered 401, the next ones 429 with `Retry-After: 60`, `/health` stayed 200, and the block cleared by itself after a minute. This also shows Cloudflare supplies the visitor address to the server, so the address limits are active.
 
 Not verified live (needs a real account or dashboard access): sign-in and the authenticator-app setup on the live site, the share preview in WhatsApp or another app, and the Supabase dashboard settings.
+
+### Live verification of the consent release (2026-10-11, commit 842e900)
+- Vercel deployment READY; the privacy page shows the new "only after you say yes" wording; `GET /me/consent` without a token answers 401 (the route is deployed); all public pages, `/health` GET and HEAD, and CORS from https://heybubbles.in are fine; API docs still 404; the GitHub tests workflow is green on this commit.
+- Not verified live (needs a real signed-in session): the consent card in the chat, saving the yes, and the Settings switch. They were checked in the local preview and by 10 server tests.
