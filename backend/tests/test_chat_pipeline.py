@@ -67,11 +67,32 @@ def test_rate_limiter_window():
 def test_rate_limiter_drops_stale_keys_so_memory_stays_bounded():
     clock = SimpleNamespace(t=0.0)
     rl = cp.RateLimiter(limit=2, window=10, clock=lambda: clock.t)
-    for i in range(5001):
+    for i in range(1200):
         rl.allow(f"ip{i}")
     clock.t = 100
-    rl.allow("fresh")
-    assert len(rl._hits) <= 4002 and "fresh" in rl._hits  # 1000 stale keys evicted per sweep, none live
+    for _ in range(cp.RateLimiter.SWEEP_EVERY):  # a sweep runs within this many calls, whatever the table size
+        rl.allow("fresh")
+    assert "fresh" in rl._hits and len(rl._hits) <= 2
+
+
+def test_rate_limiter_has_a_hard_ceiling_on_keys(monkeypatch):
+    monkeypatch.setattr(cp.RateLimiter, "MAX_KEYS", 50)
+    rl = cp.RateLimiter(limit=5, window=60, clock=lambda: 0.0)
+    allowed = [rl.allow(f"k{i}") for i in range(80)]
+    assert allowed.count(True) == 50 and len(rl._hits) == 50   # made-up keys cannot grow the table past the ceiling
+    assert rl.allow("k0")  # a key already in the table keeps working
+
+
+def test_rate_limiter_over_and_record_count_events_without_checking():
+    clock = SimpleNamespace(t=0.0)
+    rl = cp.RateLimiter(limit=3, window=10, clock=lambda: clock.t)
+    assert not rl.over("ip")
+    for _ in range(3):
+        rl.record("ip")
+    assert rl.over("ip")
+    assert not rl.over("someone-else")
+    clock.t = 11
+    assert not rl.over("ip")
 
 
 # ------------------------------------------------------------------ context

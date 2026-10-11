@@ -9,7 +9,7 @@ Start-Process powershell -ArgumentList @(
 Start-Process powershell -ArgumentList @(
     "-NoExit",
     "-Command",
-    "Set-Location '$Root\backend'; if (Test-Path '.\venv\Scripts\Activate.ps1') { . .\venv\Scripts\Activate.ps1 }; python -m uvicorn main:app --host 0.0.0.0 --port 8000"
+    "Set-Location '$Root\backend'; if (Test-Path '.\venv\Scripts\Activate.ps1') { . .\venv\Scripts\Activate.ps1 }; python -m uvicorn main:app --host 127.0.0.1 --port 8000"
 )
 
 Write-Host "BUBBLES services starting..."

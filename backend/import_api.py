@@ -71,6 +71,17 @@ def _number(raw: str) -> float | None:
     return v if v == v and abs(v) < 1e7 else None
 
 
+BAD_TABLE = "That file could not be read as a table. Check that it is a plain CSV."
+
+
+def _rows(reader):
+    """The rows of a DictReader. A malformed file (for example one enormous field) is a plain ValueError, never a server error."""
+    try:
+        yield from reader
+    except csv.Error as error:
+        raise ValueError(BAD_TABLE) from error
+
+
 def parse_rows(kind: str, text: str) -> tuple[list[dict], list[str]]:
     """-> (form bodies for health_logs.save_domain, skipped-row reasons). Raises ValueError with a user-safe message."""
     if kind not in VALUE_HEADERS:
@@ -85,7 +96,10 @@ def parse_rows(kind: str, text: str) -> tuple[list[dict], list[str]]:
     except csv.Error:
         dialect = csv.excel
     reader = csv.DictReader(io.StringIO(text), dialect=dialect)
-    headers = reader.fieldnames or []
+    try:
+        headers = reader.fieldnames or []
+    except csv.Error as error:
+        raise ValueError(BAD_TABLE) from error
     date_col, value_col = _pick(headers, DATE_HEADERS), _pick(headers, VALUE_HEADERS[kind])
     if not date_col or not value_col:
         raise ValueError(f"Could not find a date column and a {kind} column. Headers found: " + ", ".join(h.strip()[:30] for h in headers[:8]))
@@ -93,7 +107,7 @@ def parse_rows(kind: str, text: str) -> tuple[list[dict], list[str]]:
     vh = _norm(value_col)
     out: list[dict] = []
     skipped: list[str] = []
-    for i, row in enumerate(reader, start=2):
+    for i, row in enumerate(_rows(reader), start=2):
         if len(out) >= MAX_ROWS:
             skipped.append(f"stopped after {MAX_ROWS} rows")
             break

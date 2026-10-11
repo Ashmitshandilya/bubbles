@@ -17,6 +17,7 @@ Flow for one user message:
 from __future__ import annotations
 
 import hashlib
+import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -61,22 +62,65 @@ def _log_failure(operation: str, error: Exception, user_id: str | None = None) -
 # --------------------------------------------------------------------------
 
 class RateLimiter:
+    """Sliding-window limiter, safe to call from several threads. Stale keys are swept on a regular count of calls (not only when the
+    table is already huge) and the table has a hard ceiling, so a flood of made-up keys cannot grow memory without bound."""
+
+    SWEEP_EVERY = 500
+    MAX_KEYS = 100_000
+
     def __init__(self, limit: int = 30, window: float = 60.0, clock: Callable[[], float] = time.monotonic):
         self.limit, self.window, self.clock = limit, window, clock
-        self._hits: dict[str, deque[float]] = defaultdict(deque)
+        self._hits: dict[str, deque[float]] = {}
+        self._calls = 0
+        self._lock = threading.Lock()
 
-    def allow(self, key: str) -> bool:
-        now = self.clock()
-        hits = self._hits[key]
+    def _trim(self, hits: deque[float], now: float) -> None:
         while hits and now - hits[0] > self.window:
             hits.popleft()
-        if len(hits) >= self.limit:
-            return False
-        hits.append(now)
-        if len(self._hits) > 5000:  # bound memory
-            for k in [k for k, v in self._hits.items() if not v or now - v[-1] > self.window][:1000]:
-                self._hits.pop(k, None)
-        return True
+
+    def _sweep(self, now: float) -> None:
+        for k in [k for k, v in self._hits.items() if not v or now - v[-1] > self.window]:
+            self._hits.pop(k, None)
+
+    def _tick(self, now: float) -> None:
+        self._calls += 1
+        if self._calls % self.SWEEP_EVERY == 0 or len(self._hits) > self.MAX_KEYS:
+            self._sweep(now)
+
+    def allow(self, key: str) -> bool:
+        with self._lock:
+            now = self.clock()
+            self._tick(now)
+            hits = self._hits.get(key)
+            if hits is None:
+                if len(self._hits) >= self.MAX_KEYS:  # still full after sweeping: refuse new keys rather than grow
+                    return False
+                hits = self._hits[key] = deque()
+            self._trim(hits, now)
+            if len(hits) >= self.limit:
+                return False
+            hits.append(now)
+            return True
+
+    def over(self, key: str) -> bool:
+        """True when this key is already at its limit. Does not count a hit."""
+        with self._lock:
+            hits = self._hits.get(key)
+            if not hits:
+                return False
+            self._trim(hits, self.clock())
+            return len(hits) >= self.limit
+
+    def record(self, key: str) -> None:
+        """Counts a hit without checking the limit (used for events such as a failed sign-in)."""
+        with self._lock:
+            now = self.clock()
+            self._tick(now)
+            if key not in self._hits and len(self._hits) >= self.MAX_KEYS:
+                return
+            hits = self._hits.setdefault(key, deque())
+            self._trim(hits, now)
+            hits.append(now)
 
 
 # --------------------------------------------------------------------------

@@ -70,6 +70,15 @@ Render settings (names only): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `BUBBLES_FR
 - Confirmation and magic-link emails always ask Supabase to return to `https://heybubbles.in/callback` (`frontend/lib/auth-links.ts`). Supabase only honours that if it is in Authentication -> URL Configuration -> Redirect URLs, otherwise it falls back to the Site URL. So keep **Site URL = `https://heybubbles.in`** and **Redirect URLs = `https://heybubbles.in/**`** (item 2 above). The built-in Supabase email sender has a very low hourly limit: add custom SMTP before inviting more than a handful of people, and consider CAPTCHA if signups get abused.
 - Backend routes added since launch (no schema change): `/wellness/associations`, `/chat/feedback`, partner sharing and the privacy/terms pages. After a backend deploy, `GET /chat/feedback` without a token should answer 401 (not 404).
 
+
+### Security settings (see `docs/security/SECURITY_STATUS.md` for the full list)
+- `BUBBLES_DOC_SIGNING_KEY` (Render): signs partner links, plans and settings. Set it to the value the service key has TODAY before you rotate `SUPABASE_SECRET_KEY`; if it is unset the service key is used, and rotating that key would invalidate every signed document at once.
+- `BUBBLES_ADMIN_USER_IDS` (Render, optional): comma-separated user ids allowed to read the four operational routes (`/ai/telemetry`, `/production/readiness`, `/models/registry`, `/privacy/security-baseline`). Leave it unset and nobody can.
+- `BUBBLES_IP_RATE_LIMIT` (default 900 per minute per address), `BUBBLES_AUTH_FAIL_LIMIT` (default 30 bad tokens per minute per address), `BUBBLES_CONNECT_RATE_LIMIT` (default 20 invite attempts per hour per address): tune only if real users are being slowed. Keep ONE server instance while these live in memory.
+- The API docs (`/docs`, `/redoc`, `/openapi.json`) and the debug trace are off on Render. Set `BUBBLES_ENABLE_DOCS=1` only for a short debugging session.
+- Two-step sign-in (authenticator app) needs TOTP enabled in Supabase (Authentication, then Multi-factor). It is on by default.
+- The website sends a Content Security Policy built from `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_SUPABASE_URL`. If you move the API to another address (for example `api.heybubbles.in`), change the variable and redeploy, otherwise the browser will block the calls.
+
 ### Still to do before inviting real users
 1. Replace every secret that was ever pasted into a chat (Supabase secret key, all AI provider keys); update them in Render and your local `.env`.
 2. Supabase -> Authentication -> URL Configuration: Site URL `https://heybubbles.in`, Redirect URLs `https://heybubbles.in/**` and `https://www.heybubbles.in/**`.

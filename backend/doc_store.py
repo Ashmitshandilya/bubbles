@@ -29,7 +29,12 @@ LIST_LIMIT = 500
 
 def _signing_key() -> bytes:
     """Server-only secret used to sign documents. Rows a browser could have written through the database API are never trusted."""
-    return (os.environ.get("BUBBLES_DOC_SIGNING_KEY") or os.environ.get("SUPABASE_SECRET_KEY") or "bubbles-dev-only-signing-key").encode("utf-8")
+    key = os.environ.get("BUBBLES_DOC_SIGNING_KEY") or os.environ.get("SUPABASE_SECRET_KEY")
+    if not key:
+        if os.environ.get("RENDER"):
+            raise RuntimeError("No signing key is configured for signed documents")  # never fall back to a published value on the live server
+        key = "bubbles-dev-only-signing-key"  # local development and tests only
+    return key.encode("utf-8")
 
 
 def _sig(uid: str, kind: str, key: str, version: int, payload: Any) -> str:

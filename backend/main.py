@@ -21,6 +21,7 @@ from auth_errors import (
     invalid_scope_response,
 )
 from auth_assurance import requires_second_step
+from request_guard import BodyLimitMiddleware, install_access_log_redaction, require_admin
 from memory_retrieval import get_relevant_memories, format_memory_context
 from supabase_client import supabase
 from bubbles_ai import BubblesAIResponse, ask_bubbles, is_degraded
@@ -151,6 +152,12 @@ from schemas import (
 
 # The interactive API docs and the machine-readable schema list every route and field: useful while developing, a map for attackers once live.
 # On Render (and anywhere BUBBLES_ENABLE_DOCS is not "1") they are switched off.
+if os.getenv("RENDER") and not os.getenv("BUBBLES_DOC_SIGNING_KEY"):
+    # Signed documents (partner links, plans, settings) fall back to the database service key. Rotating that key would then invalidate all of
+    # them at once, so set BUBBLES_DOC_SIGNING_KEY (to the value the service key has TODAY) before rotating anything. See DEPLOY.md.
+    import logging as _logging
+    _logging.getLogger("bubbles.startup").warning("BUBBLES_DOC_SIGNING_KEY is not set: signed documents use the service key as their signing key.")
+install_access_log_redaction()  # share tokens and search terms never reach the server log
 _DOCS_ON = os.getenv("BUBBLES_ENABLE_DOCS") == "1" or not os.getenv("RENDER")
 app = FastAPI(
     title="Bubbles API",
@@ -182,6 +189,8 @@ async def bubbles_security_headers(request, call_next):
             response = JSONResponse(status_code=500, content={"detail": "Something went wrong on Bubbles' side. Please try again.", "code": "server_error", "request_id": request_id},
                                     headers={"X-Request-Id": request_id})
     REQUEST_TZ.reset(tz_token)
+    if response.status_code == 401 and request.headers.get("authorization"):
+        _auth_fail_limiter.record("ip:" + client_ip(request))
     for key, value in security_headers().items():
         response.headers[key] = value
     return response
@@ -192,6 +201,12 @@ _GUARDED_PREFIXES = ("/fitness", "/wellness", "/cycle", "/notifications", "/impo
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing
+# In front of EVERY route (before any sign-in check): one address cannot flood the API, and an address that keeps sending bad tokens is
+# stopped before each request costs a call to the sign-in service. The limits are generous for real people and are env-tunable.
+_ip_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_IP_RATE_LIMIT", "900")), window=60.0)
+_auth_fail_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_AUTH_FAIL_LIMIT", "30")), window=60.0)
+_connect_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_CONNECT_RATE_LIMIT", "20")), window=3600.0)  # partner invite codes: slows guessing across accounts
+_TOO_FAST = {"detail": "You're going a little fast. Please wait a moment and try again.", "code": "rate_limited"}
 
 
 def client_ip(request) -> str:
@@ -208,6 +223,14 @@ def client_ip(request) -> str:
 
 def _guard_request(request):
     path = request.url.path
+    ip = client_ip(request)
+    if path != "/health":  # the host's own health checks must always get through
+        if not _ip_limiter.allow("ip:" + ip):
+            return JSONResponse(status_code=429, content=_TOO_FAST, headers={"Retry-After": "30"})
+        if request.headers.get("authorization") and _auth_fail_limiter.over("ip:" + ip):
+            return JSONResponse(status_code=429, content=_TOO_FAST, headers={"Retry-After": "60"})
+    if path == "/partner-sharing/connect" and not _connect_limiter.allow("ip:" + ip):
+        return JSONResponse(status_code=429, content=_TOO_FAST, headers={"Retry-After": "600"})
     if not path.startswith(_GUARDED_PREFIXES):
         return None
     try:
@@ -224,6 +247,8 @@ def _guard_request(request):
     return None
 
 
+# Request bodies are capped everywhere, including chunked ones with no Content-Length (the guarded prefixes above keep a lower cap).
+app.add_middleware(BodyLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -532,7 +557,8 @@ _chat_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_CHAT_RATE_LIMIT", "30")
 
 
 def _debug_trace_enabled() -> bool:
-    return os.getenv("BUBBLES_DEBUG_TRACE", "false").strip().lower() in {"1", "true", "yes"}
+    # The trace puts fact text in /chat responses: never on the live server, whatever the setting says.
+    return not os.getenv("RENDER") and os.getenv("BUBBLES_DEBUG_TRACE", "false").strip().lower() in {"1", "true", "yes"}
 
 
 def _reasons_text(reasons: list[str]) -> list[str]:
@@ -744,8 +770,7 @@ def chat(
     from logging_util import logger
     logger.info(component="CHAT", operation="turn", user_id=user_id, context={
         "route": turn.route, "state": safety.state, "events": len(persisted), "timings_ms": timings,
-        "concepts": list(safety.concepts)[:6],
-    })
+    })  # no symptom concepts here: a log line tied to a user id must not say what they reported
 
     payload = {
         "response": response_text,
@@ -916,7 +941,7 @@ def sharing_plan(request: dict, authorization: str | None = Header(default=None)
 
 @app.get("/production/readiness")
 def production_readiness(authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
+    require_admin(get_authenticated_user(authorization))  # operational data: administrators only (BUBBLES_ADMIN_USER_IDS)
     return readiness_report()
 
 @app.get("/knowledge/health")
@@ -937,7 +962,7 @@ def interop_fhir(request: dict, authorization: str | None = Header(default=None)
 
 @app.get("/models/registry")
 def models_registry(authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
+    require_admin(get_authenticated_user(authorization))  # operational data: administrators only (BUBBLES_ADMIN_USER_IDS)
     from ai_orchestrator import PRICES
     return {
         "providers": sorted({price.provider for price in PRICES.values()} | {"NVIDIA"}),
@@ -1090,6 +1115,10 @@ def confirm_health_event(
     authorization: str | None = Header(default=None),
 ):
     user = get_authenticated_user(authorization)
+    try:
+        event_id = str(UUID(event_id))   # ids are UUIDs: anything else cannot exist, so it is "not found" and never reaches the database
+    except ValueError:
+        raise HTTPException(status_code=404, detail="That item was not found.")
     if request.confirmed:
         # A rejected/retracted/superseded event (e.g. withdrawn by a correction) must not come back to life.
         current = (supabase.table("extracted_health_events").select("id, extraction_status")
@@ -1653,7 +1682,7 @@ def safety_escalate(request: EscalationRequest, authorization: str | None = Head
 
 @app.get("/ai/telemetry", response_model=AITelemetryResponse)
 def ai_telemetry(authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
+    require_admin(get_authenticated_user(authorization))  # operational data: administrators only (BUBBLES_ADMIN_USER_IDS)
     telemetry_data = ai_telemetry_snapshot()
     return AITelemetryResponse(telemetry=AITelemetryData(**telemetry_data))
 
@@ -1676,7 +1705,7 @@ def privacy_consent(request: ConsentRequest, authorization: str | None = Header(
 
 @app.get("/privacy/security-baseline")
 def privacy_security_baseline(authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
+    require_admin(get_authenticated_user(authorization))  # operational data: administrators only (BUBBLES_ADMIN_USER_IDS)
     return {"status":"success","security":threat_check()}
 
 class MediaMetadataRequest(BaseModel):
