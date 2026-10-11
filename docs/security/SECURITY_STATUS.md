@@ -13,7 +13,7 @@ Last reviewed 2026-10-11. This is an honest list: what is in place, what was add
 | 5 | sitemap.xml and robots.txt | Added: `app/sitemap.ts` (public pages only) and `app/robots.ts`. Search engines stay blocked until `NEXT_PUBLIC_ALLOW_INDEXING=true`; share links and the sign-in callback are always blocked. |
 | 6 | Social preview image | Added: `app/opengraph-image.tsx` and `app/twitter-image.tsx` (1200x630, generated at build). |
 | 7 | Page titles and descriptions | In place for every page; added for the sign-in and callback pages; Open Graph and Twitter card tags added. |
-| 8 | Cookie / storage notice | Added: a one-time notice. Bubbles sets no tracking or advertising cookies and loads no analytics, so this is a notice with one button, not a consent wall. If analytics or ads are ever added, this must become a real consent choice first. |
+| 8 | Cookie / storage notice | Added: a one-time notice on the pages a new visitor sees (home, sign-in, Privacy, Terms, share links; it stays out of the signed-in app, where it would cover controls). Bubbles sets no tracking or advertising cookies and loads no analytics, so this is a notice with one button, not a consent wall. If analytics or ads are ever added, this must become a real consent choice first. |
 | 9 | Force HTTPS | Verified: http redirects to https on both the website (308) and the API (301); HSTS is sent (website and API). |
 | 10 | No mistakes | Every change is covered by tests, and was reviewed by a second agent before release. The live checks listed in the release notes are run right after each deploy; this table is updated only after they pass. |
 

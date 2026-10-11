@@ -22,9 +22,9 @@ export function PhaseRing({ day, length, phase, phaseLabel, estimated }: { day: 
         cx={size / 2} cy={size / 2} r={r} fill="none" stroke={phase ? STROKE[phase] : "var(--bubbles-pink-ink)"} strokeWidth="14"
         strokeLinecap="round" strokeDasharray={`${c * progress} ${c}`} transform={`rotate(-90 ${size / 2} ${size / 2})`}
       />
-      <text x="50%" y="46%" textAnchor="middle" fontSize="13" fontWeight="800" fill="var(--bubbles-ink-soft)">Cycle day</text>
-      <text x="50%" y="62%" textAnchor="middle" fontSize="40" fontWeight="700" fill="var(--bubbles-ink)" style={{ fontFamily: "var(--font-display)" }}>{day}</text>
-      {phaseLabel && <text x="50%" y="76%" textAnchor="middle" fontSize="13" fontWeight="800" fill="var(--bubbles-ink-soft)">{phaseLabel}</text>}
+      <text x="50%" y="38%" textAnchor="middle" fontSize="12" fontWeight="800" fill="var(--bubbles-ink-soft)">Cycle day</text>
+      <text x="50%" y="58%" textAnchor="middle" fontSize="38" fontWeight="700" fill="var(--bubbles-ink)" style={{ fontFamily: "var(--font-display)" }}>{day}</text>
+      {phaseLabel && <text x="50%" y="71%" textAnchor="middle" fontSize="12" fontWeight="800" fill="var(--bubbles-ink-soft)">{phaseLabel}</text>}
     </svg>
   );
 }

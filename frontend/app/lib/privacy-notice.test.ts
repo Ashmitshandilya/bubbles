@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NOTICE_KEY, NOTICE_TEXT, dismissNotice, shouldShowNotice, type NoticeStore } from "./privacy-notice";
+import { NOTICE_KEY, NOTICE_TEXT, dismissNotice, noticeBelongsOn, shouldShowNotice, type NoticeStore } from "./privacy-notice";
 
 const memory = (): NoticeStore & { data: Map<string, string> } => {
   const data = new Map<string, string>();
@@ -33,5 +33,10 @@ describe("privacy notice", () => {
   it("only promises what the app really does", () => {
     expect(NOTICE_TEXT).toMatch(/no ads/i);
     expect(NOTICE_TEXT).not.toContain("—");
+  });
+
+  it("shows on the pages a new visitor sees and stays out of the signed-in app", () => {
+    for (const p of ["/", "/login", "/privacy", "/terms", "/partner/abc", "/cycle/partner/abc"]) expect(noticeBelongsOn(p)).toBe(true);
+    for (const p of ["/dashboard", "/companion", "/care", "/settings", "/health", "/cycle", "/fitness/diet", "/callback"]) expect(noticeBelongsOn(p)).toBe(false);
   });
 });

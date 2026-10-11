@@ -1,19 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { NOTICE_TEXT, browserStore, dismissNotice, shouldShowNotice } from "../app/lib/privacy-notice";
+import { NOTICE_TEXT, browserStore, dismissNotice, noticeBelongsOn, shouldShowNotice } from "../app/lib/privacy-notice";
 
 /** One small notice about browser storage, shown once per browser. It never blocks the page and takes no focus. */
 export function PrivacyNotice() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname() ?? "";
 
   // Read the stored choice after mount so the server and the first client render agree (nothing is shown until then).
   useEffect(() => {
     setOpen(shouldShowNotice(browserStore()));
   }, []);
 
-  if (!open) return null;
+  // Only on the pages a new visitor sees. Signed-in screens are full of controls the notice would cover, and everyone reaches them through the sign-in page.
+  if (!open || !noticeBelongsOn(pathname)) return null;
 
   return (
     <section

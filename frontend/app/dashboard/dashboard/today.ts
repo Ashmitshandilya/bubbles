@@ -324,7 +324,8 @@ export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | nul
       label: slug ? SIGNAL_META[slug].label : label.charAt(0).toUpperCase() + label.slice(1),
       pill: { text: "Low confidence · from chat", kind: "low" },
       headline: `Your ${label} has moved compared with your usual.`,
-      body: action.detail,
+      // The headline already says what moved; the line below says where it comes from and what to do with it (never a repeat of the headline).
+      body: "This comes from what you told Bubbles in chat, so treat it as a hint. Ask Bubbles what changed, or look at your own entries first.",
       whyHref: "/insights",
       primary: { label: "Ask Bubbles about it", href: `/companion?ask=${encodeURIComponent(`What changed in my ${label} recently?`)}` },
     });

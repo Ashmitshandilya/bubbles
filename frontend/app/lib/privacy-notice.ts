@@ -32,5 +32,10 @@ export function browserStore(): NoticeStore {
   }
 }
 
+/** The notice is for first-time visitors: the home page, sign-in, the legal pages and share links. It stays out of the signed-in app. */
+export function noticeBelongsOn(pathname: string): boolean {
+  return pathname === "/" || ["/login", "/privacy", "/terms"].includes(pathname) || pathname.startsWith("/partner/") || pathname.startsWith("/cycle/partner/");
+}
+
 export const NOTICE_TEXT =
   "Bubbles keeps only what it needs in your browser: your sign-in and your settings. There are no ads, no tracking cookies and no analytics.";
