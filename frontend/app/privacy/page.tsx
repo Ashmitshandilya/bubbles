@@ -59,7 +59,7 @@ export default function PrivacyPage() {
       <section>
         <h2>Browser storage</h2>
         <p>
-          Bubbles keeps only what it needs in your browser: your sign-in and a few settings, such as whether the privacy veil is on and how much motion you want. Your sign-in
+          Bubbles keeps only what it needs in your browser: your sign-in, a few settings and small shortcuts, such as whether the privacy veil is on and whether the home page motion is paused. Your sign-in
           stays in the tab you used and goes when you close it, unless you tick &quot;Keep me signed in on this device&quot;. There are no ads, no tracking cookies and no
           analytics.
         </p>
