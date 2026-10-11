@@ -157,7 +157,8 @@ function LoginForm() {
           </p>
         )}
 
-        <form id={`${formId}-panel`} role="tabpanel" aria-labelledby={`${formId}-${mode}`} onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div id={`${formId}-panel`} role="tabpanel" aria-labelledby={`${formId}-${mode}`}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {mode === "signup" && (
             <label className="flex flex-col gap-2 text-body-sm font-extrabold">
               What should Bubbles call you?
@@ -209,6 +210,7 @@ function LoginForm() {
             )}
           </button>
         </form>
+        </div>
 
         {message && (
           <p
