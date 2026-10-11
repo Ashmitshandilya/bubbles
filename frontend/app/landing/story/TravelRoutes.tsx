@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { WALK_STOPS, walkPoint } from "../world/rig";
-import { CHAPTER_INDEX, clamp01, hopT, isLead, onStoryFrame, range, say, story } from "./store";
+import { CHAPTER_INDEX, clamp01, hopT, isLead, onStoryFrame, range, rectOf, say, story } from "./store";
 
 /**
  * The two places where Bubbles visibly travels along a path:
@@ -152,7 +152,7 @@ export function TravelRoutes() {
         if (h === 0 && trackP > 0.86) {
           const rows = document.querySelectorAll<HTMLElement>(".cw-ch--track .cw-records li");
           rowCache = Array.from(rows, (row) => {
-            const r = row.getBoundingClientRect();
+            const r = rectOf(row);
             return { x: r.left, y: r.top + r.height / 2 };
           });
         }
