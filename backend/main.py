@@ -46,7 +46,7 @@ from safety_engine import assess_safety, safety_instruction, urgent_fallback_res
 from chat_pipeline import (
     RateLimiter, ai_failed_reply, analyze_turn, build_rule_events, conversation_block, deterministic_reply,
     evidence_query, find_stored_reply, first_name, load_history, persist_events, reconcile_ai_events, reply_kind,
-    safety_payload, semantic_trace, state_block, stored_metadata,
+    safety_payload, semantic_trace, shown_evidence, state_block, stored_metadata,
 )
 from conversation_correction import apply_correction, contradiction_note
 from health_semantics import display_name
@@ -650,7 +650,7 @@ def chat(
     package_audit_meta: dict | None = None
     sentiment = "neutral"
     persisted: list[dict] = []
-    deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer"}
+    deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk"}
     # Only open-ended replies go to an outside AI model, and only after a clear yes (consent.py). Everything else, including every
     # emergency, is answered here and never depends on it.
     consent_required = turn.route not in deterministic_routes and not has_ai_consent(supabase, user_id)
@@ -820,7 +820,7 @@ def chat(
                 "fused_score": row.get("fused_score"),
                 "source_type": "external_knowledge",
             }
-            for row in evidence_results
+            for row in shown_evidence(evidence_results)
         ],
     }
     if _debug_trace_enabled():

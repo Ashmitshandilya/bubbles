@@ -35,7 +35,8 @@ def test_routes():
     assert turn(DAY1).route == "daily_log"
     assert turn("Can chest pain happen during anxiety?").route == "ai"
     assert turn("I had chest pain yesterday but I'm fine now.").route == "ai"
-    assert turn("hello").route == "ai"
+    assert turn("hello").route == "small_talk"   # answered here: no outside model, no consent question
+    assert turn("hello, why do I get headaches after lunch?").route == "ai"
 
 
 def test_emergency_beats_correction_and_daily_log():

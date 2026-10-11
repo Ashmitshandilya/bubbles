@@ -217,7 +217,10 @@ def evidence_query(facts: list[Fact], message: str) -> str:
     if topics:
         return " ".join(dict.fromkeys(topics))[:200]
     text = " ".join(message.split())
-    if not (text.endswith("?") or len(text) <= 160):
+    # Without a health topic, only a real question is looked up: a greeting or a remark would otherwise pull whatever pages sit
+    # nearest in meaning ("hey bubbles" -> colposcopy, a dance video), and those would be shown as sources.
+    from evidence_package import _KNOWLEDGE
+    if small_talk_kind(text) or not (text.endswith("?") or _KNOWLEDGE.search(text)):
         return ""
     # Filler words dilute both the keyword and the embedding query; keep the content words.
     kept = [w for w in text.split() if w.lower().strip("?.,!") not in _QUERY_STOPWORDS]
@@ -301,7 +304,93 @@ def route_turn(turn: Turn) -> str:
         return fitness
     if turn.log.is_daily_log and state != "URGENT":
         return "daily_log"
+    if not fitness and state != "URGENT" and not turn.facts and small_talk_kind(turn.text):
+        return "small_talk"   # "hey bubbles", "thanks": answered here, no outside model and no consent question
     return fitness or "ai"
+
+
+def shown_evidence(rows: list[dict[str, Any]], limit: int = 3) -> list[dict[str, Any]]:
+    """The sources shown under a reply: real matches only, one per title, at most `limit`.
+
+    A row the keyword search did not find (only "nearest in meaning") is dropped unless it was tagged for the question's link:
+    for short or vague questions the nearest pages are often unrelated, and a source chip claims relevance."""
+    out: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for row in rows:
+        if row.get("semantic_rank") is not None and row.get("lexical_rank") is None and not row.get("linked"):
+            continue
+        key = " ".join(str(row.get("title") or row.get("source_url") or row.get("chunk_id") or "").lower().split())
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(row)
+        if len(out) >= limit:
+            break
+    return out
+
+
+_GREET = frozenset("hi hii hiii hey heyy heyyy hello helo hiya namaste namaskar yo".split())
+_THANKS = frozenset("thanks thank thx ty thankyou shukriya dhanyavad".split())
+_BYE = frozenset("bye byee goodbye later tc gn".split())
+_ACK = frozenset("ok okay okk cool alright great nice".split())   # not "sure"/"yes": after an offer they mean yes, and that needs the real reply
+_FILLER = frozenset("there bubbles bubble buddy dear ji again you so much a lot very good morning afternoon evening night see ya got it".split())
+_HOW_ARE_YOU = ("how are you", "how r u", "how are u", "how r you", "kaise ho", "kaisi ho", "kya haal hai", "kya haal")
+
+
+def _words(text: str) -> list[str]:
+    return "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in (text or "").lower()).split()
+
+
+def small_talk_kind(text: str) -> str | None:
+    """'greeting' | 'how_are_you' | 'thanks' | 'bye' | 'ack' when the whole message is small talk (a few words, nothing about health), else None."""
+    words = _words(text)
+    joined = " ".join(words)
+    for phrase in _HOW_ARE_YOU:   # "hey bubbles, how are you?" is small talk too, not a question for an outside model
+        if f" {phrase} " in f" {joined} ":
+            rest = f" {joined} ".replace(f" {phrase} ", " ").split()
+            if all(w in _GREET | _FILLER for w in rest) and len(words) <= 8:
+                return "how_are_you"
+    if not words or len(words) > 6 or any(w not in _GREET | _THANKS | _BYE | _ACK | _FILLER for w in words):
+        return None
+    if set(words) & _THANKS:
+        return "thanks"
+    if set(words) & _BYE or "night" in words:
+        return "bye"
+    if set(words) & _GREET or {"morning", "afternoon", "evening"} & set(words):
+        return "greeting"
+    return "ack" if set(words) & _ACK or words == ["got", "it"] else None
+
+
+def small_talk_reply(text: str, *, name: str | None) -> str:
+    kind = small_talk_kind(text) or "greeting"
+    words = set(_words(text))
+    hi = f" {name}" if name else ""
+    comma = f", {name}" if name else ""
+    pick = int(hashlib.sha256(" ".join(_words(text)).encode("utf-8")).hexdigest(), 16)  # stable, so a retried message gets the same words
+    if kind == "how_are_you":
+        if words & {"kaise", "kaisi", "haal"}:
+            return f"Main badhiya hoon{comma}! Aap batao, aaj kaisa feel ho raha hai?"
+        return f"I'm good, thanks for asking{comma}! How are you feeling today?"
+    if kind == "thanks":
+        return ("Anytime" + comma + ". I'm here whenever you need me.", "You're welcome" + comma + "! Tell me whenever something comes up.")[pick % 2]
+    if kind == "bye":
+        if "night" in words or "gn" in words:
+            return "Good night" + comma + ". Sleep well, and tell me tomorrow how you slept."
+        return "Take care" + comma + ". I'll be here when you need me."
+    if kind == "ack":
+        return f"Okay{comma}! I'm right here if you need anything."
+    if "morning" in words:
+        return f"Good morning{hi}! How did you sleep?"
+    for part in ("evening", "afternoon"):
+        if part in words:
+            return f"Good {part}{hi}! How's your day been?"
+    if words & {"namaste", "namaskar"}:
+        return f"Namaste{hi}! How are you feeling today?"
+    return (
+        f"Hi{hi}! Tell me how you're feeling, or log something like \"slept 7 hours\" and I'll note it.",
+        f"Hey{hi}! Good to see you. How are you feeling today?",
+        f"Hi{hi}! What's on your mind? I can note how you slept or ate, or we can just talk.",
+    )[pick % 3]
 
 
 def _fitness_route(text: str) -> str | None:
@@ -332,6 +421,8 @@ def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> s
     route, safety = turn.route, turn.safety
     if route == "emergency":
         return emergency_response(safety)
+    if route == "small_talk":
+        return small_talk_reply(turn.text, name=name)
     if route in ("fitness_support", "fitness_answer"):
         return ""   # filled in by main._fitness_text (needs the database)
     if route == "correction":
