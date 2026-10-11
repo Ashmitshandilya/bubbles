@@ -1,8 +1,15 @@
 /** Plain-language versions of the messages Supabase returns when sign-in or sign-up does not go through. */
-export function friendlyAuthError(raw: string | null | undefined): { text: string; needsConfirmation: boolean } {
+export function friendlyAuthError(raw: string | null | undefined, code?: string | null): { text: string; needsConfirmation: boolean } {
   const message = String(raw ?? "");
   const lower = message.toLowerCase();
-  if (lower.includes("email not confirmed"))
+  const byCode = String(code ?? "").toLowerCase();
+  if (lower.includes("failed to fetch") || lower.includes("networkerror") || lower.includes("network request failed"))
+    return { text: "Bubbles couldn't reach the sign-in service. Check your connection and try again.", needsConfirmation: false };
+  if (lower.includes("error sending") && lower.includes("email"))
+    return { text: "Bubbles couldn't send the email just now. Please try again in a few minutes.", needsConfirmation: false };
+  if (byCode === "over_email_send_rate_limit" || byCode === "over_request_rate_limit")
+    return { text: "A lot of emails were sent just now. Please wait a few minutes and try again.", needsConfirmation: false };
+  if (byCode === "email_not_confirmed" || lower.includes("email not confirmed"))
     return { text: "Please confirm your email first. Open the link we sent (check spam too), or send it again below.", needsConfirmation: true };
   if (lower.includes("invalid login credentials"))
     return { text: "That email and password don't match. If you just created your account, confirm your email first.", needsConfirmation: false };

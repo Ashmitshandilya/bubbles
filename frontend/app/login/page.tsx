@@ -61,8 +61,8 @@ function LoginForm() {
       const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: authCallbackUrl(window.location.origin) } });
       setMessage(
         error
-          ? { kind: "error", text: friendlyAuthError(error.message).text }
-          : { kind: "info", text: "Sent again. It can take a minute, and spam folders sometimes catch it." },
+          ? { kind: "error", text: friendlyAuthError(error.message, (error as { code?: string }).code).text }
+          : { kind: "info", text: "If that address has an unconfirmed account, we sent the email again. It can take a minute, and spam folders sometimes catch it." },
       );
     } catch {
       setMessage({ kind: "error", text: "Bubbles couldn't reach the sign-in service. Check your connection and try again." });
@@ -86,7 +86,7 @@ function LoginForm() {
           email,
           options: { emailRedirectTo: authCallbackUrl(window.location.origin) },
         });
-        setMessage(error ? { kind: "error", text: friendlyAuthError(error.message).text } : { kind: "info", text: "Check your inbox. Your sign-in link is on its way." });
+        setMessage(error ? { kind: "error", text: friendlyAuthError(error.message, (error as { code?: string }).code).text } : { kind: "info", text: "Check your inbox. Your sign-in link is on its way." });
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -95,7 +95,7 @@ function LoginForm() {
           options: { data: { display_name: displayName }, emailRedirectTo: authCallbackUrl(window.location.origin) },
         });
         if (error) {
-          setMessage({ kind: "error", text: friendlyAuthError(error.message).text });
+          setMessage({ kind: "error", text: friendlyAuthError(error.message, (error as { code?: string }).code).text });
         } else if (data.session) {
           router.push("/dashboard");
         } else {
@@ -105,7 +105,7 @@ function LoginForm() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          const friendly = friendlyAuthError(error.message);
+          const friendly = friendlyAuthError(error.message, (error as { code?: string }).code);
           setMessage({ kind: "error", text: friendly.text });
           setCanResend(friendly.needsConfirmation);
         } else {
