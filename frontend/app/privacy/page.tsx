@@ -4,6 +4,7 @@ import { LegalPage } from "../legal/LegalPage";
 export const metadata: Metadata = {
   title: "Privacy | Bubbles",
   description: "What Bubbles collects, why, where it is kept, who can see it and how to remove it.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

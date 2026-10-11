@@ -4,6 +4,7 @@ import { LegalPage } from "../legal/LegalPage";
 export const metadata: Metadata = {
   title: "Terms | Bubbles",
   description: "The rules for using Bubbles, in plain words.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

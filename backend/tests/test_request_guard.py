@@ -83,8 +83,8 @@ def main_module(monkeypatch):
     return pytest.importorskip("main")
 
 
-def fake_request(path="/profile", auth=None, ip="9.9.9.9"):
-    headers = {"cf-connecting-ip": ip}
+def fake_request(path="/profile", auth=None, ip="9.9.9.9", via_cloudflare=True):
+    headers = {"cf-connecting-ip": ip} if via_cloudflare else {"x-forwarded-for": "10.0.0.1"}
     if auth:
         headers["authorization"] = auth
     return SimpleNamespace(url=SimpleNamespace(path=path), headers=headers, client=SimpleNamespace(host=ip))
@@ -168,3 +168,15 @@ def test_the_413_survives_function_middleware_too():
 
     assert client.post("/m", content=chunks(), headers={"content-type": "application/json"}).status_code == 413
     assert client.post("/m", json={"message": "hi"}).status_code == 200
+
+
+def test_without_the_cloudflare_header_the_address_limits_stand_aside(main_module, monkeypatch):
+    """A shared proxy address must never become one bucket for every user."""
+    from chat_pipeline import RateLimiter
+    monkeypatch.setattr(main_module, "_ip_limiter", RateLimiter(limit=1, window=60))
+    monkeypatch.setattr(main_module, "_auth_fail_limiter", RateLimiter(limit=1, window=60))
+    monkeypatch.setattr(main_module, "_connect_limiter", RateLimiter(limit=1, window=3600))
+    main_module._auth_fail_limiter.record("ip:10.0.0.1")
+    for path in ("/profile", "/partner-sharing/connect"):
+        for _ in range(3):
+            assert main_module._guard_request(fake_request(path=path, auth="Bearer t", via_cloudflare=False)) is None

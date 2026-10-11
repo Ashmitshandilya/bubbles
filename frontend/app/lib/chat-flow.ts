@@ -36,7 +36,7 @@ export function chatErrorMessage(status: number | null, timedOut = false): strin
   if (status === 404) return "That conversation is no longer available. Try again to start a new one.";
   if (status === 409) return "This message was already sent with different text. Try again to send it as a new message.";
   if (status === 422) return "Bubbles couldn't read that message. Keep it under 8,000 characters and try again.";
-  if (status === 429) return "That's a lot of messages at once. Wait a moment, then try again.";
+  if (status === 429) return "That's a lot of messages at once. Wait a moment, then try again. If this is an emergency, call your local emergency number now.";
   if (status === 502 || status === 503) return "Bubbles is temporarily unavailable. Try again shortly.";
   return "Something went wrong on Bubbles' side. Try again in a moment.";
 }

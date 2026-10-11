@@ -189,8 +189,8 @@ async def bubbles_security_headers(request, call_next):
             response = JSONResponse(status_code=500, content={"detail": "Something went wrong on Bubbles' side. Please try again.", "code": "server_error", "request_id": request_id},
                                     headers={"X-Request-Id": request_id})
     REQUEST_TZ.reset(tz_token)
-    if response.status_code == 401 and request.headers.get("authorization"):
-        _auth_fail_limiter.record("ip:" + client_ip(request))
+    if response.status_code == 401 and request.headers.get("authorization") and edge_client_ip(request):
+        _auth_fail_limiter.record("ip:" + edge_client_ip(request))
     for key, value in security_headers().items():
         response.headers[key] = value
     return response
@@ -221,15 +221,24 @@ def client_ip(request) -> str:
     return request.client.host if request.client else "?"
 
 
+def edge_client_ip(request) -> str | None:
+    """The visitor's own address as Cloudflare saw it, or None when the request did not come through Cloudflare.
+
+    The address limits below use ONLY this header. Without it the only candidate is a proxy hop that could be shared by everyone, and one
+    shared bucket would let a single bad actor lock every real user out, so in that case these limits stand aside (the per-user and
+    per-route limits still apply)."""
+    return (request.headers.get("cf-connecting-ip") or "").strip() or None
+
+
 def _guard_request(request):
     path = request.url.path
-    ip = client_ip(request)
-    if path != "/health":  # the host's own health checks must always get through
+    ip = edge_client_ip(request)
+    if ip is not None and path != "/health":  # the host's own health checks must always get through
         if not _ip_limiter.allow("ip:" + ip):
             return JSONResponse(status_code=429, content=_TOO_FAST, headers={"Retry-After": "30"})
         if request.headers.get("authorization") and _auth_fail_limiter.over("ip:" + ip):
             return JSONResponse(status_code=429, content=_TOO_FAST, headers={"Retry-After": "60"})
-    if path == "/partner-sharing/connect" and not _connect_limiter.allow("ip:" + ip):
+    if ip is not None and path == "/partner-sharing/connect" and not _connect_limiter.allow("ip:" + ip):
         return JSONResponse(status_code=429, content=_TOO_FAST, headers={"Retry-After": "600"})
     if not path.startswith(_GUARDED_PREFIXES):
         return None

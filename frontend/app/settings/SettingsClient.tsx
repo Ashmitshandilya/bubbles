@@ -176,7 +176,7 @@ function Settings() {
               <dt className="min-w-0 max-w-[26rem] font-bold text-ink">
                 <span id="keep-label">Keep me signed in on this device</span>
                 <span id="keep-hint" className="block text-body-sm font-normal text-muted">
-                  Off by default: you sign in again after closing the tab, and your sign-in is not kept on this device. Takes effect the next time you sign in.
+                  Off by default: you sign in again after closing the tab, and your sign-in is not kept on this device. Applies from the next time your sign-in is refreshed, or when you sign in again.
                 </span>
               </dt>
               <dd className="m-0">

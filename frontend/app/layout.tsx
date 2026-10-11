@@ -26,13 +26,11 @@ export const metadata: Metadata = {
   // The public address of the site (set NEXT_PUBLIC_SITE_URL in the host; falls back to the production domain).
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://heybubbles.in"),
   applicationName: "Bubbles",
-  alternates: { canonical: "/" },
   openGraph: {
     title: "Bubbles | Your personal health companion",
     description: "A health companion that listens, remembers and connects the dots over time. It does not diagnose.",
     type: "website",
     siteName: "Bubbles",
-    url: "/",
     locale: "en_IN",
   },
   // The share picture itself comes from app/opengraph-image.tsx and app/twitter-image.tsx.

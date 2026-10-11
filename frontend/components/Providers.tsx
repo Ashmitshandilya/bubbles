@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
+import { needsSecondStep } from "../lib/mfa";
 import {
   classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth,
   type DatabaseStatus, type HealthPayload,
@@ -90,6 +91,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       await refreshSession();
+
+      // A password-only session on an account that turned on two-step sign-in cannot use the API: send the person to the code step
+      // instead of letting every call fail with "session expired".
+      try {
+        const { data: level } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (mounted && needsSecondStep(level)) {
+          router.replace("/login?mfa=1");
+          return;
+        }
+      } catch {
+        /* no readable level: carry on, the API will say if a code is needed */
+      }
 
       const { data } = await supabase.auth.onAuthStateChange(async (_event, s) => {
         if (!mounted) return;
