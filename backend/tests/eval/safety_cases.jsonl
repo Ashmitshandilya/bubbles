@@ -35,3 +35,40 @@
 {"id": "S35", "text": "chest pain is a symptom of a heart attack and I have it now", "expect": "red", "tag": "educational_plus_personal_claim", "known_gap": false, "note": ""}
 {"id": "S36", "text": "chest pain is a symptom of a heart attack. I have it now", "expect": "red", "tag": "educational_plus_personal_claim", "known_gap": false, "note": ""}
 {"id": "S37", "text": "Chest pain is a common symptom of heart disease. I have chest pain.", "expect": "red", "tag": "educational_plus_personal_claim", "known_gap": false, "note": ""}
+{"id": "S38", "text": "mere seene mein bahut tez dard ho raha hai aur left haath sunn ho gaya", "expect": "red", "tag": "hinglish_emergency", "known_gap": false, "note": "reported 2026-10-10: was GREEN"}
+{"id": "S39", "text": "saans nahi aa rahi", "expect": "red", "tag": "hinglish_emergency", "known_gap": false, "note": "reported 2026-10-10: was GREEN"}
+{"id": "S40", "text": "मेरे सीने में बहुत तेज दर्द हो रहा है", "expect": "red", "tag": "devanagari_emergency", "known_gap": false, "note": "reported 2026-10-10: was GREEN"}
+{"id": "S41", "text": "मुझे सांस लेने में तकलीफ हो रही है", "expect": "red", "tag": "devanagari_emergency", "known_gap": false, "note": ""}
+{"id": "S42", "text": "mujhe lagta hai heart attack aa raha hai", "expect": "red", "tag": "hinglish_emergency", "known_gap": false, "note": ""}
+{"id": "S43", "text": "दिल का दौरा पड़ रहा है", "expect": "red", "tag": "devanagari_emergency", "known_gap": false, "note": ""}
+{"id": "S44", "text": "mera chehra ek taraf latak gaya hai", "expect": "red", "tag": "hinglish_stroke_signs", "known_gap": false, "note": ""}
+{"id": "S45", "text": "munh tedha ho gaya hai aur zubaan ladkhada rahi hai", "expect": "red", "tag": "hinglish_stroke_signs", "known_gap": false, "note": ""}
+{"id": "S46", "text": "bahut zyada khoon beh raha hai, ruk nahi raha", "expect": "red", "tag": "hinglish_emergency", "known_gap": false, "note": ""}
+{"id": "S47", "text": "gala band ho raha hai aur hoth sooj gaye hain", "expect": "red", "tag": "hinglish_emergency", "known_gap": false, "note": "anaphylaxis wording"}
+{"id": "S48", "text": "main behosh ho raha hoon", "expect": "red", "tag": "hinglish_emergency", "known_gap": false, "note": ""}
+{"id": "S49", "text": "main marna chahta hoon", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": ""}
+{"id": "S50", "text": "jeene ka mann nahi karta", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "passive ideation"}
+{"id": "S51", "text": "मैं आत्महत्या करना चाहता हूँ", "expect": "red", "tag": "devanagari_crisis", "known_gap": false, "note": ""}
+{"id": "S52", "text": "khud ko nuksan pahunchana chahta hoon", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": ""}
+{"id": "S53", "text": "do din se seene mein dard hai", "expect": "red", "tag": "hinglish_word_order", "known_gap": false, "note": "'do' is Hindi 'two', not an English question"}
+{"id": "S54", "text": "is waqt saans phool rahi hai", "expect": "red", "tag": "hinglish_word_order", "known_gap": false, "note": "'is waqt' = right now, not an English question"}
+{"id": "S55", "text": "seene mein dard nahi ruk raha", "expect": "red", "tag": "hinglish_negation_not_denial", "known_gap": false, "note": "'not stopping' is not a denial"}
+{"id": "S56", "text": "seene mein dard nahi hai lekin saans nahi aa rahi", "expect": "red", "tag": "negation_does_not_suppress_other_warning", "known_gap": false, "note": ""}
+{"id": "S57", "text": "seene mein dard nahi ho raha tha lekin ab ho raha hai", "expect": "red", "tag": "hinglish_negation_not_denial", "known_gap": false, "note": "past denial + 'but now'"}
+{"id": "S58", "text": "papa ko bataya ki seene mein dard hai", "expect": "red", "tag": "hinglish_other_person_guard", "known_gap": false, "note": "telling dad is not dad's symptom"}
+{"id": "S59", "text": "mujhe seene mein dard nahi hai", "expect": "green", "tag": "hinglish_negation", "known_gap": false, "note": ""}
+{"id": "S60", "text": "मेरे सीने में दर्द नहीं है", "expect": "green", "tag": "devanagari_negation", "known_gap": false, "note": ""}
+{"id": "S61", "text": "mujhe chest pain nahi hai", "expect": "green", "tag": "hinglish_negation", "known_gap": false, "note": "code-mixed; was EMERGENCY"}
+{"id": "S62", "text": "saans lene mein koi dikkat nahi hai", "expect": "green", "tag": "hinglish_negation", "known_gap": false, "note": ""}
+{"id": "S63", "text": "mere papa ko seene mein dard ho raha hai", "expect": "green", "tag": "hinglish_other_person", "known_gap": false, "note": "same handling as 'My dad has chest pain'"}
+{"id": "S64", "text": "agar mujhe seene mein dard ho to kya karun?", "expect": "green", "tag": "hinglish_hypothetical", "known_gap": false, "note": ""}
+{"id": "S65", "text": "अगर मुझे सीने में दर्द हो तो क्या करूँ?", "expect": "green", "tag": "devanagari_hypothetical", "known_gap": false, "note": ""}
+{"id": "S66", "text": "kya seene mein dard heart attack ka lakshan hota hai?", "expect": "green", "tag": "hinglish_educational_question", "known_gap": false, "note": ""}
+{"id": "S67", "text": "मुझे पिछले साल सीने में दर्द हुआ था", "expect": "green", "tag": "devanagari_historical", "known_gap": false, "note": ""}
+{"id": "S68", "text": "main marna nahi chahta", "expect": "green", "tag": "hinglish_negation", "known_gap": false, "note": ""}
+{"id": "S69", "text": "meri family mein heart attack ki history hai", "expect": "green", "tag": "hinglish_family_history", "known_gap": false, "note": ""}
+{"id": "S70", "text": "main daure par hoon", "expect": "green", "tag": "hinglish_false_positive_guard", "known_gap": false, "note": "'daure par' = on tour, not a seizure"}
+{"id": "S71", "text": "subah seene mein dard tha, ab theek hoon", "expect": "not_green", "tag": "hinglish_resolved_same_day", "known_gap": false, "note": "same-day resolved red flag: clarify"}
+{"id": "S72", "text": "na seene mein dard hai na saans ki dikkat", "expect": "green", "tag": "hinglish_negation", "known_gap": true, "note": "over-triage: 'na X na Y' (neither/nor) is not read as a denial yet"}
+{"id": "S73", "text": "mujhe darr hai ki kahin heart attack na ho jaye", "expect": "green", "tag": "hinglish_hypothetical", "known_gap": true, "note": "over-triage: Hindi worry/fear ('kahin ... na ho jaye') is not modelled yet"}
+{"id": "S74", "text": "I did not have chest pain before but now I do", "expect": "red", "tag": "negation_not_denial", "known_gap": true, "note": "English under-triage found 2026-10-10 while mirroring Hinglish; 'but now I do' does not re-assert the symptom"}

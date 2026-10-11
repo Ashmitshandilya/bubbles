@@ -114,3 +114,84 @@ def test_safety_critical_categories_have_no_exceptions():
     for case in CASES:
         if critical & set(case.get("tags", [])):
             assert case["id"] not in KNOWN_LABEL_DISPUTES, case["id"]
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Hinglish (romanized Hindi) and Devanagari. Written by the implementer (unlike CASES above, which are implementation-blind),
+# so they are kept separate and checked with the same _check. They pin the facts, not just the safety level, so the
+# negation / hypothetical / other-person / history handling stays aligned with English.
+# Term choices await native-speaker and clinician review: docs/clinical/HINGLISH_SAFETY_TERMS_REVIEW.md.
+# ---------------------------------------------------------------------------------------------------------------------
+_EMG, _NO, _POT = "EMERGENCY", "NO_REDFLAG", "POTENTIAL_REDFLAG_NEEDS_CLARIFICATION"
+
+
+def _hi(case_id, text, state, **facts):
+    return {"id": f"hinglish-{case_id}", "text": text, "state": state,
+            "facts": {c: dict(zip(("assertion", "temporal"), v if isinstance(v, tuple) else (v,))) for c, v in facts.items()}}
+
+
+HINGLISH_CASES = [
+    # escalation: the reported misses
+    _hi("chest-arm", "mere seene mein bahut tez dard ho raha hai aur left haath sunn ho gaya", _EMG,
+        chest_pain=("present", "current"), stroke_signs=("present", "current")),
+    _hi("cant-breathe", "saans nahi aa rahi", _EMG, shortness_of_breath=("present", "current")),
+    _hi("deva-chest", "मेरे सीने में बहुत तेज दर्द हो रहा है", _EMG, chest_pain=("present", "current")),
+    _hi("deva-breath", "साँस नहीं आ रही", _EMG, shortness_of_breath=("present", "current")),
+    _hi("breath-effort", "mujhe saans lene mein bahut takleef ho rahi hai", _EMG, shortness_of_breath=("present", "current")),
+    _hi("heart-attack", "dil ka daura pad raha hai", _EMG, heart_attack="present"),
+    _hi("face-droop", "mera chehra ek taraf latak gaya hai", _EMG, stroke_signs="present"),
+    _hi("slurred", "zubaan ladkhada rahi hai", _EMG, stroke_signs="present"),
+    _hi("bleeding", "khoon ruk nahi raha", _EMG, heavy_bleeding="present"),
+    _hi("anaphylaxis", "gala band ho raha hai", _EMG, allergic_reaction="present"),
+    _hi("faint", "main behosh ho raha hoon", _EMG, fainting=("present", "current")),
+    _hi("seizure", "mirgi ka daura pad raha hai", _EMG, seizure="present"),
+    _hi("crisis", "main marna chahta hoon", _EMG, suicidal_ideation="present"),
+    _hi("crisis-passive", "jeene ka mann nahi karta", _EMG, suicidal_ideation="present"),
+    _hi("deva-crisis", "मैं मरना चाहता हूँ", _EMG, suicidal_ideation="present"),
+    _hi("self-harm", "khud ko nuksan pahunchana chahta hoon", _EMG, self_harm="present"),
+    # Hindi words that look like English question cues
+    _hi("do-din", "do din se seene mein dard hai", _EMG, chest_pain=("present", "current")),
+    _hi("is-waqt", "is waqt saans phool rahi hai", _EMG, shortness_of_breath=("present", "current")),
+    # negation (Hindi puts the negator after the symptom)
+    _hi("neg", "mujhe seene mein dard nahi hai", _NO, chest_pain="negated"),
+    _hi("neg-deva", "मेरे सीने में दर्द नहीं है", _NO, chest_pain="negated"),
+    _hi("neg-code-mixed", "mujhe chest pain nahi hai", _NO, chest_pain="negated"),
+    _hi("neg-list", "seene mein dard aur saans ki takleef nahi hai", _NO, chest_pain="negated", shortness_of_breath="negated"),
+    _hi("neg-one-of-two", "seene mein dard nahi hai lekin saans nahi aa rahi", _EMG,
+        chest_pain="negated", shortness_of_breath=("present", "current")),
+    _hi("not-stopping", "seene mein dard nahi ruk raha", _EMG, chest_pain=("present", "current")),
+    _hi("past-denial-but-now", "seene mein dard nahi ho raha tha lekin ab ho raha hai", _EMG, chest_pain="present"),
+    _hi("crisis-denied", "main marna nahi chahta", _NO),
+    _hi("without", "bina saans phoole main 5 km daud leta hoon", _NO, shortness_of_breath="negated"),
+    # someone else / hypothetical / question / history
+    _hi("other", "mere papa ko seene mein dard ho raha hai", _NO, chest_pain="other_person"),
+    _hi("other-deva", "मेरे पापा को सीने में दर्द हो रहा है", _NO, chest_pain="other_person"),
+    _hi("told-dad", "papa ko bataya ki seene mein dard hai", _EMG, chest_pain="present"),
+    _hi("family-history", "meri family mein heart attack ki history hai", _NO, heart_attack="other_person"),
+    _hi("hypothetical", "agar mujhe seene mein dard ho to kya karun?", _NO, chest_pain="hypothetical"),
+    _hi("hypothetical-deva", "अगर मुझे सीने में दर्द हो तो क्या करूँ?", _NO, chest_pain="hypothetical"),
+    _hi("question", "kya seene mein dard heart attack ka lakshan hota hai?", _NO, chest_pain="question", heart_attack="question"),
+    _hi("self-question", "kya karun, seene mein bahut dard hai", _EMG, chest_pain="present"),
+    _hi("history", "pichhle saal mujhe seene mein dard hua tha", _NO, chest_pain=("present", "past")),
+    _hi("history-deva", "मुझे पिछले साल सीने में दर्द हुआ था", _NO, chest_pain=("present", "past")),
+    _hi("childhood", "bachpan mein mujhe mirgi ke daure aate the", _NO, seizure=("present", "past")),
+    _hi("resolved", "subah seene mein dard tha, ab theek hoon", _POT, chest_pain=("present", "resolved")),
+    _hi("recurring", "seedhiyan chadhte waqt saans phoolti hai", _POT, shortness_of_breath=("present", "recurring")),
+    _hi("breath-stopped-not-resolved", "saans ruk ruk ke aa rahi hai", _EMG, shortness_of_breath=("present", "current")),
+    # look-alikes that are not red flags
+    _hi("on-tour", "main daure par hoon", _NO),
+    _hi("stomach", "pet mein dard hai", _NO),
+    _hi("meal", "2 roti aur dal khayi", _NO),
+]
+
+
+@pytest.mark.parametrize("case", HINGLISH_CASES, ids=[c["id"] for c in HINGLISH_CASES])
+def test_hinglish_case(case):
+    errs = _check(case)
+    assert not errs, f"{case['text'][:120]!r}\n  " + "\n  ".join(errs)
+
+
+def test_devanagari_is_read_like_the_romanized_spelling():
+    from health_semantics import normalize
+    assert normalize("मेरे सीने में दर्द नहीं है। साँस नहीं आ रही") == "mere sine mein dard nahi hai. saans nahi aa rahi"
+    assert normalize("I have chest pain") == "I have chest pain"

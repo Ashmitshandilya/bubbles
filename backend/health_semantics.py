@@ -24,7 +24,9 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 
-ENGINE = "bubbles-semantics/1"
+import hinglish_terms as _hi
+
+ENGINE = "bubbles-semantics/2"   # 2: Hinglish/Devanagari red flags and Hindi word-order cues
 
 ASSERTIONS = ("present", "negated", "possible", "hypothetical", "question", "other_person", "quoted")
 TEMPORALS = ("current", "recent", "past", "resolved", "recurring", "future", "unknown")
@@ -220,7 +222,8 @@ def _compile(patterns: Iterable[str]) -> re.Pattern[str]:
     return re.compile(r"\b(?:" + "|".join(_p(p) for p in patterns) + r")\b", re.I)
 
 
-_LEX = tuple((c, t, l, _compile(ps)) for c, t, l, ps in _LEX_SRC)
+# Hinglish/Devanagari red flags share concept, tier and label with the English entries (Devanagari is transliterated first).
+_LEX = tuple((c, t, l, _compile(ps)) for c, t, l, ps in _LEX_SRC + _hi.LEXICON)
 _NORMAL = tuple((c, _compile([p]), re.compile(ctx, re.I) if ctx else None) for c, p, ctx in _NORMAL_SRC)
 
 # --------------------------------------------------------------------------
@@ -326,6 +329,15 @@ _OTHER_VERB = re.compile(r"[a-z']{2,}", re.I)   # any word counts as the verb: "
 _FIRST_PERSON = re.compile(r"\b(?:i|i'm|i've|i'd|i'll|me|my|mine|myself|we|us|our)\b", re.I)
 _SELF_IN_MENTION = re.compile(r"\b(?:me|my|myself|mine|i)\b", re.I)
 _FAMILY_HISTORY = re.compile(r"\b(?:family history of|runs in (?:my |the )?family|hereditary)\b", re.I)
+
+# Hindi/Hinglish cues (vocabulary in hinglish_terms). Consulted only for sentences that look Hindi (_HI_GATE),
+# so English sentences take exactly the same path as before.
+(_HI_GATE, _HI_NEG_POST, _HI_PRE_NEG, _HI_HYPO, _HI_OTHER, _HI_SELF, _HI_COMM, _HI_POSS, _HI_WORSEN, _HI_Q_START, _HI_Q_END,
+ _HI_GENERIC, _HI_FAMILY, _HI_HISTORY, _HI_CLAUSE, _HI_OLD, _HI_PAST, _HI_RECURRING, _HI_RESOLVED_AFTER, _HI_RESOLVED_CLAUSE,
+ _HI_CURRENT, _HI_SAME_DAY, _HI_PAST_TENSE, _HI_BUT_NOW) = (re.compile(p, re.I) for p in (
+    _hi.GATE, _hi.NEG_POST, _hi.PRE_NEG, _hi.HYPO, _hi.OTHER, _hi.SELF, _hi.COMM, _hi.POSS, _hi.WORSEN, _hi.Q_START, _hi.Q_END,
+    _hi.GENERIC, _hi.FAMILY, _hi.HISTORY, _hi.CLAUSE, _hi.OLD, _hi.PAST, _hi.RECURRING, _hi.RESOLVED_AFTER, _hi.RESOLVED_CLAUSE,
+    _hi.CURRENT, _hi.SAME_DAY, _hi.PAST_TENSE, _hi.BUT_NOW))
 
 _RESOLVED = re.compile(
     r"\b(?:gone|went away|go(?:es)? away|passed(?! out)|subsided|resolved|stopped|ceased|settled|cleared(?: up)?|disappeared|faded|eased|ended|finished|"
@@ -522,7 +534,7 @@ _MAX_CHARS = 8000
 
 
 def normalize(text: str) -> str:
-    t = (text or "")[:_MAX_CHARS]
+    t = _hi.transliterate((text or "")[:_MAX_CHARS])
     t = t.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
     t = _CONTR_RX.sub(lambda m: _CONTRACTIONS[m.group(1).lower()], t)
     return t
@@ -832,6 +844,47 @@ def _temporal(s: str, seg: tuple[int, int], chunk: tuple[int, int], m: _Mention,
     return "current", same_day
 
 
+def _blank(s: str, spans: list[tuple[int, int]]) -> str:
+    """`s` with every symptom mention replaced by spaces: "saans ruk gayi" (breath stopped) must not read as "it stopped"."""
+    out = list(s)
+    for a, b in spans:
+        out[a:b] = " " * (b - a)
+    return "".join(out)
+
+
+def _hi_temporal(blank: str, seg: tuple[int, int], m: _Mention, spans: list[tuple[int, int]],
+                 temporal: str, same_day: bool) -> tuple[str, bool]:
+    """Hindi time words. Hindi is verb-final ("seene mein dard THA" = there was chest pain), so they are read around the
+    symptom on text with mentions blanked. Downgrades (history, resolved, recurring) need a cue in the symptom's own
+    clause; a "now" anywhere in the sentence keeps it current. No Hindi cue at all: the English reading stands."""
+    a = seg[0]
+    for c in _HI_CLAUSE.finditer(blank, seg[0], m.start):
+        a = c.end()
+    nxt = _HI_CLAUSE.search(blank, m.end, seg[1])
+    b = nxt.start() if nxt else seg[1]
+    clause, sentence = blank[a:b], blank[seg[0]:seg[1]]
+    same_day = same_day or bool(_HI_SAME_DAY.search(sentence))
+    if _HI_OLD.search(clause):
+        return "past", False
+    follows = False
+    if nxt:                                  # "..., ab theek hoon" / "... lekin ab theek hai": a short clause that ends it
+        c_end = _HI_CLAUSE.search(blank, nxt.end(), seg[1])
+        e = c_end.start() if c_end else seg[1]
+        follows = (not any(nxt.end() <= x < e for x, _y in spans) and len(blank[nxt.end():e].split()) <= 6
+                   and bool(_HI_RESOLVED_CLAUSE.search(blank[nxt.end():e])))
+    if _HI_RESOLVED_AFTER.search(blank[m.end:b]) or follows:
+        return "resolved", same_day
+    if _HI_CURRENT.search(sentence):
+        return "current", same_day
+    if _HI_RECURRING.search(clause):
+        return "recurring", same_day
+    if _HI_PAST.search(clause):
+        return "past", False
+    if _HI_PAST_TENSE.search(blank[m.end:b]):
+        return "recent", same_day
+    return temporal, same_day
+
+
 def _cap_mentions(mentions: list[_Mention], allowance: dict[str, int]) -> list[_Mention]:
     """Keep at most the per-sentence limit and the remaining per-message budget, red-flag mentions first."""
     reds = [m for m in mentions if m.tier == "red"]
@@ -861,21 +914,34 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
     segments.append((pos, len(s)))
 
     quotes = [(q.start(), q.end()) for q in re.finditer(r'"[^"]{1,300}"', s)]
+    hi = bool(_HI_GATE.search(s))
     negs = [t for t in _NEG_PRE.finditer(s) if _outside(spans, t)]
+    if hi:
+        negs = sorted(negs + [t for t in _HI_PRE_NEG.finditer(s) if _outside(spans, t)], key=lambda t: t.start())
     possibles = [t for t in _POSSIBLE.finditer(s) if _outside(spans, t)]
     hypos = [t for t in _HYPO.finditer(s) if _outside(spans, t)
              and not (t.group(0).lower() == "if" and _IF_AFTER_DOUBT.search(s[max(0, t.start() - 40):t.start()]))]
     hypos += [t for t in _HYPO_SAY.finditer(s) if _outside(spans, t)]
+    if hi:
+        hypos += [t for t in _HI_HYPO.finditer(s) if _outside(spans, t)]
     fears = [t for t in list(_FEAR_ABOUT.finditer(s)) if _outside(spans, t)]
     fears_that = [t for t in _FEAR_THAT_I.finditer(s) if _outside(spans, t)]
     adv_src = [t for t in _ADVICE_SOURCE.finditer(s) if _outside(spans, t)]
     adv_gen = [t for t in _ADVICE_GENERIC.finditer(s) if _outside(spans, t)]
     futures = [t for t in _FUTURE_EXP.finditer(s) if _outside(spans, t)]
     others = [t for t in _OTHER_SUBJ.finditer(s) if _outside(spans, t)]
+    if hi:   # "he" is also how people type "hai"; Hindi marks the experiencer with ko/ke/ki ("papa ko")
+        others = sorted([t for t in others if t.group(0).lower() != "he"]
+                        + [t for t in _HI_OTHER.finditer(s) if _outside(spans, t)], key=lambda t: t.start())
     trail_hedge = _TRAIL_HEDGE.search(s)
 
     q_start: int | None = None
-    if _Q_AT_START.match(s):
+    if hi:
+        # Hindi words collide with English question cues ("do din se" = for two days, "is waqt" = right now), so a Hindi
+        # sentence is a question only when it is clearly educational and the speaker is not in it.
+        if (_HI_Q_START.match(s) or _HI_Q_END.search(s)) and _HI_GENERIC.search(s) and not _HI_SELF.search(s):
+            q_start = 0
+    elif _Q_AT_START.match(s):
         q_start = 0
     else:
         qc = _Q_AFTER_COMMA.search(s)
@@ -884,20 +950,23 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
     # A trailing "?" alone does not make an information question: "I said no chest pain?" is a
     # declarative with rising intonation. Only bare fragments ("Chest pain?") count.
     # ...and not when the speaker is in it ("Perhaps I fainted?") or hedging: that is a hedged report, not a question.
-    if (q_start is None and s.rstrip().endswith("?") and len(s.split()) <= 4
+    if (not hi and q_start is None and s.rstrip().endswith("?") and len(s.split()) <= 4
             and not _FIRST_PERSON.search(s) and not _POSSIBLE.search(s)):
         q_start = 0
 
     result: list[tuple[_Mention, str, str, str, str]] = []  # mention, assertion, reason, certainty, experiencer
     post_neg_idx: set[int] = set()
     for i, m in enumerate(mentions):
-        pn = _NEG_POST.match(s, m.end) or _BARE_NO_AFTER.match(s, m.end)
+        hpn = _HI_NEG_POST.match(s, m.end) if hi else None
+        if hpn and _HI_PAST_TENSE.search(hpn.group(0)) and _HI_BUT_NOW.search(s, hpn.end()):
+            hpn = None
+        pn = _NEG_POST.match(s, m.end) or _BARE_NO_AFTER.match(s, m.end) or hpn
         if pn and not (m.concept == "period" and re.match(r"\s*(?:is|was)\s+(?:over)", s[m.end:])):
             post_neg_idx.add(i)
     # a trailing ": none" governs the whole list that precedes it
     for j in sorted(post_neg_idx):
         k = j
-        while k > 0 and _only(s[mentions[k - 1].end:mentions[k].start], _FILLER_LIST):
+        while k > 0 and _only(s[mentions[k - 1].end:mentions[k].start], (_FILLER_LIST | _hi.GLUE) if hi else _FILLER_LIST):
             k -= 1
             post_neg_idx.add(k)
 
@@ -918,9 +987,11 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
                 if seg[0] <= t.start() and t.end() <= m.start and t.end() > (other.end() if other else -1):
                     gap = s[t.end():m.start]
                     # any verb (or none: "my coworker fainted" - the mention is the verb), no first-person word, no clause break
-                    if (not _FIRST_PERSON.search(gap) and len(gap.split()) <= 5 and not re.search(r"[,;:]|\bbut\b", gap)):
+                    if (not _FIRST_PERSON.search(gap) and len(gap.split()) <= 5 and not re.search(r"[,;:]|\bbut\b", gap)
+                            and not (hi and (_HI_SELF.search(gap) or _HI_COMM.search(gap)))):
                         other = t
-        fam = _FAMILY_HISTORY.search(s[seg[0]:m.start])
+        fam = _FAMILY_HISTORY.search(s[seg[0]:m.start]) or (
+            hi and _HI_FAMILY.search(s[seg[0]:m.start]) and _HI_HISTORY.search(s[seg[0]:seg[1]]))
 
         # what a doctor/leaflet SAYS is not what the user REPORTS - unless it is the user's own symptom ("told me my chest pain is ...")
         own_poss = m.text[:3].lower() == "my " or bool(_OWN_POSSESSIVE.search(s[max(seg[0], m.start - 16):m.start]))
@@ -954,7 +1025,8 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
                 if (seg[0] <= t.start() and t.end() <= m.start and len(gap.split()) <= 3 and not re.search(r"[,.;:!?]", gap)):
                     fut = t
         fear_self = any(t.end() <= m.start and _scope_reaches(s, t.end(), m, spans, _HEDGE_FIRST, strict=strict) for t in fears_that)
-        has_my = bool(re.search(r"\bmy\b", s[max(seg[0], m.start - 12):m.start] + m.text, re.I))
+        has_my = bool(re.search(r"\bmy\b", s[max(seg[0], m.start - 12):m.start] + m.text, re.I)) or (
+            hi and bool(_HI_POSS.search(s[max(seg[0], m.start - 16):m.start])))
         trailing = bool(trail_hedge) and trail_hedge.start() >= m.end and "," not in s[m.end:trail_hedge.start()] \
             and not re.search(r"[.?!;]", s[m.end:trail_hedge.start()])
 
@@ -964,7 +1036,8 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
             assertion, reason, certainty, who = "quoted", "reported_advice", "explicit", "other"
         elif other is not None or fam:
             assertion, reason, certainty, who = "other_person", "other_experiencer", "explicit", "other"
-        elif hyp is not None and not (in_question and hyp_is_fear) and not (has_my and _WORSEN.match(s, m.end)):
+        elif hyp is not None and not (in_question and hyp_is_fear) and not (
+                has_my and (_WORSEN.match(s, m.end) or (hi and _HI_WORSEN.match(s, m.end)))):
             assertion, reason, certainty = "hypothetical", "conditional_or_fear", "explicit"
         elif fut is not None:
             if m.tier == "red" and not _FUTURE_TIME.search(s[seg[0]:seg[1]]):
@@ -1039,10 +1112,13 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
         result.append((m, assertion, reason, certainty, who))
 
     facts: list[Fact] = []
+    blank = _blank(s, spans) if hi else s
     for m, assertion, reason, certainty, who in result:
         seg = _segment_of(segments, m.start)
         chunk = _chunk_of(s, seg, m.start)
         temporal, same_day = _temporal(s, seg, chunk, m, assertion, spans)
+        if hi and assertion in {"present", "possible"}:
+            temporal, same_day = _hi_temporal(blank, seg, m, spans, temporal, same_day)
         if reason in {"negation_until_now", "conditional_on_existing_symptom"}:
             temporal, same_day = "current", True  # "never had it before today" == it is happening now
         elif reason in {"counterfactual_wish", "double_negation"}:
@@ -1087,7 +1163,7 @@ def _resolve_followups(sentences: list[str], per_sentence: list[list[Fact]]) -> 
                 if f.experiencer == "self" and f.assertion in {"present", "possible", "question"} else f
                 for f in out[i - 1]
             ]
-        elif len(s.split()) <= 10 and (_resolved(s) or (_SELF_OK.search(s) and _NOW_EXPLICIT.search(s))):
+        elif len(s.split()) <= 10 and (_resolved(s) or (_SELF_OK.search(s) and _NOW_EXPLICIT.search(s)) or _HI_RESOLVED_CLAUSE.search(s)):
             out[i - 1] = [
                 _resolve_fact(f, "+resolved_followup") if f.assertion in {"present", "possible"} and f.experiencer == "self" else f
                 for f in out[i - 1]
