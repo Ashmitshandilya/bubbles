@@ -4,7 +4,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import { BubblesFigure } from "../BubblesFigure";
 import { HOP_LIFT_PX, RIGS, type Env, type Rig } from "../world/rig";
 import { feelAt, feelBand, type FeelBand } from "./feel";
-import { CHAPTER_INDEX, NEVER, easeInOut, hopT, isLead, lerp, onStoryFrame, range, say, story, trackSpeed } from "./store";
+import { CHAPTER_INDEX, NEVER, easeInOut, hopT, isLead, lerp, onStoryFrame, range, rectOf, say, story, trackSpeed } from "./store";
 
 /**
  * The host of the story: the illustrated Bubbles, placed on the stage every frame.
@@ -307,7 +307,7 @@ export function BubblesHost() {
       // Start buttons: Bubbles turns to them, brightens, and cheers in the hero and finale.
       let ctaTarget: { x: number; y: number } | null = null;
       if (cta) {
-        const r = cta.getBoundingClientRect();
+        const r = rectOf(cta);
         ctaTarget = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
         if (!hopFly && !walking) face = ctaTarget.x > sim.x ? 1 : -1;
         mood = "happy";

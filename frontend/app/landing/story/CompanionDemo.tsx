@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { CHAPTER_INDEX, focusOn, isLead, onStoryFrame, range, story } from "./store";
+import { CHAPTER_INDEX, focusOn, isLead, onStoryFrame, range, rectOf, story } from "./store";
 
 /**
  * Bubbles' intelligence layer, shown as it really works: deterministic safety
@@ -60,9 +60,9 @@ export function CompanionDemo() {
       const q = QUESTIONS[activeRef.current];
 
       // Layout reads first, writes after: alternating them forces a layout per stream per frame.
-      const box = svg.current?.getBoundingClientRect();
+      const box = svg.current ? rectOf(svg.current) : undefined;
       const ready = Boolean(box) && story.worldReady && story.bubbles.visible;
-      const rects = ready ? steps.current.map((step) => step?.getBoundingClientRect()) : [];
+      const rects = ready ? steps.current.map((step) => (step ? rectOf(step) : undefined)) : [];
       const lead = isLead(index);
       const focus = lead
         ? focusOn(p < 0.18 ? bubble.current : p < 0.6 ? steps.current[Math.min(3, Math.floor(range(p, 0.18, 0.58) * 4))] : answerBox.current)

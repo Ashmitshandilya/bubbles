@@ -164,6 +164,7 @@ export function resetStory() {
   story.tier = "lite";
   story.worldLost = false;
   story.paused = false;
+  frameRects.clear();
   resetSky();
   // (worldReady and the anchor belong to the 3D world, which resets them when it unmounts.)
   for (const c of story.chapters) {
@@ -215,10 +216,41 @@ export function onStoryFrame(listener: Listener) {
 export const isLead = (index: number) =>
   (story.current === index && story.blend < 0.5) || (story.current === index - 1 && story.blend >= 0.5);
 
+/** Element rects measured first thing each frame, while layout is still clean from the last paint (see `rectOf`). */
+const frameRects = new Map<Element, { r: DOMRect; used: boolean }>();
+
+/**
+ * An element's viewport rect as of the start of this frame. Reading layout after the frame has written styles forces a
+ * synchronous layout for every read (the biggest cost of a throttled scroll); instead the director re-measures every
+ * element read last frame before it writes anything (`measureRects`), and chapters read the cached value here. An
+ * element seen for the first time is measured on the spot. Gaze and connector lines are one frame behind, which is invisible.
+ */
+export function rectOf(el: Element): DOMRect {
+  const hit = frameRects.get(el);
+  if (hit) {
+    hit.used = true;
+    return hit.r;
+  }
+  const r = el.getBoundingClientRect();
+  frameRects.set(el, { r, used: true });
+  return r;
+}
+
+/** The director calls this before it writes anything in a frame: re-measure what was read last frame, forget the rest. */
+export function measureRects() {
+  for (const [el, entry] of frameRects) {
+    if (!entry.used || !el.isConnected) frameRects.delete(el);
+    else {
+      entry.r = el.getBoundingClientRect();
+      entry.used = false;
+    }
+  }
+}
+
 /** NDC focus point for Bubbles from a DOM element's centre. */
 export function focusOn(el: Element | null): Focus | null {
   if (!el) return null;
-  const r = el.getBoundingClientRect();
+  const r = rectOf(el);
   const x = ((r.left + r.width / 2) / story.vw) * 2 - 1;
   const y = -(((r.top + r.height / 2) / story.vh) * 2 - 1);
   return { x, y, side: x >= 0 ? 1 : -1 };

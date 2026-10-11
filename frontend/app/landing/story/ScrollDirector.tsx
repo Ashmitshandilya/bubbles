@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { ENTER_VARIANTS, skyAt, timeOfDay, type BlendedSky } from "../atmosphere/palette";
 import { mixSky, phaseMixAtDay, scrimCss } from "../atmosphere/sky";
 import { restorePaused } from "./motion";
-import { CHAPTERS, CHAPTER_INDEX, clamp01, range, resetStory, rotateFocus, smooth, story } from "./store";
+import { CHAPTERS, CHAPTER_INDEX, clamp01, measureRects, range, resetStory, rotateFocus, smooth, story } from "./store";
 
 /**
  * Drives the whole landing story from one requestAnimationFrame loop (no scroll
@@ -90,6 +90,7 @@ export function ScrollDirector() {
     let raf = 0;
 
     const frame = (now: number) => {
+      measureRects(); // layout reads first, while the last paint left it clean (store.ts rectOf)
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const raw = window.scrollY;
