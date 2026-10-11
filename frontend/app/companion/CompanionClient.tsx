@@ -75,6 +75,7 @@ export function CompanionClient() {
   const [memoryLine, setMemoryLine] = useState("Checking memory…");
   const [eventStatus, setEventStatus] = useState<Record<string, EventStatus>>({});
   const [eventErrors, setEventErrors] = useState<Record<string, string>>({});
+  const [consentBusy, setConsentBusy] = useState(false);
   const [ratings, setRatings] = useState<Record<string, Feedback>>({});
   const [ratingBusy, setRatingBusy] = useState<Record<string, boolean>>({});
   const [ratingFailed, setRatingFailed] = useState<Record<string, boolean>>({});
@@ -207,6 +208,7 @@ export function CompanionClient() {
               ].slice(0, 4)
             : [],
           healthEvents: adaptHealthEvents(payload?.health_events, payload?.health_event_ids),
+          consentRequired: payload?.consent_required === true,
         };
         // The user's bubble takes the server id; the correction (if any) withdraws the earlier warning in place;
         // the reply is upserted so a replayed response can never render twice.
@@ -333,6 +335,26 @@ export function CompanionClient() {
     else inputRef.current?.focus();
   }
 
+  /** The yes to using an outside AI model: saved on the server, then the question that was waiting is asked again. */
+  const allowAi = useCallback(
+    async (replyId: string) => {
+      setConsentBusy(true);
+      try {
+        const response = await fetchBubbles("/me/consent", { method: "PUT", body: JSON.stringify({ ai_chat: true }) });
+        if (!response.ok) throw new Error(`consent ${response.status}`);
+        const at = messages.findIndex((m) => m.id === replyId);
+        const asked = at > 0 ? messages[at - 1] : undefined;
+        setMessages((prev) => prev.map((m) => (m.id === replyId ? { ...m, consentRequired: false } : m)));
+        if (asked?.role === "user") await sendMessage(asked.content, { messageId: asked.id, fresh: true });
+      } catch {
+        setError("Bubbles couldn't save that just now. Please try again.");
+      } finally {
+        setConsentBusy(false);
+      }
+    },
+    [fetchBubbles, messages, sendMessage]
+  );
+
   const rateReply = useCallback(
     async (messageId: string, rating: Rating, reason?: FeedbackReason) => {
       setRatingBusy((prev) => ({ ...prev, [messageId]: true }));
@@ -449,7 +471,7 @@ export function CompanionClient() {
   // Follow-up chips sit under the newest reply only, and only while nothing is in flight. Never under an urgent or
   // withdrawn reply. Backend suggestions win; the static set is only for a calm, ordinary reply.
   const tail = messages.at(-1);
-  const calmTail = tail?.role === "assistant" && !sending && !isUrgentMessage(tail) && !tail.retracted ? tail : null;
+  const calmTail = tail?.role === "assistant" && !sending && !isUrgentMessage(tail) && !tail.retracted && !tail.consentRequired ? tail : null;
   const chipsFor = calmTail?.id;
   const chips = !calmTail
     ? []
@@ -584,6 +606,8 @@ export function CompanionClient() {
                       feedbackBusy={ratingBusy[m.id] === true}
                       feedbackFailed={ratingFailed[m.id] === true}
                       onRate={(rating, reason) => void rateReply(m.id, rating, reason)}
+                      onConsent={() => void allowAi(m.id)}
+                      consentBusy={consentBusy}
                     />
                   )
                 )}

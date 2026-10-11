@@ -41,6 +41,8 @@ export interface ChatMessage {
   confidence?: string | null;
   suggestions?: string[];
   healthEvents?: ExtractedHealthEvent[];
+  /** This reply is the question about using an outside AI model: the answer is waiting for a yes. */
+  consentRequired?: boolean;
 }
 
 export interface ConversationSummary {
@@ -353,6 +355,29 @@ function EventCard({
   );
 }
 
+/** The one question Bubbles asks before it sends a message to an outside AI model. The yes is stored on the server and can be undone in Settings. */
+function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
+  return (
+    <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[18px] bg-tint-sky p-4">
+      <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
+        If you say yes, Bubbles sends this message and a short summary of your own notes to an outside AI model to write its answer. Emergencies, logging and
+        patterns never need it. You can change this any time in Settings, under Privacy and data.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onAllow}
+          disabled={busy}
+          className="bubbles-press inline-flex min-h-[44px] items-center rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white disabled:cursor-wait disabled:opacity-70"
+        >
+          {busy ? "Saving..." : "Yes, allow and continue"}
+        </button>
+      </div>
+      <p className="m-0 text-caption font-semibold text-bubbles-sky-deep">If you do not want this, just keep logging and using the other pages. Nothing is sent.</p>
+    </div>
+  );
+}
+
 const THUMB_UP = "M7 11v9H4v-9zM7 11l4-8a2 2 0 0 1 2 2v4h6a2 2 0 0 1 2 2.3l-1.2 7a2 2 0 0 1-2 1.7H7";
 const THUMB_DOWN = "M17 13V4h3v9zM17 13l-4 8a2 2 0 0 1-2-2v-4H5a2 2 0 0 1-2-2.3l1.2-7A2 2 0 0 1 6.2 5H17";
 
@@ -429,6 +454,8 @@ export function BubblesReply({
   feedbackBusy = false,
   feedbackFailed = false,
   onRate,
+  onConsent,
+  consentBusy = false,
 }: {
   message: ChatMessage;
   eventStatus: Record<string, EventStatus>;
@@ -445,6 +472,9 @@ export function BubblesReply({
   feedbackBusy?: boolean;
   feedbackFailed?: boolean;
   onRate?: (rating: Rating, reason?: FeedbackReason) => void;
+  /** Shown under the reply that asks for the yes. */
+  onConsent?: () => void;
+  consentBusy?: boolean;
 }) {
   if (message.retracted) {
     // The user corrected Bubbles: a calm card, no alert role, no red, no events or sources. The original text stays
@@ -523,7 +553,8 @@ export function BubblesReply({
       {message.healthEvents && message.healthEvents.length > 0 && (
         <EventCard events={message.healthEvents} status={eventStatus} error={eventError} onDecide={onDecide} />
       )}
-      {onRate && message.role === "assistant" && isRatableId(message.id) && (
+      {message.consentRequired && onConsent && <ConsentCard busy={consentBusy} onAllow={onConsent} />}
+      {onRate && message.role === "assistant" && !message.consentRequired && isRatableId(message.id) && (
         <ReplyFeedback feedback={feedback} busy={feedbackBusy} failed={feedbackFailed} onRate={onRate} />
       )}
       {chips.length > 0 && onChip && (

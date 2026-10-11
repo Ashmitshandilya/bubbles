@@ -8,6 +8,7 @@ import { COMPAT_FIX_FILE, MESSAGES, databaseSummary } from "../lib/connection";
 import type { PartnerSharingStatus } from "../lib/partner-sharing";
 import { VeilSwitch } from "../../components/PrivacyVeil";
 import { KeepSignedInRow, TwoStepCard } from "../../components/settings/SignInSecurity";
+import { AiConsentRow } from "../../components/settings/AiConsentRow";
 import { NotificationSettingsCard } from "../../components/wellness/NotificationSettingsCard";
 import { YourDataCard } from "../../components/wellness/YourDataCard";
 import { partnerSummary } from "./summary";
@@ -144,6 +145,7 @@ function Settings() {
             <LinkRow href="/privacy" label="Privacy notice" hint="What Bubbles keeps and why" />
             <LinkRow href="/terms" label="Terms of use" />
           </ul>
+          <AiConsentRow />
           <YourDataCard />
         </div>
       </Group>

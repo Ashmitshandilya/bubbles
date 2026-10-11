@@ -35,6 +35,8 @@ from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
 from chat_feedback import build_router as build_chat_feedback_router
+from consent_api import build_router as build_consent_router
+from consent import consent_needed_reply, has_ai_consent
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -423,6 +425,7 @@ app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 # Sleep, hydration, medications, mind check-ins and notifications.
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
+app.include_router(build_consent_router(get_authenticated_user, supabase))
 app.include_router(build_import_router(get_authenticated_user, supabase))
 # Cycle: calendar, daily log, predictions with ranges, modes, insights, report, partner view.
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
@@ -647,12 +650,19 @@ def chat(
     package_audit_meta: dict | None = None
     sentiment = "neutral"
     persisted: list[dict] = []
-    if turn.route in {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer"}:
+    deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer"}
+    # Only open-ended replies go to an outside AI model, and only after a clear yes (consent.py). Everything else, including every
+    # emergency, is answered here and never depends on it.
+    consent_required = turn.route not in deterministic_routes and not has_ai_consent(supabase, user_id)
+    if turn.route in deterministic_routes or consent_required:
         # Deterministic copy: RED is a hard gate, so neither the message nor health context reaches a provider.
         t0 = perf_counter()
         persisted = persist_events(supabase, user_id, user_message_id, rule_events)
         timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
-        response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
+        if consent_required:
+            response_text = consent_needed_reply(name)
+        else:
+            response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
             response_text = _fitness_text(user_id, user_message)
     else:
@@ -792,6 +802,7 @@ def chat(
         "conflicts": turn.conflicts[:5],
         "message_id": bubbles_message_id,
         "user_message_id": user_message_id,
+        "consent_required": consent_required,
         "conversation_id": conversation_id,
         "user_id": user.id,
         "evidence": [

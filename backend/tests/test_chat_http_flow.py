@@ -61,6 +61,9 @@ def env():
 
     main.ask_bubbles = stub_ai
     main.hybrid_search = lambda **k: []
+    import consent
+    for person in (USER, OTHER):   # the open-ended replies need a yes (tests/test_consent.py covers the no)
+        consent.set_ai_chat(db, person, True)
     from fastapi.testclient import TestClient
     client = TestClient(main.app, raise_server_exceptions=False)
     yield types.SimpleNamespace(client=client, db=db, ai_calls=calls, main=main)
