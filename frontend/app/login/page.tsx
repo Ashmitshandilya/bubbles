@@ -5,6 +5,7 @@ import { Suspense, useEffect, useId, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
 import { authCallbackUrl } from "../../lib/auth-links";
+import { RESEND_COOLDOWN_SECONDS, friendlyAuthError } from "../../lib/auth-errors";
 import { BubblesMascot } from "../../components/BubblesMascot";
 
 type Mode = "login" | "signup" | "magic";
@@ -32,15 +33,40 @@ function LoginForm() {
   const [displayName, setDisplayName] = useState("");
   const [message, setMessage] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  /** Offer "send the confirmation email again" (after sign-up, or when sign-in says the email is not confirmed). */
+  const [canResend, setCanResend] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   useEffect(() => {
     const requested = searchParams?.get("mode");
     if (requested === "signup" || requested === "magic" || requested === "login") setMode(requested);
   }, [searchParams]);
 
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setTimeout(() => setCooldown((n) => n - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [cooldown]);
+
   function switchMode(next: Mode) {
     setMode(next);
     setMessage(null);
+    setCanResend(false);
+  }
+
+  async function resendConfirmation() {
+    if (!email || cooldown > 0) return;
+    setCooldown(RESEND_COOLDOWN_SECONDS);
+    try {
+      const { error } = await supabase.auth.resend({ type: "signup", email, options: { emailRedirectTo: authCallbackUrl(window.location.origin) } });
+      setMessage(
+        error
+          ? { kind: "error", text: friendlyAuthError(error.message).text }
+          : { kind: "info", text: "Sent again. It can take a minute, and spam folders sometimes catch it." },
+      );
+    } catch {
+      setMessage({ kind: "error", text: "Bubbles couldn't reach the sign-in service. Check your connection and try again." });
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -60,7 +86,7 @@ function LoginForm() {
           email,
           options: { emailRedirectTo: authCallbackUrl(window.location.origin) },
         });
-        setMessage(error ? { kind: "error", text: error.message } : { kind: "info", text: "Check your inbox. Your sign-in link is on its way." });
+        setMessage(error ? { kind: "error", text: friendlyAuthError(error.message).text } : { kind: "info", text: "Check your inbox. Your sign-in link is on its way." });
       } else if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -69,16 +95,19 @@ function LoginForm() {
           options: { data: { display_name: displayName }, emailRedirectTo: authCallbackUrl(window.location.origin) },
         });
         if (error) {
-          setMessage({ kind: "error", text: error.message });
+          setMessage({ kind: "error", text: friendlyAuthError(error.message).text });
         } else if (data.session) {
           router.push("/dashboard");
         } else {
-          setMessage({ kind: "info", text: "Account created! Please confirm your email, then sign in." });
+          setMessage({ kind: "info", text: "Account created! Please open the link we emailed you to confirm it, then sign in. Check spam if you can't see it." });
+          setCanResend(true);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          setMessage({ kind: "error", text: error.message });
+          const friendly = friendlyAuthError(error.message);
+          setMessage({ kind: "error", text: friendly.text });
+          setCanResend(friendly.needsConfirmation);
         } else {
           router.push("/dashboard");
         }
@@ -190,6 +219,17 @@ function LoginForm() {
           >
             {message.text}
           </p>
+        )}
+
+        {canResend && (
+          <button
+            type="button"
+            onClick={() => void resendConfirmation()}
+            disabled={cooldown > 0 || !email}
+            className="bubbles-press mt-3 inline-flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-line bg-surface px-5 text-body-sm font-extrabold text-bubbles-pink-ink disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {cooldown > 0 ? `Send the email again in ${cooldown}s` : "Send the confirmation email again"}
+          </button>
         )}
       </div>
 
