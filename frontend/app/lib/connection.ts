@@ -310,7 +310,7 @@ export function connectionBanner(state: {
   waking?: boolean;
 }): Banner {
   if (state.apiStatus === "checking" && state.waking) {
-    return { kind: "waking", title: "Bubbles is waking up", message: "This can take up to a minute the first time. Hang tight, it will load by itself.", dismissible: false };
+    return { kind: "waking", title: "Bubbles is waking up", message: "This can take up to a minute. Hang tight, it will load by itself.", dismissible: false };
   }
   if (state.apiStatus === "offline") {
     return { kind: "offline", title: "Can't connect to Bubbles", message: state.connectionError || MESSAGES.offline, dismissible: false };

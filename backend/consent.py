@@ -1,7 +1,8 @@
 """Consent to send a conversation to an outside AI model.
 
 Bubbles understands emergencies, corrections, daily logs and fitness questions on its own servers. Only the open-ended replies go to an
-outside AI model (a free provider), and what is sent is the person's message plus a short summary of their own notes. That needs a clear
+outside AI model (a free provider), and what is sent is the person's message, their recent messages in that chat and a short summary
+of their profile and notes (context_engine.format_user_context: name, date of birth, gender, timezone, recent entries, patterns). That needs a clear
 yes first. The yes is stored per person (signed document, no schema change), can be withdrawn at any time, and is checked on the server
 before any message leaves it. Emergency handling never depends on it.
 """

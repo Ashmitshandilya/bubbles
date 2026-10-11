@@ -255,6 +255,11 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   // The latest probe (set below) and the one in flight, so many failed calls at once share one /health check.
   const probeRef = useRef<() => Promise<boolean>>(async () => false);
   const probing = useRef<Promise<boolean> | null>(null);
+  // Read inside the probe: the long "waking up" retry is for a host that was up and fell asleep, not for every reconnect attempt while offline.
+  const statusRef = useRef(apiStatus);
+  useEffect(() => {
+    statusRef.current = apiStatus;
+  }, [apiStatus]);
   const { session } = useAuth();
 
   const fetchBubbles = useCallback(async (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) => {
@@ -339,7 +344,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
         response = await fetchBubbles("/health", {}, first ? FIRST_HEALTH_LIMITS : HEALTH_LIMITS);
       } catch (error) {
         // A later probe running out of time usually means the host fell asleep: show "waking up" and wait once, longer.
-        if (first || !failureFromError(error).timedOut) throw error;
+        if (first || !failureFromError(error).timedOut || statusRef.current === "offline") throw error;
         wasWaking.current = true;
         setWaking(true);
         setApiStatus("checking");

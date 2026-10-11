@@ -368,11 +368,15 @@ function EventCard({
 
 /**
  * The one question Bubbles asks before it sends a message to an outside AI model. The yes is stored on the server and can be undone in Settings.
- * The reply text above it already says what is sent, so the card only asks and says where to undo it.
+ * The card itself says what is sent: it can sit under a reply that does not (an urgent message from someone who has not said yes yet).
  */
 function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
   return (
     <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[18px] bg-tint-sky p-4">
+      <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
+        If you say yes, this message, your recent messages here and a short summary of your profile and notes (such as your date of birth, gender and
+        recent entries) go to an outside AI model.
+      </p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

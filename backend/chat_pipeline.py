@@ -345,7 +345,7 @@ def safety_followup_reply(reply: dict[str, Any] | None, *, name: str | None) -> 
     if meta.get("kind") == "clarification" or safety.get("state") == POTENTIAL:
         return ("Before we move on, I want to check what you told me earlier: is it still happening right now, and how strong is it from "
                 "0 to 10? If it's happening now and it's severe, call your local emergency number.")
-    return (f"Before you go{comma}: what you mentioned earlier deserves prompt attention, so please speak to a clinician or an "
+    return (f"Before we go on{comma}: what you mentioned earlier deserves prompt attention, so please speak to a clinician or an "
             "urgent-care service today. If it gets worse, go to emergency care.")
 
 

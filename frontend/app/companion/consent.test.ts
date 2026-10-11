@@ -16,12 +16,13 @@ describe("the outside AI model question", () => {
     expect(reply).toContain("!message.consentRequired && isRatableId(message.id)");
   });
 
-  it("names the outside AI model and where to undo it, without repeating the reply or an em-dash", () => {
+  it("says in visible text what is sent and where to undo it, without an em-dash", () => {
     const card = chatBits.slice(chatBits.indexOf("function ConsentCard"), chatBits.indexOf("const THUMB_UP"));
-    expect(card).toContain("outside AI model");
-    expect(card).toContain("You can change this any time in Settings.");
-    // What is sent is said once, in the reply text from the server, not again in the card.
-    expect(card).not.toContain("short summary of your own notes");
+    // Visible paragraph text, not only the screen-reader label: the card can sit under an urgent reply that does not say it.
+    const visible = card.replace(/aria-label="[^"]*"/g, "").replace(/\s+/g, " ");
+    for (const part of ["go to an outside AI model", "this message", "recent messages", "profile and notes", "date of birth", "gender", "You can change this any time in Settings."]) {
+      expect(visible).toContain(part);
+    }
     expect(card).toContain("w-full");
     expect(card).not.toContain("—");
   });
