@@ -360,7 +360,7 @@ function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) 
   return (
     <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[18px] bg-tint-sky p-4">
       <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
-        If you say yes, Bubbles sends this message and a short summary of your own notes to an outside AI model to write its answer. Emergencies, logging and
+        If you say yes, Bubbles sends this message, your recent messages in this chat and a short summary of your own notes to an outside AI model to write its answer. Emergencies, logging and
         patterns never need it. You can change this any time in Settings, under Privacy and data.
       </p>
       <div className="flex flex-wrap gap-2">

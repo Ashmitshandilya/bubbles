@@ -283,6 +283,7 @@ export function CompanionClient() {
           safety_level?: unknown;
           kind?: unknown;
           health_events?: unknown;
+          consent_required?: unknown;
         }> = Array.isArray(payload?.messages) ? payload.messages : [];
         setMessages(
           rows.map((m, i): ChatMessage => {
@@ -297,6 +298,7 @@ export function CompanionClient() {
               role: "assistant",
               ...adaptReplySafety(m.safety, m.safety_level, m.kind),
               healthEvents: adaptHealthEvents(m.health_events, undefined),
+              consentRequired: m.consent_required === true,
             };
           })
         );
@@ -606,7 +608,7 @@ export function CompanionClient() {
                       feedbackBusy={ratingBusy[m.id] === true}
                       feedbackFailed={ratingFailed[m.id] === true}
                       onRate={(rating, reason) => void rateReply(m.id, rating, reason)}
-                      onConsent={() => void allowAi(m.id)}
+                      onConsent={m.id === messages.at(-1)?.id ? () => void allowAi(m.id) : undefined}
                       consentBusy={consentBusy}
                     />
                   )

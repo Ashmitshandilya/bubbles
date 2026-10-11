@@ -39,8 +39,8 @@ def set_ai_chat(db: Any, uid: str, accepted: bool) -> dict:
 def consent_needed_reply(name: str | None = None) -> str:
     who = f"{name}, " if name else ""
     return (
-        f"{who}I can answer open questions with the help of an outside AI model. To do that I would send your message, and a short summary of "
-        "your own notes, to that model. I will not send anything unless you say yes, and you can take it back any time in Settings.\n\n"
+        f"{who}I can answer open questions with the help of an outside AI model. To do that I would send your message, your recent messages in "
+        "this chat and a short summary of your own notes to that model. I will not send anything unless you say yes, and you can take it back any time in Settings.\n\n"
         "Without it I can still save what you log, show your patterns and answer questions about your cycle, sleep and fitness. "
         "If something feels urgent, contact a clinician or your local emergency number."
     )

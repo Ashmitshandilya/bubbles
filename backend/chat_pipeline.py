@@ -163,6 +163,7 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
         "message_id": str(row.get("id")),
         "user_message_id": user_message_id,
         "conversation_id": conversation_id,
+        "consent_required": meta.get("consent_required") is True,
         "evidence": [],
         "replayed": True,
     }

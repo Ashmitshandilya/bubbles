@@ -42,7 +42,7 @@ from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
 import association_loader
 from context_engine import build_user_context, format_user_context
-from safety_engine import assess_safety, safety_instruction
+from safety_engine import assess_safety, safety_instruction, urgent_fallback_response
 from chat_pipeline import (
     RateLimiter, ai_failed_reply, analyze_turn, build_rule_events, conversation_block, deterministic_reply,
     evidence_query, find_stored_reply, first_name, load_history, persist_events, reconcile_ai_events, reply_kind,
@@ -657,10 +657,12 @@ def chat(
     if turn.route in deterministic_routes or consent_required:
         # Deterministic copy: RED is a hard gate, so neither the message nor health context reaches a provider.
         t0 = perf_counter()
-        persisted = persist_events(supabase, user_id, user_message_id, rule_events)
+        # While waiting for the yes nothing is saved: the same message is asked again after it and saved once then (saving both would count a symptom twice).
+        persisted = [] if consent_required else persist_events(supabase, user_id, user_message_id, rule_events)
         timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
         if consent_required:
-            response_text = consent_needed_reply(name)
+            # An urgent message still gets the fixed urgent text, not a question about AI models.
+            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else consent_needed_reply(name)
         else:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
@@ -764,6 +766,8 @@ def chat(
     evidence_ids = [row.get("chunk_id") for row in evidence_results if row.get("chunk_id")]
     metadata = stored_metadata(kind=kind, user_message_id=user_message_id, safety=safety_dict, events=persisted,
                                evidence_ids=evidence_ids, conflicts=turn.conflicts, trace=semantic_trace(turn), package=package_audit_meta)
+    if consent_required:
+        metadata["consent_required"] = True   # so the card survives a replay and a reload
     bubbles_message_id = _persist_chat_message(
         user_id=user_id, conversation_id=conversation_id, role="bubbles", content=response_text, metadata=metadata,
     )
@@ -909,6 +913,8 @@ def chat_conversation_messages_api(
             out["kind"] = meta.get("kind")
         if isinstance(meta.get("health_events"), list):
             out["health_events"] = meta["health_events"]
+        if meta.get("consent_required") is True:
+            out["consent_required"] = True
         return out
 
     return {

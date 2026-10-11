@@ -27,4 +27,4 @@ def security_headers()->dict:
     return {"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"no-referrer","X-Frame-Options":"DENY",
             "Strict-Transport-Security":"max-age=31536000; includeSubDomains","Permissions-Policy":"camera=(), microphone=(), geolocation=()"}
 def threat_check()->dict:
-    return {"status":"baseline","controls":["bearer auth","server-side authorization","RLS","no secrets in client bundle","redaction before external model calls"],"note":"Review deployment-specific headers, CORS and key rotation before production."}
+    return {"status":"baseline","controls":["bearer auth","server-side authorization","RLS","no secrets in client bundle","consent recorded on the server before any message goes to an outside AI model"],"note":"Review deployment-specific headers, CORS and key rotation before production."}
