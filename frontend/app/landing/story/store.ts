@@ -104,6 +104,8 @@ export const story = {
   worldReady: false,
   /** render quality chosen by `perf/tier.ts`; lite until the start-up measurement says otherwise */
   tier: "lite" as Tier,
+  /** the 3D world's WebGL context was lost: it stays unmounted for the rest of the visit */
+  worldLost: false,
   /** the visitor pressed "Pause motion": ambient motion (sky drift, bubbles, spine, fireflies, CSS loops) is frozen */
   paused: false,
   sky: {
@@ -160,6 +162,7 @@ export function resetStory() {
   story.excite = 0;
   story.boops = 0;
   story.tier = "lite";
+  story.worldLost = false;
   story.paused = false;
   resetSky();
   // (worldReady and the anchor belong to the 3D world, which resets them when it unmounts.)

@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { Component, useEffect, useState, type ReactNode } from "react";
+import { readStoredTier, worldAllowed } from "../perf/tier";
+import { onStoryFrame, story } from "../story/store";
 
 const WorldCanvas = dynamic(() => import("./WorldCanvas"), { ssr: false, loading: () => null });
 
@@ -20,9 +22,9 @@ class WorldBoundary extends Component<{ children: ReactNode; onError: () => void
 }
 
 /**
- * Mounts the 3D world only when it can run well: motion allowed and WebGL2
- * available. Otherwise the page marks itself `data-world="off"` and the CSS shows
- * the illustrated Bubbles instead.
+ * Mounts the 3D world only when it can run (perf/tier.ts `worldAllowed`: motion allowed, WebGL2, no Save-Data, enough
+ * memory, no remembered drop to static). Otherwise, or as soon as its WebGL context is lost, the page marks itself
+ * `data-world="off"` and the CSS shows the illustrated Bubbles instead. (Slow frames only slow the world down: world/Governor.tsx.)
  */
 export function WorldMount() {
   const [source, setSource] = useState<HTMLElement | null>(null);
@@ -30,7 +32,6 @@ export function WorldMount() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>(".cw");
     if (!root) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let webgl = false;
     try {
       const probe = document.createElement("canvas").getContext("webgl2");
@@ -40,19 +41,32 @@ export function WorldMount() {
     } catch {
       webgl = false;
     }
-    // Low-end phones, Save-Data and few cores: the illustrated Bubbles is enough.
     const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
-    const weak =
-      nav.connection?.saveData === true ||
-      (typeof nav.deviceMemory === "number" && nav.deviceMemory < 4) ||
-      (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency <= 4);
-    if (reduced || !webgl || weak) {
+    const allowed = worldAllowed({
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      webgl2: webgl,
+      saveData: nav.connection?.saveData === true,
+      deviceMemory: nav.deviceMemory,
+      storedTier: readStoredTier(window.sessionStorage),
+    });
+    if (!allowed) {
       root.dataset.world = "off";
       return;
     }
     root.dataset.world = "loading";
     setSource(root);
   }, []);
+
+  // A lost context unmounts the world for the rest of the visit (its unmount marks the page "off").
+  useEffect(() => {
+    if (!source) return;
+    return onStoryFrame(() => {
+      if (story.worldLost) {
+        source.dataset.world = "off";
+        setSource(null);
+      }
+    });
+  }, [source]);
 
   if (!source) return null;
   return (

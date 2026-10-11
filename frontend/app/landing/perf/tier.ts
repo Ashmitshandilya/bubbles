@@ -71,6 +71,37 @@ export function writeStoredTier(storage: Pick<Storage, "setItem"> | null | undef
   }
 }
 
+/** After this long with no scroll, pointer, touch or key input the visitor is idle (plan 3.3). */
+export const IDLE_AFTER_MS = 2000;
+
+/** Pixel-ratio ladder for the 3D world (plan 3.3: full 1.75, lite 1.5, static 1.25). Phones are held at 1 by the canvas itself. */
+export const worldDprCap = (tier: Tier) => (tier === "full" ? 1.75 : tier === "lite" ? 1.5 : 1.25);
+
+/**
+ * Whether the 3D world draws on this frame of the scroll director (the canvas renders on demand, so the page has one
+ * animation loop). Every frame while the visitor scrolls or points; once they are idle, lite draws every other frame
+ * (about 30 fps) and full keeps every frame; an idle page under "Pause motion" has nothing moving, so nothing is drawn.
+ * A page demoted to static for slow frames keeps its world (the host is the heart of the page) at about 30 fps always;
+ * only a lost WebGL context removes the world (WorldMount).
+ */
+export function shouldDrawWorld(opts: { tier: Tier; idleMs: number; paused: boolean; frame: number }): boolean {
+  const idle = opts.idleMs >= IDLE_AFTER_MS;
+  if (idle && opts.paused) return false;
+  if (opts.tier === "full") return true;
+  if (opts.tier === "lite" && !idle) return true;
+  return opts.frame % 2 === 0;
+}
+
+/**
+ * Whether the 3D world may mount at all. The old rule turned it off for 4 or fewer cores; many capable phones report
+ * few cores, so those now start in lite like everyone else (plan 3.2) and the frame monitor demotes them if they are slow.
+ * Little memory still keeps it off: the world's buffers are the heaviest thing on the page.
+ */
+export function worldAllowed(env: Pick<TierEnv, "reducedMotion" | "webgl2" | "saveData" | "deviceMemory" | "storedTier">): boolean {
+  if (env.reducedMotion || !env.webgl2 || env.saveData || env.storedTier === "static") return false;
+  return !(typeof env.deviceMemory === "number" && env.deviceMemory < 4);
+}
+
 export const DEMOTE_FRAMES = 90;
 export const DEMOTE_P95_MS = 24;
 export const PROMOTE_FRAMES = 60;

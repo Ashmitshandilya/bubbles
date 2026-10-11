@@ -1,15 +1,69 @@
 import { describe, expect, it } from "vitest";
 import {
   FrameMonitor,
+  IDLE_AFTER_MS,
   TIER_STORAGE_KEY,
   canPromote,
   demote,
   pickInitialTier,
   promote,
   readStoredTier,
+  shouldDrawWorld,
+  worldAllowed,
+  worldDprCap,
   writeStoredTier,
   type TierEnv,
 } from "./tier";
+
+describe("world pacing (one loop, idle throttle, pause, pixel ratio)", () => {
+  const draws = (opts: Omit<Parameters<typeof shouldDrawWorld>[0], "frame">, frames = 10) =>
+    Array.from({ length: frames }, (_, frame) => shouldDrawWorld({ ...opts, frame })).filter(Boolean).length;
+
+  it("draws every frame while the visitor is active, in lite and full, paused or not", () => {
+    for (const tier of ["lite", "full"] as const) {
+      expect(draws({ tier, idleMs: 0, paused: false })).toBe(10);
+      expect(draws({ tier, idleMs: IDLE_AFTER_MS - 1, paused: true })).toBe(10);
+    }
+  });
+
+  it("idle: lite halves to about 30 fps, full keeps every frame", () => {
+    expect(draws({ tier: "lite", idleMs: IDLE_AFTER_MS, paused: false })).toBe(5);
+    expect(draws({ tier: "full", idleMs: 60_000, paused: false })).toBe(10);
+  });
+
+  it("an idle page under Pause motion draws nothing", () => {
+    for (const tier of ["lite", "full", "static"] as const) expect(draws({ tier, idleMs: IDLE_AFTER_MS, paused: true })).toBe(0);
+  });
+
+  it("a page demoted to static for slow frames keeps its world at about 30 fps", () => {
+    expect(draws({ tier: "static", idleMs: 0, paused: false })).toBe(5);
+    expect(draws({ tier: "static", idleMs: IDLE_AFTER_MS, paused: false })).toBe(5);
+  });
+
+  it("steps the pixel ratio down the ladder (full 1.75, lite 1.5, static 1.25)", () => {
+    expect(worldDprCap("full")).toBe(1.75);
+    expect(worldDprCap("lite")).toBe(1.5);
+    expect(worldDprCap("static")).toBe(1.25);
+  });
+});
+
+describe("worldAllowed: who gets the 3D world at all", () => {
+  const capable = { reducedMotion: false, webgl2: true, saveData: false, deviceMemory: 8, storedTier: null };
+
+  it("a capable device mounts it, including one that reports 4 or fewer cores (it starts in lite)", () => {
+    expect(worldAllowed(capable)).toBe(true);
+    expect(worldAllowed({ ...capable, deviceMemory: undefined })).toBe(true);
+  });
+
+  it("stays off for reduced motion, no WebGL2, Save-Data, little memory or a remembered drop to static", () => {
+    expect(worldAllowed({ ...capable, reducedMotion: true })).toBe(false);
+    expect(worldAllowed({ ...capable, webgl2: false })).toBe(false);
+    expect(worldAllowed({ ...capable, saveData: true })).toBe(false);
+    expect(worldAllowed({ ...capable, deviceMemory: 2 })).toBe(false);
+    expect(worldAllowed({ ...capable, storedTier: "static" })).toBe(false);
+    expect(worldAllowed({ ...capable, storedTier: "lite" })).toBe(true);
+  });
+});
 
 const desktop: TierEnv = {
   reducedMotion: false,
