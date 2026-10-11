@@ -15,7 +15,7 @@ export function PrivacyNotice() {
     setOpen(shouldShowNotice(browserStore()));
   }, []);
 
-  // Only on the pages a new visitor sees. Signed-in screens are full of controls the notice would cover, and everyone reaches them through the sign-in page.
+  // Only on the pages a new visitor sees. Signed-in screens are full of controls the notice would cover, and nearly everyone reaches them through the sign-in page.
   if (!open || !noticeBelongsOn(pathname)) return null;
 
   return (

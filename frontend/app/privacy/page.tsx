@@ -57,6 +57,15 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>Browser storage</h2>
+        <p>
+          Bubbles keeps only what it needs in your browser: your sign-in and a few settings, such as whether the privacy veil is on and how much motion you want. Your sign-in
+          stays in the tab you used and goes when you close it, unless you tick &quot;Keep me signed in on this device&quot;. There are no ads, no tracking cookies and no
+          analytics.
+        </p>
+      </section>
+
+      <section>
         <h2>Sharing</h2>
         <p>
           Partner sharing is off by default. When you turn it on, you choose which summaries one person can see: a cycle estimate, a seven night sleep average and a note

@@ -14,7 +14,7 @@ export function PhaseRing({ day, length, phase, phaseLabel, estimated }: { day: 
   const r = 70;
   const c = 2 * Math.PI * r;
   const progress = Math.min(1, Math.max(0.02, day / Math.max(length, day)));
-  const label = `Cycle day ${day}${phaseLabel ? `, ${phaseLabel} phase${estimated ? " (estimated)" : ""}` : ""}, of about ${length} days`;
+  const label = `Cycle day ${day}${phaseLabel ? `, ${phaseLabel}${estimated ? " (estimated)" : ""}` : ""}, of about ${length} days`;
   return (
     <svg role="img" aria-label={label} viewBox={`0 0 ${size} ${size}`} width={size} height={size} className="shrink-0">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--tint-pink)" strokeWidth="14" />

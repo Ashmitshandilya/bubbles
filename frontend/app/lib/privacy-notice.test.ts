@@ -37,6 +37,6 @@ describe("privacy notice", () => {
 
   it("shows on the pages a new visitor sees and stays out of the signed-in app", () => {
     for (const p of ["/", "/login", "/privacy", "/terms", "/partner/abc", "/cycle/partner/abc"]) expect(noticeBelongsOn(p)).toBe(true);
-    for (const p of ["/dashboard", "/companion", "/care", "/settings", "/health", "/cycle", "/fitness/diet", "/callback"]) expect(noticeBelongsOn(p)).toBe(false);
+    for (const p of ["/dashboard", "/companion", "/care", "/settings", "/health", "/cycle", "/fitness/diet", "/callback", "/partner"]) expect(noticeBelongsOn(p)).toBe(false);
   });
 });
