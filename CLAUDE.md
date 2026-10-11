@@ -9,7 +9,7 @@ Bubbles is a chat-first longitudinal health-intelligence prototype. It combines 
 The repository is a two-service project:
 
 - `backend/`: FastAPI API, deterministic health reasoning, Supabase persistence, RAG, AI routing, and pytest coverage.
-- `frontend/`: Next.js 16 / React 19 client with Tailwind CSS 4.
+- `frontend/`: Next.js 15 / React 19 client with Tailwind CSS 4.
 - `supabase/migrations/`: chronological PostgreSQL/Supabase schema and RLS migrations.
 - `docs/`: the clinical review packet, schema proposals and brand image.
 
@@ -165,22 +165,17 @@ The canonical schema contains 20 tables organized around auth/profile identity, 
 
 ## Frontend architecture
 
-`frontend/app/page.tsx` is a single client component containing the dashboard shell, navigation, chat, intelligence panels, organ visualization, and view state. `frontend/app/layout.tsx` supplies the root metadata and body shell. `frontend/app/login/page.tsx` owns Supabase sign-in/sign-up. `frontend/app/globals.css` contains the V3/Cosmic visual system.
+The frontend is a Next.js 15 App Router project (React 19, Tailwind 4) with one route per area. The public front door is the scroll-story landing; everything else is the signed-in app.
 
-The dashboard uses conditional views for Dashboard, Health, Activity, Companion, Care, and Profile. `fetchBubbles` in `page.tsx` is the preferred API boundary: it removes trailing slashes, avoids insecure HTTP fallbacks on HTTPS pages, applies a 15-second timeout, and retries only network failures without hiding HTTP application errors. Prefer this helper for every API call.
+- **Landing (`frontend/app/landing`, rendered by `app/page.tsx` as `<Landing/>`):** a React Three Fiber story with a moving 3D Bubbles host, a 3D spine and ten chapters. Do not delete or replace it. Its building blocks: `atmosphere/` (chapter colour script in OKLab, sky shader and CSS fallback), `bubbles/` (soap bubbles), `post/` (bloom and grade, full tier only), `perf/tier.ts` (static, lite and full tiers with a frame monitor), `story/` (scroll director, store, chapter rail, Pause motion) and `world/` (scene, spine, lights). Reduced motion and no-WebGL visitors get a complete static page. Contrast, dash and claim rules are enforced by tests (`atmosphere/contrast.test.ts`, `accessibility.test.ts`).
+- **Signed-in app:** seven sections (Today `/dashboard`, Talk `/companion`, Patterns `/insights`, Track `/health` plus the tracker pages, Cycle `/cycle`, Fitness `/fitness`, Care `/care`) and Me (`/profile`, `/settings`). `components/Navigation.tsx` defines `SECTIONS` and `ME`; each page mounts `SectionTabs` through the two shells (`components/hub/HubKit.tsx` and `components/tracking/kit.tsx`). The Ctrl+K "Ask or jump" palette is `components/AskBubbles.tsx` with `components/commandPalette.ts`.
+- **API boundary:** `useApi().fetchBubbles` (in `components/Providers.tsx`) is the only way to call the backend. It removes trailing slashes, refuses insecure HTTP from HTTPS pages, applies a timeout, retries only network failures and classifies failures through `app/lib/connection.ts`. Never call `fetch(`${API_URL}...`)` directly.
+- **Auth:** `lib/supabase.ts` (configuration guard, dev-only preview flag), `app/login/page.tsx` (sign in, sign up, email link, resend confirmation), `app/callback/page.tsx`, `lib/auth-links.ts` (confirmation links always return to the real site, links that land on the wrong page are forwarded to `/callback`) and `lib/auth-errors.ts` (plain-language errors, no account-enumeration leak). `next.config.ts` redirects the two old production Vercel addresses to the real site; the API only accepts requests from `https://heybubbles.in`.
+- **Privacy veil:** `components/PrivacyVeil.tsx` blurs anything marked `data-private` when the tab is hidden or when Hide is pressed (opt-in in Settings). Never mark safety or urgent content.
+- **Dev-only UI preview:** `NEXT_PUBLIC_UI_PREVIEW=1` with `backend/preview_server.py` (`BUBBLES_PREVIEW=1`, fake database, token `preview`) shows signed-in screens with synthetic data. The flag folds away in production builds; never set it on Vercel or Render.
+- **Conventions:** copy is plain and calm, no em-dashes in visible text, no diagnosis or dosing language, missing data is shown as a gap and never as healthy, and every button must do something real. Pure logic lives in small modules with tests next to them (`app/lib/*.ts`, `app/<area>/*.ts`); components stay thin.
 
-The current implementation has these known reliability issues to address before declaring the frontend finished:
-
-1. `loadConversation` lacks a mounted/unmount guard and calls asynchronous Supabase/session work from component execution rather than an effect. Move initialization into `useEffect`, retain a mounted check, and avoid `router.push` after unmount.
-2. `supabase.auth.onAuthStateChange` is registered during render. Register it in an effect and clean it up.
-3. Optimistic chat messages need a stable transient ID or an index-based key; the current undefined optimistic `id` can produce duplicate React keys.
-4. `/doctor/prepare`, `/memory/diagnostics`, and direct `fetch(`${API_URL}...`)` calls bypass `fetchBubbles`; route them through the shared helper so timeout, mixed-content, and fallback behavior remain consistent.
-5. The insights button is disabled while `initializing`; remove that coupling so users can inspect available intelligence during initialization.
-6. The `/profile` endpoint is exposed but the Profile view never loads it. Load it with the authenticated session and render profile data rather than only explanatory copy.
-7. The Supabase configuration guard must cover all dashboard initialization paths, not only login.
-8. The premium UI work still needs a final visual/interaction pass and production validation.
-
-The current chart-label key issue in `TrendChart` has been fixed by using an index-qualified key. Do not reintroduce keys based only on repeated labels.
+`frontend/AGENTS.md` is generated and re-added by `next dev`; preserve its `BEGIN:nextjs-agent-rules` / `END:nextjs-agent-rules` block. Before changing Next-specific code, read the relevant guide under `frontend/node_modules/next/dist/docs/` and heed deprecation notices.
 
 ## Verification
 

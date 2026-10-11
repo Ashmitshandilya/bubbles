@@ -1,6 +1,6 @@
 # Deploying Bubbles (heybubbles.in)
 
-Nothing here has been deployed yet. This is the checklist, in the order that avoids breaking the app. Items marked **YOU** need your accounts or decisions.
+Bubbles has been live since 2026-10-10 (see "Current production setup" below). This is the checklist, in the order that avoids breaking the app, and the record of how it is set up. Items marked **YOU** need your accounts or decisions.
 
 ## 0. Before anything else
 - **Back up** the Supabase project (Dashboard → Database → Backups), or at least confirm you are on the intended project.
@@ -63,6 +63,12 @@ Point `heybubbles.in` and `www` at the frontend host and `api` at the backend ho
 
 Vercel settings (names only): `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_ALLOW_INDEXING` (false = hidden from Google), `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL` (the Render address).
 Render settings (names only): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `BUBBLES_FRONTEND_ORIGINS`, `BUBBLES_DOC_SIGNING_KEY`, `PYTHON_VERSION`, the AI provider keys and models, `ALLOW_PAID_AI=false`, `ALLOW_KEYLESS_AI=false`, `ALLOW_KEYLESS_HEALTH_DATA=false`.
+
+
+### Addresses and sign-in links (read this if "Can't connect to Bubbles" or a confirmation email lands on a Vercel address)
+- Use **https://heybubbles.in** only. The API accepts browser requests only from the origins in `BUBBLES_FRONTEND_ORIGINS`, so the app cannot work from `bubbles-7x74.vercel.app` or `bubbles-7x74-hey-bubbles.vercel.app` (those also sit behind Vercel's own login). `frontend/next.config.ts` redirects both to the real site; preview deployments are not redirected.
+- Confirmation and magic-link emails always ask Supabase to return to `https://heybubbles.in/callback` (`frontend/lib/auth-links.ts`). Supabase only honours that if it is in Authentication -> URL Configuration -> Redirect URLs, otherwise it falls back to the Site URL. So keep **Site URL = `https://heybubbles.in`** and **Redirect URLs = `https://heybubbles.in/**`** (item 2 above). The built-in Supabase email sender has a very low hourly limit: add custom SMTP before inviting more than a handful of people, and consider CAPTCHA if signups get abused.
+- Backend routes added since launch (no schema change): `/wellness/associations`, `/chat/feedback`, partner sharing and the privacy/terms pages. After a backend deploy, `GET /chat/feedback` without a token should answer 401 (not 404).
 
 ### Still to do before inviting real users
 1. Replace every secret that was ever pasted into a chat (Supabase secret key, all AI provider keys); update them in Render and your local `.env`.
