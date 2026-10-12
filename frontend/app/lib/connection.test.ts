@@ -12,6 +12,7 @@ import {
   failureFromError,
   mayReplayAfterTimeout,
   parseHealth,
+  probeRetryDelay,
   reconnectDelay,
   reconnectStatus,
   saveFailureMessage,
@@ -277,6 +278,32 @@ describe("parseHealth", () => {
 
   it("database status is unknown without a payload", () => {
     expect(databaseStatusOf(null)).toBe("unknown");
+  });
+});
+
+describe("probeRetryDelay: a waking host is not an outage", () => {
+  const base = { attempt: 0, elapsedMs: 0, firstProbe: false, canRetry: true };
+  const refused = { networkError: true };
+
+  it("retries a fast refusal on the first probe for the whole wake window, then gives up", () => {
+    expect(probeRetryDelay(refused, { ...base, firstProbe: true, attempt: 30, elapsedMs: 5000 })).toBe(1500);
+    expect(probeRetryDelay(refused, { ...base, firstProbe: true, elapsedMs: 64999 })).toBe(1500);
+    expect(probeRetryDelay(refused, { ...base, firstProbe: true, elapsedMs: 65000 })).toBeNull();
+  });
+
+  it("gives a later probe only two quick retries before it reports offline", () => {
+    expect(probeRetryDelay(refused, { ...base, attempt: 0 })).toBe(1500);
+    expect(probeRetryDelay(refused, { ...base, attempt: 1 })).toBe(1500);
+    expect(probeRetryDelay(refused, { ...base, attempt: 2 })).toBeNull();
+  });
+
+  it("never retries a timeout (the caller handles slow hosts) or a failure with no network cause", () => {
+    expect(probeRetryDelay({ timedOut: true }, { ...base, firstProbe: true })).toBeNull();
+    expect(probeRetryDelay({}, { ...base, firstProbe: true })).toBeNull();
+  });
+
+  it("does not retry when the browser is offline or no usable address exists", () => {
+    expect(probeRetryDelay(refused, { ...base, firstProbe: true, canRetry: false })).toBeNull();
   });
 });
 

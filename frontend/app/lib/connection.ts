@@ -202,6 +202,28 @@ export function reconnectDelay(attempt: number): number {
   return Math.min(RECONNECT_MAX_MS, Math.round(RECONNECT_FIRST_MS * 1.5 ** n));
 }
 
+/** A failed probe with no answer is retried this soon before the app says "Can't reach Bubbles". */
+export const PROBE_RETRY_MS = 1500;
+/** A probe that already worked, then fails without an answer, gets this many quick retries first. */
+export const LATER_PROBE_RETRIES = 2;
+/** The first probe keeps trying this long: a free host can take about a minute to wake. */
+export const FIRST_PROBE_WINDOW_MS = 65000;
+
+/**
+ * Delay before retrying a probe that got no answer, or null to report offline now. A sleeping free host answers
+ * with a bare proxy error that the browser reports as a rejected request, often within milliseconds: that is not
+ * proof the app is offline, so it must not flash "Can't reach Bubbles" and shake the layout. Timeouts are handled by
+ * the caller (a slow host), and a browser that is offline or has no usable address gets no retries.
+ */
+export function probeRetryDelay(
+  failure: FailureInput,
+  state: { attempt: number; elapsedMs: number; firstProbe: boolean; canRetry: boolean },
+): number | null {
+  if (!state.canRetry || failure.timedOut || !failure.networkError) return null;
+  if (state.firstProbe) return state.elapsedMs < FIRST_PROBE_WINDOW_MS ? PROBE_RETRY_MS : null;
+  return state.attempt < LATER_PROBE_RETRIES ? PROBE_RETRY_MS : null;
+}
+
 export type ReconnectLoop = { start: () => void; visibilityChanged: () => void; stop: () => void };
 
 /**

@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
 import { needsSecondStep } from "../lib/mfa";
 import {
-  classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth, shareInFlight,
-  type DatabaseStatus, type HealthPayload,
+  classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth, probeRetryDelay,
+  shareInFlight, type DatabaseStatus, type HealthPayload,
 } from "../app/lib/connection";
 import { createApiCache } from "../app/lib/api-cache";
 
@@ -344,24 +344,42 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   /** Any HTTP answer means the server is up (even a 5xx); only a rejected request means offline. */
   const probe = useCallback(async (): Promise<boolean> => {
     const first = !firstProbeDone.current;
+    const startedAt = Date.now();
     const wakeTimer = first
       ? window.setTimeout(() => {
           wasWaking.current = true;
           setWaking(true);
         }, WAKING_AFTER_MS)
       : undefined;
-    try {
-      let response: Response;
+    const askHealth = async (attempt: number): Promise<Response> => {
       try {
-        response = await fetchBubbles("/health", {}, first ? FIRST_HEALTH_LIMITS : HEALTH_LIMITS);
+        return await fetchBubbles("/health", {}, first ? FIRST_HEALTH_LIMITS : HEALTH_LIMITS);
       } catch (error) {
+        // No answer yet (a waking host's proxy refuses within milliseconds): retry before declaring the app offline.
+        const delay = probeRetryDelay(failureFromError(error), {
+          attempt,
+          elapsedMs: Date.now() - startedAt,
+          firstProbe: first,
+          canRetry: navigator.onLine && candidateUrls().length > 0,
+        });
+        if (delay !== null) {
+          if (first) {
+            wasWaking.current = true;
+            setWaking(true);
+          }
+          await new Promise((resolve) => window.setTimeout(resolve, delay));
+          return askHealth(attempt + 1);
+        }
         // A later probe running out of time usually means the host fell asleep: show "waking up" and wait once, longer.
         if (first || !failureFromError(error).timedOut || statusRef.current === "offline") throw error;
         wasWaking.current = true;
         setWaking(true);
         setApiStatus("checking");
-        response = await fetchBubbles("/health", {}, FIRST_HEALTH_LIMITS);
+        return fetchBubbles("/health", {}, FIRST_HEALTH_LIMITS);
       }
+    };
+    try {
+      const response = await askHealth(0);
       setHealth(parseHealth(await response.json().catch(() => null)));
       // Calls that ran while the host slept failed quietly; tell the data hooks to load again.
       if (wasWaking.current) setReconnects((n) => n + 1);
