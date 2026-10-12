@@ -172,6 +172,7 @@ LEXICON: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         # mujhe marna hai / marna hai mujhe / bas marna hai; an object before it is not about the speaker ("machhar marna hai", "isko marna hai")
         r"(?<!\bko\s)(?<!machhar\s)(?<!macchar\s)(?<!cockroach\s)(?<!chuha\s)(?<!chuhe\s)(?<!keeda\s)(?<!keede\s)"
         "mar(?:na|ne|jana|jaana| jana| jaana| hi jaana| hi jana) (?:hi )?hai",
+        "(?:khud|apne aap|apne|khud ke) ko (?:maar|mar)(?:na|ne| dalna| daalna| dena)? (?:hi )?hai",   # khud ko marna hai (reflexive)
         "(?:main|mai|me) mar (?:jaunga|jaungi|jaaunga|jaaungi|jaoonga|jaoongi)",       # main mar jaunga
         "(?:khud|apne aap|apne) ko (?:khatam|khatm|khtm) kar (?:lunga|lungi|dunga|dungi|lu|lun|loon|du|dun|doon|lena|dena)",
         "(?:neend ki|saari|sari|bahut saari|bahut sari|dher saari|ek saath|ek sath) (?:" + _W + ")?(?:goliyan|goliya|goliyaan|golian|"
