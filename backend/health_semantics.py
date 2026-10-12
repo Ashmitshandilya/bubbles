@@ -539,6 +539,8 @@ _MAX_CHARS = 8000
 _STILL_RX = re.compile(r"\b(?:(is|are) still|still) (hurts?|hurting|aches?|aching|burns?|burning|throbbing|pounding|sore|tight|heavy)\b", re.I)
 _KEEPS_RX = re.compile(r"\bkeeps? (hurting|aching|burning|throbbing|pounding)\b", re.I)
 _KEEPS = {"hurting": "hurts", "aching": "aches", "burning": "burns", "throbbing": "is throbbing", "pounding": "is pounding"}
+# The same in Hinglish: "seene mein abhi bhi dard hai" ("still" right before the pain word) hid the symptom too.
+_ABHI_BHI_RX = re.compile(r"\b(?:abhi|ab) bhi (?=(?:dard|pain|jalan|takleef|taklif)\b)", re.I)
 
 
 def normalize(text: str) -> str:
@@ -547,6 +549,7 @@ def normalize(text: str) -> str:
     t = _CONTR_RX.sub(lambda m: _CONTRACTIONS[m.group(1).lower()], t)
     t = _STILL_RX.sub(lambda m: f"{m.group(1)} {m.group(2)}" if m.group(1) else m.group(2), t)
     t = _KEEPS_RX.sub(lambda m: _KEEPS[m.group(1).lower()], t)
+    t = _ABHI_BHI_RX.sub("", t)
     return t
 
 

@@ -24,6 +24,17 @@ def test_other_body_parts_too(text, concept):
     assert any(f.concept == concept and f.assertion == "present" for f in facts), (text, [(f.concept, f.assertion) for f in facts])
 
 
+@pytest.mark.parametrize("text", ["mere seene mein abhi bhi dard hai", "seene mein ab bhi dard hai"])
+def test_hinglish_still_is_caught_like_the_plain_wording(text):
+    facts = analyze(text)
+    assert [(f.concept, f.assertion) for f in facts] == [("chest_pain", "present")], text
+    assert assess_safety(text, facts).state == "EMERGENCY"
+
+
+def test_isnt_still_hurting_is_a_denial():
+    assert [(f.concept, f.assertion) for f in analyze("my chest isn't still hurting")] == [("chest_pain", "negated")]
+
+
 @pytest.mark.parametrize("text", ["my chest doesn't hurt anymore", "my chest doesnt hurt any more", "no chest pain, it is still early"])
 def test_denials_and_unrelated_still_are_unchanged(text):
     assert assess_safety(text, analyze(text)).state != "EMERGENCY"
