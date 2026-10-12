@@ -83,6 +83,7 @@ PAIRS: list[tuple[str, str, int, str, str, str]] = [
     ("sleep_hours", "resting_hr", 0, "After longer sleep, your logged heart rate tended to be higher", "After longer sleep, your logged heart rate tended to be lower", "Heart rate depends heavily on when and how it was measured."),
     ("luteal", "mood", 0, "In the luteal phase of your cycle, your logged mood tended to be higher", "In the luteal phase of your cycle, your logged mood tended to be lower", "Cycle phase is an estimate, not a measurement."),
     ("luteal", "sleep_quality", 0, "In the luteal phase of your cycle, your sleep rating tended to be better", "In the luteal phase of your cycle, your sleep rating tended to be worse", "Cycle phase is an estimate, not a measurement."),
+    ("luteal", "symptom_severity", 0, "In the luteal phase of your cycle, your logged symptoms tended to be more severe", "In the luteal phase of your cycle, your logged symptoms tended to be milder", "Cycle phase is an estimate, not a measurement. Only days you logged a symptom are compared."),
 ]
 TOPIC = {"sleep_hours": "sleep", "sleep_quality": "sleep ratings", "mood": "mood", "activity_minutes": "activity", "hydration_ml": "drinks",
          "symptom_severity": "symptoms", "calories": "meals", "resting_hr": "heart rate", "luteal": "cycle phase"}

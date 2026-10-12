@@ -12,6 +12,7 @@ from typing import Any
 
 import association_insights as ai
 import mind_checkins as Mind
+import pattern_notices
 import rag_links
 import sleep_engine as S
 import wellness_common as W
@@ -80,6 +81,8 @@ def load_series(db: Any, uid: str, days: int = 90, tz_offset_minutes: int | None
 def compute(db: Any, uid: str, days: int = 90, tz_offset_minutes: int | None = None, with_sources: bool = False) -> dict[str, Any]:
     result = ai.analyze(load_series(db, uid, days, tz_offset_minutes))
     result["window_days"] = days
+    # remember what was found (new / stronger / reversed / faded); never raises, writes only when a pattern changes
+    result["notices"] = pattern_notices.save(db, uid, result)
     if with_sources:   # what the stored, verified health sources say about each link (best effort; may be empty)
         for item in result["insights"]:
             pid = rag_links.pair_id(*item["domains"])
