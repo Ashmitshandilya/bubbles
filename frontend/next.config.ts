@@ -79,6 +79,12 @@ const nextConfig: NextConfig = {
   ...(nativeApp
     ? { output: "export" as const }
     : {
+        // The website talks to the API through its own address (/bubbles-api/...), so the browser only ever contacts
+        // heybubbles.in: no cross-site request for an ad blocker or privacy shield to drop, no CORS check, and a
+        // sleeping API host shows up as an ordinary HTTP answer. The browser falls back to the direct address.
+        async rewrites() {
+          return [{ source: "/bubbles-api/:path*", destination: `${originOf(process.env.NEXT_PUBLIC_API_URL) ?? "https://bubbles-dk3v.onrender.com"}/:path*` }];
+        },
         async redirects() {
           return LEGACY_HOSTS.map((host) => ({
             source: "/:path*",

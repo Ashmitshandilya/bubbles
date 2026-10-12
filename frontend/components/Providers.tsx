@@ -169,11 +169,28 @@ export function useAuth() {
   return context;
 }
 
-// API base URLs to try, in order: the configured URL, its localhost twin, and
+const PROXY_PATH = "/bubbles-api";
+
+/**
+ * The website's own route to the API answered 502/503/504: the API behind it is not up yet, which is not "the server is
+ * up". A 504 may mean the request already ran, so only reads are tried again on the direct address.
+ */
+function isGatewayMiss(baseUrl: string, status: number, method?: string): boolean {
+  if (!baseUrl.endsWith(PROXY_PATH)) return false;
+  return status === 502 || status === 503 || (status === 504 && mayReplayAfterTimeout(method));
+}
+
+// API base URLs to try, in order: the website's own route, the configured URL, its localhost twin, and
 // (in the browser on a LAN address) the same host on port 8000.
 function getApiUrls(): string[] {
   const configured = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
-  const urls = new Set<string>([configured]);
+  const urls = new Set<string>();
+  // The website reaches the API through its own address first (see rewrites in next.config.ts); the Android app, which
+  // has no server of its own, and plain-http local development call the configured address directly.
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && process.env.NEXT_PUBLIC_BUBBLES_NATIVE !== "1") {
+    urls.add(`${window.location.origin}${PROXY_PATH}`);
+  }
+  urls.add(configured);
   if (configured === "http://127.0.0.1:8000" || configured === "http://localhost:8000") {
     urls.add("http://localhost:8000");
     urls.add("http://127.0.0.1:8000");
@@ -198,7 +215,8 @@ function candidateUrls(): string[] {
  * (An opaque response resolves; a stopped server rejects.)
  */
 async function answersDespiteCors(): Promise<boolean> {
-  for (const url of candidateUrls()) {
+  // Only direct addresses count: the website's own route always "answers", even when the API behind it is down.
+  for (const url of candidateUrls().filter((candidate) => !candidate.endsWith(PROXY_PATH))) {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 3000);
     try {
@@ -302,6 +320,11 @@ export function ApiProvider({ children }: { children: ReactNode }) {
               ...options.headers,
             },
           });
+          // The website's own route answered but the API behind it did not (a cold host): try the direct address next.
+          if (isGatewayMiss(baseUrl, response.status, options.method) && baseUrl !== candidates[candidates.length - 1]) {
+            lastError = new TypeError(`The API did not answer (${response.status}).`);
+            break;
+          }
           setApiStatus("online");
           setConnectionError(null);
           return response;
