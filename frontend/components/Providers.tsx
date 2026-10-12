@@ -351,24 +351,21 @@ export function ApiProvider({ children }: { children: ReactNode }) {
           setWaking(true);
         }, WAKING_AFTER_MS)
       : undefined;
-    const askHealth = async (attempt: number): Promise<Response> => {
+    const askHealth = async (): Promise<Response> => {
       try {
         return await fetchBubbles("/health", {}, first ? FIRST_HEALTH_LIMITS : HEALTH_LIMITS);
       } catch (error) {
-        // No answer yet (a waking host's proxy refuses within milliseconds): retry before declaring the app offline.
+        // No answer yet (a waking host's proxy refuses within milliseconds): keep saying "waking up" and retry
+        // for the whole wake window before declaring the app offline.
         const delay = probeRetryDelay(failureFromError(error), {
-          attempt,
           elapsedMs: Date.now() - startedAt,
-          firstProbe: first,
           canRetry: navigator.onLine && candidateUrls().length > 0,
         });
         if (delay !== null) {
-          if (first) {
-            wasWaking.current = true;
-            setWaking(true);
-          }
+          wasWaking.current = true;
+          setWaking(true);
           await new Promise((resolve) => window.setTimeout(resolve, delay));
-          return askHealth(attempt + 1);
+          return askHealth();
         }
         // A later probe running out of time usually means the host fell asleep: show "waking up" and wait once, longer.
         if (first || !failureFromError(error).timedOut || statusRef.current === "offline") throw error;
@@ -379,7 +376,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
       }
     };
     try {
-      const response = await askHealth(0);
+      const response = await askHealth();
       setHealth(parseHealth(await response.json().catch(() => null)));
       // Calls that ran while the host slept failed quietly; tell the data hooks to load again.
       if (wasWaking.current) setReconnects((n) => n + 1);

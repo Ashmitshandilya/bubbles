@@ -89,7 +89,7 @@ function Me() {
     setBusy(item.id);
     setProblem(null);
     try {
-      const response = await fetchBubbles(`/health-events/${encodeURIComponent(item.id)}/confirmation`, { method: "PATCH", body: JSON.stringify({ confirmed }) });
+      const response = await fetchBubbles(`/health-events/${encodeURIComponent(item.id)}/confirmation`, { method: "PATCH", body: JSON.stringify({ confirmed }) }, { timeoutMs: 65000, retries: 0 });
       if (response.ok) {
         reloadMemory();
       } else if (response.status === 409 || response.status === 410) {

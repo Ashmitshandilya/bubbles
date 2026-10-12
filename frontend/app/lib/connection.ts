@@ -204,9 +204,7 @@ export function reconnectDelay(attempt: number): number {
 
 /** A failed probe with no answer is retried this soon before the app says "Can't reach Bubbles". */
 export const PROBE_RETRY_MS = 1500;
-/** A probe that already worked, then fails without an answer, gets this many quick retries first. */
-export const LATER_PROBE_RETRIES = 2;
-/** The first probe keeps trying this long: a free host can take about a minute to wake. */
+/** Every probe keeps trying this long before it reports offline: a free host can take about a minute to wake. */
 export const FIRST_PROBE_WINDOW_MS = 65000;
 
 /**
@@ -217,11 +215,10 @@ export const FIRST_PROBE_WINDOW_MS = 65000;
  */
 export function probeRetryDelay(
   failure: FailureInput,
-  state: { attempt: number; elapsedMs: number; firstProbe: boolean; canRetry: boolean },
+  state: { elapsedMs: number; canRetry: boolean },
 ): number | null {
   if (!state.canRetry || failure.timedOut || !failure.networkError) return null;
-  if (state.firstProbe) return state.elapsedMs < FIRST_PROBE_WINDOW_MS ? PROBE_RETRY_MS : null;
-  return state.attempt < LATER_PROBE_RETRIES ? PROBE_RETRY_MS : null;
+  return state.elapsedMs < FIRST_PROBE_WINDOW_MS ? PROBE_RETRY_MS : null;
 }
 
 export type ReconnectLoop = { start: () => void; visibilityChanged: () => void; stop: () => void };
@@ -331,7 +328,7 @@ export function connectionBanner(state: {
   /** The first /health is taking long: a free host is starting up. Not a failure. */
   waking?: boolean;
 }): Banner {
-  if (state.apiStatus === "checking" && state.waking) {
+  if (state.apiStatus !== "offline" && state.waking) {
     return { kind: "waking", title: "Bubbles is waking up", message: "This can take up to a minute. Hang tight, it will load by itself.", dismissible: false };
   }
   if (state.apiStatus === "offline") {

@@ -389,10 +389,11 @@ export function CompanionClient() {
       const results = await Promise.all(
         ids.map(async (id): Promise<"done" | "withdrawn" | "failed"> => {
           try {
+            // A sleeping free host can take about a minute to answer: wait for it instead of failing the save at 15 seconds.
             const response = await fetchBubbles(`/health-events/${encodeURIComponent(id)}/confirmation`, {
               method: "PATCH",
               body: JSON.stringify({ confirmed }),
-            });
+            }, { timeoutMs: 65000, retries: 0 });
             if (response.ok) return "done";
             return response.status === 409 || response.status === 410 ? "withdrawn" : "failed";
           } catch {
