@@ -265,7 +265,7 @@ def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str |
     if settings["types"].get("med", True):
         schedules = M.load_schedules(db, uid)
         if schedules:
-            docs = M.dose_docs_for_day(M.load_dose_docs(db, uid, 1), day)
+            docs = M.dose_docs_for_day(M.load_dose_docs(db, uid, 1, local.date()), day)   # the window follows `now`, not the wall clock
             for time in sorted({i["time"] for i in M.due_list(schedules, docs, local)["items"] if i["status"] == "due" and not i["placebo"]}):
                 emit("med", f"med:{day}:{time}")
     if settings["types"].get("winddown", True):

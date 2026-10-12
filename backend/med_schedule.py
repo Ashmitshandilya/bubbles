@@ -531,9 +531,9 @@ def save_schedule(db: Any, uid: str, sched: dict) -> dict:
     return sched
 
 
-def load_dose_docs(db: Any, uid: str, days: int) -> dict[tuple[str, str], dict]:
-    """{(schedule id, date): payload} for the recent window. Newest first, capped by doc_store.LIST_LIMIT."""
-    since = (datetime.now(timezone.utc).date() - timedelta(days=days + 2)).isoformat()
+def load_dose_docs(db: Any, uid: str, days: int, today: date | None = None) -> dict[tuple[str, str], dict]:
+    """{(schedule id, date): payload} for the window ending `today` (default: the real date). Newest first, capped by doc_store.LIST_LIMIT."""
+    since = ((today or datetime.now(timezone.utc).date()) - timedelta(days=days + 2)).isoformat()
     out: dict[tuple[str, str], dict] = {}
     for d in doc_store.list_docs(db, uid, "med_dose", limit=doc_store.LIST_LIMIT):
         p = d["payload"]
