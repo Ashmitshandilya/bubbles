@@ -4,6 +4,8 @@ import "./globals.css";
 import { PrivacyVeilProvider } from "../components/PrivacyVeil";
 import { AuthLinkRedirect } from "../components/AuthLinkRedirect";
 import { PrivacyNotice } from "../components/PrivacyNotice";
+import { NativeBridge } from "../components/NativeBridge";
+import { isNativeApp } from "../lib/native";
 
 // Self-hosted by next/font (no runtime request to Google) with size-adjusted
 // fallback metrics, so text does not jump when the web fonts arrive.
@@ -63,6 +65,7 @@ export default function RootLayout({
         <AuthLinkRedirect />
         <PrivacyVeilProvider>{children}</PrivacyVeilProvider>
         <PrivacyNotice />
+        {isNativeApp && <NativeBridge />}
       </body>
     </html>
   );

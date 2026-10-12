@@ -387,7 +387,13 @@ export function Landing() {
               <div className="cw-final">
                 <h2 id="cw-h-bubbles" className="cw-display">Start your health story with Bubbles.</h2>
                 <p className="cw-lede">One message is enough to begin. Bubbles takes it from there.</p>
-                <AuthCta variant="final" />
+                <div className="cw-final-actions">
+                  <AuthCta variant="final" />
+                  {/* The download page, not the APK: people see the install steps first. */}
+                  <Link href="/android" className="cw-btn cw-btn--ghost cw-btn--lg">
+                    Download for Android
+                  </Link>
+                </div>
               </div>
               <div className="cw-calm-bubbles cw-calm-bubbles--final" aria-hidden="true">
                 <BubblesFigure uid="calm-final" pose="cheer" mood="happy" />
@@ -405,6 +411,7 @@ export function Landing() {
             <Link href="/login">Sign in</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
+            <Link href="/android">Android app</Link>
             <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a>
             <span>© 2026 Bubbles</span>
           </div>
