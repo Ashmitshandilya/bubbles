@@ -405,6 +405,7 @@ export function Landing() {
             <Link href="/login">Sign in</Link>
             <Link href="/privacy">Privacy</Link>
             <Link href="/terms">Terms</Link>
+            <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a>
             <span>© 2026 Bubbles</span>
           </div>
         </div>
