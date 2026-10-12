@@ -167,6 +167,14 @@ LEXICON: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         "(?:koi )?(?:wajah|vajah) (?:hi )?" + NEG + " (?:jeene|jine) (?:ki|ka)",
         "(?:jeena|jina|zinda rehna|zinda rahna) (?:hi )?" + NEG + " (?:hai|" + _WANT + "|chahiye)",
         NEG + " (?:jeena|jina)",                                                      # mujhe nahi jeena
+        "(?:jeena|jina) (?:hi )?" + NEG,                                              # ab jeena nahi
+        NEG + " (?:jee|ji|jii) (?:sakta|sakti|sakte|paunga|paungi|paaunga|paaungi|pa raha|pa rahi)",   # ab aur nahi jee sakta
+        "mar(?:na|ne|jana|jaana| jana| jaana) (?:hi )?hai",                           # mujhe marna hai
+        "(?:main|mai|me) mar (?:jaunga|jaungi|jaaunga|jaaungi|jaoonga|jaoongi)",       # main mar jaunga
+        "(?:khud|apne aap|apne) ko (?:khatam|khatm|khtm) kar (?:lunga|lungi|dunga|dungi|lu|lun|loon|du|dun|doon|lena|dena)",
+        "(?:neend ki|saari|sari|bahut saari|bahut sari|dher saari|ek saath|ek sath) (?:" + _W + ")?(?:goliyan|goliya|goliyaan|golian|"
+        "tablets?|pills?) (?:(?:ek saath|ek sath) )?kha (?:lunga|lungi|lu|lun|loon|li)",     # neend ki goliyan kha lunga
+        "sab (?:kuch )?khatam kar (?:dunga|dungi)",
         "(?:zinda?gi|jinda?gi|jeevan|jivan) (?:" + _W + ")?(?:khatam|khatm|khtm|samapt) (?:kar|karna|karne|kr|krna|krne|kardu|kar du|kar dun|"
         "kar doon|kar lu|kar lun|kar loon|kar lena|kar dena|kar lunga|kar lungi|kar dunga|kar dungi)",
         "apni (?:jaan|jan) (?:le|lena|lene|lunga|lungi|loon|lu|lun|lelu|le lu|le lunga|le lungi)",   # not "jaan de dunga" (often a figure of speech)
@@ -292,6 +300,9 @@ RESOLVED_AFTER = r"^\s*(?:\w+\s+){0,3}?(?:" + _RES_CORE + r"|chal[ae]\s+(?:gaya|
 RESOLVED_CLAUSE = r"\b(?:" + _RES_CORE + r")\b"
 CURRENT = (r"\b(?:abhi|is\s+waqt|iss\s+waqt|is\s+samay|filhaal|filhal|ab\s+bhi|ab\s+tak|lagatar|lagataar|"
            r"(?:subah|kal|raat|dopahar|shaam|sham|" + _NUM + r"\s+(?:ghante|ghanton|minute|minat|din|dino|dinon|hafte|hafton))\s+se|"
+           r"pichh?l[ae]y?\s+\w+\s+se|\w+\s+\w+\s+(?:pehle|pahle)\s+se|aaj\s+bhi|wapas\s+aa\w*|shuru\s+ho\w*|"
            r"fir\s+se|phir\s+se|dobara|ab\s+(?:\w+\s+)?(?:ho\s+raha|ho\s+rahi|ho\s+rahe|hone\s+lag\w*))\b")
 SAME_DAY = r"\b(?:aaj|aj|subah|dopahar|shaam|sham|abhi|thodi\s+der|kuch\s+der|(?:\d+|ek|do|teen|kuch)\s+(?:ghante|ghanta|minute|minat)\s+(?:pehle|pahle))\b"
 PAST_TENSE = r"\b(?:tha|thi|the)\b"
+#: a report verb ("aa rahi", "ho raha"): "saans nahi aa rahi kya ye normal hai?" reports first, asks second
+REPORT_VERB = r"\b(?:rah[aie]|rh[aie])\b"

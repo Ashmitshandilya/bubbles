@@ -334,10 +334,10 @@ _FAMILY_HISTORY = re.compile(r"\b(?:family history of|runs in (?:my |the )?famil
 # so English sentences take exactly the same path as before.
 (_HI_GATE, _HI_NEG_POST, _HI_PRE_NEG, _HI_HYPO, _HI_OTHER, _HI_SELF, _HI_COMM, _HI_POSS, _HI_WORSEN, _HI_Q_START, _HI_Q_END,
  _HI_GENERIC, _HI_FAMILY, _HI_HISTORY, _HI_CLAUSE, _HI_OLD, _HI_PAST, _HI_RECURRING, _HI_RESOLVED_AFTER, _HI_RESOLVED_CLAUSE,
- _HI_CURRENT, _HI_SAME_DAY, _HI_PAST_TENSE, _HI_BUT_NOW) = (re.compile(p, re.I) for p in (
+ _HI_CURRENT, _HI_SAME_DAY, _HI_PAST_TENSE, _HI_BUT_NOW, _HI_REPORT_VERB) = (re.compile(p, re.I) for p in (
     _hi.GATE, _hi.NEG_POST, _hi.PRE_NEG, _hi.HYPO, _hi.OTHER, _hi.SELF, _hi.COMM, _hi.POSS, _hi.WORSEN, _hi.Q_START, _hi.Q_END,
     _hi.GENERIC, _hi.FAMILY, _hi.HISTORY, _hi.CLAUSE, _hi.OLD, _hi.PAST, _hi.RECURRING, _hi.RESOLVED_AFTER, _hi.RESOLVED_CLAUSE,
-    _hi.CURRENT, _hi.SAME_DAY, _hi.PAST_TENSE, _hi.BUT_NOW))
+    _hi.CURRENT, _hi.SAME_DAY, _hi.PAST_TENSE, _hi.BUT_NOW, _hi.REPORT_VERB))
 
 _RESOLVED = re.compile(
     r"\b(?:gone|went away|go(?:es)? away|passed(?! out)|subsided|resolved|stopped|ceased|settled|cleared(?: up)?|disappeared|faded|eased|ended|finished|"
@@ -864,6 +864,8 @@ def _hi_temporal(blank: str, seg: tuple[int, int], m: _Mention, spans: list[tupl
     b = nxt.start() if nxt else seg[1]
     clause, sentence = blank[a:b], blank[seg[0]:seg[1]]
     same_day = same_day or bool(_HI_SAME_DAY.search(sentence))
+    if _HI_CURRENT.search(sentence):                 # "...history hai aur abhi ho raha hai", "ruk gaya tha, phir se shuru"
+        return "current", same_day
     if _HI_OLD.search(clause):
         return "past", False
     follows = False
@@ -873,9 +875,7 @@ def _hi_temporal(blank: str, seg: tuple[int, int], m: _Mention, spans: list[tupl
         follows = (not any(nxt.end() <= x < e for x, _y in spans) and len(blank[nxt.end():e].split()) <= 6
                    and bool(_HI_RESOLVED_CLAUSE.search(blank[nxt.end():e])))
     if _HI_RESOLVED_AFTER.search(blank[m.end:b]) or follows:
-        return "resolved", same_day
-    if _HI_CURRENT.search(sentence):
-        return "current", same_day
+        return "resolved", same_day or not _HI_PAST.search(sentence)   # an episode that just ended: ask, as in English
     if _HI_RECURRING.search(clause):
         return "recurring", same_day
     if _HI_PAST.search(clause):
@@ -917,7 +917,9 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
     hi = bool(_HI_GATE.search(s))
     negs = [t for t in _NEG_PRE.finditer(s) if _outside(spans, t)]
     if hi:
-        negs = sorted(negs + [t for t in _HI_PRE_NEG.finditer(s) if _outside(spans, t)], key=lambda t: t.start())
+        right_after = [t for t in _HI_PRE_NEG.finditer(s) if _outside(spans, t)
+                       and any(re.fullmatch(r"\s+(?:(?:kisi|koi)\s+)?", s[t.end():a]) for a, _b in spans)]
+        negs = sorted(negs + right_after, key=lambda t: t.start())
     possibles = [t for t in _POSSIBLE.finditer(s) if _outside(spans, t)]
     hypos = [t for t in _HYPO.finditer(s) if _outside(spans, t)
              and not (t.group(0).lower() == "if" and _IF_AFTER_DOUBT.search(s[max(0, t.start() - 40):t.start()]))]
@@ -939,8 +941,15 @@ def _classify(s: str, idx: int, allowance: dict[str, int] | None = None, extra: 
     if hi:
         # Hindi words collide with English question cues ("do din se" = for two days, "is waqt" = right now), so a Hindi
         # sentence is a question only when it is clearly educational and the speaker is not in it.
-        if (_HI_Q_START.match(s) or _HI_Q_END.search(s)) and _HI_GENERIC.search(s) and not _HI_SELF.search(s):
-            q_start = 0
+        if _HI_GENERIC.search(s) and not _HI_SELF.search(s):
+            if _HI_Q_START.match(s):
+                q_start = 0
+            elif _HI_Q_END.search(s):
+                brk = max(s.rfind(","), s.rfind(";"))
+                if brk >= 0:
+                    q_start = brk + 1                  # "saans nahi aa rahi, kya ye normal hota hai?": only the tail asks
+                elif not _HI_REPORT_VERB.search(s):
+                    q_start = 0
     elif _Q_AT_START.match(s):
         q_start = 0
     else:

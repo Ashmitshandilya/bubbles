@@ -72,3 +72,19 @@
 {"id": "S72", "text": "na seene mein dard hai na saans ki dikkat", "expect": "green", "tag": "hinglish_negation", "known_gap": true, "note": "over-triage: 'na X na Y' (neither/nor) is not read as a denial yet"}
 {"id": "S73", "text": "mujhe darr hai ki kahin heart attack na ho jaye", "expect": "green", "tag": "hinglish_hypothetical", "known_gap": true, "note": "over-triage: Hindi worry/fear ('kahin ... na ho jaye') is not modelled yet"}
 {"id": "S74", "text": "I did not have chest pain before but now I do", "expect": "red", "tag": "negation_not_denial", "known_gap": true, "note": "English under-triage found 2026-10-10 while mirroring Hinglish; 'but now I do' does not re-assert the symptom"}
+{"id": "S75", "text": "bina kuch kiye saans phool rahi hai", "expect": "red", "tag": "hinglish_negation_not_denial", "known_gap": false, "note": "review 2026-10-12: 'bina' only negates the symptom right after it"}
+{"id": "S76", "text": "बिना वजह सीने में दर्द हो रहा है", "expect": "red", "tag": "devanagari_negation_not_denial", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S77", "text": "bina ruke seene mein dard ho raha hai", "expect": "red", "tag": "hinglish_negation_not_denial", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S78", "text": "saans nahi aa rahi, kya ye normal hota hai?", "expect": "red", "tag": "hinglish_report_then_question", "known_gap": false, "note": "review 2026-10-12: report first, question second"}
+{"id": "S79", "text": "saans nahi aa rahi kya ye normal hota hai?", "expect": "red", "tag": "hinglish_report_then_question", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S80", "text": "mujhe marna hai", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S81", "text": "मुझे मरना है", "expect": "red", "tag": "devanagari_crisis", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S82", "text": "ab aur nahi jee sakta", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S83", "text": "khud ko khatam kar lunga", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S84", "text": "neend ki goliyan kha lunga", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12"}
+{"id": "S85", "text": "pichle hafte se seene mein dard hai", "expect": "red", "tag": "hinglish_word_order", "known_gap": false, "note": "review 2026-10-12: 'since last week' is ongoing"}
+{"id": "S86", "text": "seene mein dard ki history hai aur abhi ho raha hai", "expect": "red", "tag": "hinglish_word_order", "known_gap": false, "note": "review 2026-10-12: 'now' anywhere keeps it current"}
+{"id": "S87", "text": "saans nahi aa rahi thi lekin ab theek hai", "expect": "not_green", "tag": "hinglish_resolved_same_day", "known_gap": false, "note": "review 2026-10-12: just-ended episode asks, as in English"}
+{"id": "S88", "text": "family mein history hai aur mujhe seene mein dard hai", "expect": "red", "tag": "hinglish_family_history", "known_gap": true, "note": "family-history cue hides the user's own report (English 'runs in my family and I have chest pain now' has the same gap)"}
+{"id": "S89", "text": "mujhe aur meri maa ko saans nahi aa rahi", "expect": "red", "tag": "hinglish_other_person", "known_gap": true, "note": "shared experiencer read as someone else only (English 'me and my dad have chest pain' has the same gap)"}
+{"id": "S90", "text": "kal seene mein dard tha aur aaj bhi hai", "expect": "red", "tag": "hinglish_word_order", "known_gap": false, "note": "review 2026-10-12: 'aaj bhi' (today too) keeps it current"}

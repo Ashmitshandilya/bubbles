@@ -57,6 +57,13 @@ unambiguous; everything else stays a current report.
 - English, found while doing this work: "I did not have chest pain before but now I do" is classed GREEN. The
   Hinglish version is handled. The English rule was deliberately left unchanged for this release.
 
+- Found in the 2026-10-12 acceptance review, same gap in English, tracked as known_gap: a family-history cue hides the
+  user's own report ("family mein history hai aur mujhe seene mein dard hai"); "me and my mother" is read as someone
+  else only. ("kal ... tha aur aaj bhi hai", yesterday and today too, is handled in Hinglish; English still misses it.)
+- Crisis wording added after review: "mujhe marna hai", "ab aur nahi jee sakta", "main mar jaunga", "khud ko khatam
+  kar lunga", "neend ki goliyan kha lunga", "sab khatam kar dunga". Some are also everyday exaggeration ("main mar
+  jaunga"); they get the gentle crisis reply, which invites correction. Please confirm.
+
 ## Also recommended (not changed)
 
 - Emergency and crisis replies are English-only, and the crisis reply names US 988. For an India-first product,
