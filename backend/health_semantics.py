@@ -533,10 +533,20 @@ _CONTR_RX = re.compile(r"\b(" + "|".join(_CONTRACTIONS) + r")\b", re.I)
 _MAX_CHARS = 8000
 
 
+# "my chest still hurts", "chest is still hurting", "my head keeps hurting": a word between the body part and the verb
+# hid the symptom from every body-part pattern (while "my chest hurts" was an emergency). "Still" and "keeps" only say the
+# symptom continues now, which is already the default reading, so they are folded away before matching.
+_STILL_RX = re.compile(r"\b(?:(is|are) still|still) (hurts?|hurting|aches?|aching|burns?|burning|throbbing|pounding|sore|tight|heavy)\b", re.I)
+_KEEPS_RX = re.compile(r"\bkeeps? (hurting|aching|burning|throbbing|pounding)\b", re.I)
+_KEEPS = {"hurting": "hurts", "aching": "aches", "burning": "burns", "throbbing": "is throbbing", "pounding": "is pounding"}
+
+
 def normalize(text: str) -> str:
     t = _hi.transliterate((text or "")[:_MAX_CHARS])
     t = t.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
     t = _CONTR_RX.sub(lambda m: _CONTRACTIONS[m.group(1).lower()], t)
+    t = _STILL_RX.sub(lambda m: f"{m.group(1)} {m.group(2)}" if m.group(1) else m.group(2), t)
+    t = _KEEPS_RX.sub(lambda m: _KEEPS[m.group(1).lower()], t)
     return t
 
 
