@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The bubbles-blush token in frontend/app/tokens.css: the page background, shown behind the system bars and on the splash. -->
+    <color name="bubbles_blush">#FFF6FA</color>
+</resources>

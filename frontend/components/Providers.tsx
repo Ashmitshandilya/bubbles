@@ -8,6 +8,7 @@ import {
   classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth, shareInFlight,
   type DatabaseStatus, type HealthPayload,
 } from "../app/lib/connection";
+import { createApiCache } from "../app/lib/api-cache";
 
 type User = {
   id: string;
@@ -150,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   async function signOut() {
+    apiCache.clear();
     await supabase.auth.signOut();
     router.push("/login");
   }
@@ -240,6 +242,9 @@ type ApiContextType = {
   reconnects: number;
 };
 
+/** Short cache for repeated reads (rules in app/lib/api-cache.ts). One per tab; emptied on sign-out and user change. */
+const apiCache = createApiCache();
+
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
 export function ApiProvider({ children }: { children: ReactNode }) {
@@ -262,7 +267,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   }, [apiStatus]);
   const { session } = useAuth();
 
-  const fetchBubbles = useCallback(async (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) => {
+  const rawFetch = useCallback(async (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) => {
     const { timeoutMs = 15000, retries = 1 } = limits;
     // A caller that asked for a custom timeout expects a slow answer, so running out of time says nothing about
     // whether the backend is reachable; it must not flip the whole app offline.
@@ -328,6 +333,13 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     }
     throw Object.assign(new Error(message), { timedOut, networkError: !timedOut, corsOrigin });
   }, [session]);
+
+  /** rawFetch behind the short read cache: revisiting a screen is instant and identical reads in flight are shared. */
+  const fetchBubbles = useCallback(
+    (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) =>
+      apiCache.fetch(session?.user?.id ?? null, path, options.method || "GET", () => rawFetch(path, options, limits)),
+    [rawFetch, session],
+  );
 
   /** Any HTTP answer means the server is up (even a 5xx); only a rejected request means offline. */
   const probe = useCallback(async (): Promise<boolean> => {

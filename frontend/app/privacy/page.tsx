@@ -80,8 +80,8 @@ export default function PrivacyPage() {
           <li>Delete individual entries in each tracker.</li>
           <li>Stop partner sharing at any time.</li>
           <li>
-            Full account deletion is still being built. Until it is, write to us and we will delete your account and everything linked to it. The contact address will be
-            published here at launch.
+            Full account deletion is still being built. Until it is, write to <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a> from the email address you signed up with and we will delete your account and
+            everything linked to it.
           </li>
         </ul>
       </section>
@@ -103,7 +103,7 @@ export default function PrivacyPage() {
         <h2>India</h2>
         <p>
           We aim to follow the principles of India&apos;s Digital Personal Data Protection Act, 2023: clear consent, using data only for the purpose you gave it, and your right
-          to see, correct and erase it. The name of the operating company and the grievance contact will be added before launch.
+          to see, correct and erase it. Questions, requests and grievances: <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a>. The name of the operating company will be added before launch.
         </p>
       </section>
 

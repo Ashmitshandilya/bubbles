@@ -43,6 +43,9 @@ Point `heybubbles.in` and `www` at the frontend host and `api` at the backend ho
 3. Partner sharing, with two real accounts A and B: A opens **Partner sharing**, saves choices, makes an invite code; B signs in, enters the code under **Shared with you** and sees A's summary; A changes the choices and B sees the change; A disconnects and B sees nothing. Then make a quick link, open it in a private window (no login), turn it off, reload: it must say the link is no longer active.
 4. Try an emergency phrase in chat: the reply must be the emergency message, not a model answer.
 
+## Android app
+See `docs/ANDROID.md`. `cd frontend && npm run android:release` builds, signs and copies the APK to `frontend/public/android/`; deploying the website publishes it at `https://heybubbles.in/android`. Back up `%USERPROFILE%\.bubbles-signing` — without that key no update can be installed.
+
 ## 6. Not done / needs a person
 - Trademark clearance and a decision on the logo and mascot (file and component names changed to Bubbles; the artwork itself did not).
 - Privacy policy, terms of use, a contact address, and the consent wording — required before real users.

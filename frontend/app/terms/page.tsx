@@ -68,7 +68,7 @@ export default function TermsPage() {
       <section>
         <h2>Law and contact</h2>
         <p>
-          These terms are governed by the laws of India. The operating company, its address and the contact address will be added before the public launch.
+          These terms are governed by the laws of India. Contact: <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a>. The operating company and its address will be added before the public launch.
         </p>
       </section>
     </LegalPage>

@@ -12,3 +12,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE}/terms`, lastModified: UPDATED, changeFrequency: "yearly", priority: 0.3 },
   ];
 }
+
+// Generated once at build time (also required by the Android app's static export).
+export const dynamic = "force-static";

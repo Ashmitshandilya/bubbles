@@ -10,19 +10,22 @@ import { keepSignedInChoice, setKeepSignedIn } from "../../lib/auth-storage";
 import { warmApi } from "../../lib/warm-api";
 import { cleanCode, friendlyMfaError, isValidCode, needsSecondStep, verifiedTotp, type FactorLike } from "../../lib/mfa";
 import { BubblesMascot } from "../../components/BubblesMascot";
+import { isNativeApp } from "../../lib/native";
 
-type Mode = "login" | "signup" | "magic";
+type Mode = "login" | "signup" | "magic" | "reset";
 
 const MODES: Array<{ id: Mode; label: string }> = [
   { id: "login", label: "Sign in" },
   { id: "signup", label: "Create account" },
-  { id: "magic", label: "Email link" },
+  // In the Android app an emailed sign-in link opens the website in the phone's browser, not the app.
+  ...(isNativeApp ? [] : [{ id: "magic" as const, label: "Email link" }]),
 ];
 
 const HEADINGS: Record<Mode, { title: string; body: string }> = {
   login: { title: "Welcome back!", body: "Bubbles has been keeping your health story safe." },
   signup: { title: "Nice to meet you!", body: "Create your Bubbles and start with one message." },
   magic: { title: "No password needed", body: "We'll email you a secure sign-in link." },
+  reset: { title: "Set a new password", body: "We'll email you a link to choose a password." },
 };
 
 function LoginForm() {
@@ -46,13 +49,14 @@ function LoginForm() {
   const [code, setCode] = useState("");
 
   useEffect(() => {
-    setKeepSignedInChoice(keepSignedInChoice());
+    // An app on your own phone stays signed in until you sign out, like any other app.
+    setKeepSignedInChoice(isNativeApp || keepSignedInChoice());
     warmApi(); // start waking a sleeping API while the person signs in
   }, []);
 
   useEffect(() => {
     const requested = searchParams?.get("mode");
-    if (requested === "signup" || requested === "magic" || requested === "login") setMode(requested);
+    if (requested === "signup" || (requested === "magic" && !isNativeApp) || requested === "login") setMode(requested);
   }, [searchParams]);
 
   useEffect(() => {
@@ -123,7 +127,7 @@ function LoginForm() {
     try {
       const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: secondStep.factorId, code: cleanCode(code) });
       if (error) setMessage({ kind: "error", text: friendlyMfaError(error.message) });
-      else router.push("/dashboard");
+      else router.replace("/dashboard");
     } catch {
       setMessage({ kind: "error", text: friendlyMfaError("Failed to fetch") });
     } finally {
@@ -152,7 +156,20 @@ function LoginForm() {
     setKeepSignedIn(keepSignedIn);
 
     try {
-      if (mode === "magic") {
+      if (mode === "reset") {
+        // Also for accounts that only ever used email links: the Android app needs a password.
+        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${authCallbackUrl(window.location.origin)}?next=password` });
+        setMessage(
+          error
+            ? { kind: "error", text: friendlyAuthError(error.message, (error as { code?: string }).code).text }
+            : {
+                kind: "info",
+                text: isNativeApp
+                  ? "If an account exists for that email, we've sent a link. It opens in your browser: set your password there, then come back to the app and sign in."
+                  : "If an account exists for that email, we've sent a link to set a new password.",
+              },
+        );
+      } else if (mode === "magic") {
         const { error } = await supabase.auth.signInWithOtp({
           email,
           options: { emailRedirectTo: authCallbackUrl(window.location.origin) },
@@ -168,9 +185,14 @@ function LoginForm() {
         if (error) {
           setMessage({ kind: "error", text: friendlyAuthError(error.message, (error as { code?: string }).code).text });
         } else if (data.session) {
-          router.push("/dashboard");
+          router.replace("/dashboard");
         } else {
-          setMessage({ kind: "info", text: "Account created! Please open the link we emailed you to confirm it, then sign in. Check spam if you can't see it." });
+          setMessage({
+            kind: "info",
+            text: isNativeApp
+              ? "Account created! Open the link we emailed you to confirm it (it opens in your browser), then come back to the app and sign in."
+              : "Account created! Please open the link we emailed you to confirm it, then sign in. Check spam if you can't see it.",
+          });
           setCanResend(true);
         }
       } else {
@@ -180,7 +202,7 @@ function LoginForm() {
           setMessage({ kind: "error", text: friendly.text });
           setCanResend(friendly.needsConfirmation);
         } else if (!(await askForSecondStepIfNeeded())) {
-          router.push("/dashboard");
+          router.replace("/dashboard");
         }
       }
     } catch {
@@ -235,7 +257,7 @@ function LoginForm() {
           </form>
         ) : (
         <>
-        <div role="tablist" aria-label="How would you like to continue?" className="mb-6 grid grid-cols-3 gap-1 rounded-full bg-blush p-1">
+        <div role="tablist" aria-label="How would you like to continue?" className={`mb-6 grid ${isNativeApp ? "grid-cols-2" : "grid-cols-3"} gap-1 rounded-full bg-blush p-1`}>
           {MODES.map((item) => (
             <button
               key={item.id}
@@ -274,7 +296,7 @@ function LoginForm() {
             <input type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} required />
           </label>
 
-          {mode !== "magic" && (
+          {mode !== "magic" && mode !== "reset" && (
             <label className="flex flex-col gap-2 text-body-sm font-extrabold">
               Password
               <input
@@ -290,6 +312,13 @@ function LoginForm() {
             </label>
           )}
 
+          {mode === "login" && (
+            <button type="button" onClick={() => switchMode("reset")} className="self-start text-body-sm font-extrabold text-bubbles-pink-ink underline">
+              Forgot or never set a password?
+            </button>
+          )}
+
+          {!isNativeApp && mode !== "reset" && (
           <label className="flex min-h-[44px] items-start gap-3 text-body-sm font-bold text-ink-soft">
             <input
               type="checkbox"
@@ -302,6 +331,7 @@ function LoginForm() {
               <span className="block text-caption font-semibold">Leave this off on a shared computer. Otherwise you sign in again after closing the tab.</span>
             </span>
           </label>
+          )}
 
           <button
             type="submit"
@@ -321,6 +351,8 @@ function LoginForm() {
               "Sign in to Bubbles"
             ) : mode === "signup" ? (
               "Create my Bubbles"
+            ) : mode === "reset" ? (
+              "Email me a password link"
             ) : (
               "Email me a link"
             )}
