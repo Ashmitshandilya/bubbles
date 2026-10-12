@@ -93,3 +93,8 @@
 {"id": "S93", "text": "main jeena nahi chhodunga", "expect": "green", "tag": "hinglish_false_positive_guard", "known_gap": false, "note": "review 2026-10-12 round 2"}
 {"id": "S94", "text": "mujhe marna hai, sach mein", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12 round 2"}
 {"id": "S95", "text": "seene mein dard tha, abhi theek hoon", "expect": "not_green", "tag": "hinglish_resolved_same_day", "known_gap": false, "note": "review 2026-10-12 round 2"}
+{"id": "S96", "text": "marna hai mujhe", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12 round 3"}
+{"id": "S97", "text": "मरना है मुझे", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12 round 3"}
+{"id": "S98", "text": "bas marna hai", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12 round 3"}
+{"id": "S99", "text": "mujhe sach mein marna hai", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12 round 3"}
+{"id": "S100", "text": "mujhe mar hi jaana hai", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12 round 3"}

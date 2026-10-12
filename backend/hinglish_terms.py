@@ -169,7 +169,9 @@ LEXICON: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         NEG + " (?:jeena|jina)",                                                      # mujhe nahi jeena
         "(?:jeena|jina) (?:hi )?" + NEG + r"(?![\s-]+chh?od)",                        # ab jeena nahi (not "jeena nahi chhodunga")
         NEG + " (?:jee|ji|jii) (?:sakta|sakti|sakte|paunga|paungi|paaunga|paaungi|pa raha|pa rahi)",   # ab aur nahi jee sakta
-        "(?:mujhe|mujhko|main|mai|ab) (?:(?:bas|sirf|to|toh) )?mar(?:na|ne|jana|jaana| jana| jaana) (?:hi )?hai",   # mujhe marna hai (not "machhar marna hai")
+        # mujhe marna hai / marna hai mujhe / bas marna hai; an object before it is not about the speaker ("machhar marna hai", "isko marna hai")
+        r"(?<!\bko\s)(?<!machhar\s)(?<!macchar\s)(?<!cockroach\s)(?<!chuha\s)(?<!chuhe\s)(?<!keeda\s)(?<!keede\s)"
+        "mar(?:na|ne|jana|jaana| jana| jaana| hi jaana| hi jana) (?:hi )?hai",
         "(?:main|mai|me) mar (?:jaunga|jaungi|jaaunga|jaaungi|jaoonga|jaoongi)",       # main mar jaunga
         "(?:khud|apne aap|apne) ko (?:khatam|khatm|khtm) kar (?:lunga|lungi|dunga|dungi|lu|lun|loon|du|dun|doon|lena|dena)",
         "(?:neend ki|saari|sari|bahut saari|bahut sari|dher saari|ek saath|ek sath) (?:" + _W + ")?(?:goliyan|goliya|goliyaan|golian|"
