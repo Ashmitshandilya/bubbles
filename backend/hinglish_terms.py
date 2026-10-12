@@ -167,9 +167,9 @@ LEXICON: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         "(?:koi )?(?:wajah|vajah) (?:hi )?" + NEG + " (?:jeene|jine) (?:ki|ka)",
         "(?:jeena|jina|zinda rehna|zinda rahna) (?:hi )?" + NEG + " (?:hai|" + _WANT + "|chahiye)",
         NEG + " (?:jeena|jina)",                                                      # mujhe nahi jeena
-        "(?:jeena|jina) (?:hi )?" + NEG,                                              # ab jeena nahi
+        "(?:jeena|jina) (?:hi )?" + NEG + r"(?![\s-]+chh?od)",                        # ab jeena nahi (not "jeena nahi chhodunga")
         NEG + " (?:jee|ji|jii) (?:sakta|sakti|sakte|paunga|paungi|paaunga|paaungi|pa raha|pa rahi)",   # ab aur nahi jee sakta
-        "mar(?:na|ne|jana|jaana| jana| jaana) (?:hi )?hai",                           # mujhe marna hai
+        "(?:mujhe|mujhko|main|mai|ab) (?:(?:bas|sirf|to|toh) )?mar(?:na|ne|jana|jaana| jana| jaana) (?:hi )?hai",   # mujhe marna hai (not "machhar marna hai")
         "(?:main|mai|me) mar (?:jaunga|jaungi|jaaunga|jaaungi|jaoonga|jaoongi)",       # main mar jaunga
         "(?:khud|apne aap|apne) ko (?:khatam|khatm|khtm) kar (?:lunga|lungi|dunga|dungi|lu|lun|loon|du|dun|doon|lena|dena)",
         "(?:neend ki|saari|sari|bahut saari|bahut sari|dher saari|ek saath|ek sath) (?:" + _W + ")?(?:goliyan|goliya|goliyaan|golian|"
@@ -298,7 +298,7 @@ _RES_CORE = (r"th(?:ee|i)k\s+ho\s+(?:gaya|gayi|gaye|gya|gyi|gai|gae|chuka|chuki)
 RESOLVED_AFTER = r"^\s*(?:\w+\s+){0,3}?(?:" + _RES_CORE + r"|chal[ae]\s+(?:gaya|gayi|gaye|gya|gyi|gai)|chali\s+(?:gayi|gyi|gai))\b"
 #: a short next clause that ends the episode ("..., ab theek hoon")
 RESOLVED_CLAUSE = r"\b(?:" + _RES_CORE + r")\b"
-CURRENT = (r"\b(?:abhi|is\s+waqt|iss\s+waqt|is\s+samay|filhaal|filhal|ab\s+bhi|ab\s+tak|lagatar|lagataar|"
+CURRENT = (r"\b(?:abhi(?!\s+(?:th(?:ee|i)k|normal|better|sahi|achha|accha))|is\s+waqt|iss\s+waqt|is\s+samay|filhaal|filhal|ab\s+bhi|ab\s+tak|lagatar|lagataar|"
            r"(?:subah|kal|raat|dopahar|shaam|sham|" + _NUM + r"\s+(?:ghante|ghanton|minute|minat|din|dino|dinon|hafte|hafton))\s+se|"
            r"pichh?l[ae]y?\s+\w+\s+se|\w+\s+\w+\s+(?:pehle|pahle)\s+se|aaj\s+bhi|wapas\s+aa\w*|shuru\s+ho\w*|"
            r"fir\s+se|phir\s+se|dobara|ab\s+(?:\w+\s+)?(?:ho\s+raha|ho\s+rahi|ho\s+rahe|hone\s+lag\w*))\b")

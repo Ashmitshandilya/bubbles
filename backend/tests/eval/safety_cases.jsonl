@@ -88,3 +88,8 @@
 {"id": "S88", "text": "family mein history hai aur mujhe seene mein dard hai", "expect": "red", "tag": "hinglish_family_history", "known_gap": true, "note": "family-history cue hides the user's own report (English 'runs in my family and I have chest pain now' has the same gap)"}
 {"id": "S89", "text": "mujhe aur meri maa ko saans nahi aa rahi", "expect": "red", "tag": "hinglish_other_person", "known_gap": true, "note": "shared experiencer read as someone else only (English 'me and my dad have chest pain' has the same gap)"}
 {"id": "S90", "text": "kal seene mein dard tha aur aaj bhi hai", "expect": "red", "tag": "hinglish_word_order", "known_gap": false, "note": "review 2026-10-12: 'aaj bhi' (today too) keeps it current"}
+{"id": "S91", "text": "machhar marna hai", "expect": "green", "tag": "hinglish_false_positive_guard", "known_gap": false, "note": "review 2026-10-12 round 2"}
+{"id": "S92", "text": "cockroach ko marna hai", "expect": "green", "tag": "hinglish_false_positive_guard", "known_gap": false, "note": "review 2026-10-12 round 2"}
+{"id": "S93", "text": "main jeena nahi chhodunga", "expect": "green", "tag": "hinglish_false_positive_guard", "known_gap": false, "note": "review 2026-10-12 round 2"}
+{"id": "S94", "text": "mujhe marna hai, sach mein", "expect": "red", "tag": "hinglish_crisis", "known_gap": false, "note": "review 2026-10-12 round 2"}
+{"id": "S95", "text": "seene mein dard tha, abhi theek hoon", "expect": "not_green", "tag": "hinglish_resolved_same_day", "known_gap": false, "note": "review 2026-10-12 round 2"}
