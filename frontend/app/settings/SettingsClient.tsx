@@ -115,6 +115,8 @@ function Settings() {
             <span className="min-w-0 break-words text-body font-bold text-ink-soft">{user?.email || "Email unknown"}</span>
           </li>
           <LinkRow href="/profile" label="Your details and memory" hint="See what Bubbles knows and confirm or dismiss it" />
+          {/* The Android app signs in with email + password only (no email links). */}
+          <LinkRow href="/password" label="Set or change password" hint="Needed to sign in to the Android app" />
           <li className={ROW}>
             <span className="font-bold text-ink">Sign out of this device</span>
             <SignOutButton />

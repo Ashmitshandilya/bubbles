@@ -9,6 +9,28 @@ import { ErrorNotice, LiveRegion, Notice } from "./ui";
 import { useWellnessSend } from "./useWellness";
 import { exportFilename, plural } from "../../app/lib/wellness-format";
 import type { DeleteResult, ExportPayload } from "../../app/lib/wellness-types";
+import { isNativeApp } from "../../lib/native";
+
+/**
+ * Android's web view ignores <a download>, so the app writes the file to its private cache and opens the share sheet,
+ * where the person keeps it in Files, Drive or another app. Capacitor is imported here, never on the website.
+ * Closing the sheet is "cancelled", not an error.
+ */
+async function shareFile(filename: string, text: string): Promise<"shared" | "cancelled" | "failed"> {
+  try {
+    const [{ Directory, Encoding, Filesystem }, { Share }] = await Promise.all([import("@capacitor/filesystem"), import("@capacitor/share")]);
+    const { uri } = await Filesystem.writeFile({ path: filename, data: text, directory: Directory.Cache, encoding: Encoding.UTF8 });
+    try {
+      await Share.share({ title: filename, url: uri, dialogTitle: "Save your Bubbles data" });
+      return "shared";
+    } catch (error) {
+      // The Android plugin rejects with "Share canceled" when the sheet is closed without picking an app.
+      return error instanceof Error && /cancel/i.test(error.message) ? "cancelled" : "failed";
+    }
+  } catch {
+    return "failed";
+  }
+}
 
 export function YourDataCard() {
   const send = useWellnessSend();
@@ -35,16 +57,25 @@ export function YourDataCard() {
     const result = await send<ExportPayload>("/me/whole-health/export", "GET", undefined, { tz: false, timeoutMs: 60000 });
     setDownloading(false);
     if (!result.ok) return setDownloadError(result.message);
-    const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
+    const filename = exportFilename();
+    const json = JSON.stringify(result.data, null, 2);
+    const partial = result.data.truncated ? " Your account holds more than one file can carry, so this copy is partial." : "";
+    if (isNativeApp) {
+      const outcome = await shareFile(filename, json);
+      if (outcome === "failed") setDownloadError("Couldn't prepare the file on this phone. Please try again.");
+      else if (outcome === "shared") setDownloaded(`Shared ${plural(result.data.count, "item")} as ${filename}.${partial}`);
+      return;
+    }
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = exportFilename();
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setDownloaded(`Downloaded ${plural(result.data.count, "item")} as ${link.download}.${result.data.truncated ? " Your account holds more than one file can carry, so this copy is partial." : ""}`);
+    setDownloaded(`Downloaded ${plural(result.data.count, "item")} as ${filename}.${partial}`);
   }
 
   async function remove() {

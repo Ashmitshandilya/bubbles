@@ -7,12 +7,12 @@ import { BubblesMascot } from "../../components/BubblesMascot";
 import { needsSecondStep } from "../../lib/mfa";
 
 /** Where to go once the link has signed the person in: the code step first when the account has two-step sign-in on. */
-async function nextPath(): Promise<string> {
+async function nextPath(after: string): Promise<string> {
   try {
     const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    return needsSecondStep(data) ? "/login?mfa=1" : "/dashboard";
+    return needsSecondStep(data) ? "/login?mfa=1" : after;
   } catch {
-    return "/dashboard";
+    return after;
   }
 }
 
@@ -21,6 +21,8 @@ function CallbackContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("Processing authentication...");
+  // A password link (login: "Forgot or never set a password?") continues to the password form.
+  const destination = searchParams.get("next") === "password" ? "/password" : "/dashboard";
 
   useEffect(() => {
     async function handleAuth() {
@@ -40,7 +42,7 @@ function CallbackContent() {
           } else {
             setStatus("success");
             setMessage("Signed in! Redirecting...");
-            router.push(await nextPath());
+            router.replace(await nextPath(destination));
             router.refresh();
           }
         } catch {
@@ -70,7 +72,7 @@ function CallbackContent() {
               setMessage("Signed in! Redirecting...");
               // Clean up URL and redirect
               window.history.replaceState({}, document.title, window.location.pathname);
-              router.push(await nextPath());
+              router.replace(await nextPath(destination));
               router.refresh();
             }
           } catch {
@@ -101,7 +103,7 @@ function CallbackContent() {
             if (session && !error) {
               setStatus("success");
               setMessage("Signed in! Redirecting...");
-              router.push(await nextPath());
+              router.replace(await nextPath(destination));
               router.refresh();
             } else {
               setStatus("error");
@@ -116,7 +118,7 @@ function CallbackContent() {
     }
 
     handleAuth();
-  }, [router, searchParams]);
+  }, [router, searchParams, destination]);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-blush px-6">

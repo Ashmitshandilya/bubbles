@@ -649,6 +649,8 @@
 .cw-final { display: flex; flex-direction: column; align-items: center; gap: 22px; text-align: center; }
 .cw-final .cw-display { max-width: 14ch; }
 .cw-final .cw-lede { text-align: center; }
+/* The sign-up call to action and the Android download link share one row when they fit. */
+.cw-final-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
 .cw-final-glow { position: absolute; inset: 0; background: radial-gradient(40% 46% at 50% 58%, rgb(255 143 190 / 0.45), transparent 70%); }
 
 /* footer */
@@ -1281,7 +1283,8 @@
     opacity: clamp(0, (var(--p) - 0.02) / 0.1, 1);
   }
   .cw:not([data-story="static"]) .cw-final .cw-display { font-size: clamp(2.4rem, 4.8vw, 5rem); max-width: 18ch; }
-  .cw:not([data-story="static"]) .cw-final .cw-cta { margin-top: auto; justify-content: center; }
+  .cw:not([data-story="static"]) .cw-final .cw-cta { justify-content: center; }
+  .cw:not([data-story="static"]) .cw-final-actions { margin-top: auto; }
   .cw:not([data-story="static"]) .cw-final-glow { opacity: clamp(0, var(--p) / 0.3, 1); }
 
   /* ── Phones & small tablets ── */

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand tint-pink, the flat stand-in for the badge gradient in drawable/ic_launcher_background.xml. -->
+    <color name="ic_launcher_background">#FFE3EF</color>
+</resources>
