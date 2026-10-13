@@ -16,7 +16,7 @@ class _DB:
 
 def _run(monkeypatch, rows, **kw):
     db = _DB(rows)
-    monkeypatch.setattr(rag, "embed_text", lambda _q: None)
+    monkeypatch.setattr(rag, "embed_text", lambda _q, **_kw: None)
     monkeypatch.setattr(rag, "_db", lambda: db)
     return rag.hybrid_search(**kw), db
 

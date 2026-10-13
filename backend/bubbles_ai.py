@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ai_provider import ProviderError, call_fallback
+from ai_provider import ProviderError, call_fallback, call_timeout, reply_budget
 
 
 # ============================================================
@@ -156,7 +156,10 @@ def _call_gemini(
             "google-genai is not installed."
         ) from error
 
-    client = genai.Client(api_key=api_key)
+    # The SDK waits forever by default: a stuck call would hold the reply until the browser gave up. Cap it so the
+    # fallback pool still has time inside the reply budget.
+    timeout = call_timeout(float(os.getenv("GEMINI_TIMEOUT_S", "25")))
+    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=int(timeout * 1000)))
 
     response_schema = BubblesAIResponse.model_json_schema()
 
@@ -253,6 +256,18 @@ def ask_bubbles(
     evidence_context: str = "",
     safety_context: str = "",
     conversation_context: str = "",
+) -> BubblesAIResponse:
+    # One deadline for the whole reply: Gemini and every fallback share it, and a spent budget ends in the degraded reply.
+    with reply_budget():
+        return _ask_bubbles(message, memory_context, evidence_context, safety_context, conversation_context)
+
+
+def _ask_bubbles(
+    message: str,
+    memory_context: str,
+    evidence_context: str,
+    safety_context: str,
+    conversation_context: str,
 ) -> BubblesAIResponse:
 
     memory_context = memory_context.strip()

@@ -851,13 +851,16 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
                         .limit(limit)
                         .execute().data or [])
 
-        # Get message count for each conversation
-        for conv in conversations:
-            msg_count = (supabase.table("chat_messages")
-                        .select("id", count="exact")
-                        .eq("conversation_id", conv["id"])
-                        .execute().count or 0)
-            conv["message_count"] = msg_count
+        # Message count for each conversation, asked at the same time: one after another this was up to 50 round trips
+        # to the database before the chat screen could show anything.
+        def _count(conv: dict) -> int:
+            return (supabase.table("chat_messages")
+                    .select("id", count="exact", head=True)
+                    .eq("conversation_id", conv["id"])
+                    .execute().count or 0)
+        with ThreadPoolExecutor(max_workers=8, thread_name_prefix="history-count") as pool:
+            for conv, msg_count in zip(conversations, pool.map(_count, conversations)):
+                conv["message_count"] = msg_count
 
         return {"conversations": conversations}
     except Exception as e:

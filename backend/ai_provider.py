@@ -1,6 +1,8 @@
 import json
 import os
 import time
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
@@ -32,6 +34,11 @@ FREE_MODEL_ALLOWLIST = {
 REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "45"))
 AI_MAX_RETRIES = max(0, min(int(os.getenv("AI_MAX_RETRIES", "1")), 2))
 AI_RETRY_BACKOFF_MS = max(0, min(int(os.getenv("AI_RETRY_BACKOFF_MS", "250")), 2000))
+# One chat reply waits at most this long for AI models in total (Gemini, then every fallback and retry). Without it a slow
+# provider chain could take minutes, long after the person's browser and the website's proxy gave up on the request.
+AI_REPLY_BUDGET = max(5.0, min(float(os.getenv("AI_REPLY_BUDGET_S", "50")), 90.0))
+_MIN_CALL_SECONDS = 3.0
+_deadline: ContextVar[float | None] = ContextVar("bubbles_ai_deadline", default=None)
 
 
 @dataclass
@@ -45,6 +52,30 @@ class ProviderResult:
 
 class ProviderError(Exception):
     pass
+
+
+@contextmanager
+def reply_budget(seconds: float | None = None):
+    """Every provider call inside this block shares one deadline (an outer budget is kept, never extended)."""
+    deadline = time.monotonic() + (AI_REPLY_BUDGET if seconds is None else seconds)
+    outer = _deadline.get()
+    token = _deadline.set(deadline if outer is None else min(outer, deadline))
+    try:
+        yield
+    finally:
+        _deadline.reset(token)
+
+
+def call_timeout(cap: float = REQUEST_TIMEOUT) -> float:
+    """Seconds the next provider call may take: its own cap, cut to what is left of the reply budget.
+    Raises ProviderError when too little is left to be worth starting a call."""
+    deadline = _deadline.get()
+    if deadline is None:
+        return cap
+    remaining = deadline - time.monotonic()
+    if remaining < _MIN_CALL_SECONDS:
+        raise ProviderError("the reply time budget is spent")
+    return min(cap, remaining)
 
 
 # ============================================================
@@ -148,6 +179,7 @@ def _post_openai_compatible(
     last_error: Exception | None = None
     response = None
     for attempt in range(AI_MAX_RETRIES + 1):
+        timeout = call_timeout()  # outside the try: a spent budget ends the retries instead of being swallowed
         try:
             response = requests.post(
                 url,
@@ -156,7 +188,7 @@ def _post_openai_compatible(
                     "Content-Type": "application/json",
                 },
                 json=payload,
-                timeout=REQUEST_TIMEOUT,
+                timeout=timeout,
             )
             if response.status_code == 429 or response.status_code >= 500:
                 raise ProviderError(f"HTTP {response.status_code}")
@@ -440,7 +472,7 @@ def call_cloudflare(
                 "Content-Type": "application/json",
             },
             json=payload,
-            timeout=REQUEST_TIMEOUT,
+            timeout=call_timeout(),
         )
 
     except requests.RequestException as error:
@@ -536,7 +568,7 @@ def call_keyless(
                 "Content-Type": "application/json",
             },
             json=payload,
-            timeout=REQUEST_TIMEOUT,
+            timeout=call_timeout(),
         )
 
     except requests.RequestException as error:

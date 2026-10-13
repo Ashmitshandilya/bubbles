@@ -51,7 +51,7 @@ class _DB:
 
 def _run(monkeypatch, by_topic, **kw):
     db = _DB(by_topic)
-    monkeypatch.setattr(rag, "embed_text", lambda _q: None)
+    monkeypatch.setattr(rag, "embed_text", lambda _q, **_kw: None)
     monkeypatch.setattr(rag, "_db", lambda: db)
     return rag.hybrid_search(**kw), db
 
@@ -84,7 +84,7 @@ def test_a_failing_link_search_still_returns_the_general_results(monkeypatch):
                 raise RuntimeError("down")
             return super().rpc(name, params)
     db = Boom({None: GENERAL})
-    monkeypatch.setattr(rag, "embed_text", lambda _q: None)
+    monkeypatch.setattr(rag, "embed_text", lambda _q, **_kw: None)
     monkeypatch.setattr(rag, "_db", lambda: db)
     out = rag.hybrid_search(query="does lack of sleep affect my mood", limit=3)
     assert [r["chunk_id"] for r in out] == ["g1", "g2"]

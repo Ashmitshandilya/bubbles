@@ -76,7 +76,7 @@ class _FakeDB:
 def test_hybrid_search_attaches_policy_drops_bypass_and_fails_closed(monkeypatch):
     rows = [dict(document_id="a", content="c"), dict(document_id="b", content="c"), dict(document_id="c", content="c")]
     tags = [dict(id="a", topic_tags=["x", "policy:medication_safety_no_dosing"]), dict(id="b", topic_tags=["policy:BYPASS_LLM_use_emergency_template"]), dict(id="c", topic_tags=[])]
-    monkeypatch.setattr(rag, "embed_text", lambda _q: None)
+    monkeypatch.setattr(rag, "embed_text", lambda _q, **_kw: None)
     monkeypatch.setattr(rag, "_db", lambda: _FakeDB([dict(r) for r in rows], tags))
     out = rag.hybrid_search(query="q")
     assert [(r["document_id"], r["policy"]) for r in out] == [("a", "medication_safety_no_dosing"), ("c", "standard")]
