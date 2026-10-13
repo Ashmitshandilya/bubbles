@@ -21,9 +21,9 @@ describe("createApiCache", () => {
     expect(await (await cache.fetch("u1", "/profile", "GET", api.run)).json()).toEqual({ n: 2 });
   });
 
-  it("never caches /health, chat or consent", async () => {
+  it("never caches /health, chat, consent or the admin portal", async () => {
     const cache = createApiCache();
-    for (const path of ["/health", "/chat/history", "/chat", "/me/consent"]) {
+    for (const path of ["/health", "/chat/history", "/chat", "/me/consent", "/admin/overview?range=1h", "/admin/events/live?after=3", "/admin"]) {
       const api = counter();
       await cache.fetch("u1", path, "GET", api.run);
       await cache.fetch("u1", path, "GET", api.run);

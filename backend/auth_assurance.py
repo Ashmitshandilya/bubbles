@@ -11,16 +11,26 @@ import json
 from typing import Any
 
 
-def token_aal(token: str) -> str | None:
-    """The "aal" claim of an access token, or None when it cannot be read."""
+def _claims(token: str) -> dict:
     try:
         payload = token.split(".")[1]
         payload += "=" * (-len(payload) % 4)
         claims = json.loads(base64.urlsafe_b64decode(payload.encode("ascii")))
-        value = claims.get("aal") if isinstance(claims, dict) else None
-        return value if isinstance(value, str) else None
+        return claims if isinstance(claims, dict) else {}
     except Exception:  # noqa: BLE001 - any malformed token simply has no readable claim
-        return None
+        return {}
+
+
+def token_aal(token: str) -> str | None:
+    """The "aal" claim of an access token, or None when it cannot be read."""
+    value = _claims(token).get("aal")
+    return value if isinstance(value, str) else None
+
+
+def token_exp(token: str) -> float | None:
+    """The expiry (epoch seconds) of an access token already verified by Supabase, or None when it cannot be read."""
+    value = _claims(token).get("exp")
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
 def has_verified_factor(user: Any) -> bool:

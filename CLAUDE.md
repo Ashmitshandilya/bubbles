@@ -111,6 +111,7 @@ Never commit `.env` files, real health records, API keys, `node_modules`, `.next
 - `/medical/summary`, `/doctor/timeline`, `/doctor/prepare` — care-preparation views.
 - `/safety/escalate`, `/privacy/*`, `/ai/*` — safety, privacy, and routing diagnostics.
 - `/intelligence/body-systems`, `/intelligence/living-map`, `/intelligence/next-actions` — organ, living-signal, and next-action views.
+- `/admin/*` — the admin portal API (`admin_api.py`), gated in the middleware by `_admin_gate` before routing (fresh sign-in, two-step `aal2`, `BUBBLES_ADMIN_USER_IDS`); everyone else gets the same 404 as a missing path. See `docs/admin/README.md`.
 - `/evidence/grounding`, `/interventions/select`, `/evaluation/*`, `/multimodal/*`, `/agent/plan`, `/interop/fhir/*` — governance and interoperability helpers.
 
 The API convention is a Bearer access token on protected routes, JSON request bodies where state or a window is supplied, bounded `days` values, and FastAPI validation errors for malformed input. Keep request windows bounded and preserve explicit `status: "success"` responses for UI normalization.
@@ -133,6 +134,10 @@ Chat persistence is backend-owned. The browser sends the optional conversation I
 `backend/safety_engine.py` is deterministic and runs before generative AI. RED is a hard gate: urgent responses are generated without sending the message or health context to a provider. AMBER routes to cautious guidance without diagnosis or false reassurance. GREEN is not proof that no emergency exists.
 
 `backend/ai_provider.py` implements the free-provider allowlist and provider error handling. `backend/ai_orchestrator.py` applies policy and budget routing. The default policy is `$0 AI`: paid routing and keyless routing are disabled, and keyless health-data routing is disabled. Do not enable paid or keyless health-data routing without explicitly revisiting policy, privacy, and provider terms.
+
+### Operational telemetry and caches
+
+`ops_telemetry.py` records metadata-only events (api, ai_attempt, ai_reply, error, audit) with a per-request id; `record()` drops any field not on its kind's allow-list and never raises, and a daemon thread writes them to `bubbles_ops_events` (memory-only until that migration is applied). Never add message text, prompts, replies, user ids, raw paths or error messages to an event. `ttl_cache.py` holds the server caches (sign-in 30 s, consent 5 min, profile-sync flag 1 h); any new cache must be user-scoped or hold no user data, and must define its invalidation. Admin-editable settings are only those in `admin_settings._spec()`.
 
 ### Health data and reasoning
 
@@ -173,6 +178,7 @@ The frontend is a Next.js 15 App Router project (React 19, Tailwind 4) with one 
 - **Auth:** `lib/supabase.ts` (configuration guard, dev-only preview flag), `app/login/page.tsx` (sign in, sign up, email link, resend confirmation), `app/callback/page.tsx`, `lib/auth-links.ts` (confirmation links always return to the real site, links that land on the wrong page are forwarded to `/callback`) and `lib/auth-errors.ts` (plain-language errors, no account-enumeration leak). `next.config.ts` redirects the two old production Vercel addresses to the real site; the API only accepts requests from `https://heybubbles.in`.
 - **Privacy veil:** `components/PrivacyVeil.tsx` blurs anything marked `data-private` when the tab is hidden or when Hide is pressed (opt-in in Settings). Never mark safety or urgent content.
 - **Dev-only UI preview:** `NEXT_PUBLIC_UI_PREVIEW=1` with `backend/preview_server.py` (`BUBBLES_PREVIEW=1`, fake database, token `preview`) shows signed-in screens with synthetic data. The flag folds away in production builds; never set it on Vercel or Render.
+- **Admin console (`frontend/app/admin`):** one route with tabs (`?tab=&range=&request=`), its own light header (not HubPage), polling only. Any non-200 from `/admin/me` or a later 404 renders the ordinary not-found page. Logic and wording in `app/admin/format.ts` (tested).
 - **Conventions:** copy is plain and calm, no em-dashes in visible text, no diagnosis or dosing language, missing data is shown as a gap and never as healthy, and every button must do something real. Pure logic lives in small modules with tests next to them (`app/lib/*.ts`, `app/<area>/*.ts`); components stay thin.
 
 `frontend/AGENTS.md` is generated and re-added by `next dev`; preserve its `BEGIN:nextjs-agent-rules` / `END:nextjs-agent-rules` block. Before changing Next-specific code, read the relevant guide under `frontend/node_modules/next/dist/docs/` and heed deprecation notices.

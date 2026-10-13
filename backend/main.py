@@ -1,4 +1,7 @@
+import hashlib
 import os
+import threading
+import time
 
 import env_compat  # noqa: F401  (loads .env and maps legacy COCO_* names to BUBBLES_*; must run before config is read)
 from concurrent.futures import ThreadPoolExecutor
@@ -7,6 +10,7 @@ from time import perf_counter
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException, Header, Query
+from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from wellness_common import REQUEST_TZ, parse_tz_header
 from fastapi.responses import JSONResponse
@@ -20,8 +24,12 @@ from auth_errors import (
     invalid_token_response,
     invalid_scope_response,
 )
-from auth_assurance import requires_second_step
-from request_guard import BodyLimitMiddleware, install_access_log_redaction, require_admin
+from auth_assurance import requires_second_step, token_aal, token_exp
+from ttl_cache import TTLCache
+from admin_api import build_admin_router
+import admin_settings
+import ops_telemetry
+from request_guard import BodyLimitMiddleware, admin_ids, install_access_log_redaction, require_admin
 from memory_retrieval import get_relevant_memories, format_memory_context
 from supabase_client import supabase
 from bubbles_ai import BubblesAIResponse, ask_bubbles, is_degraded
@@ -177,12 +185,16 @@ async def bubbles_security_headers(request, call_next):
     # a network failure ("can't connect to the backend") although the server answered. Catching here keeps the
     # error readable, so the app can tell "server problem" from "server not running".
     tz_token = REQUEST_TZ.set(parse_tz_header(request.headers.get("x-tz-offset-minutes")))
+    request_id, *ops_tokens = ops_telemetry.begin_request()   # one id per request: ties AI attempts and log lines together
+    started = perf_counter()
     blocked = _guard_request(request)
+    if blocked is None and _is_admin_path(request.url.path):
+        blocked = await run_in_threadpool(_admin_gate, request)   # before routing, so a non-admin learns nothing (see _admin_gate)
     try:
         response = blocked if blocked is not None else await call_next(request)
     except Exception as error:  # noqa: BLE001
         from logging_util import logger
-        request_id = uuid4().hex[:8]       # lets a user-reported "something went wrong" be tied to one log line (no health text is logged)
+        # lets a user-reported "something went wrong" be tied to one log line (no health text is logged)
         logger.error(component="API", operation="unhandled_exception", error=error,
                      context={"path": request.url.path, "method": request.method, "error_class": type(error).__name__, "request_id": request_id}, fallback_action="returning_json_500")
         if is_permission_denied(error):  # a permission error wrapped in some other exception type
@@ -191,11 +203,94 @@ async def bubbles_security_headers(request, call_next):
             response = JSONResponse(status_code=500, content={"detail": "Something went wrong on Bubbles' side. Please try again.", "code": "server_error", "request_id": request_id},
                                     headers={"X-Request-Id": request_id})
     REQUEST_TZ.reset(tz_token)
+    try:
+        _record_api_event(request, response, started)
+    except Exception:  # noqa: BLE001 - telemetry never changes the answer
+        pass
+    finally:
+        ops_telemetry.end_request(tuple(ops_tokens))
     if response.status_code == 401 and request.headers.get("authorization") and edge_client_ip(request):
         _auth_fail_limiter.record("ip:" + edge_client_ip(request))
     for key, value in security_headers().items():
         response.headers[key] = value
+    response.headers["X-Request-Id"] = request_id
     return response
+
+
+# --------------------------------------------------
+# ADMIN GATE AND REQUEST TELEMETRY
+# --------------------------------------------------
+
+def _is_admin_path(path: str) -> bool:
+    return path == "/admin" or path.startswith("/admin/")
+
+
+def _not_found() -> JSONResponse:
+    """Byte for byte what FastAPI answers for a path that does not exist."""
+    return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
+
+_admin_denials = {"count": 0, "last_row": 0.0}
+_admin_denials_lock = threading.Lock()
+
+
+def _admin_denied(reason: str) -> JSONResponse:
+    """Counts the refusal; at most one audit row a minute (a flood of junk tokens cannot fill the database). No token, address or id."""
+    with _admin_denials_lock:
+        _admin_denials["count"] += 1
+        write = time.monotonic() - _admin_denials["last_row"] > 60
+        if write:
+            _admin_denials["last_row"] = time.monotonic()
+        count = _admin_denials["count"]
+    if write:
+        ops_telemetry.record("audit", action="admin_denied", target=reason, outcome=f"refusals_so_far={count}")
+    return _not_found()
+
+
+def _admin_gate(request) -> JSONResponse | None:
+    """Every /admin/* request: a fresh (never cached) sign-in check, a two-step (aal2) token and an id on BUBBLES_ADMIN_USER_IDS.
+
+    Anything else gets the same 404 as an unknown path, before routing, so a wrong method or a malformed body cannot reveal that a
+    route exists. A bad token still counts toward the address's bad-token limit, so /admin is no place to guess tokens."""
+    authorization = request.headers.get("authorization")
+    if not admin_ids():
+        return _admin_denied("no_admins_configured")
+    if not authorization:
+        return _admin_denied("no_token")
+    try:
+        user = get_authenticated_user(authorization, fresh=True)
+    except Exception:  # noqa: BLE001 - every failure looks the same from outside
+        if edge_client_ip(request):
+            _auth_fail_limiter.record("ip:" + edge_client_ip(request))
+        return _admin_denied("sign_in_failed")
+    if token_aal(_bearer_token(authorization)) != "aal2":
+        return _admin_denied("two_step_required")
+    if str(getattr(user, "id", "")) not in admin_ids():
+        return _admin_denied("not_admin")
+    request.state.admin_user_id = str(user.id)
+    return None
+
+
+_KNOWN_METHODS = frozenset({"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
+_STATUS_ERROR = {401: "auth", 403: "authorization", 409: "validation", 413: "validation", 422: "validation", 429: "rate_limit", 503: "database"}
+
+
+def _record_api_event(request, response, started: float) -> None:
+    """One metadata-only event per request: method, route TEMPLATE (never the raw path or query), status, time, and the chat note."""
+    path = request.url.path
+    if request.method == "OPTIONS" or _is_admin_path(path):   # the portal's own polling is not traffic
+        return
+    route = getattr(request.scope.get("route"), "path", None) or "unmatched"
+    latency = round((perf_counter() - started) * 1000, 1)
+    method = request.method if request.method in _KNOWN_METHODS else "OTHER"   # the method is client text: only known names are kept
+    ops_telemetry.record("api", method=method, route=route, status=response.status_code, latency_ms=latency,
+                         **ops_telemetry.current_note())
+    status = response.status_code
+    if status >= 400 and status != 404:
+        category = _STATUS_ERROR.get(status, "internal" if status >= 500 else "validation")
+        if status != 500:   # an unhandled 500 already recorded its error through the logger
+            ops_telemetry.record("error", category=category, component="API", route=route, error_class=f"HTTP {status}",
+                                 severity="error" if status >= 500 else "info")
 
 
 # Coarse protection for the Whole-Health OS routes: a request-size cap and a per-user request budget (the chat has its own limiter).
@@ -306,6 +401,9 @@ def _warm_database_probe() -> None:
         _database_report(timeout=0.01)
     except Exception:  # noqa: BLE001 - startup must never fail because of a diagnostic
         pass
+    if ops_telemetry._persist_enabled():   # saved admin settings (provider pauses, retention): read once, in the background
+        import threading
+        threading.Thread(target=admin_settings.load, name="bubbles-settings-load", daemon=True).start()
 
 
 # HEAD is allowed too: uptime monitors (UptimeRobot, Render, load balancers) often probe with HEAD and would otherwise see 405 and report "down"
@@ -366,8 +464,13 @@ class MemoryPromotionRequest(BaseModel):
 # AUTHENTICATION
 # --------------------------------------------------
 
-def get_authenticated_user(authorization: str | None):
+# Verified sign-ins are remembered for at most 30 s (never past the token's own expiry), so a burst of API calls costs one round trip
+# to the sign-in service instead of one each. Only successes are kept; the key is a hash of the token and is never logged or shown.
+# Trade-off accepted in review (docs/admin/DESIGN.md): a token that was just signed out keeps working for up to 30 s. /admin never uses it.
+_sign_in_cache = TTLCache("sign_in", ttl_s=30, max_entries=2000)
 
+
+def _bearer_token(authorization: str | None) -> str:
     if not authorization:
         raise missing_auth_header_response()
 
@@ -378,7 +481,20 @@ def get_authenticated_user(authorization: str | None):
 
     if not token:
         raise invalid_token_response()
+    return token
 
+
+def get_authenticated_user(authorization: str | None, *, fresh: bool = False):
+    token = _bearer_token(authorization)
+    if fresh:
+        return _verify_token(token)
+    return _sign_in_cache.get_or_compute(
+        hashlib.sha256(token.encode("utf-8")).hexdigest(), lambda: _verify_token(token),
+        ttl_for=lambda _user: (token_exp(token) or 0) - time.time(),
+    )
+
+
+def _verify_token(token: str):
     try:
         response = supabase.auth.get_user(token)
 
@@ -430,6 +546,7 @@ app.include_router(build_import_router(get_authenticated_user, supabase))
 # Cycle: calendar, daily log, predictions with ranges, modes, insights, report, partner view.
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
+app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
 
 # --------------------------------------------------
@@ -437,6 +554,7 @@ app.include_router(build_partner_router(get_authenticated_user, supabase))
 # --------------------------------------------------
 
 _profile_sync_paused_until = 0.0
+_profile_synced = TTLCache("profile_sync", ttl_s=3600, max_entries=20000)   # only "this person's name is already stored", nothing else
 
 
 def sync_profile_from_auth(user):
@@ -446,16 +564,20 @@ def sync_profile_from_auth(user):
     name = (metadata.get("full_name") or metadata.get("name") or "").strip()
     if not name or perf_counter() < _profile_sync_paused_until:
         return
+    if _profile_synced.peek(str(user.id)):   # stored already (seen in the last hour): no database read at all
+        return
     try:
         existing = (supabase.table("profiles").select("display_name")
                     .eq("id", str(user.id)).limit(1).execute().data or [])
         current = (existing[0].get("display_name") or "").strip() if existing else ""
         if current:
+            _profile_synced.put(str(user.id), True)
             return
         supabase.table("profiles").upsert(
             {"id": str(user.id), "display_name": name},
             on_conflict="id",
         ).execute()
+        _profile_synced.put(str(user.id), True)
     except Exception as error:
         if is_permission_denied(error):
             # profiles is not writable yet: stop paying two failing round trips on every chat message for 5 minutes.
@@ -593,6 +715,7 @@ def chat(
 
     if not user_message:
         response_text = "I'm here 💗 Tell me what's on your mind."
+        ops_telemetry.note(route_kind="empty", safety_level="GREEN", ai_called=False)
         empty_safety = {"level": "GREEN", "state": "NO_REDFLAG", "reasons": [], "retracted": False}
         bubbles_message_id = _persist_chat_message(
             user_id=user_id, conversation_id=conversation_id, role="bubbles", content=response_text,
@@ -654,6 +777,12 @@ def chat(
     # Only open-ended replies go to an outside AI model, and only after a clear yes (consent.py). Everything else, including every
     # emergency, is answered here and never depends on it.
     consent_required = turn.route not in deterministic_routes and not has_ai_consent(supabase, user_id)
+    # Technical facts only, from fixed lists (ops_telemetry.NOTE_VALUES): which kind of reply, the safety level, whether a model was asked.
+    try:
+        ops_telemetry.note(route_kind="consent_needed" if consent_required else turn.route, safety_level=safety.level,
+                           ai_called=not (turn.route in deterministic_routes or consent_required))
+    except Exception:  # noqa: BLE001 - telemetry never interrupts a reply
+        pass
     if turn.route in deterministic_routes or consent_required:
         # Deterministic copy: RED is a hard gate, so neither the message nor health context reaches a provider.
         t0 = perf_counter()

@@ -3,7 +3,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from ai_provider import ProviderError, call_fallback, call_timeout, reply_budget
+import admin_settings
+from ai_provider import ProviderError, ProviderResult, call_fallback, call_timeout, reply_budget
 
 
 # ============================================================
@@ -135,7 +136,30 @@ Rules:
 # GEMINI
 # ============================================================
 
+GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview"
+
+
 def _call_gemini(
+    message: str,
+    system_instruction: str,
+) -> BubblesAIResponse:
+    """One Gemini attempt (position 1). A failure of any kind is recorded as an attempt with a category, then re-raised."""
+    import time
+    started = time.perf_counter()
+    try:
+        return _call_gemini_inner(message, system_instruction)
+    except Exception as error:
+        try:
+            from ai_telemetry import classify_error, outcome_for, record
+            category = classify_error(error)
+            record(provider="Gemini", model=os.getenv("GEMINI_MODEL", GEMINI_DEFAULT_MODEL), latency_ms=(time.perf_counter() - started) * 1000,
+                   outcome=outcome_for(category), error_class=type(error).__name__, position=1, error_category=category)
+        except Exception:
+            pass
+        raise
+
+
+def _call_gemini_inner(
     message: str,
     system_instruction: str,
 ) -> BubblesAIResponse:
@@ -197,7 +221,8 @@ def _call_gemini(
             }
         try:
             from ai_telemetry import record
-            record(provider="Gemini", model=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview"), latency_ms=(time.perf_counter()-started)*1000, outcome="success", usage=usage)
+            record(provider="Gemini", model=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview"), latency_ms=(time.perf_counter()-started)*1000, outcome="success", usage=usage,
+                   position=1)
         except Exception:
             pass
         return parsed
@@ -215,24 +240,37 @@ def _call_gemini(
 def _call_fallback(
     message: str,
     system_instruction: str,
-) -> BubblesAIResponse:
+    first_position: int = 2,
+) -> tuple[BubblesAIResponse, ProviderResult]:
 
     result = call_fallback(
         system_instruction=system_instruction,
         user_message=message,
         health_data=True,
+        first_position=first_position,
+        defer_success=True,
     )
 
     try:
-        return BubblesAIResponse.model_validate(
+        parsed = BubblesAIResponse.model_validate(
             __import__("json").loads(result.content)
         )
-
+        outcome, category = "success", None
     except Exception as error:
+        parsed, outcome, category = None, "invalid_json", "invalid_json"
+        failure = error
+    try:
+        from ai_telemetry import record
+        record(provider=result.provider, model=result.model, latency_ms=result.latency_ms or 0, outcome=outcome, usage=result.usage,
+               position=result.position, error_category=category)
+    except Exception:
+        pass
+    if parsed is None:
         raise ProviderError(
             f"{result.provider} returned invalid Bubbles JSON: "
-            f"{error}"
-        ) from error
+            f"{failure}"
+        ) from failure
+    return parsed, result
 
 
 # ============================================================
@@ -302,30 +340,37 @@ def _ask_bubbles(
     # 1. Gemini
     # --------------------------------------------------------
 
-    try:
+    import time
+    started = time.perf_counter()
+    gemini_tried = False
 
-        result = _call_gemini(
-            message=message,
-            system_instruction=full_system_instruction,
-        )
+    if not admin_settings.is_paused("Gemini"):   # an administrator can pause a provider; nothing else about the chain changes
+        gemini_tried = True
+        try:
 
-        from logging_util import logger
-        logger.info(
-            component="AI_PROVIDER",
-            message=f"gemini_call succeeded: {type(result).__name__}",
-            context={"result_type": type(result).__name__},
-        )
+            result = _call_gemini(
+                message=message,
+                system_instruction=full_system_instruction,
+            )
 
-        return result
+            from logging_util import logger
+            logger.info(
+                component="AI_PROVIDER",
+                message=f"gemini_call succeeded: {type(result).__name__}",
+                context={"result_type": type(result).__name__},
+            )
+            _record_reply("answered", started, provider="Gemini", model=os.getenv("GEMINI_MODEL", GEMINI_DEFAULT_MODEL), attempts=1)
 
-    except Exception as error:
-        from logging_util import logger
-        logger.error(
-            component="AI_PROVIDER",
-            operation="gemini_call",
-            error=error,
-            context={"fallback_action": "attempting_fallback_provider"},
-        )
+            return result
+
+        except Exception as error:
+            from logging_util import logger
+            logger.error(
+                component="AI_PROVIDER",
+                operation="gemini_call",
+                error=error,
+                context={"fallback_action": "attempting_fallback_provider"},
+            )
 
     # --------------------------------------------------------
     # 2. Fallback provider pool
@@ -333,10 +378,12 @@ def _ask_bubbles(
 
     try:
 
-        result = _call_fallback(
+        result, used = _call_fallback(
             message=message,
             system_instruction=full_system_instruction,
+            first_position=2 if gemini_tried else 1,
         )
+        _record_reply("answered", started, provider=used.provider, model=used.model, attempts=used.position)
 
         return result
 
@@ -348,9 +395,22 @@ def _ask_bubbles(
             error=error,
             context={"fallback_action": "returning_degraded_response"},
         )
+        _record_reply("degraded", started)
 
         return BubblesAIResponse(
             response=DEGRADED_RESPONSE_TEXT,
             sentiment="neutral",
             health_events=[],
         )
+
+
+def _record_reply(outcome: str, started: float, *, provider: str | None = None, model: str | None = None, attempts: int | None = None) -> None:
+    """One event per reply, written only after the answer was validated: who really answered, or that nobody could."""
+    import time
+    try:
+        import ops_telemetry
+        ops_telemetry.record("ai_reply", outcome=outcome, provider=provider, model=model, attempts=attempts,
+                             fallback_used=bool(attempts and attempts > 1) if outcome == "answered" else None,
+                             total_ms=round((time.perf_counter() - started) * 1000, 1))
+    except Exception:
+        pass

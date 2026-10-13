@@ -20,6 +20,34 @@ _SECRET_WORDS = ("password", "token", "api_key", "apikey", "secret", "authorizat
 _CONTENT_KEYS = {"message", "content", "text", "query", "user_message", "body", "prompt", "response", "note", "notes", "summary"}
 
 
+_COMPONENT_CATEGORY = {"RAG": "rag", "AI_PROVIDER": "ai_provider", "AUTH": "auth", "DATABASE": "database", "DB": "database",
+                       "CACHE": "cache", "SUPABASE": "database"}
+
+
+def _current_request_id() -> str | None:
+    """The HTTP request this log line belongs to (set by the API middleware), so a log line and the admin portal match up."""
+    try:
+        import ops_telemetry
+        return ops_telemetry.current_request_id()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _ops_error(component: str, error: Any) -> None:
+    """Every logged error also becomes an admin-portal error event: component, a fixed category and the class name. No message."""
+    if str(component).upper() == "AI_PROVIDER":   # already recorded as an ai_attempt with its category (ai_telemetry)
+        return
+    try:
+        import ops_telemetry
+        name = type(error).__name__
+        lowered = name.lower()
+        category = ("timeout" if "timeout" in lowered else "network" if "connect" in lowered
+                    else _COMPONENT_CATEGORY.get(str(component).upper(), "internal"))
+        ops_telemetry.record("error", category=category, component=str(component)[:40], error_class=name[:60], severity="error")
+    except Exception:  # noqa: BLE001 - logging must never raise
+        pass
+
+
 class BubblesLogger:
     """Centralized logging for Bubbles backend operations."""
 
@@ -84,7 +112,7 @@ class BubblesLogger:
         Returns:
             dict with logged information for caller's use
         """
-        request_id = request_id or BubblesLogger.generate_request_id()
+        request_id = request_id or _current_request_id() or BubblesLogger.generate_request_id()
         timestamp = datetime.now(timezone.utc).isoformat()
 
         log_entry = {
@@ -105,6 +133,7 @@ class BubblesLogger:
         # Write to stderr so it's separate from stdout/API responses
         print(json.dumps(log_entry), file=sys.stderr)
         sys.stderr.flush()
+        _ops_error(component, error)
 
         return {
             "request_id": request_id,
@@ -129,7 +158,7 @@ class BubblesLogger:
         Accepts the same keyword arguments as :meth:`error` so a logging call made inside an
         ``except`` block can never itself raise and turn a handled failure into a 500.
         """
-        request_id = request_id or BubblesLogger.generate_request_id()
+        request_id = request_id or _current_request_id() or BubblesLogger.generate_request_id()
         timestamp = datetime.now(timezone.utc).isoformat()
 
         log_entry = {
@@ -168,7 +197,7 @@ class BubblesLogger:
     ) -> None:
         """Log informational message."""
         message = message or operation or ""
-        request_id = request_id or BubblesLogger.generate_request_id()
+        request_id = request_id or _current_request_id() or BubblesLogger.generate_request_id()
         timestamp = datetime.now(timezone.utc).isoformat()
 
         log_entry = {

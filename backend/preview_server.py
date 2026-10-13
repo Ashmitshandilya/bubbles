@@ -14,6 +14,7 @@ if os.environ.get("BUBBLES_PREVIEW") != "1":
 os.environ.setdefault("SUPABASE_URL", "https://preview.invalid")
 os.environ.setdefault("SUPABASE_SECRET_KEY", "preview")
 os.environ.setdefault("BUBBLES_FRONTEND_ORIGINS", "http://localhost:3100,http://127.0.0.1:3100")
+os.environ.setdefault("BUBBLES_OPS_PERSIST", "0")   # admin telemetry stays in memory: nothing is written anywhere
 HERE = os.path.dirname(os.path.abspath(__file__))
 for p in (HERE, os.path.join(HERE, "tests")):
     if p not in sys.path:
@@ -30,6 +31,11 @@ supabase_client.supabase = db   # BEFORE main is imported, so every module sees 
 
 import main  # noqa: E402
 import preview_seed  # noqa: E402
+
+# The demo person may open /admin in the preview. Preview tokens are not real sign-in tokens, so the two-step check is answered for
+# them here. This file is never imported by the app and refuses to start without BUBBLES_PREVIEW=1.
+os.environ.setdefault("BUBBLES_ADMIN_USER_IDS", USER)
+main.token_aal = lambda _token: "aal2"
 
 if __name__ == "__main__":
     report = preview_seed.seed(main.app, db, USER)

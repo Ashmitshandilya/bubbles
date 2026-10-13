@@ -149,11 +149,15 @@ SAFETY_HOLD_KINDS = ("safety_pause", "eating_screen")   # kept by "delete all": 
 
 def delete_everything(db: Any, uid: str, keep: tuple[str, ...] = SAFETY_HOLD_KINDS) -> int:
     """Remove every Whole-Health OS document for the user except the safety holds in ``keep``. Returns how many were removed."""
-    rows = (db.table(TABLE).select("id,title").eq("user_id", uid).eq("event_type", EVENT_TYPE).limit(20000).execute().data or [])
-    removed = 0
-    for r in rows:
-        if str(r.get("title") or "").split(":", 1)[0] in keep:
-            continue
-        db.table(TABLE).delete().eq("id", r["id"]).eq("user_id", uid).execute()
-        removed += 1
-    return removed
+    from consent import forget   # the remembered AI-consent answer must not outlive the deleted document, even if a delete fails
+    try:
+        rows = (db.table(TABLE).select("id,title").eq("user_id", uid).eq("event_type", EVENT_TYPE).limit(20000).execute().data or [])
+        removed = 0
+        for r in rows:
+            if str(r.get("title") or "").split(":", 1)[0] in keep:
+                continue
+            db.table(TABLE).delete().eq("id", r["id"]).eq("user_id", uid).execute()
+            removed += 1
+        return removed
+    finally:
+        forget(uid)
