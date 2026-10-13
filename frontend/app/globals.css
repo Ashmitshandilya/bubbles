@@ -310,3 +310,60 @@ body:has(.bubbles-ask-fab) main { padding-bottom: 7rem; }
   [data-private] { transition: none; }
   .soap-pop { display: none; }
 }
+
+/* ============================================================
+   ANDROID APP ONLY
+   Everything below is scoped to html[data-native], which app/layout.tsx
+   renders only in the app build, so none of it ever matches on the website.
+   ============================================================ */
+html[data-native] { -webkit-tap-highlight-color: transparent; }
+/* No stretch or glow when a screen is pulled past its end: the shell stays put, as in a native app. */
+html[data-native], html[data-native] body { overscroll-behavior: none; }
+/* Long-pressing chrome (links, buttons, bars) does nothing, as in a native app. Content and inputs stay selectable. */
+html[data-native] :is(a, button, nav, header, label, summary, [role="tab"]) { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* Each screen fades in as it arrives (every page renders its own <main>). */
+html[data-native] main { animation: page-fade-in 220ms var(--ease-standard) both; }
+/* Bottom tab bar (MobileNav in components/Navigation.tsx): a soft pressed state. The Talk button has its own (bubbles-press). */
+html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press) { transition: transform 160ms var(--ease-standard), background-color 160ms var(--ease-standard); }
+html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press):active { background-color: var(--tint-pink); transform: scale(0.92); }
+
+/* "Opening Bubbles" (app/NativeEntry.tsx): the splash's blush with the welcome sky glowing through. */
+html[data-native] .nw-opening {
+  background:
+    radial-gradient(70% 45% at 80% 8%, rgb(230 211 255 / 0.7), transparent 70%),
+    radial-gradient(80% 50% at 15% 95%, rgb(255 217 181 / 0.55), transparent 70%),
+    var(--bubbles-blush);
+}
+
+/* Welcome (app/NativeWelcome.tsx): the landing's opening sky, melting into the blush behind the status and navigation bars. */
+html[data-native] .nw {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 18px 24px 24px;
+  background: linear-gradient(var(--bubbles-blush), transparent 9%, transparent 90%, var(--bubbles-blush)), var(--calm-sky);
+}
+@supports (background: linear-gradient(in oklab, red, blue)) {
+  html[data-native] .nw { background: linear-gradient(in oklab, var(--bubbles-blush), transparent 9%, transparent 90%, var(--bubbles-blush)), var(--calm-sky-ok); }
+}
+html[data-native] .nw > :not(.cw-soapcss) { position: relative; }
+html[data-native] .nw-logo { align-self: flex-start; color: var(--fg); }
+html[data-native] .nw-figure { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 8px 0 4px; }
+html[data-native] .nw-figure .cf { width: auto; height: 100%; max-height: min(34vh, 300px); filter: drop-shadow(0 22px 26px rgb(26 8 30 / 0.22)); }
+html[data-native] .nw-copy { display: flex; flex-direction: column; gap: 14px; }
+html[data-native] .nw-copy .cw-display { font-size: 2.35rem; }
+html[data-native] .nw-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 28px; animation-delay: 80ms; }
+html[data-native] .nw-actions .cw-btn { width: 100%; }
+html[data-native] .nw-actions .cw-btn--ghost { background: rgb(255 255 255 / 0.4); }
+html[data-native] .nw-actions .cw-fineprint { text-align: center; }
+/* Short phones: a little less of everything, so the buttons stay on the first screen. */
+@media (max-height: 700px) {
+  html[data-native] .nw-figure .cf { max-height: 26vh; }
+  html[data-native] .nw-copy .cw-display { font-size: 2rem; }
+  html[data-native] .nw-actions { margin-top: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-native] main { animation: none; }
+  html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press):active { transform: none; }
+}

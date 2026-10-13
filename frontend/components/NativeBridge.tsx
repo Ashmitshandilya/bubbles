@@ -1,6 +1,6 @@
 "use client";
 
-// The Android app's link to the phone: splash screen, back button, printing and session refresh. app/layout.tsx mounts
+// The Android app's link to the phone: splash screen, back button, printing, haptics and session refresh. app/layout.tsx mounts
 // it only in the app build. Capacitor and Supabase are loaded with import(), not a static import: Next ships every
 // client module a layout imports in that layout's chunk on every website page (and runs it), rendered or not, and the
 // website must never download or run Capacitor.
@@ -11,6 +11,11 @@ import type { PluginListenerHandle } from "@capacitor/core";
 
 /** The app's own plugin (android/.../PrintPlugin.java): the system print dialog, which also offers Save as PDF. */
 type BubblesPrint = { print(options: { title?: string }): Promise<void> };
+/** The app's own plugin (android/.../HapticsPlugin.java): the system's light key tick, if touch feedback is on. */
+type BubblesHaptics = { tick(): Promise<void> };
+
+/** Taps that get a haptic tick: navigation (the bottom tab bar, section tabs, the More sheet), the welcome buttons, form submits. */
+const TICK_TARGETS = 'nav a, nav button, .cw-btn, button[type="submit"]';
 
 function hideSplash() {
   void import("@capacitor/splash-screen").then(({ SplashScreen }) => SplashScreen.hide()).catch(() => undefined);
@@ -44,7 +49,8 @@ export function NativeBridge() {
   const pathname = usePathname();
   const splashHidden = useRef(false);
 
-  // In the app "/" is only NativeEntry's redirect, so the first other path is the first real screen.
+  // In the app "/" is NativeEntry (a redirect or, signed out, the welcome), so the first other path is the first real
+  // screen. The welcome needs nothing here: the splash auto-hides after 1 s (capacitor.config.ts).
   useEffect(() => {
     if (pathname === "/" || splashHidden.current) return;
     splashHidden.current = true;
@@ -57,6 +63,11 @@ export function NativeBridge() {
     const webPrint = window.print;
     const handles: PluginListenerHandle[] = [];
     let active = true;
+    let tick: (() => void) | null = null;
+    const onTap = (event: MouseEvent) => {
+      if (tick && event.target instanceof Element && event.target.closest(TICK_TARGETS)) tick();
+    };
+    document.addEventListener("click", onTap, true);
 
     void (async () => {
       const [{ App }, { registerPlugin }, { supabase }] = await Promise.all([
@@ -69,6 +80,8 @@ export function NativeBridge() {
       // print events), so routing it to the plugin is enough.
       const printer = registerPlugin<BubblesPrint>("BubblesPrint");
       window.print = () => void printer.print({ title: document.title }).catch(() => undefined);
+      const haptics = registerPlugin<BubblesHaptics>("BubblesHaptics");
+      tick = () => void haptics.tick().catch(() => undefined);
       const listeners = await Promise.all([
         App.addListener("backButton", ({ canGoBack }) => void goBack(canGoBack, () => App.minimizeApp())),
         // supabase-js cannot tell when an app is in the background, so refresh the session only while it is in front.
@@ -83,6 +96,7 @@ export function NativeBridge() {
     return () => {
       active = false;
       window.clearTimeout(splashTimer);
+      document.removeEventListener("click", onTap, true);
       window.print = webPrint;
       handles.forEach((handle) => void handle.remove());
     };

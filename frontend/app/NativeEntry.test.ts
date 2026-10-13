@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: () => undefined }) }));
 
-const { entryTarget } = await import("./NativeEntry");
+const { entryRoute, entryTarget } = await import("./NativeEntry");
 const ORIGIN = "https://heybubbles.in";
 
 describe("entryTarget", () => {
@@ -20,5 +20,18 @@ describe("entryTarget", () => {
     for (const to of ["//evil.example/x", "/\\evil.example/x", "/\t/evil.example/x", "/\n/evil.example"]) {
       expect(entryTarget(to, ORIGIN)).toBe("/dashboard");
     }
+  });
+});
+
+describe("entryRoute", () => {
+  it("shows the welcome only to signed-out people opening the app", () => {
+    expect(entryRoute(null, ORIGIN, false)).toBeNull();
+    expect(entryRoute(null, ORIGIN, true)).toBe("/dashboard");
+  });
+
+  it("follows a deep link either way; that page checks sign-in itself", () => {
+    expect(entryRoute("/sleep", ORIGIN, false)).toBe("/sleep");
+    expect(entryRoute("/sleep", ORIGIN, true)).toBe("/sleep");
+    expect(entryRoute("//evil.example", ORIGIN, false)).toBe("/dashboard");
   });
 });

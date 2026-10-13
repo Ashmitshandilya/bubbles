@@ -60,7 +60,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${nunito.variable} ${fredoka.variable}`}>
+    // data-native switches on the Android app's own styles (the end of globals.css); the website never renders it.
+    <html lang="en" className={`${nunito.variable} ${fredoka.variable}`} data-native={isNativeApp ? "" : undefined}>
       <body className="bubbles-shell min-h-dvh flex flex-col">
         <AuthLinkRedirect />
         <PrivacyVeilProvider>{children}</PrivacyVeilProvider>
