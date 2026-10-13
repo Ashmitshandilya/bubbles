@@ -1,0 +1,27 @@
+name: Keep API awake
+
+# Render's free plan puts the API to sleep after about 15 minutes without a request, and waking it takes up to a
+# minute: that is the "Can't connect to Bubbles" / slow first reply people see. A light /health call every 10 minutes
+# keeps it awake (one always-on free service fits inside Render's monthly free hours). GitHub may run scheduled jobs
+# a few minutes late, so a rare wake-up can still happen.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /health
+        run: |
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 70 https://bubbles-dk3v.onrender.com/health || true)
+            echo "attempt $attempt: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::The API did not answer /health with 200"
