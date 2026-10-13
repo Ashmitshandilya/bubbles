@@ -3,6 +3,7 @@ import { BubblesMascot } from "../components/BubblesMascot";
 import { isNativeApp } from "../lib/native";
 import { Landing } from "./landing/Landing";
 import { NativeEntry } from "./NativeEntry";
+import { NativeWelcome } from "./NativeWelcome";
 
 export const metadata: Metadata = {
   title: "Bubbles | your personal health companion",
@@ -12,12 +13,13 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  // The Android app has no marketing page: its "/" only forwards to the first real screen. The mascot is rendered
-  // here, on the server, so NativeEntry's client code (which the website's "/" also ships) stays tiny.
+  // The Android app has no marketing page: its "/" forwards signed-in people to the first real screen and shows
+  // signed-out people a welcome screen. Both are rendered here, on the server, so NativeEntry's client code (which the
+  // website's "/" also ships) stays tiny.
   if (isNativeApp) {
     return (
-      <NativeEntry>
-        <BubblesMascot size={80} />
+      <NativeEntry welcome={<NativeWelcome />}>
+        <BubblesMascot size={88} />
       </NativeEntry>
     );
   }

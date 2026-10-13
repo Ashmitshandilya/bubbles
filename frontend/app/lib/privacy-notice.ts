@@ -1,5 +1,7 @@
 /** The small storage notice. Bubbles sets no tracking or advertising cookies and loads no analytics, so this is a notice with one button, not a consent wall. */
 
+import { isNativeApp } from "../../lib/native";
+
 export const NOTICE_KEY = "bubbles.notice.v1";
 
 /** Anything with the two storage methods we use; a real Storage, a test double, or null when storage is blocked. */
@@ -38,4 +40,4 @@ export function noticeBelongsOn(pathname: string): boolean {
 }
 
 export const NOTICE_TEXT =
-  "Bubbles keeps only what it needs in your browser: your sign-in and your settings. There are no ads, no tracking cookies and no analytics.";
+  `Bubbles keeps only what it needs on this ${isNativeApp ? "phone" : "browser"}: your sign-in and your settings. There are no ads, no tracking cookies and no analytics.`;

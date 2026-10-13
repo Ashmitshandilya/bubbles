@@ -38,7 +38,8 @@ import "./landing.css";
 /** What the illustrated Bubbles looks like, for the calm page (the figure is drawn, so this is its text alternative). */
 const BUBBLES_ALT = "Bubbles, a baby unicorn doctor in a nurse cap and a doctor's coat, with a heart stethoscope";
 
-const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-cw-display", axes: ["opsz", "wdth"], display: "swap" });
+// Exported for the Android app's welcome screen (app/NativeWelcome.tsx), which wears the same type.
+export const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-cw-display", axes: ["opsz", "wdth"], display: "swap" });
 const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-cw-mono", display: "swap" });
 
 type Vars = CSSProperties & Record<`--${string}`, string | number>;

@@ -28,13 +28,17 @@ It is not a separate product: same code, same FastAPI backend, same Supabase pro
   only ever used email links) tap **"Forgot or never set a password?"** on the sign-in screen, or **Settings → Set or
   change password** on the website, and choose one on `/password`. The session is kept in the WebView's app-private
   storage and refreshed when the app returns to the foreground.
-- **Root screen.** The APK opens `/dashboard` (signed-out users are sent to `/login` by the existing guards) instead
-  of the marketing landing page (`app/NativeEntry.tsx`). Capacitor answers any extensionless path with the root
+- **Root screen.** Signed-in people go straight to `/dashboard`; signed-out people see a welcome screen with the
+  landing's opening look at its static tier (`app/NativeWelcome.tsx`: sky, CSS soap bubbles, Bubbles, "Get started" and
+  "I already have an account") instead of the scroll story (`app/NativeEntry.tsx`). Capacitor answers any extensionless path with the root
   document, so a full page load at another path bounces through `/?to=<path>` and is routed client-side.
 - **Native glue** (`components/NativeBridge.tsx`): Android back button (closes open sheets/dialogs, then goes back,
   then backgrounds the app on the first screen), splash hand-off (the splash auto-hides after 1 s; holding the first
   frame until JS was ready made slow devices report "app not responding"), `window.print()` → Android print dialog
-  (`PrintPlugin.java`, offers "Save as PDF"), session refresh on resume. The data export (Profile → Your data) is
+  (`PrintPlugin.java`, offers "Save as PDF"), a light haptic tick on navigation, welcome and submit taps
+  (`HapticsPlugin.java`: the system key feedback, no extra permission, silent when touch feedback is off), session
+  refresh on resume. App-only CSS (no tap flash, no long-press selection on chrome, no overscroll glow, a fade between
+  screens, pressed tab bar) sits at the end of `app/globals.css` under `html[data-native]`. The data export (Profile → Your data) is
   written to the app-private cache and handed to the share sheet.
 - **System bars / keyboard.** `SystemBars.insetsHandling = "native"` keeps the web view between the status bar,
   navigation bar and keyboard, so the existing mobile layout is used as-is.
