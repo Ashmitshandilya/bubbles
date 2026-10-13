@@ -74,6 +74,13 @@ Render settings (names only): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `BUBBLES_FR
 - Backend routes added since launch (no schema change): `/wellness/associations`, `/chat/feedback`, partner sharing and the privacy/terms pages. After a backend deploy, `GET /chat/feedback` without a token should answer 401 (not 404).
 
 
+### Admin portal (https://heybubbles.in/admin), see `docs/admin/README.md`
+1. Turn on two-step sign-in (authenticator app) for your own account in Settings, then Account. The portal requires it.
+2. Render: `BUBBLES_ADMIN_USER_IDS=<your Supabase user id>` (it already gates the four operational routes).
+3. Supabase SQL editor, once: `supabase/migrations/20261013_bubbles_ops.sql`, then its three verification queries. Without it the portal works but keeps logs in memory only.
+4. Optional Render knobs: `BUBBLES_TELEMETRY_RETENTION_DAYS` (default 14; also settable in the portal), `BUBBLES_OPS_PERSIST=0` turns database writes of telemetry off.
+5. After deploy: `GET https://bubbles-dk3v.onrender.com/admin/me` without a token must answer 404 with `{"detail":"Not Found"}`, exactly like `/no-such-path`.
+
 ### Security settings (see `docs/security/SECURITY_STATUS.md` for the full list)
 - `BUBBLES_DOC_SIGNING_KEY` (Render): signs partner links, plans and settings. Set it to the value the service key has TODAY before you rotate `SUPABASE_SECRET_KEY`; if it is unset the service key is used, and rotating that key would invalidate every signed document at once.
 - `BUBBLES_ADMIN_USER_IDS` (Render, optional): comma-separated user ids allowed to read the four operational routes (`/ai/telemetry`, `/production/readiness`, `/models/registry`, `/privacy/security-baseline`). Leave it unset and nobody can.

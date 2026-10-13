@@ -13,3 +13,21 @@ if str(BACKEND_DIR) not in sys.path:
 os.environ.setdefault("BUBBLES_IP_RATE_LIMIT", "1000000")
 os.environ.setdefault("BUBBLES_AUTH_FAIL_LIMIT", "1000000")
 os.environ.setdefault("BUBBLES_CONNECT_RATE_LIMIT", "1000000")
+# Telemetry stays in memory during tests (no background writer against the dummy database address).
+os.environ.setdefault("BUBBLES_OPS_PERSIST", "0")
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _fresh_server_state():
+    """Every test starts with empty server caches, telemetry and admin settings, so nothing remembered leaks between tests."""
+    import admin_settings
+    import ops_telemetry
+    import ttl_cache
+    ttl_cache.clear_all()
+    for cache in list(ttl_cache._registry.values()):
+        cache.enabled = True
+    ops_telemetry.reset_for_tests()
+    admin_settings.reset_for_tests()
+    yield

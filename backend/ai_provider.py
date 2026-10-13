@@ -8,6 +8,8 @@ from typing import Any
 
 import requests
 
+import admin_settings
+
 
 # ============================================================
 # BUBBLES AI PROVIDER ROUTER
@@ -48,6 +50,7 @@ class ProviderResult:
     content: str
     usage: dict[str, int] | None = None
     latency_ms: float | None = None
+    position: int | None = None
 
 
 class ProviderError(Exception):
@@ -705,7 +708,8 @@ def provider_pool(*, health_data: bool) -> list[tuple[str, Any]]:
     providers = list(AUTHENTICATED_PROVIDERS)
     if ALLOW_KEYLESS_AI and (not health_data or ALLOW_KEYLESS_HEALTH_DATA):
         providers.extend(KEYLESS_PROVIDERS)
-    return providers
+    # After the policy gate: an administrator's pause can only remove a provider, never add or reorder one (admin_settings).
+    return [(name, fn) for name, fn in providers if not admin_settings.is_paused(name)]
 
 
 # ============================================================
@@ -717,11 +721,16 @@ def call_fallback(
     user_message: str,
     *,
     health_data: bool = False,
+    first_position: int = 1,
+    defer_success: bool = False,
 ) -> ProviderResult:
+    """Tries the pool in order. ``first_position`` numbers the attempts after earlier ones (Gemini). With ``defer_success`` the
+    caller records the successful attempt itself, after checking the answer is usable (so telemetry never counts a reply that
+    was thrown away as an answer)."""
 
     errors = []
 
-    for provider_name, provider_function in provider_pool(health_data=health_data):
+    for position, (provider_name, provider_function) in enumerate(provider_pool(health_data=health_data), start=first_position):
 
         started = time.perf_counter()
 
@@ -732,6 +741,8 @@ def call_fallback(
             )
 
             elapsed = time.perf_counter() - started
+            result.latency_ms = elapsed * 1000
+            result.position = position
 
             from logging_util import logger
             logger.info(
@@ -739,11 +750,13 @@ def call_fallback(
                 message=f"provider_call succeeded: {provider_name} model={result.model} elapsed={round(elapsed, 2)}s",
                 context={"provider": provider_name, "model": result.model, "elapsed_seconds": round(elapsed, 2)},
             )
-            try:
-                from ai_telemetry import record
-                record(provider=provider_name, model=result.model, latency_ms=elapsed * 1000, outcome="success", usage=result.usage)
-            except Exception:
-                pass
+            if not defer_success:
+                try:
+                    from ai_telemetry import record
+                    record(provider=provider_name, model=result.model, latency_ms=elapsed * 1000, outcome="success", usage=result.usage,
+                           position=position)
+                except Exception:
+                    pass
             return result
 
         except Exception as error:
@@ -764,8 +777,10 @@ def call_fallback(
                 context={"provider": provider_name, "elapsed_seconds": round(elapsed, 2)},
             )
             try:
-                from ai_telemetry import record
-                record(provider=provider_name, model=os.getenv(f"{provider_name.upper()}_MODEL", "unknown"), latency_ms=elapsed * 1000, outcome="error", error_class=type(error).__name__)
+                from ai_telemetry import classify_error, outcome_for, record
+                category = classify_error(error)
+                record(provider=provider_name, model=os.getenv(f"{provider_name.upper()}_MODEL", "unknown"), latency_ms=elapsed * 1000,
+                       outcome=outcome_for(category), error_class=type(error).__name__, position=position, error_category=category)
             except Exception:
                 pass
             continue
