@@ -230,7 +230,7 @@ def _not_found() -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
 
-_admin_denials = {"count": 0, "last_row": 0.0}
+_admin_denials = {"count": 0, "last_row": float("-inf")}  # not 0.0: monotonic() is uptime, under 60 s on a fresh host
 _admin_denials_lock = threading.Lock()
 
 
