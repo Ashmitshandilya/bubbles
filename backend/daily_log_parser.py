@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Iterable
 
+from event_dates import day_phrase, stated_date, user_today
 from health_semantics import MEDICATION_NAME_PATTERN, Fact, display_name, normalize, split_sentences
 
 _NUM = r"(\d+(?:[.,]\d+)?)"
@@ -265,9 +266,12 @@ def parse_daily_log(text: str, facts: Iterable[Fact] = (), *, now: datetime | No
     """Extract the explicitly stated metrics. `facts` supplies symptom/denial/period context."""
     t = normalize(text)
     now = now or datetime.now(timezone.utc)
-    day = now.date()
+    today = user_today(now)
+    day = today
     if re.match(r"\s*(?:\[day \d+\]\s*)?(?:for )?yesterday\b", t, _I) or re.search(r"\byesterday'?s? (?:log|summary|day)\b", t, _I):
         day = day - timedelta(days=1)
+    # A message that names one day ("on 20 September I slept 5 hours", "on the 20th") is logged on that day.
+    day = stated_date(text, today) or day
     log = DailyLog(log_date=day.isoformat())
     mt, d = log.metrics, log.domains
 
@@ -609,7 +613,11 @@ def summarize_log(log: DailyLog, facts: Iterable[Fact], *, name: str | None = No
     facts = [f for f in facts if f.experiencer == "self"]
     mt = log.metrics
     opener = f"Got it, {name}." if name else "Got it."
-    day_word = "today" if log.log_date == datetime.now(timezone.utc).date().isoformat() else f"for {log.log_date}"
+    try:
+        day_word = day_phrase(log.log_date, user_today())
+        day_word = day_word if day_word == "today" else "for " + day_word.removeprefix("on ")   # "I've logged for 20 September"
+    except ValueError:
+        day_word = f"for {log.log_date}"
     bits: list[str] = []
 
     cycle = []

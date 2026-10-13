@@ -17,20 +17,22 @@ Flow for one user message:
 from __future__ import annotations
 
 import hashlib
+import re
 import threading
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 
 from conversation_correction import (
     Correction, NOT_A_CORRECTION, contradiction_note, correction_response, detect_contradictions, detect_correction,
 )
+from event_dates import find_dates, stated_date, user_today
 from daily_log_parser import DailyLog, _estimate_nutrition, parse_daily_log, summarize_log
 from event_filters import DEAD_STATUSES, clean_data
 from health_event_pipeline import prepare_db_row
-from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state
+from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state, split_sentences
 from safety_engine import (
     POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
 )
@@ -538,32 +540,68 @@ def _int_severity(value: Any) -> int | None:
     return n if 1 <= n <= 10 else None
 
 
+# Words that end one part of a sentence and start another: "on the 20th I had fever and today I have a cough".
+_CLAUSE_BREAK = re.compile(r",|;|\b(?:and|but|then|while|whereas|aur|lekin|par|phir)\b", re.I)
+_PASTISH_TEMPORALS = {"past", "resolved", "recent"}
+
+
+def fact_day(turn: Turn, f: Fact, today: date) -> date | None:
+    """The day the person said this symptom happened, or None when they named no day for it.
+
+    The part of the sentence that holds the symptom decides first, then the whole sentence; a symptom told in the
+    past tense with no day of its own takes the one day the message names ("On 20 September. I had a headache")."""
+    sentences = split_sentences(turn.text)
+    sentence = sentences[f.sentence_index] if 0 <= f.sentence_index < len(sentences) else ""
+    dates = find_dates(sentence, today) if sentence else []
+    if dates:
+        cuts = [0, *(m.start() for m in _CLAUSE_BREAK.finditer(sentence)), len(sentence)]
+        start = max(c for c in cuts if c <= f.span[0])
+        end = min((c for c in cuts if c >= f.span[1]), default=len(sentence))
+        own = {d for pos, d in dates if start <= pos < end}
+        if len(own) == 1:
+            return own.pop()
+        named = {d for _pos, d in dates}
+        if len(named) == 1:
+            return named.pop()
+        before = [d for pos, d in dates if pos < f.span[0]]
+        return before[-1] if before else dates[0][1]
+    if f.temporal in _PASTISH_TEMPORALS:
+        return stated_date(turn.text, today)
+    return None
+
+
 def build_rule_events(turn: Turn, message_id: str | None, *, now: datetime | None = None) -> list[dict[str, Any]]:
     """Events from explicitly stated values only (nothing inferred). Denials become ONE symptom-screen event."""
     now = now or datetime.now(timezone.utc)
     now_iso = now.isoformat()
     mt, day = turn.log.metrics, turn.log.log_date
+    today = user_today(now)
     out: list[dict[str, Any]] = []
 
     def add(event_type: str, data: dict[str, Any], confidence: float = 0.9, *, metric: str = "", temporal: str = "current") -> None:
-        key = _key(message_id, event_type, metric or data.get("name") or data.get("symptom") or "", day)
-        data = {**data, "date": data.get("date", day)}
+        when = data.get("date", day)
+        key = _key(message_id, event_type, metric or data.get("name") or data.get("symptom") or "", when)
+        data = {**data, "date": when}
         data["_prov"] = _prov("rules", message_id, key, now_iso, temporal=temporal)
         out.append({"event_type": event_type, "extracted_data": data, "confidence": confidence})
 
     # ---- symptoms the user reports as current/recent/recurring
-    seen: dict[str, Fact] = {}
+    # A symptom told with a day of its own ("on the 20th I had a headache") is logged on that day, even in the past tense.
+    seen: dict[tuple[str, str], Fact] = {}
     for f in turn.facts:
         if f.experiencer != "self" or f.assertion != "present" or f.concept in NON_SYMPTOM_CONCEPTS or f.concept.startswith("custom:"):
             continue
-        if not (f.temporal in ACTIVE_TEMPORALS or (f.temporal == "resolved" and f.same_day)):
+        named = fact_day(turn, f, today)
+        if not (f.temporal in ACTIVE_TEMPORALS or (f.temporal == "resolved" and f.same_day)
+                or (f.temporal in _PASTISH_TEMPORALS and named is not None)):
             continue
-        prev = seen.get(f.concept)
+        when = named.isoformat() if named else day
+        prev = seen.get((f.concept, when))
         if prev is None or (f.severity or 0) > (prev.severity or 0):
-            seen[f.concept] = f
-    for concept, f in seen.items():
+            seen[(f.concept, when)] = f
+    for (concept, when), f in seen.items():
         label = display_name(concept)
-        data: dict[str, Any] = {"symptom": label, "name": label}
+        data: dict[str, Any] = {"symptom": label, "name": label, "date": when}
         sev = _int_severity(f.severity)
         if sev is not None:
             data["severity"] = sev
@@ -685,6 +723,9 @@ def reconcile_ai_events(ai_events: list[Any], turn: Turn, rule_events: list[dict
         return []
     now_iso = (now or datetime.now(timezone.utc)).isoformat()
     day = turn.log.log_date
+    today = user_today(now)
+    # Days the message itself names: a date the model proposes is kept only when the person actually said that day.
+    said_days = {d.isoformat() for _pos, d in find_dates(turn.text, today)}
     proposed = []
     for ev in ai_events:
         try:
@@ -713,6 +754,7 @@ def reconcile_ai_events(ai_events: list[Any], turn: Turn, rule_events: list[dict
             continue  # the model quoted something the user never wrote
         term = str(data.get("symptom") or data.get("name") or data.get("category") or "").strip()
         temporal = "current"
+        named: date | None = None
         if et in SYMPTOMISH_TYPES:
             if not term:
                 continue
@@ -722,6 +764,7 @@ def reconcile_ai_events(ai_events: list[Any], turn: Turn, rule_events: list[dict
             if not mentions or not live:
                 continue  # ungrounded, denied, hypothetical, a question, quoted, someone else's, or merely possible
             temporal = live[0].temporal
+            named = fact_day(turn, live[0], today)
             if (et, term.lower()) in covered:
                 continue  # the rule-built event already records exactly this
             if any(e["event_type"] in {"symptom", "menstrual_symptom"} and str(e["extracted_data"].get("name", "")).lower() == _name(concept).lower()
@@ -730,8 +773,9 @@ def reconcile_ai_events(ai_events: list[Any], turn: Turn, rule_events: list[dict
         elif et in covered_types and et in {"sleep", "hydration", "weight", "activity", "exercise", "food", "vital_sign", "mood", "stress"}:
             continue  # the deterministic parser already captured this domain from the same message
         data = {k: v for k, v in data.items() if v not in (None, "")}
-        data.setdefault("date", day)
-        key = _key(message_id, et, term or data.get("category") or "", day)
+        proposed_day = str(data.get("date") or "")[:10]
+        data["date"] = named.isoformat() if named else (proposed_day if proposed_day in said_days else day)
+        key = _key(message_id, et, term or data.get("category") or "", data["date"])
         data["_prov"] = _prov("llm", message_id, key, now_iso, temporal=temporal)
         kept.append({"event_type": et, "extracted_data": data, "confidence": min(conf, 0.9)})
     return kept

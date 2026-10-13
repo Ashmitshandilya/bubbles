@@ -10,6 +10,7 @@ import {
   adaptHealthEvents,
   adaptKind,
   adaptReplySafety,
+  eventDayLabel,
   adaptSafety,
   applyCorrection,
   confidenceLabel,
@@ -529,5 +530,25 @@ describe("splitBold", () => {
       { text: " it", bold: false },
     ]);
     expect(splitBold("no bold")).toEqual([{ text: "no bold", bold: false }]);
+  });
+});
+
+describe("event days", () => {
+  const today = new Date(2026, 9, 13, 10, 0);   // 13 October 2026, local time
+
+  it("carries the day the backend filed the event under", () => {
+    const [event] = adaptHealthEvents([{ id: "e1", event_type: "symptom", extracted_data: { name: "headache", date: "2026-09-20" } }], undefined);
+    expect(event.date).toBe("2026-09-20");
+    const [undated] = adaptHealthEvents([{ id: "e2", event_type: "symptom", extracted_data: { name: "headache", date: "not a day" } }], undefined);
+    expect(undated.date).toBeNull();
+  });
+
+  it("names the day plainly", () => {
+    expect(eventDayLabel("2026-10-13", today)).toBe("today");
+    expect(eventDayLabel("2026-10-12", today)).toBe("yesterday");
+    expect(eventDayLabel("2026-09-20", today)).toMatch(/^Sun,? 20 Sept?$/);
+    expect(eventDayLabel("2025-12-20", today)).toMatch(/^Sat,? 20 Dec 2025$/);
+    expect(eventDayLabel("2026-02-31", today)).toBeNull();
+    expect(eventDayLabel(null, today)).toBeNull();
   });
 });

@@ -60,6 +60,8 @@ export interface ExtractedHealthEvent {
   notPresent: string[];
   /** Whether this event can be confirmed: it has an id, is asserted as present and is still pending. */
   isConfirmable: boolean;
+  /** The day it happened (YYYY-MM-DD), as the backend dated it from what was said ("on the 20th"). Null when absent. */
+  date: string | null;
 }
 
 export interface EvidenceItem {
@@ -350,8 +352,36 @@ export function adaptHealthEvents(raw: unknown, rawIds: unknown): ExtractedHealt
       status,
       notPresent: asStrings(data?.pertinent_negatives),
       isConfirmable: id !== null && (assertion === null || assertion === "present") && (status === null || status === "pending"),
+      date: isoDay(data?.date),
     };
   });
+}
+
+/** "YYYY-MM-DD" when the value starts with a real calendar day, else null. */
+function isoDay(value: unknown): string | null {
+  const text = asString(value);
+  const match = text ? /^(\d{4})-(\d{2})-(\d{2})/.exec(text) : null;
+  if (!match) return null;
+  const [, y, m, d] = match.map(Number);
+  const day = new Date(y, m - 1, d);
+  return day.getFullYear() === y && day.getMonth() === m - 1 && day.getDate() === d ? match[0] : null;
+}
+
+/**
+ * The day an event is filed under, for the chat card: "today", "yesterday" or "Sun 20 Sep" (with the year when it
+ * is not this year). Null when the event has no usable day. `today` is the person's own calendar day.
+ */
+export function eventDayLabel(date: string | null, today: Date = new Date()): string | null {
+  const iso = isoDay(date);
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  const day = new Date(y, m - 1, d);
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diff = Math.round((start.getTime() - day.getTime()) / 86_400_000);
+  if (diff === 0) return "today";
+  if (diff === 1) return "yesterday";
+  const label = day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  return day.getFullYear() === today.getFullYear() ? label : `${label} ${day.getFullYear()}`;
 }
 
 /** What the server already says about an event, so a reloaded message does not re-offer a settled one. */

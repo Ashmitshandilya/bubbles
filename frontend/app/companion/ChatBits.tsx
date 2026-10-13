@@ -5,6 +5,7 @@ import { BubblesMascot } from "../../components/BubblesMascot";
 import { TONE, type Tone } from "../../components/hub/HubKit";
 import {
   confidenceLabel,
+  eventDayLabel,
   eventNote,
   isUrgentMessage,
   parseChatMarkdown,
@@ -298,6 +299,7 @@ function EventCard({
           const state = stateOf(event);
           const conf = confidenceLabel(event.confidence);
           const note = eventNote(event);
+          const day = eventDayLabel(event.date);
           const denied = event.notPresent.length > 0;
           const struck = state === "retracted" ? "line-through" : "";
           return (
@@ -314,6 +316,7 @@ function EventCard({
                     <span className={`text-ink-soft ${struck}`}> · {event.description}</span>
                   </>
                 )}
+                {day && !denied && <span className={`block text-[0.8125rem] text-ink-soft ${struck}`}>For {day}</span>}
                 {conf && !denied && <span className="block text-[0.8125rem] text-ink-soft">Bubbles&apos; confidence: {conf}</span>}
                 {note && <span className="block text-[0.8125rem] text-ink-soft">{note}</span>}
               </div>
