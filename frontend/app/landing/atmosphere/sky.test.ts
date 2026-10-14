@@ -1,27 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { CHAPTERS, MOBILE_LEN_FACTOR, story } from "../story/store";
-import {
-  COLOR_SCRIPT,
-  ENTER_VARIANTS,
-  PHASE_COLORS,
-  composite,
-  contrastRatio,
-  cycleAt,
-  mixOklab,
-  phaseColorAt,
-  sampleSky,
-  skyAt,
-  type ChapterPalette,
-} from "./palette";
+import { COLOR_SCRIPT, composite, contrastRatio, mixOklab, sampleSky, type ChapterPalette } from "./palette";
 import { SKY_FRAG, SKY_UNIFORMS, SKY_VERT } from "./sky.glsl";
 import {
   OVERLAY_CAP,
   calmBackground,
   calmStops,
   hexToUnit,
-  mixSky,
   newSkyParams,
-  phaseMixAtDay,
   scrimCss,
   skyCanvasSize,
   skyGradient,
@@ -41,13 +27,7 @@ describe("chapters and the colour script agree", () => {
     });
   });
 
-  it("Numbers is clinical noon: a light sky with dark ink", () => {
-    const noise = CHAPTERS.find((c) => c.key === "noise");
-    expect(noise?.tone).toBe("light");
-    expect(COLOR_SCRIPT.find((c) => c.key === "noise")?.tone).toBe("light");
-  });
-
-  it("the store starts on the opening (dawn) sky", () => {
+  it("the store starts on the opening sky", () => {
     expect(story.sky.top).toBe(COLOR_SCRIPT[0].sky.top);
     expect(story.sky.mid).toBe(COLOR_SCRIPT[0].sky.mid);
     expect(story.sky.horizon).toBe(COLOR_SCRIPT[0].sky.horizon);
@@ -57,47 +37,6 @@ describe("chapters and the colour script agree", () => {
 
   it("phones use the planned 0.8 chapter-length factor", () => {
     expect(MOBILE_LEN_FACTOR).toBe(0.8);
-  });
-});
-
-describe("phaseMixAtDay", () => {
-  it("peaks each phase colour at the middle of its days and mixes between", () => {
-    expect(phaseColorAt(phaseMixAtDay(2.5))).toBe(PHASE_COLORS.period);
-    expect(phaseColorAt(phaseMixAtDay(9))).toBe(PHASE_COLORS.follicular);
-    expect(phaseColorAt(phaseMixAtDay(14.5))).toBe(PHASE_COLORS.ovulation);
-    expect(phaseColorAt(phaseMixAtDay(22))).toBe(PHASE_COLORS.luteal);
-    expect(phaseMixAtDay(5.75)).toBeCloseTo(0.5, 5);
-  });
-
-  it("only moves forward through the day and stays inside 0..3", () => {
-    let last = -1;
-    for (let d = -2; d <= 30; d += 0.05) {
-      const m = phaseMixAtDay(d);
-      expect(m).toBeGreaterThanOrEqual(last);
-      expect(m).toBeGreaterThanOrEqual(0);
-      expect(m).toBeLessThanOrEqual(3);
-      last = m;
-    }
-    expect(phaseMixAtDay(Number.NaN)).toBe(0);
-    expect(phaseMixAtDay(27.999)).toBe(3);
-  });
-});
-
-describe("mixSky", () => {
-  const a = skyAt(1, 0);
-  const b = skyAt(2, 0);
-
-  it("returns each end exactly and follows the nearer sky for tone", () => {
-    expect(mixSky(a, b, 0).top).toBe(a.top);
-    expect(mixSky(a, b, 1).horizon).toBe(b.horizon);
-    expect(mixSky(a, b, 0.25).tone).toBe(a.tone);
-    expect(mixSky(a, b, 0.75).tone).toBe(b.tone);
-    expect(mixSky(a, b, 0.4).mid).toBe(mixOklab(a.mid, b.mid, 0.4));
-  });
-
-  it("clamps t", () => {
-    expect(mixSky(a, b, -5).top).toBe(a.top);
-    expect(mixSky(a, b, 5).top).toBe(b.top);
   });
 });
 
@@ -134,10 +73,7 @@ describe("the calm (static) page keeps every pixel readable", () => {
     return p.scrim ? composite(base, p.scrim.color, p.scrim.alpha) : base;
   };
 
-  const all: Array<[string, ChapterPalette]> = [
-    ...COLOR_SCRIPT.map((c) => [c.key, c] as [string, ChapterPalette]),
-    ...[0, 0.5, 1, 1.5, 2, 2.5, 3].map((x) => [`cycle/${x}`, cycleAt(x)] as [string, ChapterPalette]),
-  ];
+  const all: Array<[string, ChapterPalette]> = COLOR_SCRIPT.map((c) => [c.key, c] as [string, ChapterPalette]);
 
   for (const [name, p] of all) {
     it(`${name}: the whole background, top to bottom, holds 4.5 for ${p.tone === "light" ? "ink" : "blush"} text`, () => {
@@ -155,25 +91,18 @@ describe("the calm (static) page keeps every pixel readable", () => {
     expect(c.horizon).toBe(sampleSky(sky, 0.78));
   });
 
-  it("adds the scrim only where a chapter has one, in both gradient flavours", () => {
-    const cycle = COLOR_SCRIPT.find((c) => c.key === "cycle")!;
-    expect(calmBackground(cycle, true)).toContain("rgb(28 10 38 / 0.4)");
-    expect(calmBackground(cycle, false)).not.toContain("oklab");
+  it("adds a scrim only where a palette has one, in both gradient flavours", () => {
+    const scrimmed = { ...COLOR_SCRIPT[0], scrim: { color: "#1C0A26" as const, alpha: 0.4 } };
+    expect(calmBackground(scrimmed, true)).toContain("rgb(28 10 38 / 0.4)");
+    expect(calmBackground(scrimmed, false)).not.toContain("oklab");
     expect(calmBackground(COLOR_SCRIPT[0], true)).not.toContain("rgb(");
-    // the night hero has one too (its horizon is bright enough to wash out the copy), the other variants do not
-    expect(ENTER_VARIANTS.night.scrim).not.toBeNull();
-    expect(ENTER_VARIANTS.dusk.scrim).toBeNull();
   });
 });
 
 describe("the shader's overlay budget", () => {
   // glow + rays + haze can lighten the sky toward the sun colour by at most OVERLAY_CAP[tone];
   // copy must still pass at that worst case, everywhere in the copy zone.
-  const cases: Array<[string, ChapterPalette | (typeof ENTER_VARIANTS)[keyof typeof ENTER_VARIANTS] & { sky: ChapterPalette["sky"] }]> = [
-    ...COLOR_SCRIPT.map((c) => [c.key, c] as [string, ChapterPalette]),
-    ...Object.entries(ENTER_VARIANTS).map(([k, v]) => [`enter/${k}`, v] as [string, never]),
-    ...[0, 0.5, 1, 1.5, 2, 2.5, 3].map((x) => [`cycle/${x}`, cycleAt(x)] as [string, ChapterPalette]),
-  ];
+  const cases: Array<[string, ChapterPalette]> = COLOR_SCRIPT.map((c) => [c.key, c] as [string, ChapterPalette]);
 
   for (const [name, p] of cases) {
     it(`${name}: copy holds contrast with the glow, rays and haze at their cap`, () => {
@@ -195,10 +124,11 @@ describe("the shader's overlay budget", () => {
 });
 
 describe("skyParams", () => {
-  it("puts the sun top-left on light skies and a small moon top-right on dark ones", () => {
+  it("puts the light top-left on light skies (no disc on pearl) and a small moon top-right on dark ones", () => {
     const light = skyParams(0, "full", newSkyParams());
     const dark = skyParams(1, "full", newSkyParams());
     expect(light.sunX).toBeLessThan(0.5);
+    expect(light.discAlpha).toBe(0);
     expect(dark.sunX).toBeGreaterThan(0.5);
     expect(dark.sunSize).toBeLessThan(light.sunSize);
     expect(dark.cap).toBe(OVERLAY_CAP.dark);

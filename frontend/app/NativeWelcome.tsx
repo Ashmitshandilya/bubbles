@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
 import Link from "next/link";
-import { display } from "./landing/Landing";
 import { BubblesLogo } from "./landing/BubblesMark";
 import { BubblesFigure } from "./landing/BubblesFigure";
 import { SoapCss } from "./landing/bubbles/SoapCss";
@@ -21,7 +20,7 @@ const SKY = { "--calm-sky": calmBackground(COLOR_SCRIPT[0], false), "--calm-sky-
 
 export function NativeWelcome() {
   return (
-    <main className={`cw nw ${display.variable}`} data-tone="light" style={SKY}>
+    <main className="cw nw" data-tone="light" style={SKY}>
       <SoapCss variant="hero" />
       <BubblesLogo size={34} className="nw-logo" />
       <div className="nw-figure">

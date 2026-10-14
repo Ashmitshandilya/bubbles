@@ -3,7 +3,7 @@ import { COLOR_SCRIPT } from "../atmosphere/palette";
 import { GRADE_FRAG, GRADE_UNIFORMS, GRADE_VERT } from "./grade.glsl";
 import { POST, bloomStrength, fadeAmount, gradeUniforms, newGradeUniforms, postAllowed, postTargetSize, postWanted } from "./grade";
 
-const chapter = (key: string) => COLOR_SCRIPT.find((c) => c.key === key)!;
+const grade = (warmth: number, saturation = 0, contrast = 0, lift = 0, vignette = 0) => ({ warmth, saturation, contrast, lift, vignette });
 
 describe("when the post stack runs", () => {
   it("only in the full tier (never lite or static)", () => {
@@ -34,24 +34,24 @@ describe("grade from the colour script", () => {
   });
 
   it("warm chapters push red up and blue down, cool chapters the other way", () => {
-    const warm = gradeUniforms(chapter("track").grade, 1, newGradeUniforms());
+    const warm = gradeUniforms(grade(0.6), 1, newGradeUniforms());
     expect(warm.warm[0]).toBeGreaterThan(1);
     expect(warm.warm[2]).toBeLessThan(1);
-    const cool = gradeUniforms(chapter("body").grade, 1, newGradeUniforms());
+    const cool = gradeUniforms(grade(-0.5), 1, newGradeUniforms());
     expect(cool.warm[0]).toBeLessThan(1);
     expect(cool.warm[2]).toBeGreaterThan(1);
   });
 
-  it("follows saturation and contrast in percent points (Numbers is desaturated and crisper)", () => {
-    const noon = gradeUniforms(chapter("noise").grade, 1, newGradeUniforms());
+  it("follows saturation and contrast in percent points", () => {
+    const noon = gradeUniforms(grade(0, -15, 8), 1, newGradeUniforms());
     expect(noon.sat).toBeCloseTo(0.85, 6);
     expect(noon.con).toBeCloseTo(1.08, 6);
-    const care = gradeUniforms(chapter("care").grade, 1, newGradeUniforms());
+    const care = gradeUniforms(grade(0, 0, -6), 1, newGradeUniforms());
     expect(care.con).toBeLessThan(1);
   });
 
   it("carries the page vignette through at the same strength as --vig", () => {
-    expect(gradeUniforms(chapter("remember").grade, 1, newGradeUniforms()).vig).toBeCloseTo(0.14, 6);
+    expect(gradeUniforms(grade(0, 0, 0, 0, 0.14), 1, newGradeUniforms()).vig).toBeCloseTo(0.14, 6);
   });
 
   it("stays subtle: no chapter moves a channel by more than 10 percent, or lifts by more than 0.01", () => {
@@ -67,7 +67,7 @@ describe("grade from the colour script", () => {
   it("writes into the object it is given, with no allocation", () => {
     const out = newGradeUniforms();
     const warm = out.warm;
-    expect(gradeUniforms(chapter("enter").grade, 1, out)).toBe(out);
+    expect(gradeUniforms(grade(0.25), 1, out)).toBe(out);
     expect(out.warm).toBe(warm);
   });
 });
@@ -79,13 +79,9 @@ describe("bloom from the colour script", () => {
     expect(bloomStrength(0.5, 1)).toBeGreaterThan(bloomStrength(0.15, 1));
   });
 
-  it("makes the companion chapter the one big bloom, and keeps every chapter gentle", () => {
-    const strengths = COLOR_SCRIPT.map((c) => bloomStrength(c.bloom, 1));
-    const companion = bloomStrength(chapter("companion").bloom, 1);
-    expect(companion).toBe(Math.max(...strengths));
-    expect(companion).toBeLessThanOrEqual(0.75);
-    // the opening chapter sits at the plan's "about 0.35" (scaled by the gain)
-    expect(bloomStrength(chapter("enter").bloom, 1)).toBeCloseTo(0.35 * POST.bloomGain, 6);
+  it("keeps every chapter's bloom gentle (a soft glint on the orb, never a glow)", () => {
+    for (const c of COLOR_SCRIPT) expect(bloomStrength(c.bloom, 1), c.key).toBeLessThanOrEqual(0.25);
+    expect(bloomStrength(0.35, 1)).toBeCloseTo(0.35 * POST.bloomGain, 6);
   });
 
   it("clamps out-of-range input", () => {
