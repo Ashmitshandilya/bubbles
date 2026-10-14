@@ -113,7 +113,7 @@ function Activity() {
       />
       <Link
         href="/companion"
-        className="bubbles-press inline-flex min-h-[48px] items-center justify-center self-start rounded-full bg-bubbles-grape px-5 text-body-sm font-extrabold text-white no-underline shadow-[0_5px_0_var(--bubbles-grape-deep)]"
+        className="bubbles-press inline-flex min-h-[48px] items-center justify-center self-start rounded-full bg-bubbles-grape px-5 text-body-sm font-extrabold text-white no-underline bubbles-glow bubbles-glow-grape"
       >
         Ask Bubbles what movement suits this week
       </Link>

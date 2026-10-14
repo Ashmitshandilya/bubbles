@@ -142,7 +142,7 @@ function CallbackContent() {
             <button
               type="button"
               onClick={() => router.push("/login")}
-              className="bubbles-press mt-2 min-h-[48px] rounded-full bg-bubbles-pink-ink px-6 font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)]"
+              className="bubbles-press mt-2 min-h-[48px] rounded-full bg-bubbles-pink-ink px-6 font-extrabold text-white bubbles-glow"
             >
               Back to sign in
             </button>

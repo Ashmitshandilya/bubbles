@@ -268,7 +268,18 @@ input::placeholder, textarea::placeholder { color: var(--bubbles-ink-faint); opa
   transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-standard), background-color 150ms var(--ease-standard);
 }
 .bubbles-press:hover:not(:disabled) { transform: translateY(-2px); }
-.bubbles-press:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.bubbles-press:active:not(:disabled) { transform: translateY(1px) scale(0.975); }
+
+/* Soft press glow for coloured fills (buttons, the Talk button, your own chat messages). The glow takes the fill's deep
+   colour: plain .bubbles-glow is Rani Pink, the modifiers match the signal fills. Never a hard offset edge. */
+.bubbles-glow { box-shadow: var(--press-highlight), 0 10px 22px -8px rgb(var(--press-rgb) / 0.5); }
+.bubbles-glow-grape { --press-rgb: 74 43 199; }
+.bubbles-glow-sun { --press-rgb: 122 83 0; }
+.bubbles-glow-mint { --press-rgb: 13 107 82; }
+.bubbles-glow-sky { --press-rgb: 17 88 154; }
+.bubbles-glow-peach { --press-rgb: 154 58 18; }
+:is(a, button).bubbles-glow:hover:not(:disabled) { box-shadow: var(--press-highlight), 0 14px 28px -8px rgb(var(--press-rgb) / 0.55); }
+:is(a, button).bubbles-glow:active:not(:disabled) { box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.18), 0 4px 10px -6px rgb(var(--press-rgb) / 0.5); }
 
 /* Cards that respond gently to hover */
 .bubbles-lift { transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-standard); }

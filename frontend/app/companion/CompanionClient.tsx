@@ -573,7 +573,7 @@ export function CompanionClient() {
                     <button
                       type="button"
                       onClick={() => conversationId && void openConversation(conversationId)}
-                      className="bubbles-press min-h-[44px] rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white shadow-[0_4px_0_var(--bubbles-pink-deep)]"
+                      className="bubbles-press min-h-[44px] rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white bubbles-glow"
                     >
                       Try again
                     </button>
@@ -588,7 +588,7 @@ export function CompanionClient() {
                 {messages.map((m, i) =>
                   m.role === "user" ? (
                     <li key={m.clientId ?? m.id} className="bubbles-rise flex max-w-[85%] flex-col items-end gap-1 self-end sm:max-w-[min(72%,34rem)]">
-                      <p data-private className="m-0 whitespace-pre-wrap break-words rounded-[22px_22px_8px_22px] bg-bubbles-pink-ink px-[18px] py-3.5 shadow-[0_3px_0_var(--bubbles-pink-deep)] text-body font-semibold leading-normal text-white">
+                      <p data-private className="m-0 whitespace-pre-wrap break-words rounded-[22px_22px_8px_22px] bg-bubbles-pink-ink px-[18px] py-3.5 bubbles-glow text-body font-semibold leading-normal text-white">
                         <span className="sr-only">You: </span>
                         {m.content}
                       </p>
@@ -658,7 +658,7 @@ export function CompanionClient() {
                     )}
                   </span>
                 </div>
-                <div className="flex items-end gap-2.5 rounded-[28px] border-2 border-ink bg-surface py-1.5 pl-5 pr-1.5 shadow-[0_5px_0_var(--bubbles-ink)] transition-colors focus-within:border-bubbles-grape focus-within:shadow-[0_5px_0_var(--bubbles-grape)]">
+                <div className="flex items-end gap-2.5 rounded-[28px] border-2 border-ink bg-surface py-1.5 pl-5 pr-1.5 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-bubbles-grape focus-within:shadow-[var(--shadow-glow-accent)]">
                   <textarea
                     id="bubbles-message"
                     ref={inputRef}
@@ -684,7 +684,7 @@ export function CompanionClient() {
                     disabled={composerDisabled || !input.trim()}
                     className={`bubbles-press flex h-12 w-12 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed ${
                       sending || input.trim()
-                        ? "bg-bubbles-pink-ink text-white shadow-[0_4px_0_var(--bubbles-pink-deep)]"
+                        ? "bg-bubbles-pink-ink text-white bubbles-glow"
                         : "bg-tint-pink text-bubbles-pink-deep shadow-none"
                     }`}
                   >

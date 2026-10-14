@@ -137,7 +137,7 @@ export function toneFor(signal: string): Tone {
 
 export const CARD = "rounded-3xl border-2 border-line bg-surface";
 export const BTN_PRIMARY =
-  "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)] disabled:opacity-60";
+  "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white bubbles-glow disabled:opacity-60";
 export const BTN_SECONDARY =
   "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold text-ink disabled:opacity-60";
 export const PILL = "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.8125rem] font-extrabold";

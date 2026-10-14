@@ -53,7 +53,7 @@ function Mind() {
         title="Mind"
         why="A quick check-in, a private journal and a few calm tools. Bubbles notices patterns over time and never diagnoses."
         action={
-          <a href="#checkin" className="bubbles-press inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-bubbles-sun px-6 text-body font-extrabold text-ink shadow-[0_5px_0_var(--bubbles-sun-deep)] sm:w-auto">
+          <a href="#checkin" className="bubbles-press inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-bubbles-sun px-6 text-body font-extrabold text-ink bubbles-glow bubbles-glow-sun sm:w-auto">
             Check in
           </a>
         }

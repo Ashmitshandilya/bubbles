@@ -104,7 +104,7 @@ export function OrganTracker() {
               setThreeFailed(false);
               setShow3D((v) => !v);
             }}
-            className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full bg-bubbles-grape px-5 text-body-sm font-extrabold text-white shadow-[0_5px_0_var(--bubbles-grape-deep)]"
+            className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full bg-bubbles-grape px-5 text-body-sm font-extrabold text-white bubbles-glow bubbles-glow-grape"
           >
             {show3D ? "Hide 3D body" : "Show 3D body"}
           </button>
