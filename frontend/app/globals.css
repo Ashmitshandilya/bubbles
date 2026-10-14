@@ -26,8 +26,22 @@
 @theme inline {
   --color-background: var(--color-bg);
   --color-foreground: var(--color-text);
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Pearl Lab weights: Figtree tops out at 600 in the UI ("extrabold" and "bold" were Nunito-era names). */
+  --font-weight-extrabold: 600;
+  --font-weight-bold: 600;
+  --font-weight-black: 600;
+
+  /* Lilac-tinted shadows, never grey. */
+  --shadow-sm: 0 1px 2px rgba(107,70,214,.06), 0 4px 12px rgba(107,70,214,.06);
+  --shadow: 0 1px 2px rgba(107,70,214,.06), 0 4px 12px rgba(107,70,214,.06);
+  --shadow-md: 0 1px 2px rgba(107,70,214,.06), 0 8px 24px rgba(107,70,214,.08);
+  --shadow-lg: 0 1px 2px rgba(107,70,214,.06), 0 12px 32px rgba(107,70,214,.12);
+  --shadow-xl: 0 16px 40px rgba(107,70,214,.14);
+  --shadow-2xl: 0 24px 56px rgba(107,70,214,.16);
 
   --color-brand: var(--bubbles-pink-ink);
   --color-brand-strong: var(--bubbles-pink-deep);
@@ -62,6 +76,9 @@
   --color-bubbles-peach: var(--bubbles-peach);
   --color-bubbles-peach-deep: var(--bubbles-peach-deep);
   --color-bubbles-urgent: var(--bubbles-urgent);
+  --color-bubbles-caution: var(--bubbles-caution);
+  --color-bubbles-lilac: var(--bubbles-lilac);
+  --color-bubbles-gold-line: var(--bubbles-gold-line);
 
   --color-tint-pink: var(--tint-pink);
   --color-tint-grape: var(--tint-grape);
@@ -104,6 +121,13 @@ h1, h2, h3, h4 {
   color: var(--color-text);
 }
 
+/* Fraunces (display): soft, optical sizing on, lining numerals so figures line up. */
+.font-display, h1, h2, h3, h4, .text-display, .text-h1, .text-h2, .text-h3, .text-h4, .text-metric, .text-metric-lg {
+  font-variation-settings: "SOFT" 50;
+  font-optical-sizing: auto;
+  font-feature-settings: "lnum", "tnum";
+}
+
 .text-display, .text-h1, .text-h2, .text-h3, .text-h4, .text-metric, .text-metric-lg {
   font-family: var(--font-display);
   font-weight: var(--weight-display);
@@ -112,12 +136,12 @@ h1, h2, h3, h4 {
 button, input, select, textarea { font: inherit; color: inherit; }
 
 :focus-visible {
-  outline: 3px solid var(--bubbles-grape);
+  outline: 2px solid var(--bubbles-grape);
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-::selection { background: var(--tint-pink); color: var(--bubbles-ink); }
+::selection { background: var(--bubbles-lilac); color: var(--bubbles-ink); }
 
 input::placeholder, textarea::placeholder { color: var(--bubbles-ink-faint); opacity: 1; }
 }
@@ -148,7 +172,7 @@ input::placeholder, textarea::placeholder { color: var(--bubbles-ink-faint); opa
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-xl);
-  background: var(--tint-pink);
+  background: var(--tint-grape);
   color: var(--bubbles-pink-ink);
   font-family: var(--font-display);
   font-weight: var(--weight-display);
@@ -252,38 +276,61 @@ input::placeholder, textarea::placeholder { color: var(--bubbles-ink-faint); opa
 /* AI thinking dots */
 .bubbles-thinking-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; animation: bubbles-dot 1.2s ease-in-out infinite; }
 .bubbles-thinking-dot:nth-child(1) { background: var(--bubbles-grape); }
-.bubbles-thinking-dot:nth-child(2) { background: var(--bubbles-pink); animation-delay: .15s; }
-.bubbles-thinking-dot:nth-child(3) { background: var(--bubbles-sun); animation-delay: .3s; }
+.bubbles-thinking-dot:nth-child(2) { background: var(--bubbles-lilac); animation-delay: .15s; }
+.bubbles-thinking-dot:nth-child(3) { background: var(--bubbles-grape); opacity: .6; animation-delay: .3s; }
 
-/* Skeleton loading block */
+/* Skeleton loading: soft lilac pills and bubbles with a gentle 1.4s shimmer. A plain .bubbles-skeleton is one soft
+   shape. Add .bubbles-skeleton-card to a card-sized block and it becomes a porcelain card holding a bubble and two
+   pills, so a loading card reads as "content is coming" instead of a flat slab. */
 .bubbles-skeleton {
-  border-radius: var(--radius-lg);
-  background: linear-gradient(90deg, var(--tint-pink) 25%, #FFF0F6 50%, var(--tint-pink) 75%);
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--tint-grape) 25%, #FAF8FE 50%, var(--tint-grape) 75%);
   background-size: 200% 100%;
-  animation: bubbles-skeleton 1.4s linear infinite;
+  animation: bubbles-skeleton 1.4s ease-in-out infinite;
+}
+.bubbles-skeleton.bubbles-skeleton-card {
+  position: relative;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  border: 1px solid var(--bubbles-line);
+  overflow: hidden;
+  animation: none;
+}
+.bubbles-skeleton-card::before,
+.bubbles-skeleton-card::after {
+  content: "";
+  position: absolute;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--tint-grape) 25%, #FAF8FE 50%, var(--tint-grape) 75%);
+  background-size: 200% 100%;
+  animation: bubbles-skeleton 1.4s ease-in-out infinite;
+}
+/* a bubble on the left, a title pill beside it, a shorter line pill under it */
+.bubbles-skeleton-card::before { top: 20px; left: 20px; width: 40px; height: 40px; }
+.bubbles-skeleton-card::after {
+  top: 28px; left: 76px; width: min(55%, 240px); height: 12px;
+  box-shadow: 0 28px 0 0 var(--tint-grape);
 }
 
 /* Springy, tactile buttons: lift on hover, press down on click */
 .bubbles-press {
-  transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-standard), background-color 150ms var(--ease-standard);
+  transition: transform 200ms var(--ease-standard), box-shadow 200ms var(--ease-standard), background-color 150ms var(--ease-standard);
 }
-.bubbles-press:hover:not(:disabled) { transform: translateY(-2px); }
-.bubbles-press:active:not(:disabled) { transform: translateY(1px) scale(0.975); }
+.bubbles-press:hover:not(:disabled) { transform: translateY(-1px); }
+.bubbles-press:active:not(:disabled) { transform: scale(0.98); }
+/* Primary violet deepens on hover (DESIGN.md button-primary-hover). */
+:is(a, button).bg-bubbles-pink-ink:hover:not(:disabled), :is(a, button).bg-bubbles-grape:hover:not(:disabled) { background-color: var(--bubbles-pink-deep); }
 
-/* Soft press glow for coloured fills (buttons, the Talk button, your own chat messages). The glow takes the fill's deep
-   colour: plain .bubbles-glow is Rani Pink, the modifiers match the signal fills. Never a hard offset edge. */
-.bubbles-glow { box-shadow: var(--press-highlight), 0 10px 22px -8px rgb(var(--press-rgb) / 0.5); }
-.bubbles-glow-grape { --press-rgb: 74 43 199; }
-.bubbles-glow-sun { --press-rgb: 122 83 0; }
-.bubbles-glow-mint { --press-rgb: 13 107 82; }
-.bubbles-glow-sky { --press-rgb: 17 88 154; }
-.bubbles-glow-peach { --press-rgb: 154 58 18; }
-:is(a, button).bubbles-glow:hover:not(:disabled) { box-shadow: var(--press-highlight), 0 14px 28px -8px rgb(var(--press-rgb) / 0.55); }
-:is(a, button).bubbles-glow:active:not(:disabled) { box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.18), 0 4px 10px -6px rgb(var(--press-rgb) / 0.5); }
+/* Soft press for coloured fills (buttons, the Talk button). Pearl Lab: a quiet lilac shadow under the fill, never a
+   coloured outer glow. The old modifier names stay so markup keeps working; they all share the one lilac shadow. */
+.bubbles-glow { box-shadow: var(--press-highlight), 0 1px 2px rgb(var(--press-rgb) / 0.12), 0 8px 18px -8px rgb(var(--press-rgb) / 0.4); }
+.bubbles-glow-grape, .bubbles-glow-sun, .bubbles-glow-mint, .bubbles-glow-sky, .bubbles-glow-peach { --press-rgb: 107 70 214; }
+:is(a, button).bubbles-glow:hover:not(:disabled) { box-shadow: var(--press-highlight), 0 1px 2px rgb(var(--press-rgb) / 0.12), 0 12px 24px -8px rgb(var(--press-rgb) / 0.45); }
+:is(a, button).bubbles-glow:active:not(:disabled) { box-shadow: inset 0 2px 5px rgb(30 27 46 / 0.16), 0 2px 6px -4px rgb(var(--press-rgb) / 0.4); }
 
 /* Cards that respond gently to hover */
 .bubbles-lift { transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-standard); }
-.bubbles-lift:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.bubbles-lift:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
 /* Privacy veil. components/PrivacyVeil.tsx sets data-privacy-veil on <html> while values should be hidden.
    Put data-private on any health value or chat text; a tap on it shows everything again. */
@@ -299,11 +346,11 @@ html[data-privacy-veil="on"] [data-private] {
    Everything starts invisible and only the animation shows it, so it stays hidden if animations are off. */
 .soap-pop { position: absolute; inset: 0; display: block; pointer-events: none; }
 .soap-pop-ring, .soap-pop-drop { position: absolute; left: 50%; top: 50%; border-radius: 9999px; opacity: 0; }
-.soap-pop-ring { width: 36px; height: 36px; margin: -18px 0 0 -18px; border: 2px solid var(--bubbles-sky); animation: soap-ring 420ms var(--ease-out) both; }
-.soap-pop-drop { width: var(--size); height: var(--size); margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2); background: var(--bubbles-pink); animation: soap-drop 520ms var(--ease-out) both; }
-.soap-pop-drop:nth-child(4n+3) { background: var(--bubbles-sky); }
+.soap-pop-ring { width: 36px; height: 36px; margin: -18px 0 0 -18px; border: 1.5px solid var(--bubbles-lilac); animation: soap-ring 420ms var(--ease-out) both; }
+.soap-pop-drop { width: var(--size); height: var(--size); margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2); background: var(--bubbles-lilac); animation: soap-drop 520ms var(--ease-out) both; }
+.soap-pop-drop:nth-child(4n+3) { background: #F7C8D6; }
 .soap-pop-drop:nth-child(4n+4) { background: var(--bubbles-sun); }
-.soap-pop-drop:nth-child(4n+5) { background: var(--bubbles-mint); }
+.soap-pop-drop:nth-child(4n+5) { background: #BDEBDC; }
 @keyframes soap-drop { 0% { opacity: 0; transform: translate(0, 0) scale(.3); } 25% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); } }
 @keyframes soap-ring { 0% { opacity: .9; transform: scale(.55); } 100% { opacity: 0; transform: scale(1.7); } }
 
@@ -315,7 +362,7 @@ body:has(.bubbles-ask-fab) main { padding-bottom: 7rem; }
   html { scroll-behavior: auto; }
   .bubbles-float, .bubbles-breathe, .bubbles-blink, .bubbles-tilt, .bubbles-hop, .bubbles-drift, .bubbles-drift-slow,
   .bubbles-rise, .bubbles-pop-in, .bubbles-sheet-up, .bubbles-bar, .bubbles-stagger > *, .bubbles-thinking-dot,
-  .bubbles-skeleton, .bubbles-pulse-dot, .petal-decoration, .sparkle-dot { animation: none !important; }
+  .bubbles-skeleton, .bubbles-skeleton-card::before, .bubbles-skeleton-card::after, .bubbles-pulse-dot, .petal-decoration, .sparkle-dot { animation: none !important; }
   .bubbles-press, .bubbles-lift { transition: none; }
   .bubbles-press:hover:not(:disabled), .bubbles-lift:hover { transform: none; }
   [data-private] { transition: none; }
@@ -336,7 +383,7 @@ html[data-native] :is(a, button, nav, header, label, summary, [role="tab"]) { -w
 html[data-native] main { animation: page-fade-in 220ms var(--ease-standard) both; }
 /* Bottom tab bar (MobileNav in components/Navigation.tsx): a soft pressed state. The Talk button has its own (bubbles-press). */
 html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press) { transition: transform 160ms var(--ease-standard), background-color 160ms var(--ease-standard); }
-html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press):active { background-color: var(--tint-pink); transform: scale(0.92); }
+html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press):active { background-color: var(--tint-grape); transform: scale(0.92); }
 
 /* "Opening Bubbles" (app/NativeEntry.tsx): the splash's blush with the welcome sky glowing through. */
 html[data-native] .nw-opening {
@@ -378,3 +425,9 @@ html[data-native] .nw-actions .cw-fineprint { text-align: center; }
   html[data-native] main { animation: none; }
   html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press):active { transform: none; }
 }
+
+/* Pearl Lab headings: Fraunces reads best at 500. Unlayered on purpose, so it wins over the Nunito-era weight utilities
+   (font-bold, font-extrabold) that still sit on many headings. Text that should read as UI uses font-sans. */
+:where(h1, h2, h3, h4), .font-display { font-weight: 500; }
+:where(h1, h2, h3, h4).font-sans { font-weight: 600; }
+.text-label { font-weight: 600; letter-spacing: 0.06em; }
