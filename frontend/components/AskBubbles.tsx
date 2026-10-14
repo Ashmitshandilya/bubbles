@@ -119,7 +119,12 @@ export function AskBubbles() {
       else openPalette();
     }
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    // On phones the trigger is the header's search button (Navigation.tsx), which sends this event.
+    window.addEventListener("bubbles:ask", openPalette);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("bubbles:ask", openPalette);
+    };
   }, [session, isOpen, openPalette]);
 
   // Keep the highlighted row in view while arrowing through a long list.
@@ -191,7 +196,8 @@ export function AskBubbles() {
 
   return (
     <>
-      {/* The Today dashboard has its own inline Ask Bubbles box, so the floating button would only cover content there. */}
+      {/* Large screens only: on phones a floating button sat over content and next to the tab bar's Talk button, so the
+          header's search button opens the palette there instead. The Today dashboard has its own inline Ask box. */}
       {pathname !== "/dashboard" && (
         <button
           ref={triggerRef}
@@ -201,12 +207,12 @@ export function AskBubbles() {
           aria-haspopup="dialog"
           aria-keyshortcuts="Control+K Meta+K"
           aria-expanded={isOpen}
-          className="bubbles-ask-fab bubbles-press fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-sticky flex h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 text-white bubbles-glow bubbles-glow-grape lg:bottom-6 lg:right-6 lg:pr-5"
+          className="bubbles-ask-fab bubbles-press fixed bottom-6 right-6 z-sticky hidden h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 pr-5 text-white bubbles-glow bubbles-glow-grape lg:flex"
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
             <BubblesMascot size={40} />
           </span>
-          <span className="hidden text-body font-extrabold lg:inline">Ask Bubbles</span>
+          <span className="text-body font-extrabold">Ask Bubbles</span>
         </button>
       )}
 
@@ -337,7 +343,7 @@ export function AskBubbles() {
               </div>
             )}
 
-            <p className="m-0 text-[0.8125rem] font-bold text-ink-soft">Not a diagnosis · for emergencies call your local number</p>
+            <p className="m-0 text-chip font-bold text-ink-soft">Not a diagnosis · for emergencies call your local number</p>
           </div>
         )}
       </dialog>

@@ -39,18 +39,18 @@ export function Icon({ name, size = 20, className = "" }: { name: keyof typeof I
 /** Literal class names per signal colour (Tailwind needs them spelled out). */
 const TONE: Record<SignalSlug, { ink: string; border: string; dashed: string; bar: string; tint: string }> = {
   cycle: { ink: "text-bubbles-pink-deep", border: "border-line", dashed: "border-bubbles-pink", bar: "bg-bubbles-pink", tint: "bg-tint-pink" },
-  sleep: { ink: "text-bubbles-grape-deep", border: "border-[#E4DCFF]", dashed: "border-[#B9A8FF]", bar: "bg-bubbles-grape", tint: "bg-tint-grape" },
-  mood: { ink: "text-bubbles-sun-deep", border: "border-[#FCE8A9]", dashed: "border-bubbles-sun", bar: "bg-bubbles-sun", tint: "bg-tint-sun" },
-  activity: { ink: "text-bubbles-peach-deep", border: "border-[#FFD9C8]", dashed: "border-bubbles-peach", bar: "bg-bubbles-peach", tint: "bg-tint-peach" },
-  hydration: { ink: "text-bubbles-sky-deep", border: "border-[#D3ECFF]", dashed: "border-[#9FD3FF]", bar: "bg-bubbles-sky", tint: "bg-tint-sky" },
-  nutrition: { ink: "text-bubbles-mint-deep", border: "border-[#CFF1E4]", dashed: "border-bubbles-mint", bar: "bg-bubbles-mint", tint: "bg-tint-mint" },
+  sleep: { ink: "text-bubbles-grape-deep", border: "border-line-grape", dashed: "border-line-grape-strong", bar: "bg-bubbles-grape", tint: "bg-tint-grape" },
+  mood: { ink: "text-bubbles-sun-deep", border: "border-line-sun", dashed: "border-line-sun-strong", bar: "bg-bubbles-sun", tint: "bg-tint-sun" },
+  activity: { ink: "text-bubbles-peach-deep", border: "border-line-peach", dashed: "border-line-peach-strong", bar: "bg-bubbles-peach", tint: "bg-tint-peach" },
+  hydration: { ink: "text-bubbles-sky-deep", border: "border-line-sky", dashed: "border-line-sky-strong", bar: "bg-bubbles-sky", tint: "bg-tint-sky" },
+  nutrition: { ink: "text-bubbles-mint-deep", border: "border-line-mint", dashed: "border-line-mint-strong", bar: "bg-bubbles-mint", tint: "bg-tint-mint" },
 };
 
 const PILL: Record<PillKind, string> = {
   high: "bg-tint-mint text-bubbles-mint-deep",
   medium: "bg-tint-grape text-bubbles-grape-deep",
   low: "bg-tint-sun text-bubbles-sun-deep",
-  gap: "border-2 border-dashed border-[#9FD3FF] text-bubbles-sky-deep",
+  gap: "border-2 border-dashed border-line-sky-strong text-bubbles-sky-deep",
 };
 
 function Pill({ kind, children }: { kind: PillKind; children: ReactNode }) {
@@ -98,7 +98,7 @@ function Spark({ bars, slug }: { bars: number[]; slug: SignalSlug }) {
   const logged = points.filter((p) => p !== null).length;
   if (!logged) return null;
   return (
-    <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width={SPARK_W} height={SPARK_H} role="img" aria-label={`Last 7 days, logged on ${logged}`} className={`shrink-0 ${TONE[slug].ink}`}>
+    <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width={SPARK_W} height={SPARK_H} role="img" aria-label={`Last 7 days, logged on ${logged}`} className={`min-w-0 shrink ${TONE[slug].ink}`}>
       <path d={sparkPath(points)} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       {points.map((p, i) => p && <circle key={i} cx={p.x} cy={p.y} r="2.2" fill="currentColor" />)}
     </svg>
@@ -108,7 +108,7 @@ function Spark({ bars, slug }: { bars: number[]; slug: SignalSlug }) {
 const BTN = "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold no-underline";
 const BTN_GRAPE = `${BTN} bg-bubbles-grape text-white bubbles-glow bubbles-glow-grape`;
 const BTN_SKY = `${BTN} bg-bubbles-sky-deep text-white bubbles-glow bubbles-glow-sky disabled:opacity-60`;
-const BTN_QUIET = `${BTN} border-2 border-[#E4DCFF] bg-surface text-bubbles-grape-deep`;
+const BTN_QUIET = `${BTN} border-2 border-line-grape bg-surface text-bubbles-grape-deep`;
 
 export function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
   return <h2 id={id} className="m-0 font-display text-[1.375rem] font-semibold sm:text-2xl">{children}</h2>;
@@ -147,7 +147,7 @@ export function Greeting({ title, date, cycleDay, mood, showMascot }: { title: s
           </p>
         </div>
       </div>
-      <form onSubmit={ask} className="flex w-full min-w-0 items-center gap-2.5 rounded-full border-2 border-[#E4DCFF] bg-surface py-1.5 pl-[18px] pr-1.5 shadow-[0_8px_20px_rgba(106,69,245,0.08)] focus-within:border-bubbles-grape sm:w-auto sm:min-w-[300px] sm:flex-[0_1_420px]">
+      <form onSubmit={ask} className="flex w-full min-w-0 items-center gap-2.5 rounded-full border-2 border-line-grape bg-surface py-1.5 pl-[18px] pr-1.5 shadow-[0_8px_20px_rgba(106,69,245,0.08)] focus-within:border-bubbles-grape sm:w-auto sm:min-w-[300px] sm:flex-[0_1_420px]">
         <label htmlFor="today-ask" className="sr-only">Ask Bubbles</label>
         <input
           id="today-ask"
@@ -156,7 +156,7 @@ export function Greeting({ title, date, cycleDay, mood, showMascot }: { title: s
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Ask Bubbles anything about your health…"
           maxLength={500}
-          className="min-w-0 flex-1 border-0 bg-transparent text-base text-ink outline-none focus-visible:outline-none"
+          className="min-h-[44px] min-w-0 flex-1 border-0 bg-transparent text-base text-ink outline-none focus-visible:outline-none"
         />
         <button type="submit" aria-label="Send to Bubbles" disabled={!question.trim()} className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-bubbles-grape text-white disabled:opacity-50">
           <Icon name="arrow" size={20} />
@@ -183,7 +183,7 @@ export function TodayBrief({ state, items, showMascot, onRetry, onAddWater, wate
     <section aria-labelledby="today-matters" aria-busy={state === "loading"} className="flex flex-col gap-4">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="today-matters" className="m-0 font-display text-[1.375rem] font-semibold sm:text-2xl">Your next step</h2>
-        <span className="text-[0.8125rem] font-bold text-ink-soft">Based on your own logs from the last 4 weeks</span>
+        <span className="text-chip font-bold text-ink-soft">Based on your own logs from the last 4 weeks</span>
       </div>
 
       {state === "loading" && (
@@ -382,7 +382,7 @@ export function tileFromCycle(c: CycleInfo): Tile {
 
 export function SignalTiles({ tiles }: { tiles: Tile[] }) {
   return (
-    <section aria-labelledby="today-signals" className="flex min-w-0 flex-[2_1_520px] flex-col gap-3.5">
+    <section aria-labelledby="today-signals" className="flex min-w-0 flex-col gap-3.5">
       <SectionHeading id="today-signals">What changed this week</SectionHeading>
       <ul className="bubbles-stagger m-0 grid list-none grid-cols-1 gap-3 p-0 min-[460px]:grid-cols-2 sm:gap-3.5 xl:grid-cols-3">
         {tiles.map((tile) => <li key={tile.slug} className="min-w-0"><SignalTile tile={tile} /></li>)}
@@ -403,7 +403,7 @@ function SignalTile({ tile }: { tile: Tile }) {
       <Link href={meta.href} className={`${base} ${tone.border}`}>
         {label}
         <span className="font-display text-lg font-semibold text-ink-soft">Couldn&apos;t load</span>
-        <span className={`text-[0.8125rem] font-extrabold ${tone.ink}`}>Open tracker</span>
+        <span className={`text-chip font-extrabold ${tone.ink}`}>Open tracker</span>
       </Link>
     );
   }
@@ -415,15 +415,15 @@ function SignalTile({ tile }: { tile: Tile }) {
       {empty ? (
         <>
           <span className="font-display text-lg font-semibold leading-tight text-ink-soft sm:text-[1.375rem]">{tile.logged ? "Nothing this week" : "Nothing logged yet"}</span>
-          <span className={`text-[0.8125rem] font-extrabold ${tone.ink}`}>{tile.detail}</span>
+          <span className={`text-chip font-extrabold ${tone.ink}`}>{tile.detail}</span>
         </>
       ) : (
         <>
           <span data-private className="flex items-center justify-between gap-3">
-            <span className="font-display text-[1.625rem] font-semibold leading-tight sm:text-[1.875rem]">{tile.value}</span>
+            <span className="whitespace-nowrap font-display text-[1.625rem] font-semibold leading-tight sm:text-[1.875rem]">{tile.value}</span>
             {tile.bars && <Spark bars={tile.bars} slug={tile.slug} />}
           </span>
-          <span data-private className="mt-auto flex items-center gap-2.5 text-[0.8125rem] font-semibold text-ink-soft">
+          <span data-private className="mt-auto flex items-center gap-2.5 text-chip font-semibold text-ink-soft">
             {tile.trend && <TrendGlyph trend={tile.trend} slug={tile.slug} />}
             {tile.detail}
           </span>
@@ -436,7 +436,8 @@ function SignalTile({ tile }: { tile: Tile }) {
 // ── Patterns + coming up ───────────────────────────────────────────────────
 
 const CARD = "flex flex-col gap-2 rounded-[24px] border-2 border-line bg-surface p-[18px]";
-const TEXT_LINK = "inline-flex min-h-[44px] items-center self-start text-sm font-extrabold text-bubbles-pink-ink";
+// DESIGN.md text button: Baingani Deep with a tint wash on hover; -mx-3 keeps the words aligned with the card text.
+const TEXT_LINK = "-mx-3 inline-flex min-h-[44px] items-center self-start rounded-full px-3 text-body-sm font-extrabold text-bubbles-grape-deep no-underline transition-colors hover:bg-tint-grape";
 
 export function Patterns({ state, items, note, onRetry }: { state: "loading" | "error" | "ready"; items: PatternItem[]; note?: string; onRetry: () => void }) {
   return (
@@ -467,7 +468,7 @@ export function Patterns({ state, items, note, onRetry }: { state: "loading" | "
           ))}
         </ul>
       )}
-      {note && <p className="m-0 text-[0.8125rem] font-semibold text-ink-soft">{note}</p>}
+      {note && <p className="m-0 text-chip font-semibold text-ink-soft">{note}</p>}
     </div>
   );
 }
@@ -509,14 +510,14 @@ export function ComingUp({ cycle, visits, loading, failed }: { cycle: CycleInfo 
           <Link href="/visits" className={TEXT_LINK}>Add a doctor visit</Link>
         </>
       )}
-      {failed && rows.length > 0 && <p className="m-0 text-[0.8125rem] font-semibold text-ink-soft">Some dates couldn&apos;t load right now.</p>}
+      {failed && rows.length > 0 && <p className="m-0 text-chip font-semibold text-ink-soft">Some dates couldn&apos;t load right now.</p>}
     </section>
   );
 }
 
 export function BodyMapCard() {
   return (
-    <section aria-labelledby="today-body-map" className="flex flex-col gap-3 rounded-[24px] border-2 border-[#E4DCFF] bg-tint-grape p-5">
+    <section aria-labelledby="today-body-map" className="flex flex-col gap-3 rounded-[24px] border-2 border-line-grape bg-tint-grape p-5">
       <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-bubbles-grape-deep"><Icon name="body" size={24} /></span>
       <h2 id="today-body-map" className="m-0 font-display text-xl font-semibold">Your body map</h2>
       <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">See which body systems Bubbles has evidence for, and where it still needs data. It organises evidence; it doesn&apos;t measure organ health.</p>

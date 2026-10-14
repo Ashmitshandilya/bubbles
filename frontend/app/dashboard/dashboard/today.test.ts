@@ -1,6 +1,6 @@
 // Run: npx vitest run app/dashboard/dashboard/today.test.ts
 import { describe, expect, it } from "vitest";
-import { buildTodayItems, daysAgo, summarizeCycle, summarizeSignal, upcomingVisits } from "./today";
+import { buildTodayItems, daysAgo, livingSignalLine, plainMetric, summarizeCycle, summarizeSignal, upcomingVisits } from "./today";
 import type { TrackerEntry } from "./types";
 
 const now = new Date(2026, 9, 6, 9, 0); // 6 Oct 2026, local time
@@ -23,10 +23,10 @@ describe("today derivations", () => {
     const usual = [8, 9, 10, 11, 12, 13].map((ago) => sleep(ago, 7.5));
     const short = [0, 1, 2].map((ago) => sleep(ago, 5.5));
     const s = summarizeSignal("sleep", [...short, ...usual], now);
-    expect(s.value).toBe("5.5 h");
+    expect(s.value).toBe("5.5\u00A0h");
     expect(s.change?.direction).toBe("down");
     expect(s.change?.confidence).toBe("low");
-    expect(s.detail).toBe("Below your usual 7.5 h");
+    expect(s.detail).toBe("Below your usual 7.5\u00A0h");
 
     const thin = summarizeSignal("sleep", [...short, sleep(9, 7.5)], now);
     expect(thin.change).toBeUndefined();
@@ -61,5 +61,20 @@ describe("today derivations", () => {
   it("lists upcoming visits soonest first", () => {
     const visits = upcomingVisits([{ id: "a", date: day(-10) }, { id: "b", date: day(5) }, { id: "c", date: day(-1) }], now);
     expect(visits.map((v) => v.id)).toEqual(["c", "a"]);
+  });
+});
+
+describe("living map wording", () => {
+  it("reads metric ids with underscores or spaces", () => {
+    expect(plainMetric("sleep_hours")).toBe("sleep");
+    expect(plainMetric("Water ml")).toBe("water intake");
+    expect(plainMetric("resting heart rate bpm")).toBe("resting heart rate");
+  });
+
+  it("says a baseline change in plain words and never claims a cause", () => {
+    expect(livingSignalLine({ kind: "baseline_change", direction: "down", evidence: "observed personal-baseline deviation" })).toBe("Lower than your usual lately.");
+    expect(livingSignalLine({ kind: "baseline_change", direction: "up", evidence: "" })).toBe("Higher than your usual lately.");
+    expect(livingSignalLine({ kind: "repeated_cooccurrence", direction: "context", evidence: "" })).toMatch(/not proof/);
+    expect(livingSignalLine({ kind: "something_new", evidence: "As sent" })).toBe("As sent");
   });
 });

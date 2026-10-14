@@ -222,7 +222,7 @@ function TodayPanel({ o }: { o: HydrationOverview }) {
       )}
 
       <details className="rounded-2xl bg-blush px-4 py-3 text-body-sm text-muted">
-        <summary className="cursor-pointer font-extrabold text-ink">How is this target worked out?</summary>
+        <summary className="-my-[11px] cursor-pointer py-[11px] font-extrabold text-ink">How is this target worked out?</summary>
         <p className="m-0 mt-2">{goal.message}</p>
         <ul className="m-0 mt-2 list-disc pl-5">
           {goal.base_ml !== null && <li>Everyday base: {formatMl(goal.base_ml)}{goal.basis === "personal" ? " (from your weight)" : " (a general starting point)"}</li>}

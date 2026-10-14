@@ -92,7 +92,7 @@ function Settings() {
   const partnerValue = partner.status === "ready" ? partnerSummary(partner.data) : null;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="max-w-3xl space-y-8">
       <header className="bubbles-rise">
         <h1 className="text-h1 text-ink">Settings</h1>
         <nav aria-label="Jump to a section" className="mt-3">
@@ -214,7 +214,7 @@ function Settings() {
                   </p>
                   {health && health.denied_tables.length > 0 && (
                     <details>
-                      <summary className="cursor-pointer font-extrabold text-ink">
+                      <summary className="-my-[11px] cursor-pointer py-[11px] font-extrabold text-ink">
                         {health.denied_tables.length} {health.denied_tables.length === 1 ? "table needs" : "tables need"} access
                       </summary>
                       <p className="m-0 mt-1 break-words">{health.denied_tables.join(", ")}</p>

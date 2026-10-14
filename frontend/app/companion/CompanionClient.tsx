@@ -525,7 +525,7 @@ export function CompanionClient() {
               <div className="min-w-0">
                 <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">Bubbles</h1>
                 <p
-                  className={`m-0 truncate text-[0.8125rem] font-extrabold ${
+                  className={`m-0 truncate text-chip font-extrabold ${
                     memoryLine.startsWith("Memory on") ? "text-bubbles-mint-deep" : "text-ink-soft"
                   }`}
                 >
@@ -533,7 +533,7 @@ export function CompanionClient() {
                 </p>
               </div>
             </div>
-            <p className="m-0 rounded-2xl border-2 border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:rounded-full sm:text-[0.8125rem]">
+            <p className="m-0 rounded-2xl border-2 border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:rounded-full sm:text-chip">
               Not a diagnosis · for emergencies call your local number
             </p>
           </header>
@@ -592,7 +592,7 @@ export function CompanionClient() {
                         <span className="sr-only">You: </span>
                         {m.content}
                       </p>
-                      {failed?.messageId === m.id && <span className="text-[0.8125rem] font-bold text-bubbles-urgent">Bubbles didn&apos;t reply to this yet</span>}
+                      {failed?.messageId === m.id && <span className="text-chip font-bold text-bubbles-urgent">Bubbles didn&apos;t reply to this yet</span>}
                     </li>
                   ) : (
                     <BubblesReply
@@ -650,7 +650,7 @@ export function CompanionClient() {
                   <label htmlFor="bubbles-message" className="text-body-sm font-extrabold text-ink">
                     Message Bubbles
                   </label>
-                  <span id="bubbles-message-hint" className={`text-[0.8125rem] font-semibold ${nearLimit ? "text-bubbles-urgent" : "text-ink-soft"}`}>
+                  <span id="bubbles-message-hint" className={`text-chip font-semibold ${nearLimit ? "text-bubbles-urgent" : "text-ink-soft"}`}>
                     {nearLimit ? (
                       `${input.length.toLocaleString()} / ${MAX_MESSAGE.toLocaleString()} characters`
                     ) : (

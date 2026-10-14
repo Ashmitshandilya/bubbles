@@ -183,7 +183,7 @@ function Report({ r }: { r: ReportResponse }) {
       )}
 
       <footer className="mt-6 border-t-2 border-line pt-3">
-        <ul className="m-0 list-none space-y-1 p-0 text-[0.8125rem] text-muted">
+        <ul className="m-0 list-none space-y-1 p-0 text-chip text-muted">
           {r.disclaimers.map((d) => <li key={d}>{d}</li>)}
           <li>Predictions are estimates from self-reported logs. They are not birth control and they do not replace medical advice.</li>
         </ul>

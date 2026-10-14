@@ -152,7 +152,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
                 </li>
               ))}
             </ol>
-            <a href="#insights" className="text-body-sm font-extrabold text-bubbles-grape-deep underline">
+            <a href="#insights" className="inline-flex min-h-[44px] items-center self-start text-body-sm font-extrabold text-bubbles-grape-deep underline">
               How you tend to feel in this phase
             </a>
           </div>
