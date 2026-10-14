@@ -80,8 +80,8 @@ export const SECTIONS: readonly Section[] = [
   { id: "today", label: "Today", icon: "dashboard", href: "/dashboard", match: ["/dashboard"] },
   { id: "talk", label: "Talk", icon: "companion", href: "/companion", match: ["/companion"] },
   {
-    id: "patterns", label: "Patterns", icon: "insights", href: "/insights", match: ["/insights", "/health"],
-    tabs: [{ label: "Patterns", href: "/insights" }, { label: "My health", href: "/health" }],
+    id: "patterns", label: "Patterns", icon: "insights", href: "/insights", match: ["/insights", "/health", "/body"],
+    tabs: [{ label: "Patterns", href: "/insights" }, { label: "My health", href: "/health" }, { label: "Body map", href: "/body" }],
   },
   {
     id: "track", label: "Track", icon: "activity", href: "/sleep",
