@@ -401,7 +401,7 @@ def test_urgent_text_in_journal_returns_the_safety_response_and_stores_nothing(e
 def test_crisis_message_gives_crisis_resources(env):
     client, _db = env
     msg = client.post("/wellness/mind/journal", json={"text": URGENT}, headers=H1).json()["message"]
-    assert "988" in msg or "emergency number" in msg
+    assert "112" in msg and "14416" in msg and "988" not in msg
 
 
 def test_journal_roundtrip_local_only_flag_and_idor(env):

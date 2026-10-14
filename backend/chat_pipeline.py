@@ -34,7 +34,7 @@ from event_filters import DEAD_STATUSES, clean_data
 from health_event_pipeline import prepare_db_row
 from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state, split_sentences
 from safety_engine import (
-    POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
+    CRISIS_LINES, POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
 )
 
 HISTORY_TURNS = 10
@@ -339,8 +339,7 @@ def safety_followup_reply(reply: dict[str, Any] | None, *, name: str | None) -> 
     comma = f", {name}" if name else ""
     if any(c in CRISIS for c in safety.get("concepts") or []):
         return (f"I'm still here{comma}. If you might act on these thoughts or you are in immediate danger, please call your local emergency "
-                "number now. In the US you can call or text 988; elsewhere, findahelpline.com lists free local lines. "
-                "Would you tell me how you're feeling right now?")
+                f"number now. {CRISIS_LINES} Would you tell me how you're feeling right now?")
     if meta.get("kind") == "emergency" or safety.get("state") == "EMERGENCY":
         return (f"I'm still here{comma}. If what you told me is still happening, or it feels severe, please contact your local emergency "
                 "service now, and ask someone nearby to stay with you. How are you feeling right now?")

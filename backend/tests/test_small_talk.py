@@ -73,7 +73,7 @@ def test_small_talk_after_a_crisis_reply_restates_the_help_not_a_goodbye():
         turn = cp.analyze_turn(text, _history(CRISIS_REPLY))
         assert turn.route == "safety_followup", text
         reply = cp.deterministic_reply(turn, name="Sudiksha", saved_events=0)
-        assert "emergency" in reply and "988" in reply and "Sleep well" not in reply and "Take care" not in reply, text
+        assert "emergency" in reply and "14416" in reply and "988" not in reply and "Sleep well" not in reply and "Take care" not in reply, text
 
 
 def test_small_talk_after_an_emergency_or_clarification_or_urgent_reply():
