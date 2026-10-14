@@ -45,7 +45,7 @@ export function FlagList({ flags, hideIds = [] }: { flags: Flag[]; hideIds?: str
             role={flag.severity === "urgent" ? "alert" : undefined}
             className={`rounded-3xl border-2 p-4 ${s.box} ${flag.severity === "urgent" ? "" : "border-current"}`}
           >
-            <p className="m-0 text-[0.8125rem] font-extrabold uppercase tracking-wide">{s.label}</p>
+            <p className="m-0 text-chip font-extrabold uppercase tracking-wide">{s.label}</p>
             <p className={`m-0 mt-1 font-display text-h4 ${flag.severity === "urgent" ? "text-bubbles-urgent" : ""}`}>{flag.title}</p>
             <p className={`m-0 mt-1 text-body ${flag.severity === "urgent" ? "font-extrabold" : "font-semibold"}`}>{flag.message}</p>
             {flag.detail && <p className="m-0 mt-1 text-body-sm font-semibold">{flag.detail}</p>}

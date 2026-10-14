@@ -478,7 +478,7 @@ function DoctorPrep() {
                 return (
                   <li key={event.id ?? i} className={`relative pb-4 ${i >= 10 && !showAll ? "hidden print:block" : ""}`}>
                     <span className={`absolute -left-[27px] top-1.5 h-3 w-3 rounded-full ring-4 ring-white ${tone.dot}`} aria-hidden="true" />
-                    <p className="text-[0.8125rem] font-bold text-muted">{whenText(event.date)}</p>
+                    <p className="text-chip font-bold text-muted">{whenText(event.date)}</p>
                     <p className="font-extrabold text-ink">{humanize(event.event_type ?? "Entry")}</p>
                     {detail && <p className="break-words text-body-sm text-muted">{detail}</p>}
                   </li>
@@ -562,10 +562,10 @@ function RecordCard({
                 {row.range && row.range.status !== "none" && (
                   <p className="mt-1 flex flex-wrap items-center gap-2">
                     <span className={`${PILL} ${RANGE_BADGE[row.range.status].style}`}>{RANGE_BADGE[row.range.status].text}</span>
-                    <span className="text-[0.8125rem] text-muted">Range entered: {row.range.range}</span>
+                    <span className="text-chip text-muted">Range entered: {row.range.range}</span>
                   </p>
                 )}
-                {row.range && row.range.status === "none" && <p className="mt-1 text-[0.8125rem] text-muted">No range entered, so nothing to compare.</p>}
+                {row.range && row.range.status === "none" && <p className="mt-1 text-chip text-muted">No range entered, so nothing to compare.</p>}
               </li>
             ))}
           </ul>

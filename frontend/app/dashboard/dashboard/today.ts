@@ -50,8 +50,17 @@ const METRIC_PLAIN: Record<string, string> = {
   resting_hr: "resting heart rate", activity_minutes: "activity", calories: "food intake", calories_kcal: "food intake",
 };
 export function plainMetric(metric: string): string {
-  const key = metric.trim().toLowerCase();
+  const key = metric.trim().toLowerCase().replace(/\s+/g, "_"); // the living map sends "sleep hours"
   return METRIC_PLAIN[key] ?? (key.replace(/_(ml|hours?|minutes?|mins?|kg|lbs?|bpm|score|count|level)$/, "").replaceAll("_", " ") || "this");
+}
+
+/** One plain sentence for a living-map signal, instead of the backend's "observed personal-baseline deviation". */
+export function livingSignalLine(signal: { kind: string; direction?: string | null; evidence: string }): string {
+  if (signal.kind === "baseline_change") {
+    return signal.direction === "up" ? "Higher than your usual lately." : signal.direction === "down" ? "Lower than your usual lately." : "Close to your usual.";
+  }
+  if (signal.kind === "repeated_cooccurrence") return "These came up together more than once. That is not proof one causes the other.";
+  return signal.evidence;
 }
 
 export function greeting(now: Date): string {
@@ -67,11 +76,12 @@ export function readTracker(raw: unknown): TrackerResponse {
 
 // ── Signals ────────────────────────────────────────────────────────────────
 
+// Non-breaking spaces keep a number with its unit ("6.8 h" never wraps as "6.8" / "h" in a narrow tile).
 const METRICS: Record<DailySlug, { pick: (e: TrackerEntry) => number | undefined; perDay: "sum" | "avg"; week: "avg" | "total"; format: (n: number) => string }> = {
-  sleep: { pick: (e) => e.duration, perDay: "sum", week: "avg", format: (n) => `${round1(n)} h` },
-  mood: { pick: (e) => e.mood, perDay: "avg", week: "avg", format: (n) => `${round1(n)} / 10` },
-  hydration: { pick: (e) => e.volume, perDay: "sum", week: "avg", format: (n) => (n >= 1000 ? `${round1(n / 1000)} L` : `${Math.round(n)} ml`) },
-  activity: { pick: (e) => e.duration, perDay: "sum", week: "total", format: (n) => `${Math.round(n)} min` },
+  sleep: { pick: (e) => e.duration, perDay: "sum", week: "avg", format: (n) => `${round1(n)}\u00A0h` },
+  mood: { pick: (e) => e.mood, perDay: "avg", week: "avg", format: (n) => `${round1(n)}\u00A0/\u00A010` },
+  hydration: { pick: (e) => e.volume, perDay: "sum", week: "avg", format: (n) => (n >= 1000 ? `${round1(n / 1000)}\u00A0L` : `${Math.round(n)}\u00A0ml`) },
+  activity: { pick: (e) => e.duration, perDay: "sum", week: "total", format: (n) => `${Math.round(n)}\u00A0min` },
   nutrition: { pick: () => 1, perDay: "sum", week: "total", format: (n) => plural(n, "meal") },
 };
 

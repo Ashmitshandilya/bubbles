@@ -111,7 +111,7 @@ export default function Anatomy3D({
           );
         })}
       </Canvas>
-      <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-[0.8125rem] font-bold text-muted">
+      <p className="pointer-events-none absolute bottom-3 left-0 right-0 text-center text-chip font-bold text-muted">
         Drag to turn · tap a dot to select
       </p>
     </div>

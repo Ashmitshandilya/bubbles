@@ -72,7 +72,7 @@ export function DueList({ today, glp1, onChanged, onAdd }: { today: MedsToday; g
       ))}
 
       <details className="rounded-2xl bg-blush px-4 py-3 text-body-sm text-muted">
-        <summary className="cursor-pointer font-extrabold text-ink">What if I miss a dose?</summary>
+        <summary className="-my-[11px] cursor-pointer py-[11px] font-extrabold text-ink">What if I miss a dose?</summary>
         <p className="m-0 mt-2">{today.missed_dose_help}</p>
       </details>
       <LiveRegion message={said} />

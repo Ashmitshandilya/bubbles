@@ -140,7 +140,7 @@ export const BTN_PRIMARY =
   "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white bubbles-glow disabled:opacity-60";
 export const BTN_SECONDARY =
   "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold text-ink disabled:opacity-60";
-export const PILL = "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.8125rem] font-extrabold";
+export const PILL = "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-chip font-extrabold";
 
 export function SignOutButton() {
   const { signOut } = useAuth();

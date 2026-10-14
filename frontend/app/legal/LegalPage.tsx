@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 /** Plain, readable shell for the legal pages. Public (no sign-in), one column, comfortable line length. */
 export function LegalPage({ title, updated, children }: { title: string; updated: string; children: ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-12 sm:py-20">
+    <main className="mx-auto w-full max-w-[34rem] px-5 py-12 sm:py-20">
       <Link href="/" className="inline-flex min-h-[44px] items-center text-body-sm font-extrabold text-bubbles-pink-ink no-underline hover:underline">
         Back to Bubbles
       </Link>

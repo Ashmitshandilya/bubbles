@@ -203,7 +203,7 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
               </>
             );
             const chip =
-              "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-left text-[0.8125rem] font-extrabold leading-snug text-bubbles-grape-deep no-underline";
+              "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-left text-chip font-extrabold leading-snug text-bubbles-grape-deep no-underline";
             return ev.sourceUrl ? (
               <a key={ev.chunkId ?? `${ev.title}-${idx}`} href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" className={`${chip} hover:bg-bubbles-grape/15`}>
                 {label}
@@ -218,7 +218,7 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
         </div>
       )}
       {confidence && (
-        <span className="inline-flex min-h-[32px] items-center rounded-full bg-tint-mint px-3 py-1.5 text-[0.8125rem] font-extrabold text-bubbles-mint-deep">
+        <span className="inline-flex min-h-[32px] items-center rounded-full bg-tint-mint px-3 py-1.5 text-chip font-extrabold text-bubbles-mint-deep">
           Confidence {confidence}
         </span>
       )}
@@ -316,9 +316,9 @@ function EventCard({
                     <span className={`text-ink-soft ${struck}`}> · {event.description}</span>
                   </>
                 )}
-                {day && !denied && <span className={`block text-[0.8125rem] text-ink-soft ${struck}`}>For {day}</span>}
-                {conf && !denied && <span className="block text-[0.8125rem] text-ink-soft">Bubbles&apos; confidence: {conf}</span>}
-                {note && <span className="block text-[0.8125rem] text-ink-soft">{note}</span>}
+                {day && !denied && <span className={`block text-chip text-ink-soft ${struck}`}>For {day}</span>}
+                {conf && !denied && <span className="block text-chip text-ink-soft">Bubbles&apos; confidence: {conf}</span>}
+                {note && <span className="block text-chip text-ink-soft">{note}</span>}
               </div>
               {state === "saved" && (
                 <span className="inline-flex items-center gap-1 text-body-sm font-extrabold text-bubbles-mint-deep">
@@ -653,7 +653,7 @@ export function ConversationList({
                   }`}
                 >
                   <strong className="block w-full truncate text-body-sm font-extrabold text-ink">{c.title}</strong>
-                  <span className="text-[0.8125rem] text-ink-soft">{c.when}</span>
+                  <span className="text-chip text-ink-soft">{c.when}</span>
                 </button>
               </li>
             );

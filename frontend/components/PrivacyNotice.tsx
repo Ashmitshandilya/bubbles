@@ -35,7 +35,7 @@ export function PrivacyNotice() {
         >
           Got it
         </button>
-        <Link href="/privacy" className="text-body-sm font-extrabold text-bubbles-pink-ink underline">
+        <Link href="/privacy" className="inline-flex min-h-[44px] items-center text-body-sm font-extrabold text-bubbles-pink-ink underline">
           Read the privacy policy
         </Link>
       </div>

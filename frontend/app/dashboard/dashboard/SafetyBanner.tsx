@@ -17,7 +17,7 @@ export function SafetyBanner({ level, reasons }: { level: SafetyLevel; reasons: 
   }
 
   return (
-    <div role="status" className="rounded-[18px] border-2 border-[#FCE8A9] bg-tint-sun px-5 py-4 text-[#5C3E00]">
+    <div role="status" className="rounded-[18px] border-2 border-line-sun bg-tint-sun px-5 py-4 text-bubbles-sun-deep">
       <p className="m-0 text-[0.9375rem] font-extrabold">This may deserve timely medical attention.</p>
       <p className="m-0 mt-1 text-[0.9375rem]">Consider contacting a clinician soon, and get urgent care if it gets worse.{noticed}</p>
     </div>

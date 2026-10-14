@@ -124,7 +124,7 @@ function YearPane({ year, weekStart, onOpenMonth }: { year: number; weekStart: 0
 
 function Legend() {
   return (
-    <ul className="m-0 mt-4 flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-[0.8125rem] font-bold text-ink-soft" aria-label="Legend">
+    <ul className="m-0 mt-4 flex list-none flex-wrap gap-x-4 gap-y-2 p-0 text-chip font-bold text-ink-soft" aria-label="Legend">
       {MARKER_LEGEND.map((l) => (
         <li key={l.kind} className="flex items-center gap-1.5"><Marker kind={l.kind} size={14} />{l.label}</li>
       ))}
