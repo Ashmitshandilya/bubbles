@@ -5,6 +5,9 @@ from supabase_client import supabase
 from event_filters import clean_data, counts_as_observation, pertinent_negatives
 
 
+EVENT_COLUMNS = "id, event_type, extracted_data, confidence, created_at, extraction_status, user_confirmed"
+
+
 def _text(value: Any) -> str:
     if value is None:
         return ""
@@ -48,6 +51,7 @@ def get_relevant_memories(
     query: str,
     limit_l1: int = 12,
     limit_l2_l3: int = 12,
+    event_rows: list[dict] | None = None,
 ) -> dict[str, list[dict]]:
     """
     Retrieve relevant personal health context.
@@ -66,20 +70,18 @@ def get_relevant_memories(
     # --------------------------------------------------
 
     try:
-        result = (
-            supabase
-            .table("extracted_health_events")
-            .select(
-                "id, event_type, extracted_data, "
-                "confidence, created_at, extraction_status, user_confirmed"
-            )
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .limit(100)
-            .execute()
-        )
+        if event_rows is None:   # build_user_context passes the rows it already read (same columns, newest 100)
+            event_rows = (
+                supabase
+                .table("extracted_health_events")
+                .select(EVENT_COLUMNS)
+                .eq("user_id", user_id)
+                .order("created_at", desc=True)
+                .limit(100)
+                .execute()
+            ).data or []
 
-        for event in result.data or []:
+        for event in event_rows:
             # live positives, plus screen rows that carry explicit denials; rejected rows never reach the prompt
             if not (counts_as_observation(event) or pertinent_negatives(event)):
                 continue

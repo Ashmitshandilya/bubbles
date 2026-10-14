@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 import admin_settings
-from ai_provider import ProviderError, ProviderResult, call_fallback, call_timeout, reply_budget
+from ai_provider import ProviderError, ProviderResult, _extract_json, call_fallback, call_timeout, provider_pool, reply_budget
 
 
 # ============================================================
@@ -48,9 +48,9 @@ class BubblesAIResponse(BaseModel):
 # ============================================================
 
 SYSTEM_INSTRUCTION = """
-You are Bubbles, a personal health companion.
+You are Bubbles, a personal health companion: the friend who happens to know health really well.
 
-You are friendly, calm, evidence-aware and non-judgmental.
+You are warm, quick, curious, evidence-aware and non-judgmental. You keep it short.
 
 You are NOT a doctor and must not pretend to diagnose.
 
@@ -124,11 +124,7 @@ Rules:
 - health_events must be [] when no useful health event exists.
 - confidence must be between 0 and 1.
 - Do not invent missing values.
-- Keep response concise but useful.
-- Avoid wall-of-text paragraphs.
-- Prefer a brief opening followed by clear sections and bullets.
-- For health guidance, use: **What I’m noticing**, **What you can do now**, **When to get help**, and **A question for you** only when relevant.
-- Be warm, feminine, sober, subtle and professional; use very few emojis.
+- "response" is the chat message the person reads: follow BUBBLES VOICE (short, warm, like a friend; no headings; never name sources).
 """
 
 
@@ -142,18 +138,19 @@ GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview"
 def _call_gemini(
     message: str,
     system_instruction: str,
+    position: int = 1,
 ) -> BubblesAIResponse:
-    """One Gemini attempt (position 1). A failure of any kind is recorded as an attempt with a category, then re-raised."""
+    """One Gemini attempt. A failure of any kind is recorded as an attempt with a category, then re-raised."""
     import time
     started = time.perf_counter()
     try:
-        return _call_gemini_inner(message, system_instruction)
+        return _call_gemini_inner(message, system_instruction, position)
     except Exception as error:
         try:
             from ai_telemetry import classify_error, outcome_for, record
             category = classify_error(error)
             record(provider="Gemini", model=os.getenv("GEMINI_MODEL", GEMINI_DEFAULT_MODEL), latency_ms=(time.perf_counter() - started) * 1000,
-                   outcome=outcome_for(category), error_class=type(error).__name__, position=1, error_category=category)
+                   outcome=outcome_for(category), error_class=type(error).__name__, position=position, error_category=category)
         except Exception:
             pass
         raise
@@ -162,6 +159,7 @@ def _call_gemini(
 def _call_gemini_inner(
     message: str,
     system_instruction: str,
+    position: int = 1,
 ) -> BubblesAIResponse:
 
     api_key = os.getenv("GEMINI_API_KEY")
@@ -197,7 +195,7 @@ def _call_gemini_inner(
         contents=message,
         config=types.GenerateContentConfig(
             system_instruction=system_instruction,
-            temperature=0.2,
+            temperature=0.4,
             response_mime_type="application/json",
             response_schema=response_schema,
         ),
@@ -222,7 +220,7 @@ def _call_gemini_inner(
         try:
             from ai_telemetry import record
             record(provider="Gemini", model=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview"), latency_ms=(time.perf_counter()-started)*1000, outcome="success", usage=usage,
-                   position=1)
+                   position=position)
         except Exception:
             pass
         return parsed
@@ -241,6 +239,7 @@ def _call_fallback(
     message: str,
     system_instruction: str,
     first_position: int = 2,
+    only: str | None = None,
 ) -> tuple[BubblesAIResponse, ProviderResult]:
 
     result = call_fallback(
@@ -249,12 +248,12 @@ def _call_fallback(
         health_data=True,
         first_position=first_position,
         defer_success=True,
+        only=only,
+        json_mode=True,
     )
 
     try:
-        parsed = BubblesAIResponse.model_validate(
-            __import__("json").loads(result.content)
-        )
+        parsed = BubblesAIResponse.model_validate(_extract_json(result.content))
         outcome, category = "success", None
     except Exception as error:
         parsed, outcome, category = None, "invalid_json", "invalid_json"
@@ -276,6 +275,14 @@ def _call_fallback(
 # ============================================================
 # MAIN BUBBLES AI
 # ============================================================
+
+def chat_provider_order() -> list[str]:
+    """CHAT_PROVIDER_ORDER (comma separated, default Groq,Gemini,NVIDIA,Mistral), then any other pooled provider."""
+    order = [p.strip() for p in os.getenv("CHAT_PROVIDER_ORDER", "Groq,Gemini,NVIDIA,Mistral").split(",") if p.strip()]
+    if "Gemini" not in order:
+        order.append("Gemini")
+    return order + [name for name, _ in provider_pool(health_data=True) if name not in order]
+
 
 DEGRADED_RESPONSE_TEXT = (
     "I'm having trouble reaching my AI services "
@@ -337,71 +344,41 @@ def _ask_bubbles(
         )
 
     # --------------------------------------------------------
-    # 1. Gemini
+    # Providers in CHAT_PROVIDER_ORDER, then anything else in the pool. Groq leads: in Oct 2026 it answered in ~0.4 s
+    # against Gemini's ~3 s. An unusable answer moves on to the next provider instead of ending the reply.
     # --------------------------------------------------------
 
     import time
     started = time.perf_counter()
-    gemini_tried = False
+    from logging_util import logger
 
-    if not admin_settings.is_paused("Gemini"):   # an administrator can pause a provider; nothing else about the chain changes
-        gemini_tried = True
+    position = 0
+    for name in chat_provider_order():
+        if name == "Gemini":
+            if admin_settings.is_paused("Gemini"):   # an administrator can pause a provider; nothing else about the chain changes
+                continue
+            position += 1
+            try:
+                result = _call_gemini(message=message, system_instruction=full_system_instruction, position=position)
+                _record_reply("answered", started, provider="Gemini", model=os.getenv("GEMINI_MODEL", GEMINI_DEFAULT_MODEL), attempts=position)
+                return result
+            except Exception as error:
+                logger.error(component="AI_PROVIDER", operation="gemini_call", error=error, context={"fallback_action": "next_provider"})
+            continue
+        if not any(pooled == name for pooled, _ in provider_pool(health_data=True)):
+            continue                               # paused, or not allowed for health data
+        position += 1
         try:
-
-            result = _call_gemini(
-                message=message,
-                system_instruction=full_system_instruction,
-            )
-
-            from logging_util import logger
-            logger.info(
-                component="AI_PROVIDER",
-                message=f"gemini_call succeeded: {type(result).__name__}",
-                context={"result_type": type(result).__name__},
-            )
-            _record_reply("answered", started, provider="Gemini", model=os.getenv("GEMINI_MODEL", GEMINI_DEFAULT_MODEL), attempts=1)
-
+            result, used = _call_fallback(message=message, system_instruction=full_system_instruction, first_position=position, only=name)
+            _record_reply("answered", started, provider=used.provider, model=used.model, attempts=used.position)
             return result
-
         except Exception as error:
-            from logging_util import logger
-            logger.error(
-                component="AI_PROVIDER",
-                operation="gemini_call",
-                error=error,
-                context={"fallback_action": "attempting_fallback_provider"},
-            )
+            logger.error(component="AI_PROVIDER", operation="provider_call", error=error, context={"provider": name, "fallback_action": "next_provider"})
 
-    # --------------------------------------------------------
-    # 2. Fallback provider pool
-    # --------------------------------------------------------
-
-    try:
-
-        result, used = _call_fallback(
-            message=message,
-            system_instruction=full_system_instruction,
-            first_position=2 if gemini_tried else 1,
-        )
-        _record_reply("answered", started, provider=used.provider, model=used.model, attempts=used.position)
-
-        return result
-
-    except Exception as error:
-        from logging_util import logger
-        logger.error(
-            component="AI_PROVIDER",
-            operation="fallback_provider_pool",
-            error=error,
-            context={"fallback_action": "returning_degraded_response"},
-        )
-        _record_reply("degraded", started)
-
-        return BubblesAIResponse(
-            response=DEGRADED_RESPONSE_TEXT,
-            sentiment="neutral",
-            health_events=[],
-        )
+    logger.error(component="AI_PROVIDER", operation="chat_provider_chain", error=ProviderError("every chat provider failed"),
+                 context={"fallback_action": "returning_degraded_response"})
+    _record_reply("degraded", started)
+    return BubblesAIResponse(response=DEGRADED_RESPONSE_TEXT, sentiment="neutral", health_events=[])
 
 
 def _record_reply(outcome: str, started: float, *, provider: str | None = None, model: str | None = None, attempts: int | None = None) -> None:

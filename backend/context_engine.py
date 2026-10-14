@@ -6,6 +6,7 @@ for the response layer.
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any
 
@@ -58,30 +59,16 @@ def _denials(rows: list[dict[str, Any]], limit: int = 5) -> list[dict[str, Any]]
     return out[:limit]
 
 
-def build_user_context(user_id: str, query: str) -> dict[str, Any]:
-    from memory_retrieval import get_relevant_memories, format_memory_context
-
-    memories = get_relevant_memories(user_id=user_id, query=query)
-
-    # over-fetch: dead / non-positive rows are dropped below and must not crowd out live ones
-    rows = _safe_table_select(
-        "extracted_health_events",
-        "id, event_type, extracted_data, confidence, created_at, extraction_status, user_confirmed",
-        user_id,
-        limit=40,
-    )
-    recent_events = [row for row in rows if counts_as_observation(row)][:20]
-    denials = _denials(rows)
-
+def _profile_rows(user_id: str) -> list[dict[str, Any]]:
     try:
-        profile_result = (
+        result = (
             _get_supabase().table("profiles")
             .select("id, display_name, date_of_birth, gender, timezone")
             .eq("id", user_id)
             .limit(1)
             .execute()
         )
-        profile = list(profile_result.data or [])
+        return list(result.data or [])
     except Exception as error:
         from logging_util import logger
         logger.warning(
@@ -90,15 +77,30 @@ def build_user_context(user_id: str, query: str) -> dict[str, Any]:
             user_id=user_id,
             context={"table": "profiles", "fallback_action": "returning_empty_profile"},
         )
-        profile = []
+        return []
 
-    preferences = _safe_table_select(
-        "user_preferences",
-        "*",
-        user_id,
-        limit=1,
-        order_by=None,
-    )
+
+# ponytail: one small shared pool for per-request fan-out; size it up if many chats run at once.
+_POOL = ThreadPoolExecutor(max_workers=8, thread_name_prefix="bubbles-ctx")
+
+
+def build_user_context(user_id: str, query: str) -> dict[str, Any]:
+    from memory_retrieval import EVENT_COLUMNS, get_relevant_memories, format_memory_context
+
+    # The reads are independent, so they run together (each one is a network round trip). The events are read once and
+    # shared: memory retrieval used to read the same table again.
+    events_job = _POOL.submit(_safe_table_select, "extracted_health_events", EVENT_COLUMNS, user_id, 100)
+    profile_job = _POOL.submit(_profile_rows, user_id)
+    preferences_job = _POOL.submit(_safe_table_select, "user_preferences", "*", user_id, 1, None)
+
+    rows = events_job.result()
+    memories = get_relevant_memories(user_id=user_id, query=query, event_rows=rows)
+    # over-fetch: dead / non-positive rows are dropped below and must not crowd out live ones
+    rows = rows[:40]
+    recent_events = [row for row in rows if counts_as_observation(row)][:20]
+    denials = _denials(rows)
+    profile = profile_job.result()
+    preferences = preferences_job.result()
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),

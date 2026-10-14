@@ -51,6 +51,10 @@ AI_RETRY_BACKOFF_MS = max(0, min(int(os.getenv("AI_RETRY_BACKOFF_MS", "250")), 2
 AI_REPLY_BUDGET = max(5.0, min(float(os.getenv("AI_REPLY_BUDGET_S", "50")), 90.0))
 _MIN_CALL_SECONDS = 3.0
 _deadline: ContextVar[float | None] = ContextVar("bubbles_ai_deadline", default=None)
+# Set by call_fallback(json_mode=True) for the chat reply: providers known to support it are asked for a JSON object, so a
+# fast model never wraps the answer in prose. Others still get the "Return ONLY valid JSON" instruction.
+_json_mode: ContextVar[bool] = ContextVar("bubbles_ai_json_mode", default=False)
+JSON_MODE_PROVIDERS = {"Groq", "Mistral"}
 
 
 @dataclass
@@ -190,6 +194,8 @@ def _post_openai_compatible(
         ],
         "temperature": 0.2,
     }
+    if _json_mode.get() and provider in JSON_MODE_PROVIDERS:
+        payload["response_format"] = {"type": "json_object"}
 
     last_error: Exception | None = None
     response = None
@@ -735,14 +741,26 @@ def call_fallback(
     health_data: bool = False,
     first_position: int = 1,
     defer_success: bool = False,
+    only: str | None = None,
+    json_mode: bool = False,
 ) -> ProviderResult:
-    """Tries the pool in order. ``first_position`` numbers the attempts after earlier ones (Gemini). With ``defer_success`` the
-    caller records the successful attempt itself, after checking the answer is usable (so telemetry never counts a reply that
-    was thrown away as an answer)."""
+    """Tries the pool in order (or just the provider named ``only``). ``first_position`` numbers the attempts after earlier
+    ones. With ``defer_success`` the caller records the successful attempt itself, after checking the answer is usable (so
+    telemetry never counts a reply that was thrown away as an answer)."""
+    token = _json_mode.set(json_mode)
+    try:
+        return _call_pool(system_instruction, user_message, health_data=health_data, first_position=first_position,
+                          defer_success=defer_success, only=only)
+    finally:
+        _json_mode.reset(token)
 
+
+def _call_pool(system_instruction: str, user_message: str, *, health_data: bool, first_position: int, defer_success: bool,
+               only: str | None) -> ProviderResult:
     errors = []
+    pool = [(n, f) for n, f in provider_pool(health_data=health_data) if only is None or n == only]
 
-    for position, (provider_name, provider_function) in enumerate(provider_pool(health_data=health_data), start=first_position):
+    for position, (provider_name, provider_function) in enumerate(pool, start=first_position):
 
         started = time.perf_counter()
 

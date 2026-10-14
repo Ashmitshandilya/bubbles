@@ -22,7 +22,8 @@ def test_explicit_personal_facts():
 
 def test_response_format():
     out=normalize_response("First sentence. Second sentence. Third sentence.")
-    assert "\n" in out
+    assert out=="First sentence. Second sentence. Third sentence."   # a short friend reply is not turned into bullets
+    assert normalize_response("a\n\n\n\nb")=="a\n\nb"
 
 def test_personalization():
     assert build_personalization({"full_name":"Ashmit"},{},[] )["style"]=="warm_formal"

@@ -305,10 +305,22 @@ GOOD = '{"response": "Here is a calm answer.", "sentiment": "neutral", "health_e
 
 
 def _fallback(content, provider="Groq"):
-    def call(system_instruction, user_message, *, health_data, first_position, defer_success):
-        assert defer_success is True
-        return ProviderResult(provider, "model-x", content, latency_ms=12.0, position=first_position)
+    """Stands in for ai_provider.call_fallback. ``content`` is one answer for everyone, or a dict of answers per provider."""
+    def call(system_instruction, user_message, *, health_data, first_position, defer_success, only=None, json_mode=False):
+        assert defer_success is True and json_mode is True
+        name = only or provider
+        text = content.get(name, GOOD) if isinstance(content, dict) else content
+        return ProviderResult(name, "model-x", text, latency_ms=12.0, position=first_position)
     return call
+
+
+def test_groq_leads_the_chat_chain_and_answers_first(monkeypatch):
+    monkeypatch.setattr(bubbles_ai, "_call_gemini_inner", lambda *a, **k: pytest.fail("Gemini is not needed when Groq answers"))
+    monkeypatch.setattr(bubbles_ai, "call_fallback", _fallback(GOOD))
+    assert not bubbles_ai.is_degraded(bubbles_ai.ask_bubbles("hello"))
+    assert [(e["data"]["provider"], e["data"]["position"]) for e in _events("ai_attempt")] == [("Groq", 1)]
+    reply = _events("ai_reply")[0]["data"]
+    assert (reply["provider"], reply["attempts"], reply["fallback_used"]) == ("Groq", 1, False)
 
 
 def test_the_answering_provider_is_recorded_only_after_a_validated_answer(monkeypatch):
@@ -316,13 +328,14 @@ def test_the_answering_provider_is_recorded_only_after_a_validated_answer(monkey
         raise ProviderError("Gemini: HTTP 503: unavailable")
 
     monkeypatch.setattr(bubbles_ai, "_call_gemini_inner", gemini_down)
-    monkeypatch.setattr(bubbles_ai, "call_fallback", _fallback(GOOD))
+    monkeypatch.setattr(bubbles_ai, "call_fallback", _fallback({"Groq": "this is not json"}))
     assert not bubbles_ai.is_degraded(bubbles_ai.ask_bubbles("hello"))
     attempts = [e["data"] for e in _events("ai_attempt")]
-    assert [(a["provider"], a["position"], a["outcome"]) for a in attempts] == [("Gemini", 1, "error"), ("Groq", 2, "success")]
-    assert attempts[0]["error_category"] == "provider_error"
+    assert [(a["provider"], a["position"], a["outcome"]) for a in attempts] == [
+        ("Groq", 1, "invalid_json"), ("Gemini", 2, "error"), ("NVIDIA", 3, "success")]
+    assert attempts[1]["error_category"] == "provider_error"
     reply = _events("ai_reply")[0]["data"]
-    assert (reply["outcome"], reply["provider"], reply["attempts"], reply["fallback_used"]) == ("answered", "Groq", 2, True)
+    assert (reply["outcome"], reply["provider"], reply["attempts"], reply["fallback_used"]) == ("answered", "NVIDIA", 3, True)
     assert len({e["request_id"] for e in _events() if e["kind"].startswith("ai_")}) == 1
 
 
@@ -330,7 +343,7 @@ def test_an_unusable_answer_is_not_counted_as_an_answer(monkeypatch):
     monkeypatch.setattr(bubbles_ai, "_call_gemini_inner", lambda *a, **k: (_ for _ in ()).throw(ProviderError("down")))
     monkeypatch.setattr(bubbles_ai, "call_fallback", _fallback("this is not json"))
     assert bubbles_ai.is_degraded(bubbles_ai.ask_bubbles("hello"))
-    assert [e["data"]["outcome"] for e in _events("ai_attempt")] == ["error", "invalid_json"]
+    assert [e["data"]["outcome"] for e in _events("ai_attempt")] == ["invalid_json", "error", "invalid_json", "invalid_json"]
     assert [e["data"]["outcome"] for e in _events("ai_reply")] == ["degraded"]
 
 
@@ -344,6 +357,7 @@ def test_gemini_failures_and_timeouts_are_recorded_with_a_category(monkeypatch, 
     def fail(*_a, **_k):
         raise error
 
+    monkeypatch.setenv("CHAT_PROVIDER_ORDER", "Gemini,Groq")   # the order is configurable; put Gemini first to see its failures
     monkeypatch.setattr(bubbles_ai, "_call_gemini_inner", fail)
     monkeypatch.setattr(bubbles_ai, "call_fallback", _fallback(GOOD))
     bubbles_ai.ask_bubbles("hello")
