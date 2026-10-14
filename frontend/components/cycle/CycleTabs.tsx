@@ -92,7 +92,7 @@ function LogButton() {
       type="button"
       aria-label="Log today"
       onClick={() => openLog()}
-      className="bubbles-press fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-bubbles-pink-ink text-white shadow-[0_5px_0_var(--bubbles-pink-deep)] print:hidden lg:bottom-28 lg:right-8"
+      className="bubbles-press fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-bubbles-pink-ink text-white bubbles-glow print:hidden lg:bottom-28 lg:right-8"
     >
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true" focusable="false">
         <path d="M12 5v14M5 12h14" />

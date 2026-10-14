@@ -124,7 +124,7 @@ export function WeekdayChart({ series, goalHours }: { series: { date: string; ho
 const LEVEL_FILL: Record<number, string> = {
   1: "bg-[#FFC9AE]",
   2: "bg-[#FCE8A9]",
-  3: "bg-[#DDF7EE]",
+  3: "bg-tint-mint",
   4: "bg-[#A9E8D2]",
   5: "bg-bubbles-mint",
 };

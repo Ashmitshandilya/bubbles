@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BubblesMascot } from "../components/BubblesMascot";
 
 // Class string repeated here: a server component cannot read constants exported from a client module.
-const BTN = "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)]";
+const BTN = "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white bubbles-glow";
 
 export default function NotFound() {
   return (

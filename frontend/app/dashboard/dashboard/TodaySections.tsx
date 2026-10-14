@@ -106,8 +106,8 @@ function Spark({ bars, slug }: { bars: number[]; slug: SignalSlug }) {
 }
 
 const BTN = "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 text-sm font-extrabold no-underline";
-const BTN_GRAPE = `${BTN} bg-bubbles-grape text-white shadow-[0_4px_0_var(--bubbles-grape-deep)]`;
-const BTN_SKY = `${BTN} bg-bubbles-sky-deep text-white shadow-[0_4px_0_#0B3D6B] disabled:opacity-60`;
+const BTN_GRAPE = `${BTN} bg-bubbles-grape text-white bubbles-glow bubbles-glow-grape`;
+const BTN_SKY = `${BTN} bg-bubbles-sky-deep text-white bubbles-glow bubbles-glow-sky disabled:opacity-60`;
 const BTN_QUIET = `${BTN} border-2 border-[#E4DCFF] bg-surface text-bubbles-grape-deep`;
 
 export function SectionHeading({ id, children }: { id: string; children: ReactNode }) {

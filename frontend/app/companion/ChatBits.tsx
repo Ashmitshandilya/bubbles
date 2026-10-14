@@ -349,7 +349,7 @@ function EventCard({
             type="button"
             disabled={busy}
             onClick={() => onDecide(pending.map((e) => e.id), true)}
-            className={`${btn} bg-bubbles-mint text-ink shadow-[0_4px_0_var(--bubbles-mint-deep)]`}
+            className={`${btn} bg-bubbles-mint text-ink bubbles-glow bubbles-glow-mint`}
           >
             <Icon d={ICONS.check} size={16} strokeWidth={3} />
             {pending.length === 1 ? "Yes, save it" : "Yes, save all"}
@@ -563,7 +563,7 @@ export function BubblesReply({
           )}
         </div>
       )}
-      <div data-private className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink shadow-[0_3px_0_var(--tint-grape)]">
+      <div data-private className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink">
         <MessageBody content={message.content} />
         <EvidenceRow evidence={message.evidence ?? []} confidence={message.confidence} />
       </div>
@@ -614,7 +614,7 @@ export function ConversationList({
       <button
         type="button"
         onClick={onNew}
-        className="bubbles-press flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-4 text-body font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)]"
+        className="bubbles-press flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-4 text-body font-extrabold text-white bubbles-glow"
       >
         <Icon d={ICONS.plus} strokeWidth={2.6} />
         New conversation

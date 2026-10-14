@@ -109,7 +109,7 @@ function Published() {
           href={release.file}
           download
           type="application/vnd.android.package-archive"
-          className="bubbles-press mt-4 inline-flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)] sm:w-auto"
+          className="bubbles-press mt-4 inline-flex min-h-[56px] w-full items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white bubbles-glow sm:w-auto"
         >
           <DownloadIcon />
           Download for Android

@@ -362,7 +362,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
               href={talk.href}
               aria-label="Talk to Bubbles"
               aria-current={current?.id === "talk" ? "page" : undefined}
-              className="bubbles-press -mt-7 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-bubbles-pink-ink text-white no-underline shadow-[0_5px_0_var(--bubbles-pink-deep)]"
+              className="bubbles-press -mt-7 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-bubbles-pink-ink text-white no-underline bubbles-glow"
             >
               <NavIcon id="companion" size={26} />
             </Link>
@@ -497,7 +497,7 @@ function OfflineBanner({ title, message, onRetry }: { title: string; message: st
                 setManual(false);
               }
             }}
-            className={`${BANNER_BUTTON} bg-bubbles-pink-ink text-white shadow-[0_4px_0_var(--bubbles-pink-deep)]`}
+            className={`${BANNER_BUTTON} bg-bubbles-pink-ink text-white bubbles-glow`}
           >
             Try again now
           </button>

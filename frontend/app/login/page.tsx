@@ -247,7 +247,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={loading}
-              className="bubbles-press inline-flex min-h-[56px] items-center justify-center rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)] disabled:cursor-wait disabled:opacity-70"
+              className="bubbles-press inline-flex min-h-[56px] items-center justify-center rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white bubbles-glow disabled:cursor-wait disabled:opacity-70"
             >
               {loading ? "Checking…" : "Continue"}
             </button>
@@ -268,7 +268,7 @@ function LoginForm() {
               aria-controls={`${formId}-panel`}
               onClick={() => switchMode(item.id)}
               className={`min-h-[44px] rounded-full px-2 text-body-sm font-extrabold transition-colors ${
-                mode === item.id ? "bg-bubbles-pink-ink text-white shadow-[0_3px_0_var(--bubbles-pink-deep)]" : "text-ink-soft hover:text-ink"
+                mode === item.id ? "bg-bubbles-pink-ink text-white" : "text-ink-soft hover:text-ink"
               }`}
             >
               {item.label}
@@ -336,7 +336,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="bubbles-press mt-2 inline-flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)] disabled:cursor-wait disabled:opacity-70"
+            className="bubbles-press mt-2 inline-flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white bubbles-glow disabled:cursor-wait disabled:opacity-70"
           >
             {loading ? (
               <>

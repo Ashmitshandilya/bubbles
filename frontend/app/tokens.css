@@ -193,10 +193,10 @@
   --shadow-glow-brand: 0 10px 24px rgba(214,36,111,.18);
   --shadow-glow-accent: 0 10px 24px rgba(106,69,245,.2);
   --shadow-glow-success: 0 10px 24px rgba(34,195,154,.18);
-  /* Cute "sticker" press shadows for primary buttons and hero cards */
-  --shadow-pop-brand: 0 5px 0 var(--bubbles-pink-deep);
-  --shadow-pop-accent: 0 6px 0 var(--bubbles-grape-deep);
-  --shadow-pop-ink: 0 5px 0 var(--bubbles-ink);
+  /* Soft press (DESIGN.md "The Soft Press Rule"): an inner top highlight plus a blurred glow in the fill's own deep
+     colour. The glow itself lives in .bubbles-glow (globals.css), which reads --press-rgb on the element. */
+  --press-highlight: inset 0 1px 0 rgb(255 255 255 / 0.28);
+  --press-rgb: 168 21 90;
 
   /* ── Motion ── */
   --duration-instant: 0ms;

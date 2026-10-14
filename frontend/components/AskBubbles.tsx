@@ -201,7 +201,7 @@ export function AskBubbles() {
           aria-haspopup="dialog"
           aria-keyshortcuts="Control+K Meta+K"
           aria-expanded={isOpen}
-          className="bubbles-ask-fab bubbles-press fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-sticky flex h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 text-white shadow-[0_5px_0_var(--bubbles-grape-deep)] lg:bottom-6 lg:right-6 lg:pr-5"
+          className="bubbles-ask-fab bubbles-press fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-sticky flex h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 text-white bubbles-glow bubbles-glow-grape lg:bottom-6 lg:right-6 lg:pr-5"
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
             <BubblesMascot size={40} />
@@ -277,7 +277,7 @@ export function AskBubbles() {
                   type="button"
                   onClick={() => ask(query)}
                   disabled={!query.trim()}
-                  className="bubbles-press min-h-[44px] shrink-0 rounded-full bg-bubbles-grape px-5 text-body-sm font-extrabold text-white shadow-[0_4px_0_var(--bubbles-grape-deep)] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bubbles-press min-h-[44px] shrink-0 rounded-full bg-bubbles-grape px-5 text-body-sm font-extrabold text-white bubbles-glow bubbles-glow-grape disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Ask
                 </button>

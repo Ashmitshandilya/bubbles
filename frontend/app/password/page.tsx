@@ -51,7 +51,7 @@ export default function PasswordPage() {
   const inputClass =
     "min-h-[52px] w-full rounded-[18px] border-2 border-line bg-surface px-4 text-body text-ink outline-none transition-colors focus:border-bubbles-grape";
   const buttonClass =
-    "bubbles-press mt-2 inline-flex min-h-[56px] items-center justify-center rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white shadow-[0_5px_0_var(--bubbles-pink-deep)] disabled:cursor-wait disabled:opacity-70";
+    "bubbles-press mt-2 inline-flex min-h-[56px] items-center justify-center rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white bubbles-glow disabled:cursor-wait disabled:opacity-70";
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-blush px-5 py-10">
