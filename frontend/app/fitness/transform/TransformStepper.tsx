@@ -271,11 +271,11 @@ function SafetyStep({ questions, busy, error, incomplete, onSubmit, review }: {
         <p className="m-0">Plans that cut calories can be hard on some people, so Bubbles checks first. Your answers stay private and only decide what Bubbles offers you.</p>
       </ConsentCard>
       {questions.map((q, i) => (
-        <fieldset key={q} className="m-0 min-w-0 rounded-2xl border-2 border-line p-4">
+        <fieldset key={q} className="m-0 min-w-0 rounded-2xl border border-line p-4">
           <legend className="px-1 text-body font-bold text-ink">{i + 1}. {q}</legend>
           <div className="mt-1 flex gap-3">
             {([true, false] as const).map((v) => (
-              <label key={String(v)} className={`flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border-2 px-4 text-body-sm font-extrabold ${answers[i] === v ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line text-muted"}`}>
+              <label key={String(v)} className={`flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-body-sm font-extrabold ${answers[i] === v ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line text-muted"}`}>
                 <input type="radio" name={`scoff-${i}`} checked={answers[i] === v} onChange={() => setAnswers(answers.map((a, n) => (n === i ? v : a)))} className="h-5 w-5 accent-[var(--bubbles-grape)]" />
                 {v ? "Yes" : "No"}
               </label>

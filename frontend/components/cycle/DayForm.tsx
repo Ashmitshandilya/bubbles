@@ -110,7 +110,7 @@ export function DayForm({ date, initial, onDone }: { date: string; initial: DayR
           Soaking a pad or tampon every hour for 2 hours or more
         </CheckRow>
         {form.soaking && (
-          <p id="cycle-soak-hint" role="alert" className="m-0 rounded-2xl border-2 border-bubbles-urgent bg-tint-urgent px-4 py-3 text-body font-extrabold text-ink">
+          <p id="cycle-soak-hint" role="alert" className="m-0 rounded-2xl border border-bubbles-urgent bg-tint-urgent px-4 py-3 text-body font-extrabold text-ink">
             {STATIC_URGENT_HINT}
           </p>
         )}

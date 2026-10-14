@@ -82,7 +82,6 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
   const { openLog, tempUnit } = useCycle();
   const urgent = o.urgent;
   const calm = !urgent && !safety;
-  const mood = o.weather?.tone === "bright" ? "happy" : o.weather?.tone === "heavier" ? "caring" : "calm";
   const conf = confidenceCopy(o.confidence);
   const hideFertility = o.mode === "birth_control";
   const ringLength = Math.round(o.stats.average_length ?? 28);
@@ -112,7 +111,6 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
           <div className="min-w-[14rem] flex-1 space-y-3">
             {calm && o.weather && (
               <div className="flex items-start gap-3">
-                <BubblesMascot size={64} mood={mood} />
                 <div>
                   <p className="m-0 text-body-sm font-extrabold uppercase tracking-wide text-muted">Inner weather · {o.weather.label}</p>
                   <p className="m-0 mt-0.5 font-display text-h4 text-ink">{o.weather.line}</p>
@@ -211,7 +209,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
 
       <Notices notices={o.notices} />
 
-      <Link href="/companion" className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 border-line bg-surface px-5 text-body-sm font-extrabold text-bubbles-grape-deep no-underline hover:border-line-strong">
+      <Link href="/companion" className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-surface px-5 text-body-sm font-extrabold text-bubbles-grape-deep no-underline hover:border-line-strong">
         <Icon id="sparkle" size={18} /> Ask Bubbles about your cycle
       </Link>
     </div>

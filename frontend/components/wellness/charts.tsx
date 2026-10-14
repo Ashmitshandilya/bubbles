@@ -19,15 +19,15 @@ export function ScoreRing({ value, label, size = 148 }: { value: number; label?:
   return (
     <div className="flex flex-col items-center gap-1">
       <svg width={size} height={size} viewBox="0 0 140 140" role="img" aria-label={`Sleep score ${Math.round(value)} out of 100, ${words}`}>
-        <circle cx="70" cy="70" r={r} fill="none" stroke="#EEE8FF" strokeWidth="14" />
+        <circle cx="70" cy="70" r={r} fill="none" stroke="#F1ECFB" strokeWidth="14" />
         <circle
-          cx="70" cy="70" r={r} fill="none" stroke="#6A45F5" strokeWidth="14" strokeLinecap="round"
+          cx="70" cy="70" r={r} fill="none" stroke="#6B46D6" strokeWidth="14" strokeLinecap="round"
           strokeDasharray={`${dash} ${gap}`} transform="rotate(-90 70 70)"
         />
-        <text x="70" y="76" textAnchor="middle" fontSize="38" fontWeight="800" fill="#2B1A3F" aria-hidden="true">
+        <text x="70" y="76" textAnchor="middle" fontSize="38" fontWeight="800" fill="#1E1B2E" aria-hidden="true">
           {Math.round(value)}
         </text>
-        <text x="70" y="98" textAnchor="middle" fontSize="12" fontWeight="700" fill="#5E4E73" aria-hidden="true">
+        <text x="70" y="98" textAnchor="middle" fontSize="12" fontWeight="700" fill="#5E5873" aria-hidden="true">
           out of 100
         </text>
       </svg>
@@ -87,27 +87,27 @@ export function WeekdayChart({ series, goalHours }: { series: { date: string; ho
           <desc id={`${titleId}-desc`}>{summary}</desc>
           <g transform="translate(10 18)">
             {/* goal line */}
-            <line x1="0" x2={W} y1={H - (goalHours / ceiling) * H} y2={H - (goalHours / ceiling) * H} stroke="#6A45F5" strokeWidth="1.5" strokeDasharray="5 4" />
-            <text x={W} y={H - (goalHours / ceiling) * H - 4} textAnchor="end" fontSize="10" fontWeight="700" fill="#4A2BC7">
+            <line x1="0" x2={W} y1={H - (goalHours / ceiling) * H} y2={H - (goalHours / ceiling) * H} stroke="#6B46D6" strokeWidth="1.5" strokeDasharray="5 4" />
+            <text x={W} y={H - (goalHours / ceiling) * H - 4} textAnchor="end" fontSize="10" fontWeight="700" fill="#5835BF">
               your goal {formatHours(goalHours)}
             </text>
             {boxes.map((box, i) =>
               box ? (
                 <g key={bars[i].index}>
-                  <rect x={box.x} y={box.y} width={box.width} height={box.height} rx="6" fill="#6A45F5" />
-                  <text x={box.x + box.width / 2} y={box.y - 4} textAnchor="middle" fontSize="10" fontWeight="800" fill="#2B1A3F">
+                  <rect x={box.x} y={box.y} width={box.width} height={box.height} rx="6" fill="#6B46D6" />
+                  <text x={box.x + box.width / 2} y={box.y - 4} textAnchor="middle" fontSize="10" fontWeight="800" fill="#1E1B2E">
                     {bars[i].hours}
                   </text>
                 </g>
               ) : (
                 <rect
                   key={bars[i].index} x={(W / 7) * i + (W / 7) * 0.15} y={H - 8} width={(W / 7) * 0.7} height="8" rx="4"
-                  fill="none" stroke="#C9BCFF" strokeWidth="2" strokeDasharray="3 3"
+                  fill="none" stroke="#C9B6F2" strokeWidth="2" strokeDasharray="3 3"
                 />
               ),
             )}
             {bars.map((b, i) => (
-              <text key={b.index} x={(W / 7) * i + W / 14} y={H + 16} textAnchor="middle" fontSize="11" fontWeight="700" fill="#5E4E73">
+              <text key={b.index} x={(W / 7) * i + W / 14} y={H + 16} textAnchor="middle" fontSize="11" fontWeight="700" fill="#5E5873">
                 {b.short}
               </text>
             ))}
@@ -122,10 +122,10 @@ export function WeekdayChart({ series, goalHours }: { series: { date: string; ho
 /* ── Year in pixels ─────────────────────────────────────────────────── */
 
 const LEVEL_FILL: Record<number, string> = {
-  1: "bg-[#FFC9AE]",
-  2: "bg-[#FCE8A9]",
+  1: "bg-[#FBCFC6]",
+  2: "bg-[#F1E2C2]",
   3: "bg-tint-mint",
-  4: "bg-[#A9E8D2]",
+  4: "bg-[#E3D8CA]",
   5: "bg-bubbles-mint",
 };
 const MONTH_INITIAL = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
@@ -203,14 +203,14 @@ export function PixelGrid({ pixels }: { pixels: Pixels }) {
 
 function Plant({ stage }: { stage: GardenStage }) {
   const leaf = (x: number, y: number, rot: number, s = 1) => (
-    <path key={`${x}-${y}`} d="M0 0C10-14 26-14 32 0C20 10 8 10 0 0Z" fill="#22C39A" stroke="#0D6B52" strokeWidth="1.5" transform={`translate(${x} ${y}) rotate(${rot}) scale(${s})`} />
+    <path key={`${x}-${y}`} d="M0 0C10-14 26-14 32 0C20 10 8 10 0 0Z" fill="#D9CBB8" stroke="#5C4A33" strokeWidth="1.5" transform={`translate(${x} ${y}) rotate(${rot}) scale(${s})`} />
   );
   const flower = (cx: number, cy: number, s = 1) => (
     <g key={`f${cx}`} transform={`translate(${cx} ${cy}) scale(${s})`}>
       {[0, 72, 144, 216, 288].map((a) => (
-        <ellipse key={a} cx="0" cy="-11" rx="7" ry="10" fill="#FF5FA2" stroke="#A8155A" strokeWidth="1.2" transform={`rotate(${a})`} />
+        <ellipse key={a} cx="0" cy="-11" rx="7" ry="10" fill="#F7C8D6" stroke="#B03A66" strokeWidth="1.2" transform={`rotate(${a})`} />
       ))}
-      <circle r="6" fill="#FFC83D" stroke="#7A5300" strokeWidth="1.2" />
+      <circle r="6" fill="#E9C98B" stroke="#7A5208" strokeWidth="1.2" />
     </g>
   );
   switch (stage) {
@@ -224,7 +224,7 @@ function Plant({ stage }: { stage: GardenStage }) {
     case "sprout":
       return (
         <g>
-          <path d="M160 156 V126" stroke="#0D6B52" strokeWidth="4" strokeLinecap="round" />
+          <path d="M160 156 V126" stroke="#5C4A33" strokeWidth="4" strokeLinecap="round" />
           {leaf(160, 130, -150, 0.8)}
           {leaf(160, 126, -30, 0.8)}
         </g>
@@ -232,7 +232,7 @@ function Plant({ stage }: { stage: GardenStage }) {
     case "leaves":
       return (
         <g>
-          <path d="M160 156 V96" stroke="#0D6B52" strokeWidth="5" strokeLinecap="round" />
+          <path d="M160 156 V96" stroke="#5C4A33" strokeWidth="5" strokeLinecap="round" />
           {leaf(160, 138, -160)}
           {leaf(160, 124, -20)}
           {leaf(160, 108, -165, 1.1)}
@@ -242,7 +242,7 @@ function Plant({ stage }: { stage: GardenStage }) {
     case "blossom":
       return (
         <g>
-          <path d="M160 156 V92" stroke="#0D6B52" strokeWidth="5" strokeLinecap="round" />
+          <path d="M160 156 V92" stroke="#5C4A33" strokeWidth="5" strokeLinecap="round" />
           {leaf(160, 138, -160)}
           {leaf(160, 124, -20)}
           {flower(160, 82, 1.3)}
@@ -251,14 +251,14 @@ function Plant({ stage }: { stage: GardenStage }) {
     case "pond":
       return (
         <g>
-          <path d="M120 156 V100" stroke="#0D6B52" strokeWidth="5" strokeLinecap="round" />
+          <path d="M120 156 V100" stroke="#5C4A33" strokeWidth="5" strokeLinecap="round" />
           {leaf(120, 140, -160)}
           {leaf(120, 126, -20)}
           {flower(120, 90, 1.3)}
-          <path d="M92 150 V128" stroke="#0D6B52" strokeWidth="4" strokeLinecap="round" />
+          <path d="M92 150 V128" stroke="#5C4A33" strokeWidth="4" strokeLinecap="round" />
           {flower(92, 122, 0.8)}
-          <ellipse cx="214" cy="158" rx="52" ry="14" fill="#9FD3FF" stroke="#1F7FD6" strokeWidth="2" />
-          <path d="M190 156 q10 -4 20 0 M214 162 q10 -4 20 0" stroke="#1F7FD6" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          <ellipse cx="214" cy="158" rx="52" ry="14" fill="#CDB9DA" stroke="#8E6FA6" strokeWidth="2" />
+          <path d="M190 156 q10 -4 20 0 M214 162 q10 -4 20 0" stroke="#8E6FA6" strokeWidth="1.5" fill="none" strokeLinecap="round" />
         </g>
       );
     case "oasis":
@@ -266,13 +266,13 @@ function Plant({ stage }: { stage: GardenStage }) {
         <g>
           <path d="M120 158 C118 130 126 104 134 82" stroke="#9A3A12" strokeWidth="7" fill="none" strokeLinecap="round" />
           {[-60, -25, 10, 45, 80].map((a) => (
-            <path key={a} d="M0 0 C16 -16 40 -14 54 4 C36 -2 16 0 0 0Z" fill="#22C39A" stroke="#0D6B52" strokeWidth="1.5" transform={`translate(134 82) rotate(${a - 20})`} />
+            <path key={a} d="M0 0 C16 -16 40 -14 54 4 C36 -2 16 0 0 0Z" fill="#D9CBB8" stroke="#5C4A33" strokeWidth="1.5" transform={`translate(134 82) rotate(${a - 20})`} />
           ))}
-          <path d="M92 152 V132" stroke="#0D6B52" strokeWidth="4" strokeLinecap="round" />
+          <path d="M92 152 V132" stroke="#5C4A33" strokeWidth="4" strokeLinecap="round" />
           {flower(92, 126, 0.75)}
-          <ellipse cx="220" cy="158" rx="60" ry="15" fill="#9FD3FF" stroke="#1F7FD6" strokeWidth="2" />
-          <path d="M194 156 q10 -4 20 0 M222 163 q10 -4 20 0" stroke="#1F7FD6" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-          <path d="M262 150 V132" stroke="#0D6B52" strokeWidth="4" strokeLinecap="round" />
+          <ellipse cx="220" cy="158" rx="60" ry="15" fill="#CDB9DA" stroke="#8E6FA6" strokeWidth="2" />
+          <path d="M194 156 q10 -4 20 0 M222 163 q10 -4 20 0" stroke="#8E6FA6" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          <path d="M262 150 V132" stroke="#5C4A33" strokeWidth="4" strokeLinecap="round" />
           {flower(262, 126, 0.75)}
         </g>
       );
@@ -292,24 +292,24 @@ export function GardenScene({ level, percent }: { level: number; percent: number
   const fillH = (gaugeH * pct) / 100;
   return (
     <svg viewBox="0 0 320 200" role="img" aria-label={gardenAlt(stage, pct)} className="h-auto w-full max-w-[460px] rounded-3xl">
-      <rect width="320" height="200" fill="#E0F1FF" />
-      <circle cx="268" cy="40" r="20" fill="#FFC83D" />
-      <path d="M0 150 Q80 128 160 142 T320 140 V200 H0Z" fill="#A9E8D2" />
-      <path d="M0 168 Q90 150 170 162 T320 160 V200 H0Z" fill="#8FDCC2" />
+      <rect width="320" height="200" fill="#F6F0F8" />
+      <circle cx="268" cy="40" r="20" fill="#E9C98B" />
+      <path d="M0 150 Q80 128 160 142 T320 140 V200 H0Z" fill="#E3D8CA" />
+      <path d="M0 168 Q90 150 170 162 T320 160 V200 H0Z" fill="#CDBDA8" />
       <g className={reduced ? "" : "bubbles-breathe"} style={{ transformBox: "fill-box", transformOrigin: "50% 100%" }}>
         <Plant stage={stage} />
       </g>
       {/* today's water gauge */}
       <g>
-        <rect x="22" y={gaugeTop} width="22" height={gaugeH} rx="11" fill="#FFFFFF" stroke="#1F7FD6" strokeWidth="2.5" />
+        <rect x="22" y={gaugeTop} width="22" height={gaugeH} rx="11" fill="#FFFFFF" stroke="#8E6FA6" strokeWidth="2.5" />
         <clipPath id="gauge-clip">
           <rect x="22" y={gaugeTop} width="22" height={gaugeH} rx="11" />
         </clipPath>
         <rect
-          x="22" y={gaugeTop + gaugeH - fillH} width="22" height={fillH} fill="#1F7FD6" clipPath="url(#gauge-clip)"
+          x="22" y={gaugeTop + gaugeH - fillH} width="22" height={fillH} fill="#8E6FA6" clipPath="url(#gauge-clip)"
           style={{ transition: reduced ? "none" : "y .6s ease, height .6s ease" }}
         />
-        <text x="33" y={gaugeTop + gaugeH + 18} textAnchor="middle" fontSize="12" fontWeight="800" fill="#11589A">
+        <text x="33" y={gaugeTop + gaugeH + 18} textAnchor="middle" fontSize="12" fontWeight="800" fill="#5F4372">
           {Math.round(pct)}%
         </text>
       </g>

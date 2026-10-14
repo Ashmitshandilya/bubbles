@@ -179,7 +179,7 @@ function DayBar({ day, today, onChange }: { day: string; today: string; onChange
       <button type="button" className={BTN_SECONDARY} onClick={() => onChange(shiftDay(day, -1))} aria-label="Previous day">
         &larr;
       </button>
-      <label className="flex min-h-[44px] items-center gap-2 rounded-full border-2 border-line bg-surface px-4 text-body-sm font-extrabold text-ink">
+      <label className="flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-ink">
         <span className="sr-only">Date</span>
         <input type="date" value={day} max={today} onChange={(e) => e.target.value && onChange(e.target.value)} className="min-h-[40px] bg-transparent" />
       </label>

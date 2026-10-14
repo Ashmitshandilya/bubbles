@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sidebar, MobileNav, ApiAlert } from "../../components/Navigation";
 import { useAuth, useApi } from "../../components/Providers";
 import { BubblesMascot } from "../../components/BubblesMascot";
+import { LoadingBubbles } from "../../components/hub/HubKit";
 import {
   adaptCorrection,
   adaptEvidence,
@@ -461,10 +462,7 @@ export function CompanionClient() {
   if (authLoading || !session) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-blush">
-        <div role="status" className="flex flex-col items-center gap-4 text-center">
-          <BubblesMascot size={80} mood="thinking" />
-          <p className="m-0 text-body font-bold text-ink-soft">{authLoading ? "Loading Bubbles…" : "Taking you to sign in…"}</p>
-        </div>
+        <LoadingBubbles label={authLoading ? "Loading Bubbles…" : "Taking you to sign in…"} />
       </main>
     );
   }
@@ -517,7 +515,7 @@ export function CompanionClient() {
                 aria-haspopup="dialog"
                 aria-expanded={drawerOpen}
                 aria-label="Your conversations"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-surface text-ink lg:hidden"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink lg:hidden"
               >
                 <Icon d={ICONS.menu} size={20} />
               </button>
@@ -533,7 +531,7 @@ export function CompanionClient() {
                 </p>
               </div>
             </div>
-            <p className="m-0 rounded-2xl border-2 border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:rounded-full sm:text-[0.8125rem]">
+            <p className="m-0 rounded-2xl border border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:rounded-full sm:text-[0.8125rem]">
               Not a diagnosis · for emergencies call your local number
             </p>
           </header>
@@ -564,9 +562,8 @@ export function CompanionClient() {
               )}
 
               {conversationError && (
-                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-line bg-surface px-5 py-4">
+                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-surface px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <BubblesMascot size={40} mood="resting" animated={false} />
                     <p className="m-0 text-body font-bold text-ink">{conversationError}</p>
                   </div>
                   <div className="flex gap-2">
@@ -577,7 +574,7 @@ export function CompanionClient() {
                     >
                       Try again
                     </button>
-                    <button type="button" onClick={startNewConversation} className="min-h-[44px] rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold">
+                    <button type="button" onClick={startNewConversation} className="min-h-[44px] rounded-full border border-line-strong bg-surface px-5 text-body-sm font-extrabold">
                       New conversation
                     </button>
                   </div>
@@ -625,13 +622,13 @@ export function CompanionClient() {
           <div className="shrink-0 border-t-2 border-line bg-blush px-4 pb-3 pt-3 lg:px-7 lg:pb-5">
             <div className="mx-auto flex w-full max-w-[860px] flex-col gap-2.5">
               {error && (
-                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-bubbles-urgent/30 bg-tint-urgent px-4 py-2.5">
+                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-bubbles-urgent/30 bg-tint-urgent px-4 py-2.5">
                   <p className="m-0 text-body-sm font-bold text-bubbles-urgent">{error}</p>
                   {failed && (
                     <button
                       type="button"
                       onClick={() => void sendMessage(failed.text, { messageId: failed.messageId, fresh: failed.fresh })}
-                      className="min-h-[44px] rounded-full border-2 border-ink bg-surface px-4 text-body-sm font-extrabold text-ink"
+                      className="min-h-[44px] rounded-full border border-line-strong bg-surface px-4 text-body-sm font-extrabold text-ink"
                     >
                       Try again
                     </button>
@@ -658,7 +655,7 @@ export function CompanionClient() {
                     )}
                   </span>
                 </div>
-                <div className="flex items-end gap-2.5 rounded-[28px] border-2 border-ink bg-surface py-1.5 pl-5 pr-1.5 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-bubbles-grape focus-within:shadow-[var(--shadow-glow-accent)]">
+                <div className="flex items-end gap-2.5 rounded-[24px] border border-line-strong bg-surface py-1.5 pl-5 pr-1.5 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-bubbles-grape focus-within:shadow-[var(--shadow-glow-accent)]">
                   <textarea
                     id="bubbles-message"
                     ref={inputRef}
@@ -722,7 +719,7 @@ export function CompanionClient() {
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close conversations"
-                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-line text-ink"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-line text-ink"
               >
                 <Icon d={ICONS.close} size={20} />
               </button>

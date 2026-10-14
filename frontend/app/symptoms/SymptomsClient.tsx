@@ -90,7 +90,7 @@ function Symptoms() {
             ]}
           />
           {top.length > 0 && (
-            <section aria-labelledby="symptom-frequency" className="rounded-[28px] border-2 border-line bg-surface p-5">
+            <section aria-labelledby="symptom-frequency" className="rounded-[24px] border border-line bg-surface p-5">
               <h2 id="symptom-frequency" className="m-0 font-display text-h3 text-default">Most frequent</h2>
               <p className="m-0 mt-1 text-body-sm font-semibold text-muted">Last 30 days · tap one to log it again</p>
               <ul className="bubbles-stagger m-0 mt-3 flex list-none flex-wrap gap-2 p-0">
@@ -100,7 +100,7 @@ function Symptoms() {
                       type="button"
                       onClick={() => openSheet(name)}
                       aria-label={`Log ${name} again (logged ${count} ${count === 1 ? "time" : "times"} in 30 days)`}
-                      className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 border-line bg-tint-pink px-4 text-body-sm font-extrabold text-bubbles-pink-deep"
+                      className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-tint-pink px-4 text-body-sm font-extrabold text-bubbles-pink-deep"
                     >
                       {name}
                       <span className="rounded-full bg-surface px-2 py-0.5 text-[0.8125rem]">×{count}</span>

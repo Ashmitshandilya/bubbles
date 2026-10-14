@@ -33,7 +33,7 @@ function ExerciseCard({ exercise: e }: { exercise: Exercise }) {
   const [guide, setGuide] = useState(false);
   const breathing = e.kind === "breathing" && e.pattern;
   return (
-    <li className="flex flex-col gap-3 rounded-2xl border-2 border-line bg-surface p-4">
+    <li className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="m-0 font-display text-h4 text-default">{e.name}</h3>
         <span className={`${PILL} ${breathing ? "bg-tint-sky text-bubbles-sky-deep" : "bg-tint-mint text-bubbles-mint-deep"}`}>

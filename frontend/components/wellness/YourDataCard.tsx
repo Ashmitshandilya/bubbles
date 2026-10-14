@@ -127,7 +127,7 @@ export function YourDataCard() {
               {deleted && <p className="m-0 text-body-sm font-extrabold text-bubbles-mint-deep">{deleted}</p>}
             </>
           ) : (
-            <div role="group" aria-labelledby="delete-confirm-title" className="flex flex-col gap-3 rounded-2xl border-2 border-bubbles-pink-ink bg-tint-pink p-4">
+            <div role="group" aria-labelledby="delete-confirm-title" className="flex flex-col gap-3 rounded-2xl border border-bubbles-pink-ink bg-tint-pink p-4">
               <p id="delete-confirm-title" className="m-0 font-extrabold text-ink">
                 Step 2 of 2: type DELETE to confirm
               </p>
@@ -137,7 +137,7 @@ export function YourDataCard() {
               </label>
               <input
                 id="delete-typed" ref={typedRef} value={typed} onChange={(e) => setTyped(e.target.value)} autoComplete="off" autoCapitalize="off" spellCheck={false}
-                className="min-h-[48px] w-full rounded-[20px] border-2 border-line-strong bg-surface px-4 py-2 text-body text-default focus:border-bubbles-grape"
+                className="min-h-[48px] w-full rounded-[20px] border border-line-strong bg-surface px-4 py-2 text-body text-default focus:border-bubbles-grape"
               />
               {deleteError && <ErrorNotice message={deleteError} />}
               <div className="flex flex-wrap gap-3">

@@ -89,11 +89,11 @@ export function Screening({ questions, initial, onDone, onCancel }: {
       <p className="m-0 mb-4 text-body-sm text-muted">These help keep movement safe for you. They are not a diagnosis, and a &ldquo;yes&rdquo; is never a problem, it just changes the plan.</p>
       <form noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }} className="flex flex-col gap-4">
         {questions.map((q, n) => (
-          <fieldset key={q.key} className="m-0 min-w-0 rounded-2xl border-2 border-line p-4">
+          <fieldset key={q.key} className="m-0 min-w-0 rounded-2xl border border-line p-4">
             <legend className="px-1 text-body font-bold text-ink">{n + 1}. {q.text}</legend>
             <div className="mt-1 flex gap-3">
               {([true, false] as const).map((v) => (
-                <label key={String(v)} className={`flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border-2 px-4 text-body-sm font-extrabold ${answers[q.key] === v ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line text-muted"}`}>
+                <label key={String(v)} className={`flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-body-sm font-extrabold ${answers[q.key] === v ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line text-muted"}`}>
                   <input type="radio" name={`q-${q.key}`} checked={answers[q.key] === v} onChange={() => setAnswers({ ...answers, [q.key]: v })} className="h-5 w-5 accent-[var(--bubbles-grape)]" />
                   {v ? "Yes" : "No"}
                 </label>

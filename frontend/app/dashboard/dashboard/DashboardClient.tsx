@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header, Sidebar, MobileNav, ApiAlert } from "../../../components/Navigation";
 import { useAuth, useApi } from "../../../components/Providers";
-import { BubblesMascot, type BubblesMood } from "../../../components/BubblesMascot";
+import { LoadingBubbles } from "../../../components/hub/HubKit";
 import { isSupabaseConfigured } from "../../../lib/supabase";
 import { SafetyBanner, type SafetyLevel } from "./SafetyBanner";
 import { LivingSignalMap } from "./LivingSignalMap";
@@ -140,7 +140,7 @@ export function DashboardClient() {
   if (!isSupabaseConfigured) {
     return (
       <Shell>
-        <div role="alert" className="max-w-md rounded-[24px] border-2 border-line bg-surface p-6">
+        <div role="alert" className="max-w-md rounded-[24px] border border-line bg-surface p-6">
           <h1 className="m-0 font-display text-2xl font-semibold">Bubbles isn&apos;t configured yet</h1>
           <p className="m-0 mt-2 text-[0.9375rem] text-ink-soft">
             Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to frontend/.env.local, then restart the app.
@@ -153,10 +153,9 @@ export function DashboardClient() {
   if (authLoading || !session) {
     return (
       <Shell>
-        <div className="flex flex-col items-center gap-4" role="status">
-          <BubblesMascot size={80} mood="calm" />
-          <p className="m-0 font-bold text-ink-soft">{authLoading ? "Getting your day ready…" : "Taking you to sign in…"}</p>
-          {!authLoading && <Link href="/login" className="font-extrabold text-bubbles-pink-ink">Go to sign in</Link>}
+        <div className="flex flex-col items-center gap-3">
+          <LoadingBubbles label={authLoading ? "Getting your day ready…" : "Taking you to sign in…"} />
+          {!authLoading && <Link href="/login" className="font-semibold text-bubbles-pink-ink">Go to sign in</Link>}
         </div>
       </Shell>
     );
@@ -193,7 +192,6 @@ export function DashboardClient() {
   // ponytail: no endpoint the dashboard reads exposes the user's current triage level (only /chat replies do),
   // and companion.safety_note is generic guidance, so the page stays GREEN. Feed `level` once /intelligence/brief returns it.
   const safety: { level: SafetyLevel; reasons: string[] } = { level: "GREEN", reasons: [] };
-  const mood: BubblesMood = safety.level === "AMBER" ? "caring" : water === "saving" || water === "saved" ? "happy" : "calm";
   const showMascot = safety.level !== "RED";
 
   const name = (profile?.display_name ?? user?.display_name ?? "").trim().split(/\s+/)[0]?.slice(0, 40);
@@ -211,7 +209,7 @@ export function DashboardClient() {
         <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
 
         <main id="main" className="bubbles-stagger mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-6 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
-          <Greeting title={name ? `${greeting(now)}, ${name}` : greeting(now)} date={date} cycleDay={cycle?.day} mood={mood} showMascot={showMascot} />
+          <Greeting title={name ? `${greeting(now)}, ${name}` : greeting(now)} date={date} cycleDay={cycle?.day} />
 
           {safety.level !== "GREEN" && <SafetyBanner level={safety.level} reasons={safety.reasons} />}
 

@@ -42,7 +42,7 @@ export function CycleTabs() {
       <div
         role="tablist"
         aria-label="Cycle sections"
-        className="-mx-1 flex gap-1 overflow-x-auto rounded-full border-2 border-line bg-surface p-1 print:hidden"
+        className="-mx-1 flex gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1 print:hidden"
       >
         {CYCLE_TABS.map((t) => {
           const active = t.id === tab;

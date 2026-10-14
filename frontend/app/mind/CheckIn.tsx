@@ -19,15 +19,15 @@ const FACE_MOUTH: Record<number, string> = {
   4: "M10 18 Q16 22.5 22 18",
   5: "M9 17.5 Q16 25 23 17.5",
 };
-const FACE_FILL: Record<number, string> = { 1: "#FFC9AE", 2: "#FCE8A9", 3: "#DDF7EE", 4: "#A9E8D2", 5: "#22C39A" };
+const FACE_FILL: Record<number, string> = { 1: "#FBCFC6", 2: "#F1E2C2", 3: "#F4EFE8", 4: "#E3D8CA", 5: "#D9CBB8" };
 
 function Face({ n }: { n: number }) {
   return (
     <svg width="44" height="44" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <circle cx="16" cy="16" r="14" fill={FACE_FILL[n]} stroke="#2B1A3F" strokeWidth="1.8" />
-      <circle cx="11.5" cy="12.5" r="1.7" fill="#2B1A3F" />
-      <circle cx="20.5" cy="12.5" r="1.7" fill="#2B1A3F" />
-      <path d={FACE_MOUTH[n]} fill="none" stroke="#2B1A3F" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="16" cy="16" r="14" fill={FACE_FILL[n]} stroke="#1E1B2E" strokeWidth="1.8" />
+      <circle cx="11.5" cy="12.5" r="1.7" fill="#1E1B2E" />
+      <circle cx="20.5" cy="12.5" r="1.7" fill="#1E1B2E" />
+      <path d={FACE_MOUTH[n]} fill="none" stroke="#1E1B2E" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -95,7 +95,7 @@ export function CheckIn({ overview, onSaved }: { overview: MindOverview; onSaved
                     setFace(f.face);
                     setError("");
                   }}
-                  className={`bubbles-press flex min-h-[84px] flex-col items-center justify-center gap-1 rounded-2xl border-2 px-1 py-2 text-body-sm font-extrabold ${on ? "border-bubbles-sun-deep bg-tint-sun text-ink" : "border-line bg-surface text-ink-soft hover:border-line-strong"}`}
+                  className={`bubbles-press flex min-h-[84px] flex-col items-center justify-center gap-1 rounded-2xl border px-1 py-2 text-body-sm font-extrabold ${on ? "border-bubbles-sun-deep bg-tint-sun text-ink" : "border-line bg-surface text-ink-soft hover:border-line-strong"}`}
                 >
                   <Face n={f.face} />
                   {f.label}

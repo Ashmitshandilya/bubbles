@@ -223,7 +223,7 @@ function Rhythm({ pulse, tone }: { pulse: Pulse; tone: Tone }) {
               style={{ height: `${Math.max(25, (n / max) * 100)}%` }}
             />
           ) : (
-            <span key={i} className="block h-1.5 w-full rounded-full border-2 border-dashed border-line-strong" />
+            <span key={i} className="block h-1.5 w-full rounded-full border border-dashed border-line-strong" />
           ),
         )}
       </div>

@@ -105,7 +105,7 @@ function Entry({ entry, onDeleted }: { entry: JournalEntry; onDeleted: () => voi
     onDeleted();
   }
   return (
-    <li className="rounded-2xl border-2 border-line bg-surface p-4">
+    <li className="rounded-2xl border border-line bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="m-0 text-body-sm font-extrabold text-muted">{shortDay(entry.date, true)}</p>
         <span className={`${PILL} ${entry.local_only ? "bg-tint-grape text-bubbles-grape-deep" : "bg-blush text-ink-soft"}`}>{entry.local_only ? "Private from AI" : "AI features may use this"}</span>

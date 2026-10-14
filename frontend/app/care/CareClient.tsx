@@ -251,7 +251,7 @@ function DoctorPrep() {
         </div>
 
         {/* Visit-ready summary: what changed since the last visit, from data already on file. */}
-        <section aria-labelledby="ready-title" className="bubbles-rise rounded-[32px] bg-tint-sky p-5 text-ink sm:p-8">
+        <section aria-labelledby="ready-title" className="bubbles-rise rounded-[24px] bg-tint-sky p-5 text-ink sm:p-8">
           <div className="flex flex-wrap items-start gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-body-sm font-extrabold uppercase tracking-wide text-bubbles-sky-deep">Doctor prep</p>
@@ -262,7 +262,6 @@ function DoctorPrep() {
                 Organized from your own logs. Bubbles doesn&apos;t diagnose; your clinician makes the call.
               </p>
             </div>
-            <BubblesMascot size={64} mood="calm" animated={false} />
           </div>
 
           <dl className="m-0 mt-6 grid gap-3 sm:grid-cols-3">
@@ -375,7 +374,7 @@ function DoctorPrep() {
                   value={ownDraft}
                   onChange={(e) => setOwnDraft(e.target.value)}
                   maxLength={QUESTION_MAX}
-                  className="mt-2 min-h-[48px] w-full rounded-2xl border-2 border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none"
+                  className="mt-2 min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none"
                 />
               </div>
               <button type="submit" disabled={!ownDraft.trim()} className={BTN_SECONDARY}>
@@ -409,7 +408,7 @@ function DoctorPrep() {
                 onChange={(e) => setDraft(e.target.value)}
                 maxLength={200}
                 placeholder="e.g. headaches before my period"
-                className="min-h-[48px] w-full rounded-2xl border-2 border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none"
+                className="min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none"
               />
               <button type="submit" className={BTN_PRIMARY}>
                 {concern && concern === draft.trim() ? "Updated" : "Prepare"}

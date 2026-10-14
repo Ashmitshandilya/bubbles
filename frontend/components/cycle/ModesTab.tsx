@@ -12,7 +12,7 @@ import { PrivacyPanel } from "./PrivacyPanel";
 import { Card, InlineError, PanelError, PanelSkeleton, TabHeading } from "./shared";
 
 const CHOICE_CARD =
-  "relative flex min-h-[64px] cursor-pointer gap-3 rounded-3xl border-2 p-4 has-[:checked]:border-bubbles-pink-ink has-[:checked]:bg-tint-pink has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-bubbles-grape border-line bg-surface";
+  "relative flex min-h-[64px] cursor-pointer gap-3 rounded-3xl border p-4 has-[:checked]:border-bubbles-pink-ink has-[:checked]:bg-tint-pink has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-bubbles-grape border-line bg-surface";
 
 export function ModesTab() {
   const { settings, settingsStatus, settingsError, reloadSettings, overview, saveSettings, today, announce } = useCycle();
@@ -67,7 +67,7 @@ export function ModesTab() {
                 <li key={m.id}>
                   <label className={CHOICE_CARD}>
                     <input type="radio" name="cycle-mode" className="sr-only" checked={d.mode === m.id} onChange={() => change({ mode: m.id })} />
-                    <span aria-hidden="true" className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 text-sm font-extrabold ${d.mode === m.id ? "border-bubbles-pink-ink bg-bubbles-pink-ink text-white" : "border-line-strong"}`}>
+                    <span aria-hidden="true" className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-sm font-extrabold ${d.mode === m.id ? "border-bubbles-pink-ink bg-bubbles-pink-ink text-white" : "border-line-strong"}`}>
                       {d.mode === m.id ? "✓" : ""}
                     </span>
                     <span>

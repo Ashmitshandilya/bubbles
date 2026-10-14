@@ -122,7 +122,7 @@ export function NotificationBell() {
           setOpen((v) => !v);
           if (!open) void load(false);
         }}
-        className="bubbles-press relative inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-line bg-surface text-ink hover:border-line-strong"
+        className="bubbles-press relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-ink hover:border-line-strong"
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
           <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />
@@ -147,7 +147,7 @@ export function NotificationBell() {
             const next = e.relatedTarget as Node | null;
             if (next && !popRef.current?.contains(next) && !buttonRef.current?.contains(next)) close(false);
           }}
-          className="absolute right-0 top-full z-[80] mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-3xl border-2 border-line bg-surface p-4 shadow-lg outline-none"
+          className="absolute right-0 top-full z-[80] mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-3xl border border-line bg-surface p-4 shadow-lg outline-none"
         >
           <div className="flex items-center justify-between gap-2">
             <h2 className="m-0 font-display text-h4 text-default">Notifications</h2>
@@ -174,7 +174,7 @@ export function NotificationBell() {
           ) : (
             <ul className="m-0 mt-3 flex max-h-80 list-none flex-col gap-2 overflow-y-auto p-0">
               {items.map((n) => (
-                <li key={n.id} className={`rounded-2xl px-3 py-2 ${n.read ? "bg-blush" : "border-2 border-bubbles-pink bg-tint-pink"}`}>
+                <li key={n.id} className={`rounded-2xl px-3 py-2 ${n.read ? "bg-blush" : "border border-bubbles-pink bg-tint-pink"}`}>
                   <p className="m-0 text-[0.75rem] font-extrabold text-muted">
                     {KIND_LABEL[n.kind] ?? "Bubbles"} · {timeAgo(n.created_at)}
                     {!n.read && <span className="ml-2 font-extrabold text-bubbles-pink-deep">New</span>}

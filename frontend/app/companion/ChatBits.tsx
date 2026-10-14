@@ -142,10 +142,9 @@ export function ThinkingBubble() {
     <li
       role="status"
       aria-live="polite"
-      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-[18px] py-3"
+      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border border-bubbles-grape/15 bg-surface px-[18px] py-3"
     >
-      <BubblesMascot size={32} mood="thinking" />
-      <span className="text-body-sm font-extrabold text-bubbles-grape-deep">Checking your history and trusted sources</span>
+      <span className="text-body-sm font-semibold text-ink-soft">Checking your history and trusted sources</span>
       <span className="inline-flex shrink-0 gap-1" aria-hidden="true">
         <span className="bubbles-thinking-dot" />
         <span className="bubbles-thinking-dot" />
@@ -171,7 +170,7 @@ export function PromptCards({ cards, disabled, onPick }: { cards: PromptCard[]; 
           type="button"
           disabled={disabled}
           onClick={() => onPick(card.text)}
-          className="bubbles-lift flex min-h-[44px] flex-col items-start gap-2.5 rounded-3xl border-2 border-line bg-surface p-4 text-left hover:border-bubbles-grape/40 disabled:cursor-not-allowed disabled:opacity-60"
+          className="bubbles-lift flex min-h-[44px] flex-col items-start gap-2.5 rounded-3xl border border-line bg-surface p-4 text-left hover:border-bubbles-grape/40 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.75rem] font-extrabold ${TONE[card.tone].chip}`}>{card.tag}</span>
           <span className="text-body font-bold leading-snug text-ink">{card.text}</span>
@@ -264,10 +263,12 @@ function EventCard({
   if (resolved) {
     if (saved.length) {
       return (
-        <div ref={resultRef} tabIndex={-1} role="status" className="bubbles-pop-in flex items-center gap-3 rounded-3xl bg-tint-mint px-4 py-3 outline-offset-4">
-          <BubblesMascot size={44} mood="happy" />
+        <div ref={resultRef} tabIndex={-1} role="status" className="bubbles-pop-in flex items-center gap-3 rounded-3xl border border-line bg-surface px-4 py-3 outline-offset-4">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tint-grape text-bubbles-grape-deep">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          </span>
           <div className="min-w-0">
-            <strong className="block font-display text-h4 font-semibold text-bubbles-mint-deep">Saved to your health record</strong>
+            <strong className="block font-display text-h4 text-ink">Saved to your health record</strong>
             <span className="block text-body-sm text-ink-soft">
               {saved.map(eventLabel).join(", ")}
               {skipped.length ? ` · skipped ${skipped.length}` : ""}
@@ -277,7 +278,7 @@ function EventCard({
       );
     }
     return (
-      <div ref={resultRef} tabIndex={-1} role="status" className="rounded-3xl border-2 border-line bg-surface px-4 py-3 text-body-sm text-ink-soft outline-offset-4">
+      <div ref={resultRef} tabIndex={-1} role="status" className="rounded-3xl border border-line bg-surface px-4 py-3 text-body-sm text-ink-soft outline-offset-4">
         {withdrawn.length === confirmable.length
           ? "Bubbles withdrew this after your correction. Nothing was saved."
           : "Okay, nothing from this message was saved."}
@@ -289,7 +290,7 @@ function EventCard({
   return (
     <section
       aria-label="Health details Bubbles noticed"
-      className="flex flex-col gap-3 rounded-3xl border-2 border-dashed border-bubbles-pink/60 bg-blush px-4 py-4 sm:px-5"
+      className="flex flex-col gap-3 rounded-3xl border border-dashed border-bubbles-pink/60 bg-blush px-4 py-4 sm:px-5"
     >
       <h3 className="m-0 font-display text-h4 font-semibold">
         {confirmable.length ? `Should I save ${many ? "these" : "this"} to your health record?` : "Bubbles noticed"}
@@ -303,7 +304,7 @@ function EventCard({
           const denied = event.notPresent.length > 0;
           const struck = state === "retracted" ? "line-through" : "";
           return (
-            <li key={event.id ?? `${event.eventType}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-line bg-surface px-3 py-2">
+            <li key={event.id ?? `${event.eventType}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface px-3 py-2">
               <div data-private className="min-w-0 text-body-sm">
                 {denied ? (
                   <>
@@ -375,7 +376,7 @@ function EventCard({
  */
 function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
   return (
-    <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[18px] bg-tint-sky p-4">
+    <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[20px] bg-tint-sky p-4">
       <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
         If you say yes, this message, your recent messages here and a short summary of your profile and notes (such as your date of birth, gender and
         recent entries) go to an outside AI model.
@@ -419,7 +420,7 @@ function ReplyFeedback({
       aria-label={label}
       disabled={busy}
       onClick={() => onRate(rating)}
-      className={`bubbles-press inline-flex h-11 w-11 items-center justify-center rounded-full border-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`bubbles-press inline-flex h-11 w-11 items-center justify-center rounded-full border disabled:cursor-not-allowed disabled:opacity-60 ${
         rated === rating ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
       }`}
     >
@@ -444,7 +445,7 @@ function ReplyFeedback({
               aria-pressed={feedback?.reason === r.id}
               disabled={busy}
               onClick={() => onRate("down", r.id)}
-              className={`bubbles-press min-h-[44px] rounded-full border-2 px-4 text-body-sm font-extrabold disabled:opacity-60 ${
+              className={`bubbles-press min-h-[44px] rounded-full border px-4 text-body-sm font-extrabold disabled:opacity-60 ${
                 feedback?.reason === r.id ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft hover:border-line-strong"
               }`}
             >
@@ -498,7 +499,7 @@ export function BubblesReply({
     // available behind a disclosure so nothing is silently erased.
     return (
       <li data-kind={message.kind} className="flex w-full flex-col gap-3 self-start sm:max-w-[88%]">
-        <div className="flex flex-col gap-2 rounded-[20px] border-2 border-line bg-surface px-5 py-4 text-ink">
+        <div className="flex flex-col gap-2 rounded-[20px] border border-line bg-surface px-5 py-4 text-ink">
           <div role="status" className="flex flex-col gap-1.5">
             <h3 className="m-0 font-display text-h4 font-semibold">Earlier warning withdrawn</h3>
             <p className="m-0 text-body-sm text-ink-soft">{retractionNote(message.retractionConcepts)}</p>
@@ -531,7 +532,7 @@ export function BubblesReply({
               : "If this is happening now or feels severe, call your local emergency number or go to the nearest emergency department."}
           </p>
         </div>
-        <div className="rounded-[20px] border-2 border-bubbles-urgent bg-surface px-5 py-4 text-body leading-relaxed text-ink">
+        <div className="rounded-[20px] border border-bubbles-urgent bg-surface px-5 py-4 text-body leading-relaxed text-ink">
           <MessageBody content={message.content} />
         </div>
       </li>
@@ -545,7 +546,7 @@ export function BubblesReply({
       <span className="mt-1 flex w-9 shrink-0 justify-center">{showAvatar && <BubblesMascot size={36} animated={false} />}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
       {message.safetyLevel === "AMBER" && (
-        <div className="flex items-start gap-2.5 rounded-[18px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
+        <div className="flex items-start gap-2.5 rounded-[20px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
           <span className="mt-0.5">
             <Icon d={ICONS.warn} size={20} />
           </span>
@@ -563,7 +564,7 @@ export function BubblesReply({
           )}
         </div>
       )}
-      <div data-private className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink">
+      <div data-private className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink">
         <MessageBody content={message.content} />
         <EvidenceRow evidence={message.evidence ?? []} confidence={message.confidence} />
       </div>
@@ -582,7 +583,7 @@ export function BubblesReply({
               type="button"
               disabled={chipsDisabled}
               onClick={() => onChip(chip)}
-              className="bubbles-press min-h-[44px] rounded-full border-2 border-bubbles-grape/20 bg-surface px-4 text-left text-body-sm font-extrabold text-bubbles-grape-deep hover:border-bubbles-grape disabled:cursor-not-allowed disabled:opacity-60"
+              className="bubbles-press min-h-[44px] rounded-full border border-bubbles-grape/20 bg-surface px-4 text-left text-body-sm font-extrabold text-bubbles-grape-deep hover:border-bubbles-grape disabled:cursor-not-allowed disabled:opacity-60"
             >
               {chip}
             </button>
@@ -630,7 +631,7 @@ export function ConversationList({
       {state === "error" && (
         <div role="alert" className="flex flex-col items-start gap-2 rounded-2xl bg-tint-pink px-3.5 py-3 text-body-sm text-ink">
           Bubbles couldn&apos;t load your conversations.
-          <button type="button" onClick={onRetry} className="min-h-[44px] rounded-full border-2 border-ink bg-surface px-4 text-body-sm font-extrabold">
+          <button type="button" onClick={onRetry} className="min-h-[44px] rounded-full border border-line-strong bg-surface px-4 text-body-sm font-extrabold">
             Try again
           </button>
         </div>

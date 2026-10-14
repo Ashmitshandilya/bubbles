@@ -22,7 +22,7 @@ export const SIGNAL: Record<Signal, { tint: string; ink: string; on: string; sol
 export const BTN_TEXT =
   "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-4 text-body-sm font-extrabold text-bubbles-grape-deep hover:bg-tint-grape disabled:opacity-60";
 export const INPUT =
-  "min-h-[48px] w-full min-w-0 rounded-[20px] border-2 border-line bg-surface px-4 py-2.5 text-body text-default placeholder:text-ink-faint hover:border-line-strong focus:border-bubbles-grape aria-[invalid=true]:border-bubbles-pink-ink";
+  "min-h-[48px] w-full min-w-0 rounded-[20px] border border-line bg-surface px-4 py-2.5 text-body text-default placeholder:text-ink-faint hover:border-line-strong focus:border-bubbles-grape aria-[invalid=true]:border-bubbles-pink-ink";
 
 /* ── Layout ─────────────────────────────────────────────────────────── */
 
@@ -131,7 +131,7 @@ export function Switch({ label, hint, checked, onChange, disabled = false, offWo
         onClick={() => onChange(!checked)}
         className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full pl-1 pr-3 disabled:opacity-60"
       >
-        <span aria-hidden="true" className={`relative h-7 w-12 shrink-0 rounded-full border-2 ${checked ? "border-bubbles-mint-deep bg-bubbles-mint-deep" : "border-line-strong bg-surface"}`}>
+        <span aria-hidden="true" className={`relative h-7 w-12 shrink-0 rounded-full border ${checked ? "border-bubbles-mint-deep bg-bubbles-mint-deep" : "border-line-strong bg-surface"}`}>
           <span className={`absolute top-0.5 h-5 w-5 rounded-full ${checked ? "left-[1.375rem] bg-white" : "left-0.5 bg-line-strong"}`} />
         </span>
         <span aria-hidden="true" className="w-8 text-body-sm font-extrabold text-ink">
@@ -163,7 +163,7 @@ export function ToggleChips<T extends string | number>({ legend, options, select
               type="button"
               aria-pressed={on}
               onClick={() => onToggle(o.value)}
-              className={`bubbles-press min-h-[44px] rounded-full border-2 px-4 text-body-sm font-extrabold ${on ? SIGNAL[signal].on : "border-line bg-surface text-muted hover:border-line-strong hover:text-default"}`}
+              className={`bubbles-press min-h-[44px] rounded-full border px-4 text-body-sm font-extrabold ${on ? SIGNAL[signal].on : "border-line bg-surface text-muted hover:border-line-strong hover:text-default"}`}
             >
               {on && <span aria-hidden="true">✓ </span>}
               {o.label}
@@ -253,7 +253,7 @@ export function QueryView<T>({ query, onRetry, what, skeleton, children }: {
 /** Empty state without the mascot-heavy chrome: a dashed card with words and (optionally) one action. */
 export function EmptyNote({ title, children, action }: { title: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="rounded-2xl border-2 border-dashed border-line-strong bg-blush px-4 py-4">
+    <div className="rounded-2xl border border-dashed border-line-strong bg-blush px-4 py-4">
       <p className="m-0 font-display text-h4 text-default">{title}</p>
       <div className="mt-1 text-body-sm text-muted">{children}</div>
       {action && <div className="mt-3">{action}</div>}

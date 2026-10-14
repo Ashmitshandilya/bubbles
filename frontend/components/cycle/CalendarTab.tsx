@@ -14,7 +14,7 @@ import { MonthGrid } from "./MonthGrid";
 import { Card, PanelError, TabHeading } from "./shared";
 import { YearView } from "./YearView";
 
-const NAV = "bubbles-press inline-flex h-11 min-w-[44px] items-center justify-center rounded-full border-2 border-line bg-surface px-3 font-extrabold text-ink hover:border-line-strong";
+const NAV = "bubbles-press inline-flex h-11 min-w-[44px] items-center justify-center rounded-full border border-line bg-surface px-3 font-extrabold text-ink hover:border-line-strong";
 
 function toMap(days: CalendarDay[] | undefined): Map<string, CalendarDay> {
   return new Map((days ?? []).map((d) => [d.date, d]));
@@ -65,7 +65,7 @@ export function CalendarTab() {
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => setView(v)}
-                className={`bubbles-press min-h-[44px] rounded-full border-2 px-4 text-body-sm font-extrabold ${view === v ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft"}`}
+                className={`bubbles-press min-h-[44px] rounded-full border px-4 text-body-sm font-extrabold ${view === v ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft"}`}
               >
                 {view === v && <span aria-hidden="true">✓ </span>}
                 {v === "month" ? "Month" : "Year"}
@@ -128,7 +128,7 @@ function Legend() {
       {MARKER_LEGEND.map((l) => (
         <li key={l.kind} className="flex items-center gap-1.5"><Marker kind={l.kind} size={14} />{l.label}</li>
       ))}
-      <li className="flex items-center gap-1.5"><span aria-hidden="true" className="inline-block h-3.5 w-3.5 rounded border-2 border-ink" />Today</li>
+      <li className="flex items-center gap-1.5"><span aria-hidden="true" className="inline-block h-3.5 w-3.5 rounded border border-ink" />Today</li>
     </ul>
   );
 }

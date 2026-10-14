@@ -154,7 +154,7 @@ function PlanView({ doc, reload, onChange }: { doc: DietPlanDoc; reload: () => v
             tabIndex={i === index ? 0 : -1}
             onClick={() => setIndex(i)}
             onKeyDown={(e) => onKey(e, i)}
-            className={`bubbles-press min-h-[44px] min-w-[64px] rounded-full border-2 px-4 text-body-sm font-extrabold ${i === index ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong"}`}
+            className={`bubbles-press min-h-[44px] min-w-[64px] rounded-full border px-4 text-body-sm font-extrabold ${i === index ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong"}`}
           >
             Day {d.day}
           </button>

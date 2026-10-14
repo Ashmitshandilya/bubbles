@@ -201,7 +201,7 @@ function ScheduleCard({ s, onEdit, onChanged }: { s: Schedule; onEdit: () => voi
   }
 
   return (
-    <li className={`rounded-2xl border-2 p-4 ${s.active ? "border-line bg-surface" : "border-dashed border-line-strong bg-blush"}`}>
+    <li className={`rounded-2xl border p-4 ${s.active ? "border-line bg-surface" : "border-dashed border-line-strong bg-blush"}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="m-0 break-words font-display text-h4 text-default">

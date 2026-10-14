@@ -21,7 +21,7 @@ export function PrivacyNotice() {
   return (
     <section
       aria-label="Privacy notice"
-      className="bubbles-rise fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-4 right-4 z-50 rounded-[22px] border-2 border-line bg-surface p-4 shadow-md sm:right-auto sm:max-w-sm lg:bottom-4"
+      className="bubbles-rise fixed bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] left-4 right-4 z-50 rounded-[20px] border border-line bg-surface p-4 shadow-md sm:right-auto sm:max-w-sm lg:bottom-4"
     >
       <p className="m-0 text-body-sm font-semibold text-ink-soft">{NOTICE_TEXT}</p>
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">

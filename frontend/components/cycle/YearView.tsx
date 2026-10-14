@@ -24,7 +24,7 @@ export function YearView({ year, days, weekStart, onOpenMonth, busy }: { year: n
               type="button"
               onClick={() => onOpenMonth(ym)}
               aria-label={`${monthLabel(ym)}: ${monthSummary(inMonth)}. Open month`}
-              className="bubbles-press block min-h-[44px] w-full rounded-3xl border-2 border-line bg-surface p-3 text-left hover:border-line-strong"
+              className="bubbles-press block min-h-[44px] w-full rounded-3xl border border-line bg-surface p-3 text-left hover:border-line-strong"
             >
               <span className="block font-display text-h4 text-ink">{name}</span>
               <svg viewBox={`0 0 ${7 * CELL} ${rows.length * CELL}`} className="mt-2 block w-full" aria-hidden="true" focusable="false">

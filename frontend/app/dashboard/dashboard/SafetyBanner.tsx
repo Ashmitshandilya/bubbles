@@ -9,7 +9,7 @@ export function SafetyBanner({ level, reasons }: { level: SafetyLevel; reasons: 
 
   if (level === "RED") {
     return (
-      <div role="alert" className="rounded-[18px] bg-bubbles-urgent px-5 py-4 text-white">
+      <div role="alert" className="rounded-[20px] bg-bubbles-urgent px-5 py-4 text-white">
         <p className="m-0 text-base font-extrabold">Please get urgent help now if this may be an emergency.</p>
         <p className="m-0 mt-1 text-[0.9375rem]">Call your local emergency number or go to the nearest emergency department.{noticed}</p>
       </div>
@@ -17,7 +17,7 @@ export function SafetyBanner({ level, reasons }: { level: SafetyLevel; reasons: 
   }
 
   return (
-    <div role="status" className="rounded-[18px] border-2 border-[#FCE8A9] bg-tint-sun px-5 py-4 text-[#5C3E00]">
+    <div role="status" className="rounded-[20px] border border-[#F1E2C2] bg-tint-sun px-5 py-4 text-[#5C3E06]">
       <p className="m-0 text-[0.9375rem] font-extrabold">This may deserve timely medical attention.</p>
       <p className="m-0 mt-1 text-[0.9375rem]">Consider contacting a clinician soon, and get urgent care if it gets worse.{noticed}</p>
     </div>

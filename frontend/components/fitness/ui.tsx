@@ -61,7 +61,7 @@ export function SubNav() {
               <Link
                 href={s.href}
                 aria-current={active ? "page" : undefined}
-                className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full border-2 px-4 text-body-sm font-extrabold no-underline ${
+                className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full border px-4 text-body-sm font-extrabold no-underline ${
                   active ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
                 }`}
               >
@@ -272,7 +272,7 @@ export function ConsentCard({ id, checked, onChange, title, children, label }: {
   id: string; checked: boolean; onChange: (v: boolean) => void; title: string; children: ReactNode; label: string;
 }) {
   return (
-    <div className="rounded-3xl border-2 border-bubbles-grape bg-tint-grape p-5">
+    <div className="rounded-3xl border border-bubbles-grape bg-tint-grape p-5">
       <h3 className="m-0 font-display text-h4 text-ink">{title}</h3>
       <div className="mt-2 flex flex-col gap-2 text-body-sm text-ink">{children}</div>
       <label htmlFor={id} className="mt-4 flex min-h-[44px] cursor-pointer items-start gap-3 text-body font-extrabold text-ink">
@@ -318,7 +318,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
       className="m-0 mt-auto max-h-[94dvh] w-full max-w-none overflow-y-auto overscroll-contain bg-transparent p-0 text-ink backdrop:bg-ink/55 sm:m-auto sm:w-[calc(100%-2rem)] sm:max-w-[600px]"
     >
       {open && (
-        <div className="bubbles-sheet-up flex flex-col gap-4 rounded-t-[36px] bg-surface px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-4 sm:rounded-[32px] sm:px-7 sm:pb-7 sm:pt-6">
+        <div className="bubbles-sheet-up flex flex-col gap-4 rounded-t-[24px] bg-surface px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-4 sm:rounded-[24px] sm:px-7 sm:pb-7 sm:pt-6">
           <div className="flex items-start justify-between gap-3">
             <h2 id={titleId} ref={heading} tabIndex={-1} className="m-0 font-display text-h2 text-ink outline-none">
               {title}
@@ -327,7 +327,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-surface text-muted hover:text-ink"
+              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-muted hover:text-ink"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                 <path d="M6 6l12 12M18 6 6 18" />
@@ -344,7 +344,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
 /* ── Form bits ──────────────────────────────────────────────────────── */
 
 export const INPUT =
-  "w-full min-w-0 min-h-[48px] rounded-[20px] border-2 border-line bg-surface px-4 py-3 text-body text-ink placeholder:text-ink-faint hover:border-line-strong focus:border-bubbles-grape aria-[invalid=true]:border-bubbles-pink-ink";
+  "w-full min-w-0 min-h-[48px] rounded-[20px] border border-line bg-surface px-4 py-3 text-body text-ink placeholder:text-ink-faint hover:border-line-strong focus:border-bubbles-grape aria-[invalid=true]:border-bubbles-pink-ink";
 
 export function Field({ id, label, hint, error, optional, children }: { id: string; label: string; hint?: string; error?: string | null; optional?: boolean; children: ReactNode }) {
   return (
@@ -419,7 +419,7 @@ export function SelectField({ id, label, value, onChange, options, hint, error, 
 export function Chip({ on, onClick, children, onRemove, removeLabel }: { on?: boolean; onClick?: () => void; children: ReactNode; onRemove?: () => void; removeLabel?: string }) {
   if (onRemove) {
     return (
-      <span className="inline-flex min-h-[44px] items-center gap-1 rounded-full border-2 border-bubbles-grape bg-tint-grape pl-4 pr-1 text-body-sm font-extrabold text-bubbles-grape-deep">
+      <span className="inline-flex min-h-[44px] items-center gap-1 rounded-full border border-bubbles-grape bg-tint-grape pl-4 pr-1 text-body-sm font-extrabold text-bubbles-grape-deep">
         {children}
         <button type="button" onClick={onRemove} aria-label={removeLabel ?? "Remove"} className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full hover:bg-surface">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
@@ -434,7 +434,7 @@ export function Chip({ on, onClick, children, onRemove, removeLabel }: { on?: bo
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={`bubbles-press inline-flex min-h-[44px] items-center gap-1.5 rounded-full border-2 px-4 text-body-sm font-extrabold ${
+      className={`bubbles-press inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-4 text-body-sm font-extrabold ${
         on ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
       }`}
     >
@@ -531,7 +531,7 @@ export function TagInput({ id, label, values, onChange, suggestions = [], hint, 
           }}
           className={INPUT}
         />
-        <button type="button" onClick={() => add(text)} disabled={!text.trim()} className="bubbles-press min-h-[48px] shrink-0 rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold text-ink disabled:opacity-50">
+        <button type="button" onClick={() => add(text)} disabled={!text.trim()} className="bubbles-press min-h-[48px] shrink-0 rounded-full border border-line-strong bg-surface px-5 text-body-sm font-extrabold text-ink disabled:opacity-50">
           Add
         </button>
       </div>

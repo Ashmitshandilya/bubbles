@@ -99,7 +99,7 @@ function Settings() {
           <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
             {GROUPS.map(([id, label]) => (
               <li key={id}>
-                <a href={`#${id}`} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border-2 border-line bg-surface px-4 text-body-sm font-extrabold text-ink no-underline hover:border-line-strong">
+                <a href={`#${id}`} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-ink no-underline hover:border-line-strong">
                   {label}
                 </a>
               </li>
