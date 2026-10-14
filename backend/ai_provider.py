@@ -24,13 +24,23 @@ ALLOW_KEYLESS_HEALTH_DATA = os.getenv("ALLOW_KEYLESS_HEALTH_DATA", "false").lowe
 
 FREE_MODEL_ALLOWLIST = {
     "Groq": {"openai/gpt-oss-120b", "openai/gpt-oss-20b", "qwen/qwen3.8-27b", "qwen/qwen3.6-27b"},
-    "NVIDIA": {"deepseek-ai/deepseek-v4-flash-0731", "nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3.5-lightning-30b-a3b", "openai/gpt-oss-20b"},
+    # deepseek-v4-flash-0731 was retired (HTTP 410, Oct 2026); gpt-oss-20b on NVIDIA took ~45 s per reply.
+    "NVIDIA": {"nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3.5-lightning-30b-a3b"},
     "Mistral": {"ministral-14b-latest", "ministral-8b-latest", "ministral-3b-latest"},
     "KeylessAI": {"openai-fast"},
     "Kilo": {"kilo-auto/free"},
     "Murakumo": {"murakumo-main"},
     "BlockRun": {"nvidia/nemotron-3.5-lightning"},
     "Animica": {"kimi-k3"},
+}
+
+# Used when the configured model is not (or no longer) on the allowlist, so a retired model id left in a hosting
+# dashboard degrades to a known free model instead of taking the provider out of the chain. Measured Oct 2026:
+# Groq gpt-oss-120b ~0.4 s, NVIDIA nemotron-3-super ~0.7 s for a short reply.
+FREE_DEFAULT_MODEL = {
+    "Groq": "openai/gpt-oss-120b",
+    "NVIDIA": "nvidia/nemotron-3-super-120b-a12b",
+    "Mistral": "ministral-14b-latest",
 }
 
 REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "45"))
@@ -159,6 +169,8 @@ def _post_openai_compatible(
         allowed = FREE_MODEL_ALLOWLIST.get(provider)
         # Fail closed: a provider with no explicit free-model policy must not
         # become an accidental paid-model route when paid AI is disabled.
+        if allowed and model not in allowed and FREE_DEFAULT_MODEL.get(provider) in allowed:
+            model = FREE_DEFAULT_MODEL[provider]
         if not allowed or model not in allowed:
             raise ProviderError(
                 f"{provider}: model {model!r} is not on BUBBLES' explicit free-model allowlist."
@@ -280,7 +292,7 @@ def call_groq(system_instruction: str, user_message: str) -> ProviderResult:
         api_key=_require_key("GROQ_API_KEY"),
         model=os.getenv(
             "GROQ_MODEL",
-            "openai/gpt-oss-20b",
+            FREE_DEFAULT_MODEL["Groq"],
         ),
         system_instruction=system_instruction,
         user_message=user_message,
@@ -297,7 +309,7 @@ def call_nvidia(system_instruction: str, user_message: str) -> ProviderResult:
         api_key=_require_key("NVIDIA_API_KEY"),
         model=os.getenv(
             "NVIDIA_MODEL",
-            "nvidia/nemotron-3.5-lightning-30b-a3b",
+            FREE_DEFAULT_MODEL["NVIDIA"],
         ),
         system_instruction=system_instruction,
         user_message=user_message,
