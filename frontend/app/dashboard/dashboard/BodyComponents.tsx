@@ -62,7 +62,7 @@ export function OrganPanel({
           <h2 id="organ-panel-title" className="m-0 font-display text-[1.375rem] font-semibold">Your body map</h2>
           <p className="m-0 text-[0.9375rem] text-ink-soft">Where Bubbles has evidence, where it has gaps, and what may deserve a closer look.</p>
         </div>
-        <span className="rounded-full bg-tint-grape px-3 py-1.5 text-[0.8125rem] font-extrabold text-bubbles-grape-deep" aria-live="polite">
+        <span className="rounded-full bg-tint-grape px-3 py-1.5 text-chip font-extrabold text-bubbles-grape-deep" aria-live="polite">
           {loading ? "Updating…" : `${data?.systems_with_data ?? 0} of ${data?.total_systems ?? 9} with data`}
         </span>
       </div>
@@ -86,7 +86,7 @@ export function OrganPanel({
             <div className="h-2 overflow-hidden rounded-full bg-surface" role="img" aria-label={`Evidence completeness ${completeness}%`}>
               <span className="block h-full rounded-full bg-bubbles-grape" style={{ width: `${completeness}%` }} />
             </div>
-            <p className="m-0 mt-2 text-[0.8125rem] font-semibold text-ink-soft">
+            <p className="m-0 mt-2 text-chip font-semibold text-ink-soft">
               Evidence completeness {completeness}% · confidence {Math.round((selectedRow?.confidence ?? 0) * 100)}%
             </p>
           </div>

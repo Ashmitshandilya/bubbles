@@ -103,7 +103,7 @@ function Symptoms() {
                       className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 border-line bg-tint-pink px-4 text-body-sm font-extrabold text-bubbles-pink-deep"
                     >
                       {name}
-                      <span className="rounded-full bg-surface px-2 py-0.5 text-[0.8125rem]">×{count}</span>
+                      <span className="rounded-full bg-surface px-2 py-0.5 text-chip">×{count}</span>
                     </button>
                   </li>
                 ))}

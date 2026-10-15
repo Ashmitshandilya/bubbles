@@ -36,6 +36,7 @@ const ICON_PATHS: Record<string, string> = {
   profile: "M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 21a7 7 0 0 1 14 0",
   fitness: "M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11",
   more: "M5 12h.01M12 12h.01M19 12h.01",
+  search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 16 16",
   settings: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1",
 };
 
@@ -337,7 +338,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
         <Link
           href={item.href}
           aria-current={active ? "page" : undefined}
-          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.8125rem] font-extrabold no-underline ${
+          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold no-underline ${
             active ? "text-bubbles-pink-ink" : "text-muted"
           }`}
         >
@@ -374,7 +375,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
               aria-haspopup="dialog"
               aria-expanded={moreOpen}
               onClick={() => setMoreOpen(true)}
-              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.8125rem] font-extrabold ${
+              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold ${
                 !onTab ? "text-bubbles-pink-ink" : "text-muted"
               }`}
             >
@@ -402,16 +403,27 @@ export function Header({
       <header className="sticky top-0 z-sticky w-full border-b border-soft bg-blush/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-gutter py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <Link href="/dashboard" className="lg:hidden flex items-center gap-2 no-underline text-default" aria-label="Bubbles home">
+            <Link href="/dashboard" className="lg:hidden -ml-1 flex h-11 w-11 shrink-0 items-center justify-center no-underline text-default" aria-label="Bubbles home">
               <BubblesMascot size={36} animated={false} />
             </Link>
             {currentPage && (
               <p className="m-0 truncate font-display text-h3 text-default">{currentPage}</p>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <span className="hidden sm:inline-flex"><StatusLine apiStatus={apiStatus} /></span>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {/* The sidebar shows it from lg up */}
+            <span className="hidden sm:inline-flex lg:hidden"><StatusLine apiStatus={apiStatus} /></span>
             <VeilToggle />
+            {/* Opens the Ask Bubbles palette (AskBubbles.tsx); large screens use its floating button and Ctrl K instead. */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("bubbles:ask"))}
+              aria-label="Ask Bubbles or find a page"
+              aria-haspopup="dialog"
+              className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full border-2 border-line bg-surface text-muted hover:text-default lg:hidden"
+            >
+              <NavIcon id="search" size={20} />
+            </button>
             <NotificationBell />
             <Link
               href="/profile"

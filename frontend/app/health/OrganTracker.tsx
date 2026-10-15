@@ -194,7 +194,7 @@ export function OrganTracker() {
                       <span className={`h-3.5 w-3.5 shrink-0 rounded-full ${status.dot}`} aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block font-extrabold text-ink">{ORGAN_LABEL[system.organ] ?? humanize(system.organ)}</span>
-                        <span className="block text-[0.8125rem] font-bold text-muted">{status.label}</span>
+                        <span className="block text-chip font-bold text-muted">{status.label}</span>
                       </span>
                     </button>
                   </li>
@@ -235,7 +235,7 @@ function OrganDetail({ system }: { system: OrganAssessment }) {
         <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface" aria-hidden="true">
           <div className="h-full rounded-full bg-bubbles-grape" style={{ width: `${evidence}%` }} />
         </div>
-        <p className="mt-1.5 text-[0.8125rem] font-bold text-muted">
+        <p className="mt-1.5 text-chip font-bold text-muted">
           Confidence: {confidenceWord(system.confidence ?? 0)}
         </p>
       </div>
@@ -247,7 +247,7 @@ function OrganDetail({ system }: { system: OrganAssessment }) {
             {signals.slice(0, 4).map((signal) => (
               <li key={signal.factor + signal.direction} className="rounded-2xl bg-surface px-3 py-2 text-body-sm">
                 <span className="font-bold text-ink">{humanize(signal.factor)}</span>
-                <span className="block text-[0.8125rem] font-bold text-muted">{DIRECTION[signal.direction] ?? humanize(signal.direction)}</span>
+                <span className="block text-chip font-bold text-muted">{DIRECTION[signal.direction] ?? humanize(signal.direction)}</span>
               </li>
             ))}
           </ul>
@@ -261,7 +261,7 @@ function OrganDetail({ system }: { system: OrganAssessment }) {
         </div>
       )}
 
-      <p className="mt-4 text-[0.8125rem] text-muted">
+      <p className="mt-4 text-chip text-muted">
         {system.limitations?.[system.limitations.length - 1] ??
           "Bubbles needs more reliable data before saying anything stronger."}
       </p>

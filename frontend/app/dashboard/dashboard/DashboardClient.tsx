@@ -219,8 +219,12 @@ export function DashboardClient() {
 
           <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
 
+          {/* "Your week" sits under the tiles, so on wide screens the left column runs as long as the Patterns column */}
           <div className="flex flex-wrap items-start gap-6">
-            <SignalTiles tiles={tiles} />
+            <div className="flex min-w-0 flex-[2_1_520px] flex-col gap-6">
+              <SignalTiles tiles={tiles} />
+              <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} />
+            </div>
             <aside aria-labelledby="today-patterns" className="flex min-w-0 flex-[1_1_300px] flex-col gap-3.5">
               <Patterns
                 state={patternsState}
@@ -237,8 +241,6 @@ export function DashboardClient() {
             </aside>
           </div>
 
-          <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} />
-
           <WholeHealthCards />
           <PartnerCard />
 
@@ -247,7 +249,7 @@ export function DashboardClient() {
             <BodyMapCard />
           </div>
 
-          <footer className="flex flex-col gap-1 text-[0.8125rem] font-semibold leading-relaxed text-ink-soft">
+          <footer className="flex flex-col gap-1 text-chip font-semibold leading-relaxed text-ink-soft">
             <p className="m-0">Bubbles shares patterns and general guidance, not diagnoses. Missing data is shown as a gap, never as &ldquo;all clear&rdquo;.</p>
             {briefData?.companion?.safety_note && <p className="m-0">{briefData.companion.safety_note}</p>}
           </footer>

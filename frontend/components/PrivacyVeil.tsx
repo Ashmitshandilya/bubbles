@@ -113,7 +113,7 @@ export function VeilToggle({ className = "" }: { className?: string }) {
       aria-label="Hide private details"
       onClick={toggleCover}
       className={`bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 px-4 text-sm font-extrabold ${
-        covered ? "border-bubbles-grape bg-bubbles-grape text-white" : "border-[#E4DCFF] bg-surface text-bubbles-grape-deep"
+        covered ? "border-bubbles-grape bg-bubbles-grape text-white" : "border-line-grape bg-surface text-bubbles-grape-deep"
       } ${className}`}
     >
       <Eye off={covered} />

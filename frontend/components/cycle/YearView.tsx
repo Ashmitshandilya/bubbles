@@ -41,7 +41,7 @@ export function YearView({ year, days, weekStart, onOpenMonth, busy }: { year: n
                   }),
                 )}
               </svg>
-              <span className="mt-1 block text-[0.8125rem] font-semibold text-muted">{monthSummary(inMonth)}</span>
+              <span className="mt-1 block text-chip font-semibold text-muted">{monthSummary(inMonth)}</span>
             </button>
           </li>
         );

@@ -29,6 +29,10 @@
   --font-sans: var(--font-nunito), ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
 
+  /* DESIGN.md "Chip" size as a plain utility (text-chip): font size only, so it combines with weight and responsive
+     prefixes. (The .text-caption class in tokens.css also sets weight and line height.) */
+  --text-chip: 0.8125rem;
+
   --color-brand: var(--bubbles-pink-ink);
   --color-brand-strong: var(--bubbles-pink-deep);
   --color-brand-muted: var(--tint-pink);
@@ -70,6 +74,19 @@
   --color-tint-sky: var(--tint-sky);
   --color-tint-peach: var(--tint-peach);
   --color-tint-urgent: var(--tint-urgent);
+
+  --color-line-pink: var(--line-pink);
+  --color-line-pink-strong: var(--line-pink-strong);
+  --color-line-grape: var(--line-grape);
+  --color-line-grape-strong: var(--line-grape-strong);
+  --color-line-sun: var(--line-sun);
+  --color-line-sun-strong: var(--line-sun-strong);
+  --color-line-mint: var(--line-mint);
+  --color-line-mint-strong: var(--line-mint-strong);
+  --color-line-sky: var(--line-sky);
+  --color-line-sky-strong: var(--line-sky-strong);
+  --color-line-peach: var(--line-peach);
+  --color-line-peach-strong: var(--line-peach-strong);
 }
 
 @layer base {

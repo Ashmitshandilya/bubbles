@@ -68,7 +68,7 @@ export function useAdminQuery<T>(path: string | null, every?: number): [Loaded<T
 
 export function Pill({ tone, children }: { tone: PillTone; children: ReactNode }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-[0.8125rem] font-extrabold ${PILL_TONE[tone]}`}>
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1 text-chip font-extrabold ${PILL_TONE[tone]}`}>
       <span aria-hidden className={`h-2 w-2 rounded-full ${DOT_TONE[tone]}`} />
       {children}
     </span>

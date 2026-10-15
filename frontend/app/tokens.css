@@ -42,6 +42,21 @@
   --tint-peach: #FFE9DF;
   --tint-urgent: #FDE2E4;
 
+  /* Area outlines: --line-* edges a card that belongs to an area; --line-*-strong is its dashed "not logged" edge
+     and the colour of past days in a week chart. Pink uses the ordinary Petal Line. */
+  --line-pink: var(--bubbles-line);
+  --line-pink-strong: #FFB3D3;
+  --line-grape: #E4DCFF;
+  --line-grape-strong: #C9BCFF;
+  --line-sun: #FCE8A9;
+  --line-sun-strong: #F5CF5B;
+  --line-mint: #CFF1E4;
+  --line-mint-strong: #8FDCC2;
+  --line-sky: #D3ECFF;
+  --line-sky-strong: #9FD3FF;
+  --line-peach: #FFD9C8;
+  --line-peach-strong: #FFB894;
+
   /* ── Color: Base ── */
   --color-bg: var(--bubbles-blush);
   --color-bg-elevated: var(--bubbles-white);

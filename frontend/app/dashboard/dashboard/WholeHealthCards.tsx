@@ -1,6 +1,6 @@
 "use client";
 
-// Today: two calm cards that open the Fitness and Cycle sections, plus a one-tap quick-log row.
+// Today: two calm cards that open the Fitness and Cycle sections. (Quick logging is the "Log in a tap" row higher up.)
 // Each card loads on its own and fails on its own, so one slow section never blanks the day.
 
 import Link from "next/link";
@@ -8,15 +8,6 @@ import { BTN_SECONDARY, CARD, ErrorCard, PILL, Skeleton, useBubblesQuery } from 
 import { ProgressRing } from "../../../components/fitness/ui";
 import type { Overview } from "../../lib/cycle-types";
 import type { Summary } from "../../lib/fitness-types";
-
-const QUICK = [
-  { href: "/fitness/calories", label: "Log a meal" },
-  { href: "/fitness/workouts", label: "Log a workout" },
-  { href: "/hydration", label: "Water" },
-  { href: "/cycle", label: "Period & cycle" },
-  { href: "/mind", label: "Mood" },
-  { href: "/medications", label: "Medicines" },
-] as const;
 
 function FitnessCard() {
   const [q, reload] = useBubblesQuery<Summary & { status: string }>("/fitness/summary");
@@ -96,17 +87,10 @@ function CycleCard() {
 
 export function WholeHealthCards() {
   return (
-    <>
-      <div className="grid gap-6 md:grid-cols-2">
-        <FitnessCard />
-        <CycleCard />
-      </div>
-      <nav aria-label="Quick log" className="flex flex-wrap gap-2">
-        {QUICK.map((item) => (
-          <Link key={item.href + item.label} href={item.href} className={`${BTN_SECONDARY} no-underline`}>{item.label}</Link>
-        ))}
-      </nav>
-    </>
+    <div className="grid gap-6 md:grid-cols-2">
+      <FitnessCard />
+      <CycleCard />
+    </div>
   );
 }
 
@@ -117,11 +101,11 @@ export function PartnerCard() {
   return (
     <p className="m-0 px-1 text-body-sm text-muted">
       {n > 0 ? (
-        <Link href="/partner" className="font-extrabold text-bubbles-pink-ink underline">
+        <Link href="/partner" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink underline">
           {n === 1 ? "1 person shares" : `${n} people share`} with you
         </Link>
       ) : (
-        <Link href="/partner" className="font-bold text-muted underline">Share with someone you trust</Link>
+        <Link href="/partner" className="inline-flex min-h-[44px] items-center font-bold text-muted underline">Share with someone you trust</Link>
       )}
     </p>
   );

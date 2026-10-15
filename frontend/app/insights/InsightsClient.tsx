@@ -377,7 +377,7 @@ function PatternCardView({ card }: { card: PatternCard }) {
     <article className={`${CARD} p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className={`${PILL} ${CONFIDENCE_PILL[card.confidence]}`}>{card.confidence} confidence</span>
-        <span className="text-[0.8125rem] font-bold text-muted">{card.window}</span>
+        <span className="text-chip font-bold text-muted">{card.window}</span>
       </div>
       <h3 className="mt-3 text-h3 text-ink">{card.headline}</h3>
       <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Signals involved">

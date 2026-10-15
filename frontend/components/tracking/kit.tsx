@@ -20,38 +20,38 @@ const SIGNALS: Record<Signal, { tint: string; ink: string; button: string; solid
   pink: {
     tint: "bg-tint-pink", ink: "text-bubbles-pink-deep",
     button: "bg-bubbles-pink-ink text-white bubbles-glow", solid: "bg-bubbles-pink-ink text-white",
-    border: "border-line", dashed: "border-[#FFB3D3]", chipOn: "border-bubbles-pink-ink bg-tint-pink text-bubbles-pink-deep",
-    bar: "bg-bubbles-pink", barSoft: "bg-[#FFC2DC]",
+    border: "border-line-pink", dashed: "border-line-pink-strong", chipOn: "border-bubbles-pink-ink bg-tint-pink text-bubbles-pink-deep",
+    bar: "bg-bubbles-pink", barSoft: "bg-line-pink-strong",
   },
   grape: {
     tint: "bg-tint-grape", ink: "text-bubbles-grape-deep",
     button: "bg-bubbles-grape text-white bubbles-glow bubbles-glow-grape", solid: "bg-bubbles-grape text-white",
-    border: "border-[#E4DCFF]", dashed: "border-[#C9BCFF]", chipOn: "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep",
-    bar: "bg-bubbles-grape", barSoft: "bg-[#C9BCFF]",
+    border: "border-line-grape", dashed: "border-line-grape-strong", chipOn: "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep",
+    bar: "bg-bubbles-grape", barSoft: "bg-line-grape-strong",
   },
   sun: {
     tint: "bg-tint-sun", ink: "text-bubbles-sun-deep",
     button: "bg-bubbles-sun text-ink bubbles-glow bubbles-glow-sun", solid: "bg-bubbles-sun text-ink",
-    border: "border-[#FCE8A9]", dashed: "border-[#F5CF5B]", chipOn: "border-bubbles-sun-deep bg-tint-sun text-bubbles-sun-deep",
-    bar: "bg-bubbles-sun", barSoft: "bg-[#FCE8A9]",
+    border: "border-line-sun", dashed: "border-line-sun-strong", chipOn: "border-bubbles-sun-deep bg-tint-sun text-bubbles-sun-deep",
+    bar: "bg-bubbles-sun", barSoft: "bg-line-sun",
   },
   mint: {
     tint: "bg-tint-mint", ink: "text-bubbles-mint-deep",
     button: "bg-bubbles-mint-deep text-white bubbles-glow bubbles-glow-mint", solid: "bg-bubbles-mint-deep text-white",
-    border: "border-[#CFF1E4]", dashed: "border-[#8FDCC2]", chipOn: "border-bubbles-mint-deep bg-tint-mint text-bubbles-mint-deep",
-    bar: "bg-bubbles-mint", barSoft: "bg-[#A9E8D2]",
+    border: "border-line-mint", dashed: "border-line-mint-strong", chipOn: "border-bubbles-mint-deep bg-tint-mint text-bubbles-mint-deep",
+    bar: "bg-bubbles-mint", barSoft: "bg-line-mint-strong",
   },
   sky: {
     tint: "bg-tint-sky", ink: "text-bubbles-sky-deep",
     button: "bg-bubbles-sky-deep text-white bubbles-glow bubbles-glow-sky", solid: "bg-bubbles-sky-deep text-white",
-    border: "border-[#D3ECFF]", dashed: "border-[#9FD3FF]", chipOn: "border-bubbles-sky-deep bg-tint-sky text-bubbles-sky-deep",
-    bar: "bg-bubbles-sky", barSoft: "bg-[#9FD3FF]",
+    border: "border-line-sky", dashed: "border-line-sky-strong", chipOn: "border-bubbles-sky-deep bg-tint-sky text-bubbles-sky-deep",
+    bar: "bg-bubbles-sky", barSoft: "bg-line-sky-strong",
   },
   peach: {
     tint: "bg-tint-peach", ink: "text-bubbles-peach-deep",
     button: "bg-bubbles-peach-deep text-white bubbles-glow bubbles-glow-peach", solid: "bg-bubbles-peach-deep text-white",
-    border: "border-[#FFD9C8]", dashed: "border-[#FFB894]", chipOn: "border-bubbles-peach-deep bg-tint-peach text-bubbles-peach-deep",
-    bar: "bg-bubbles-peach", barSoft: "bg-[#FFC9AE]",
+    border: "border-line-peach", dashed: "border-line-peach-strong", chipOn: "border-bubbles-peach-deep bg-tint-peach text-bubbles-peach-deep",
+    bar: "bg-bubbles-peach", barSoft: "bg-line-peach-strong",
   },
 };
 
@@ -494,7 +494,7 @@ function Chip({ signal, on, onClick, children, tall = false }: { signal: Signal;
       aria-pressed={on}
       onClick={onClick}
       className={`bubbles-press min-h-[48px] border-2 font-extrabold leading-tight ${
-        tall ? "min-h-[60px] rounded-[18px] px-1 text-[0.8125rem] break-words sm:text-[0.9375rem]" : "rounded-full px-4 text-body-sm"
+        tall ? "min-h-[60px] rounded-[18px] px-1 text-chip break-words sm:text-[0.9375rem]" : "rounded-full px-4 text-body-sm"
       } ${on ? SIGNALS[signal].chipOn : "border-line bg-surface text-muted hover:border-line-strong hover:text-default"}`}
     >
       {children}
