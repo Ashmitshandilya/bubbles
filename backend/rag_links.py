@@ -36,6 +36,14 @@ LINK_DOCS: dict[str, list[str]] = {
     "fatigue-labs": ["Fatigue: definition and common causes", "Iron deficiency anaemia: overview", "Underactive thyroid (hypothyroidism): causes, treatment and self-care"],
     "labs-weight": ["Underactive thyroid (hypothyroidism): causes, treatment and self-care"],
     "cycle-labs": ["Heavy periods: overview", "Iron deficiency anaemia: overview", "Underactive thyroid (hypothyroidism): causes, treatment and self-care"],
+    # nutrients, blood markers and hormones (documents added by rag_nutrient_ingest.py; see nutrient_manifest.json)
+    "fatigue-nutrient": ["Fatigue: definition and common causes", "Iron deficiency anaemia: overview", "Ferritin blood test", "Iron tests",
+                         "Vitamin B tests", "Vitamin D test", "Magnesium blood test"],
+    "hair-iron": ["Iron deficiency anaemia: overview", "Ferritin blood test", "Iron tests", "Haemoglobin test"],
+    "mood-vitamind": ["Vitamin D test", "Low mood, sadness and depression: causes, treatment and self-care"],
+    "b12-diet": ["Vitamin B tests", "Homocysteine test"],
+    "cycle-thyroid": ["Underactive thyroid (hypothyroidism): causes, treatment and self-care", "TSH (thyroid stimulating hormone) test",
+                      "Hypothyroidism (underactive thyroid)", "Hyperthyroidism (overactive thyroid)", "Common reasons periods become irregular or stop"],
 }
 LINK_QUERY = {
     "mood-sleep": "sleep and mood link", "activity-mood": "exercise and mood", "activity-sleep": "exercise and sleep",
@@ -44,6 +52,8 @@ LINK_QUERY = {
     "sleep-weight": "sleep and weight", "stress-weight": "stress and weight appetite", "cycle-stress": "stress and periods",
     "fatigue-sleep": "tiredness and sleep", "cycle-fatigue": "heavy periods tiredness iron",
     "fatigue-labs": "tiredness anaemia thyroid", "labs-weight": "underactive thyroid weight gain", "cycle-labs": "periods anaemia thyroid",
+    "fatigue-nutrient": "tiredness vitamin or mineral deficiency blood test", "hair-iron": "hair fall iron ferritin",
+    "mood-vitamind": "vitamin D and mood", "b12-diet": "vitamin B12 vegetarian vegan diet", "cycle-thyroid": "thyroid and periods",
 }
 SERIES_DOMAIN = {"sleep_hours": "sleep", "sleep_quality": "sleep", "mood": "mood", "activity_minutes": "activity", "hydration_ml": "hydration",
                  "symptom_severity": "symptom", "calories": "food", "resting_hr": "heart", "luteal": "cycle"}
