@@ -104,7 +104,7 @@ function Patterns() {
             aria-pressed={days === value}
             onClick={() => setDays(value)}
             className={`bubbles-press min-h-[44px] rounded-full px-5 text-body-sm font-extrabold ${
-              days === value ? "bg-ink text-white" : "border border-line bg-surface text-ink-soft hover:border-line-strong"
+              days === value ? "bg-bubbles-grape text-white" : "border border-line bg-surface text-ink-soft hover:border-line-strong"
             }`}
           >
             Last {value} days
@@ -462,7 +462,7 @@ function TrendView({ analysis, days }: { analysis: NonNullable<LongitudinalRespo
             {counts.map((count, i) => (
               <div key={i} className="flex h-full flex-1 items-end" title={`${weekLabel(i)}: ${count} logs`}>
                 <div
-                  className={`bubbles-bar w-full rounded-t ${count ? "bg-bubbles-grape" : "bg-line"}`}
+                  className={`bubbles-bar w-full rounded-t ${count ? "bg-bubbles-lilac" : "bg-line"}`}
                   style={{ height: count ? `${Math.max(6, (count / peak) * 100)}%` : "3px", animationDelay: `${i * 40}ms` }}
                 />
               </div>

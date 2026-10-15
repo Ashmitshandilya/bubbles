@@ -128,7 +128,7 @@ function Legend() {
       {MARKER_LEGEND.map((l) => (
         <li key={l.kind} className="flex items-center gap-1.5"><Marker kind={l.kind} size={14} />{l.label}</li>
       ))}
-      <li className="flex items-center gap-1.5"><span aria-hidden="true" className="inline-block h-3.5 w-3.5 rounded border border-ink" />Today</li>
+      <li className="flex items-center gap-1.5"><span aria-hidden="true" className="inline-block h-3.5 w-3.5 rounded-full border-2 border-bubbles-grape" />Today</li>
     </ul>
   );
 }

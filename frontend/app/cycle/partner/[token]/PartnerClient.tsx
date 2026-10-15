@@ -76,7 +76,7 @@ export function PartnerClient({ token }: { token: string }) {
             <h1 className="m-0 mt-4 font-display text-h2">Shared with you</h1>
             <p className="m-0 mt-1 text-body-sm font-bold text-muted">{state.data.label}</p>
             <section aria-labelledby="partner-next" className="mt-5 rounded-3xl bg-tint-pink p-5 text-bubbles-pink-deep">
-              <h2 id="partner-next" className="m-0 text-body-sm font-extrabold uppercase tracking-wide">Next period, estimated</h2>
+              <h2 id="partner-next" className="m-0 text-label">Next period, estimated</h2>
               {state.data.next_period ? (
                 <p className="m-0 mt-1 font-display text-h3">Between {formatRange(state.data.next_period.earliest, state.data.next_period.latest).replace(" to ", " and ")}</p>
               ) : (

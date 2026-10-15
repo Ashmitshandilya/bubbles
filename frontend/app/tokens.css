@@ -53,6 +53,12 @@
   --tint-peach: #FDEDE8;
   --tint-urgent: #FDECEA;
 
+  /* Cycle phases: fills, dots and ring segments only, always next to a text label. */
+  --phase-period: #E8336F;
+  --phase-follicular: #FF8A7A;
+  --phase-ovulation: #FFC37A;
+  --phase-luteal: #B49BFF;
+
   /* ── Color: Base ── */
   --color-bg: var(--bubbles-blush);
   --color-bg-elevated: var(--bubbles-white);

@@ -254,7 +254,7 @@ function DoctorPrep() {
         <section aria-labelledby="ready-title" className="bubbles-rise rounded-[24px] bg-tint-sky p-5 text-ink sm:p-8">
           <div className="flex flex-wrap items-start gap-4">
             <div className="min-w-0 flex-1">
-              <p className="text-body-sm font-extrabold uppercase tracking-wide text-bubbles-sky-deep">Doctor prep</p>
+              <p className="text-label text-bubbles-sky-deep">Doctor prep</p>
               <h1 id="ready-title" className="mt-1 text-h1 text-ink">
                 Your visit-ready summary
               </h1>
@@ -264,10 +264,10 @@ function DoctorPrep() {
             </div>
           </div>
 
-          <dl className="m-0 mt-6 grid gap-3 sm:grid-cols-3">
+          <dl className="m-0 mt-6 grid divide-y divide-line overflow-hidden rounded-[20px] border border-line bg-surface sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)] sm:divide-x sm:divide-y-0">
             <VisitTile label="Last visit" value={visitText(last)} loading={visitsLoading} failed={visitsQuery.status === "error"} onRetry={reloadVisits} gap="No visit logged yet" />
             <VisitTile label="Next visit" value={visitText(next)} loading={visitsLoading} failed={false} onRetry={reloadVisits} gap="No upcoming visit logged" />
-            <div className="rounded-2xl bg-surface p-4">
+            <div className="p-4">
               <dt className="text-body-sm font-extrabold text-ink-soft">{last ? "Logged since last visit" : "Logged in the last 6 months"}</dt>
               <dd className="m-0 mt-1">
                 {visitQuery.status === "loading" ? (
@@ -351,7 +351,7 @@ function DoctorPrep() {
                   const on = !skipped.has(question);
                   return (
                     <li key={question}>
-                      <label className={`flex min-h-[48px] cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 ${on ? "bg-tint-sun" : "bg-blush"}`}>
+                      <label className={`flex min-h-[48px] cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 ${on ? "bg-tint-grape" : "bg-blush"}`}>
                         <input type="checkbox" checked={on} onChange={() => toggleQuestion(question)} className="mt-1 h-6 w-6 shrink-0 accent-[var(--bubbles-grape)]" />
                         <span className={`pt-0.5 text-body ${on ? "text-ink" : "text-muted"}`}>
                           <span className="sr-only">Question {i + 1}: </span>
@@ -498,7 +498,7 @@ function DoctorPrep() {
 
 function VisitTile({ label, value, loading, failed, onRetry, gap }: { label: string; value: string | null; loading: boolean; failed: boolean; onRetry: () => void; gap: string }) {
   return (
-    <div className="rounded-2xl bg-surface p-4">
+    <div className="p-4">
       <dt className="text-body-sm font-extrabold text-ink-soft">{label}</dt>
       <dd className="m-0 mt-1 break-words">
         {loading ? (

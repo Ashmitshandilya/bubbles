@@ -27,6 +27,7 @@ export function BubblesMascot({ size = 64, mood = "calm", animated = true, title
 
   return (
     <span
+      data-mascot=""
       className={`relative inline-flex shrink-0 ${motion} ${className}`}
       style={{ width: size, height: size, ...style }}
       role={title ? "img" : undefined}

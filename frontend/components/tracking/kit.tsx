@@ -20,37 +20,37 @@ export type Signal = "pink" | "grape" | "sun" | "mint" | "sky" | "peach";
 const SIGNALS: Record<Signal, { tint: string; ink: string; button: string; solid: string; border: string; dashed: string; chipOn: string; bar: string; barSoft: string }> = {
   pink: {
     tint: "bg-tint-pink", ink: "text-bubbles-pink-deep",
-    button: "bg-bubbles-pink-ink text-white bubbles-glow", solid: "bg-bubbles-pink-ink text-white",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
     border: "border-line", dashed: "border-[#F2A9C0]", chipOn: "border-bubbles-pink-ink bg-tint-pink text-bubbles-pink-deep",
     bar: "bg-bubbles-pink", barSoft: "bg-[#F7C8D6]",
   },
   grape: {
     tint: "bg-tint-grape", ink: "text-bubbles-grape-deep",
-    button: "bg-bubbles-grape text-white bubbles-glow bubbles-glow-grape", solid: "bg-bubbles-grape text-white",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
     border: "border-[#E7E0EC]", dashed: "border-[#C9B6F2]", chipOn: "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep",
     bar: "bg-bubbles-grape", barSoft: "bg-[#C9B6F2]",
   },
   sun: {
     tint: "bg-tint-sun", ink: "text-bubbles-sun-deep",
-    button: "bg-bubbles-sun text-ink bubbles-glow bubbles-glow-sun", solid: "bg-bubbles-sun text-ink",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
     border: "border-[#F1E2C2]", dashed: "border-[#E9C98B]", chipOn: "border-bubbles-sun-deep bg-tint-sun text-bubbles-sun-deep",
     bar: "bg-bubbles-sun", barSoft: "bg-[#F1E2C2]",
   },
   mint: {
     tint: "bg-tint-mint", ink: "text-bubbles-mint-deep",
-    button: "bg-bubbles-mint-deep text-white bubbles-glow bubbles-glow-mint", solid: "bg-bubbles-mint-deep text-white",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
     border: "border-[#E7DED2]", dashed: "border-[#CDBDA8]", chipOn: "border-bubbles-mint-deep bg-tint-mint text-bubbles-mint-deep",
     bar: "bg-bubbles-mint", barSoft: "bg-[#E3D8CA]",
   },
   sky: {
     tint: "bg-tint-sky", ink: "text-bubbles-sky-deep",
-    button: "bg-bubbles-sky-deep text-white bubbles-glow bubbles-glow-sky", solid: "bg-bubbles-sky-deep text-white",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
     border: "border-[#E9DFEE]", dashed: "border-[#CDB9DA]", chipOn: "border-bubbles-sky-deep bg-tint-sky text-bubbles-sky-deep",
     bar: "bg-bubbles-sky", barSoft: "bg-[#CDB9DA]",
   },
   peach: {
     tint: "bg-tint-peach", ink: "text-bubbles-peach-deep",
-    button: "bg-bubbles-peach-deep text-white bubbles-glow bubbles-glow-peach", solid: "bg-bubbles-peach-deep text-white",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
     border: "border-[#F8D9D0]", dashed: "border-[#F5B5A6]", chipOn: "border-bubbles-peach-deep bg-tint-peach text-bubbles-peach-deep",
     bar: "bg-bubbles-peach", barSoft: "bg-[#FBCFC6]",
   },
@@ -112,19 +112,20 @@ export function TrackerShell({ title, children }: { title: string; children: Rea
   if (!session) return null;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-blush">
-      <Header apiStatus={apiStatus} currentPage={title} />
-      <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
-      <div className="flex flex-1">
-        <Sidebar apiStatus={apiStatus} />
-        <main className="min-w-0 flex-1 px-4 pb-10 pt-5 sm:px-6 lg:px-10 lg:pt-8">
+    // Same frame as HubPage: sidebar on the left, then header, notices and the page in one column.
+    <div className="flex min-h-dvh bg-blush">
+      <Sidebar apiStatus={apiStatus} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Header apiStatus={apiStatus} currentPage={title} />
+        <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
+        <main className="min-w-0 flex-1 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
           <div className="mx-auto flex w-full max-w-[920px] flex-col gap-6">
             <SectionTabs />
             {children}
           </div>
         </main>
+        <MobileNav />
       </div>
-      <MobileNav />
     </div>
   );
 }

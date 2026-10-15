@@ -55,7 +55,7 @@ const ROW = "flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 ga
 function Group({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-24">
-      <h2 id={`${id}-title`} className="mb-2 px-1 text-body-sm font-extrabold uppercase tracking-wide text-ink-soft">
+      <h2 id={`${id}-title`} className="mb-2 px-1 text-label text-ink-soft">
         {title}
       </h2>
       {children}

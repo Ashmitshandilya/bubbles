@@ -131,8 +131,8 @@ export function Switch({ label, hint, checked, onChange, disabled = false, offWo
         onClick={() => onChange(!checked)}
         className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full pl-1 pr-3 disabled:opacity-60"
       >
-        <span aria-hidden="true" className={`relative h-7 w-12 shrink-0 rounded-full border ${checked ? "border-bubbles-mint-deep bg-bubbles-mint-deep" : "border-line-strong bg-surface"}`}>
-          <span className={`absolute top-0.5 h-5 w-5 rounded-full ${checked ? "left-[1.375rem] bg-white" : "left-0.5 bg-line-strong"}`} />
+        <span aria-hidden="true" className={`relative h-7 w-12 shrink-0 rounded-full border ${checked ? "border-bubbles-grape bg-bubbles-grape" : "border-ink-faint bg-surface"}`}>
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full ${checked ? "left-[1.375rem] bg-white" : "left-0.5 bg-ink-faint"}`} />
         </span>
         <span aria-hidden="true" className="w-8 text-body-sm font-extrabold text-ink">
           {checked ? onWord : offWord}

@@ -6,7 +6,7 @@ export function SectionCard({ section, idPrefix }: { section: PartnerSection; id
   const id = `${idPrefix}-${section.key}`;
   return (
     <section aria-labelledby={id} className="mt-4 rounded-3xl bg-tint-pink p-5 text-left text-bubbles-pink-deep">
-      <h3 id={id} className="m-0 text-body-sm font-extrabold uppercase tracking-wide">{section.title}</h3>
+      <h3 id={id} className="m-0 text-label">{section.title}</h3>
       {section.range && (
         <p className="m-0 mt-1 font-display text-h3">Between {formatRange(section.range.earliest, section.range.latest).replace(" to ", " and ")}</p>
       )}

@@ -469,6 +469,8 @@ export function CompanionClient() {
 
   const lastReply = [...messages].reverse().find((m) => m.role === "assistant");
   const urgent = lastReply !== undefined && isUrgentMessage(lastReply);
+  // Caution replies hide the header mascot too: no mascot near a safety banner.
+  const caution = lastReply?.safetyLevel === "AMBER" && !lastReply.retracted;
   // Follow-up chips sit under the newest reply only, and only while nothing is in flight. Never under an urgent or
   // withdrawn reply. Backend suggestions win; the static set is only for a calm, ordinary reply.
   const tail = messages.at(-1);
@@ -519,12 +521,12 @@ export function CompanionClient() {
               >
                 <Icon d={ICONS.menu} size={20} />
               </button>
-              {!urgent && <BubblesMascot size={44} />}
+              {!urgent && !caution && <BubblesMascot size={44} animated={false} />}
               <div className="min-w-0">
                 <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">Bubbles</h1>
                 <p
-                  className={`m-0 truncate text-[0.8125rem] font-extrabold ${
-                    memoryLine.startsWith("Memory on") ? "text-bubbles-mint-deep" : "text-ink-soft"
+                  className={`m-0 truncate font-mono text-xs ${
+                    "text-ink-soft"
                   }`}
                 >
                   {memoryLine}
@@ -585,7 +587,7 @@ export function CompanionClient() {
                 {messages.map((m, i) =>
                   m.role === "user" ? (
                     <li key={m.clientId ?? m.id} className="bubbles-rise flex max-w-[85%] flex-col items-end gap-1 self-end sm:max-w-[min(72%,34rem)]">
-                      <p data-private className="m-0 whitespace-pre-wrap break-words rounded-[22px_22px_8px_22px] bg-bubbles-pink-ink px-[18px] py-3.5 bubbles-glow text-body font-semibold leading-normal text-white">
+                      <p data-private className="m-0 whitespace-pre-wrap break-words rounded-[20px_20px_8px_20px] bg-bubbles-lilac px-[18px] py-3.5 text-body leading-normal text-ink">
                         <span className="sr-only">You: </span>
                         {m.content}
                       </p>
@@ -664,7 +666,7 @@ export function CompanionClient() {
                     maxLength={MAX_MESSAGE}
                     disabled={composerDisabled}
                     aria-describedby="bubbles-message-hint"
-                    placeholder="Tell Bubbles how you're feeling…"
+                    placeholder="Ask Bubbles anything about your health…"
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -682,7 +684,7 @@ export function CompanionClient() {
                     className={`bubbles-press flex h-12 w-12 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed ${
                       sending || input.trim()
                         ? "bg-bubbles-pink-ink text-white bubbles-glow"
-                        : "bg-tint-pink text-bubbles-pink-deep shadow-none"
+                        : "bg-tint-grape text-bubbles-grape-deep shadow-none"
                     }`}
                   >
                     {sending ? (

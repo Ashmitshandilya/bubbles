@@ -79,6 +79,10 @@
   --color-bubbles-caution: var(--bubbles-caution);
   --color-bubbles-lilac: var(--bubbles-lilac);
   --color-bubbles-gold-line: var(--bubbles-gold-line);
+  --color-phase-period: var(--phase-period);
+  --color-phase-follicular: var(--phase-follicular);
+  --color-phase-ovulation: var(--phase-ovulation);
+  --color-phase-luteal: var(--phase-luteal);
 
   --color-tint-pink: var(--tint-pink);
   --color-tint-grape: var(--tint-grape);
@@ -431,3 +435,6 @@ html[data-native] .nw-actions .cw-fineprint { text-align: center; }
 :where(h1, h2, h3, h4), .font-display { font-weight: 500; }
 :where(h1, h2, h3, h4).font-sans { font-weight: 600; }
 .text-label { font-weight: 600; letter-spacing: 0.06em; }
+
+/* Safety first: while an urgent or caution block is on screen, no mascot anywhere on the page (logo included). */
+body:has([data-safety]) [data-mascot] { display: none; }
