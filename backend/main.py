@@ -42,6 +42,7 @@ from health_logs import build_router as build_health_logs_router
 from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
+from insights_api import build_router as build_insights_router
 from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
 from onboarding_api import build_router as build_onboarding_router, style_block_for
@@ -1231,6 +1232,9 @@ def pattern_analysis(
         "status": "success",
         "analysis": analyze_patterns(events, days=days),
     }
+
+
+app.include_router(build_insights_router(get_authenticated_user, supabase))   # GET /insights/{id}; after /insights/weekly so that path wins
 
 
 # --------------------------------------------------
