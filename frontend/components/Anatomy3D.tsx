@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Billboard, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { BODY_FILL, BODY_OUTLINE, SELECT_GLOW, statusColor } from "./anatomy/palette";
+import { BODY_EDGE, BODY_FILL, SELECT_GLOW, statusColor } from "./anatomy/palette";
 import { SELECTED_SCALE, easeFactor, isSettled, organOpacity, pulse, stepSpring, type SpringState } from "./anatomy/motion";
 import { figure, organLabel, organsFor, type Anatomy, type OrganSpec, type Part } from "./anatomy/presets";
 
@@ -37,7 +37,7 @@ function PartGeometry({ part }: { part: Part }) {
   );
 }
 
-const OUTLINE = 0.013;
+const OUTLINE = 0.009;
 
 /** The part grown by the outline width: a sphere's scale, a capsule's radius. Used for the back-face shell that draws the silhouette line. */
 function shellOf(part: Part): { args: number[]; scale: [number, number, number] | undefined } {
@@ -47,7 +47,7 @@ function shellOf(part: Part): { args: number[]; scale: [number, number, number] 
   return { args: part.args, scale: [x * grow, y * grow, z * grow] };
 }
 
-/** The silhouette: translucent, but clearly drawn (fill + outline). Organs are drawn after it and are always visible through it. */
+/** The silhouette: soft and translucent with a gentle rim (no hard line). Organs are drawn after it and are always visible through it. */
 function Body({ anatomy }: { anatomy: Anatomy }) {
   const parts = useMemo(() => figure(anatomy), [anatomy]);
   return (
@@ -58,11 +58,11 @@ function Body({ anatomy }: { anatomy: Anatomy }) {
           <group key={part.id}>
             <mesh position={part.position} scale={shell.scale} rotation={part.rotation} renderOrder={-1}>
               <PartGeometry part={{ ...part, args: shell.args }} />
-              <meshBasicMaterial color={BODY_OUTLINE} side={THREE.BackSide} transparent opacity={0.9} depthWrite={false} />
+              <meshBasicMaterial color={BODY_EDGE} side={THREE.BackSide} transparent opacity={0.8} depthWrite={false} />
             </mesh>
             <mesh position={part.position} scale={part.scale} rotation={part.rotation} renderOrder={0}>
               <PartGeometry part={part} />
-              <meshStandardMaterial color={BODY_FILL} emissive={BODY_FILL} emissiveIntensity={0.2} transparent opacity={0.93} depthWrite={false} roughness={0.85} />
+              <meshStandardMaterial color={BODY_FILL} emissive={BODY_FILL} emissiveIntensity={0.15} transparent opacity={0.82} depthWrite={false} roughness={0.85} />
             </mesh>
           </group>
         );

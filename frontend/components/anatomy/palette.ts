@@ -1,9 +1,9 @@
-// Colours for the 3D body. Bubbles is light-first (no automatic dark mode), so there is one palette. Every pair that
-// matters is checked in palette.test.ts: the silhouette outline against the canvas, and each status colour against the body.
+// Colours for the 3D body. Bubbles is light-first (no automatic dark mode), so there is one palette. The organ status colours are
+// checked against the body in palette.test.ts (the canvas is decorative: the list beside it is the accessible source of truth).
 
 export const CANVAS = "#FFF6FA";          // the blush the canvas sits on (--bubbles-blush)
-export const BODY_FILL = "#F9D0E3";       // skin tone of the figure
-export const BODY_OUTLINE = "#A8155A";    // silhouette line (--bubbles-pink-deep)
+export const BODY_FILL = "#FFC9E0";       // soft pink of the figure (translucent, like the first body)
+export const BODY_EDGE = "#EE86B2";       // a soft rim, not a line: it only lifts the edge off the canvas
 export const SELECT_GLOW = "#6A45F5";     // emissive + halo (--bubbles-grape)
 
 /** One colour per assessment status. Darker than the list dots on purpose: they sit on the pink body and need 3:1 against it. */
