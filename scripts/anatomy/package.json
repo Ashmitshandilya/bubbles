@@ -1,0 +1,12 @@
+{
+  "name": "bubbles-anatomy-build",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build_body_model.mjs", "inspect": "node inspect_body_model.mjs" },
+  "dependencies": {
+    "@gltf-transform/core": "4.1.1",
+    "@gltf-transform/extensions": "4.1.1",
+    "@gltf-transform/functions": "4.1.1",
+    "meshoptimizer": "0.22.0"
+  }
+}

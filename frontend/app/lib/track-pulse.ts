@@ -116,3 +116,11 @@ export function recentText(c: CheckIns, partial = false): string {
   if (c.recentDays === 0) return partial ? "Nothing found in the last 14 days from the trackers that could be read." : "Nothing logged in the last 14 days yet.";
   return `${partial ? "At least " : ""}${c.recentDays} of the last 14 days had something logged.`;
 }
+
+/** Provenance line under a number: "from your log, 2 days ago". Empty when there is no usable date (no claim is made). */
+export function sourceLine(lastLogged: string | undefined, now = new Date()): string {
+  if (!lastLogged) return "";
+  const { lastAgo } = buildPulse([{ date: lastLogged }], now);
+  if (lastAgo === null) return "";
+  return `from your log, ${lastAgo === 0 ? "today" : lastAgo === 1 ? "yesterday" : `${lastAgo} days ago`}`;
+}

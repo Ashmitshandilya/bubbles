@@ -12,7 +12,7 @@ import { useCycle } from "./CycleStore";
 import { INPUT } from "./fields";
 import { PostpartumCard, PregnancyCard } from "./ModeCards";
 import { PeriodButtons } from "./PeriodButtons";
-import { PhaseRing } from "./PhaseRing";
+import { PHASE_DOT, PhaseRing } from "./PhaseRing";
 import { Card, FlagList, InlineError, Notice, PanelError, PanelSkeleton, SafetyAlert, TabHeading } from "./shared";
 
 const CONF_TONE = { learning: "bg-tint-grape text-bubbles-grape-deep", low: "bg-tint-sun text-bubbles-sun-deep", medium: "bg-tint-sky text-bubbles-sky-deep", high: "bg-tint-mint text-bubbles-mint-deep" } as const;
@@ -82,7 +82,6 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
   const { openLog, tempUnit } = useCycle();
   const urgent = o.urgent;
   const calm = !urgent && !safety;
-  const mood = o.weather?.tone === "bright" ? "happy" : o.weather?.tone === "heavier" ? "caring" : "calm";
   const conf = confidenceCopy(o.confidence);
   const hideFertility = o.mode === "birth_control";
   const ringLength = Math.round(o.stats.average_length ?? 28);
@@ -109,12 +108,11 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
           {showRing && o.cycle_day !== null && (
             <PhaseRing day={o.cycle_day} length={ringLength} phase={o.phase?.id ?? null} phaseLabel={o.phase?.label ?? null} estimated={o.phase?.estimated ?? true} />
           )}
-          <div className="min-w-[14rem] flex-1 space-y-3">
+          <div className="min-w-[14rem] flex-1 space-y-4">
             {calm && o.weather && (
               <div className="flex items-start gap-3">
-                <BubblesMascot size={64} mood={mood} />
                 <div>
-                  <p className="m-0 text-body-sm font-extrabold uppercase tracking-wide text-muted">Inner weather · {o.weather.label}</p>
+                  <p className="m-0 text-label text-muted">Inner weather · {o.weather.label}</p>
                   <p className="m-0 mt-0.5 font-display text-h4 text-ink">{o.weather.line}</p>
                 </div>
               </div>
@@ -125,7 +123,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
             {o.phase && <p className="m-0 text-body text-ink"><strong>{o.phase.label}.</strong> {o.phase.summary}{o.phase.estimated ? " (an estimate)" : ""}</p>}
             {np && (
               <div>
-                <p className="m-0 text-body-sm font-extrabold uppercase tracking-wide text-muted">Next period</p>
+                <p className="m-0 text-label text-muted">Next period</p>
                 <p className="m-0 font-display text-h3 text-ink">{np.range}, {np.likely}</p>
                 <p className="m-0 text-body-sm font-bold text-muted">{np.relative}</p>
                 {npNote && <p className="m-0 mt-1 text-body-sm text-muted">{npNote}</p>}
@@ -145,14 +143,15 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
                 <li
                   key={step.id}
                   aria-current={step.here ? "step" : undefined}
-                  className={`${PILL} ${step.here ? "bg-bubbles-pink-ink text-white" : "border border-line bg-blush text-ink-soft"}`}
+                  className={`${PILL} ${step.here ? "bg-surface text-ink ring-2 ring-bubbles-grape" : "border border-line bg-blush text-ink-soft"}`}
                 >
+                  <span aria-hidden="true" className={`h-2.5 w-2.5 rounded-full ${PHASE_DOT[step.id as keyof typeof PHASE_DOT] ?? "bg-line-strong"}`} />
                   {step.label}
                   {step.here && <span className="sr-only"> (you are here, estimated)</span>}
                 </li>
               ))}
             </ol>
-            <a href="#insights" className="text-body-sm font-extrabold text-bubbles-grape-deep underline">
+            <a href="#insights" className="inline-flex min-h-[44px] items-center self-start text-body-sm font-extrabold text-bubbles-grape-deep underline">
               How you tend to feel in this phase
             </a>
           </div>
@@ -161,15 +160,15 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
         {!hideFertility && (o.ovulation || o.fertile_window) && (
           <ul className="m-0 mt-4 flex list-none flex-wrap gap-2 p-0">
             {o.fertile_window && (
-              <li className={`${PILL} bg-tint-mint text-bubbles-mint-deep`}>
-                <span aria-hidden="true">◆</span>
+              <li className={`${PILL} border border-dashed border-phase-ovulation bg-surface text-ink`}>
+                <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full border border-dashed border-bubbles-sun-deep" />
                 Fertile window {formatRange(o.fertile_window.start, o.fertile_window.end)}
                 {o.fertile_window.active_today ? " · includes today" : o.fertile_window.passed ? " · passed" : ""}
               </li>
             )}
             {o.ovulation && (
               <li className={`${PILL} bg-tint-sun text-bubbles-sun-deep`}>
-                <span aria-hidden="true">★</span>
+                <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-phase-ovulation" />
                 Ovulation around {shortDay(o.ovulation.date)} ({o.ovulation.confirmed ? "confirmed" : ovulationSourceText(o.ovulation.source)})
               </li>
             )}
@@ -211,7 +210,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
 
       <Notices notices={o.notices} />
 
-      <Link href="/companion" className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 border-line bg-surface px-5 text-body-sm font-extrabold text-bubbles-grape-deep no-underline hover:border-line-strong">
+      <Link href="/companion" className="bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-surface px-5 text-body-sm font-extrabold text-bubbles-grape-deep no-underline hover:border-line-strong">
         <Icon id="sparkle" size={18} /> Ask Bubbles about your cycle
       </Link>
     </div>

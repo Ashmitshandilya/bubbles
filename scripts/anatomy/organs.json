@@ -1,0 +1,42 @@
+{
+  "license": "CC BY-SA 4.0",
+  "credit": "Anatomy from BodyParts3D (c) The Database Center for Life Science, CC BY-SA 2.1 JP, and Z-Anatomy (Gauthier Kervyn and contributors), CC BY-SA 4.0. Uterus and ovaries are illustrative, modelled procedurally for Bubbles. Combined model CC BY-SA 4.0.",
+  "sources": {
+    "bp3d": {
+      "title": "BodyParts3D 4.0 (part-of tree, OBJ, 99% reduction)",
+      "credit": "BodyParts3D, (c) The Database Center for Life Science, licensed under CC BY-SA 2.1 Japan",
+      "license": "CC BY-SA 2.1 JP",
+      "url": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip"
+    },
+    "zanatomy": {
+      "title": "Z-Anatomy internal organs, glTF export of Startup.blend from the anatomi-simulatoru repository",
+      "credit": "Z-Anatomy, the libre 3D atlas of anatomy (Gauthier Kervyn and contributors), licensed under CC BY-SA 4.0, itself derived from BodyParts3D (DBCLS, CC BY-SA 2.1 JP). glTF export from github.com/DrMuratAltun/anatomi-simulatoru, CC BY-SA 4.0.",
+      "license": "CC BY-SA 4.0",
+      "url": "https://raw.githubusercontent.com/DrMuratAltun/anatomi-simulatoru/37e85dfbbb398e11ba33c8f0e411f06f9bba592f/systems/ic-organlar.glb",
+      "upstream": "https://github.com/Z-Anatomy/Models-of-human-anatomy",
+      "offset_m": [0, 0.0747, -0.0982],
+      "offset_note": "Z-Anatomy keeps BodyParts3D scale but sits 74.7 mm higher and 98.2 mm further back. Measured on the kidneys, which match BodyParts3D to 0.1 mm."
+    },
+    "procedural": {
+      "title": "female_pelvis.mjs in this folder",
+      "credit": "Modelled procedurally for Bubbles from textbook adult proportions. Illustrative, not measured anatomy.",
+      "license": "CC BY-SA 4.0"
+    }
+  },
+  "organs": [
+    { "id": "skeleton",   "name": "Skeleton",        "source": "bp3d",     "fma": ["FMA23881"], "simplify": 0.12 },
+    { "id": "brain",      "name": "Brain",           "source": "bp3d",     "fma": ["FMA50801"], "simplify": 0.12, "simplify_error": 0.004 },
+    { "id": "thyroid",    "name": "Thyroid gland",   "source": "zanatomy", "nodes": ["Thyroid gland"], "fma": ["FMA9603"], "refine": 1 },
+    { "id": "heart",      "name": "Heart",           "source": "bp3d",     "fma": ["FMA7088"],  "simplify": 0.5 },
+    { "id": "lungs",      "name": "Lungs",           "source": "zanatomy", "nodes": ["Superior lobe of right lung", "Middle lobe of right lung", "Inferior lobe of right lung", "Superior lobe of left lung", "Inferior lobe of left lung"], "fma": ["FMA7309", "FMA7310"], "fill_holes": true },
+    { "id": "liver",      "name": "Liver",           "source": "bp3d",     "fma": ["FMA7197"],  "simplify": 0.25 },
+    { "id": "stomach",    "name": "Stomach",         "source": "zanatomy", "nodes": ["Stomach"], "fma": ["FMA7148"], "fill_holes": true, "refine": 1 },
+    { "id": "pancreas",   "name": "Pancreas",        "source": "bp3d",     "fma": ["FMA7198"],  "simplify": 0.6 },
+    { "id": "intestines", "name": "Intestines",      "source": "bp3d",     "fma": ["FMA7200", "FMA7201"], "simplify": 0.4 },
+    { "id": "kidneys",    "name": "Kidneys",         "source": "bp3d",     "fma": ["FMA7204", "FMA7205"], "simplify": 0.6 },
+    { "id": "bladder",    "name": "Urinary bladder", "source": "zanatomy", "nodes": ["Urinary bladder"], "fma": ["FMA15900"], "refine": 1 },
+    { "id": "uterus",     "name": "Uterus and uterine tubes", "source": "procedural", "illustrative": true, "fma": ["FMA17558", "FMA18245"] },
+    { "id": "ovaries",    "name": "Ovaries",         "source": "procedural", "illustrative": true, "fma": ["FMA7213", "FMA7214"] },
+    { "id": "skin",       "name": "Skin",            "source": "bp3d",     "fma": ["FMA7163"],  "simplify": 0.25 }
+  ]
+}

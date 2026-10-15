@@ -42,7 +42,7 @@ export function CycleTabs() {
       <div
         role="tablist"
         aria-label="Cycle sections"
-        className="-mx-1 flex gap-1 overflow-x-auto rounded-full border-2 border-line bg-surface p-1 print:hidden"
+        className="-mx-1 flex gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1 print:hidden"
       >
         {CYCLE_TABS.map((t) => {
           const active = t.id === tab;
@@ -92,7 +92,7 @@ function LogButton() {
       type="button"
       aria-label="Log today"
       onClick={() => openLog()}
-      className="bubbles-press fixed bottom-[calc(10.5rem+env(safe-area-inset-bottom))] right-4 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-bubbles-pink-ink text-white bubbles-glow print:hidden lg:bottom-28 lg:right-8"
+      className="bubbles-press fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] right-4 z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-bubbles-pink-ink text-white bubbles-glow print:hidden lg:bottom-28 lg:right-8"
     >
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true" focusable="false">
         <path d="M12 5v14M5 12h14" />

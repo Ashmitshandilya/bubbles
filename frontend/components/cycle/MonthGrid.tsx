@@ -107,9 +107,9 @@ export function MonthGrid({
                       onSelect(cell.iso);
                     }}
                     onKeyDown={(e) => onKeyDown(e, cell.iso)}
-                    className={`flex h-14 min-h-[44px] w-full flex-col items-center justify-start gap-0.5 rounded-2xl border-2 pt-1 text-body-sm ${
+                    className={`flex h-14 min-h-[44px] w-full flex-col items-center justify-start gap-0.5 rounded-2xl border pt-1 text-body-sm ${
                       day?.period === "logged" ? "bg-tint-pink" : "bg-surface"
-                    } ${isToday ? "border-ink font-extrabold" : "border-line"} ${isSelected ? "outline outline-[3px] outline-offset-1 outline-bubbles-grape" : ""} ${
+                    } ${isToday ? "border-2 border-bubbles-grape font-semibold" : "border-line"} ${isSelected ? "outline outline-2 outline-offset-1 outline-bubbles-grape" : ""} ${
                       day?.is_future ? "text-ink-soft" : "text-ink"
                     }`}
                   >

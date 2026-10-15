@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPulse, lastLoggedText, rollupToday, weekText, checkIns, recentText, streakText } from "./track-pulse";
+import { buildPulse, lastLoggedText, rollupToday, weekText, checkIns, recentText, streakText, sourceLine } from "./track-pulse";
 
 const NOW = new Date(2026, 9, 10, 15, 0); // 10 Oct 2026, local
 
@@ -107,5 +107,19 @@ describe("check-in days across trackers", () => {
     const outside = buildPulse([day(30)], now);
     expect(inside.active[0]).toBe(true);
     expect(outside.active.some(Boolean)).toBe(false);
+  });
+});
+
+describe("sourceLine", () => {
+  const now = new Date(2026, 9, 15, 12);
+  it("says where a number came from and when", () => {
+    expect(sourceLine(new Date(2026, 9, 15, 8).toISOString(), now)).toBe("from your log, today");
+    expect(sourceLine(new Date(2026, 9, 14, 8).toISOString(), now)).toBe("from your log, yesterday");
+    expect(sourceLine(new Date(2026, 9, 12, 8).toISOString(), now)).toBe("from your log, 3 days ago");
+  });
+  it("claims nothing without a usable past date", () => {
+    expect(sourceLine(undefined, now)).toBe("");
+    expect(sourceLine("not a date", now)).toBe("");
+    expect(sourceLine(new Date(2026, 9, 20).toISOString(), now)).toBe("");
   });
 });

@@ -102,7 +102,7 @@ function Hydration() {
                     type="button"
                     disabled={busy !== null}
                     onClick={() => void add({ preset: p.id }, p.id)}
-                    className="bubbles-press flex min-h-[64px] flex-col items-center justify-center rounded-2xl border-2 border-bubbles-sky-deep bg-tint-sky px-3 py-2 text-bubbles-sky-deep disabled:opacity-60"
+                    className="bubbles-press flex min-h-[64px] flex-col items-center justify-center rounded-2xl border border-bubbles-sky-deep bg-tint-sky px-3 py-2 text-bubbles-sky-deep disabled:opacity-60"
                   >
                     <span className="font-display text-h4">{busy === p.id ? "Adding…" : p.label}</span>
                     <span className="text-body-sm font-bold">{formatMl(p.ml)}</span>
@@ -112,7 +112,7 @@ function Hydration() {
                   type="button"
                   disabled={busy !== null}
                   onClick={() => { setCustomError(""); setOpen(true); }}
-                  className="bubbles-press flex min-h-[64px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-bubbles-sky-deep bg-surface px-3 py-2 text-bubbles-sky-deep disabled:opacity-60"
+                  className="bubbles-press flex min-h-[64px] flex-col items-center justify-center rounded-2xl border border-dashed border-bubbles-sky-deep bg-surface px-3 py-2 text-bubbles-sky-deep disabled:opacity-60"
                 >
                   <span className="font-display text-h4">Custom</span>
                   <span className="text-body-sm font-bold">any amount</span>
@@ -222,7 +222,7 @@ function TodayPanel({ o }: { o: HydrationOverview }) {
       )}
 
       <details className="rounded-2xl bg-blush px-4 py-3 text-body-sm text-muted">
-        <summary className="cursor-pointer font-extrabold text-ink">How is this target worked out?</summary>
+        <summary className="-my-[11px] cursor-pointer py-[11px] font-extrabold text-ink">How is this target worked out?</summary>
         <p className="m-0 mt-2">{goal.message}</p>
         <ul className="m-0 mt-2 list-disc pl-5">
           {goal.base_ml !== null && <li>Everyday base: {formatMl(goal.base_ml)}{goal.basis === "personal" ? " (from your weight)" : " (a general starting point)"}</li>}

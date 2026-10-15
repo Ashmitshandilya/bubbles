@@ -186,7 +186,7 @@ function Tile({ item, pulses }: { item: QuickItem; pulses: PulseMap | null | und
           <Icon id={item.id} />
         </span>
         <div className="min-w-0 flex-1">
-          <Link href={`/${item.id}`} className="font-display text-h4 text-ink no-underline hover:underline">
+          <Link href={`/${item.id}`} className="-my-[11px] inline-block py-[11px] font-display text-h4 text-ink no-underline hover:underline">
             {item.title}
           </Link>
           <p className={`m-0 text-body-sm font-bold ${doneToday ? TONE[item.tone].ink : "text-muted"}`}>
@@ -223,7 +223,7 @@ function Rhythm({ pulse, tone }: { pulse: Pulse; tone: Tone }) {
               style={{ height: `${Math.max(25, (n / max) * 100)}%` }}
             />
           ) : (
-            <span key={i} className="block h-1.5 w-full rounded-full border-2 border-dashed border-line-strong" />
+            <span key={i} className="block h-1.5 w-full rounded-full border border-dashed border-line-strong" />
           ),
         )}
       </div>

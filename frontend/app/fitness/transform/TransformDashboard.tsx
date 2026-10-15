@@ -240,7 +240,7 @@ function CheckinFlow({ reload }: { reload: () => void }) {
 
 function PauseResult({ result, reload }: { result: Checkin; reload: () => void }) {
   return (
-    <section aria-labelledby="pause-title" className="rounded-3xl border-2 border-bubbles-sky bg-tint-sky p-5 sm:p-6">
+    <section aria-labelledby="pause-title" className="rounded-3xl border border-bubbles-sky bg-tint-sky p-5 sm:p-6">
       <h2 id="pause-title" className="m-0 font-display text-h3 text-ink">Bubbles has paused your plan</h2>
       <ul className="m-0 mt-2 flex list-none flex-col gap-2 p-0">{result.messages.map((m) => <li key={m} className="text-body text-ink">{m}</li>)}</ul>
       <p className="m-0 mt-3 text-body text-ink">Taking a pause is a sensible thing to do. Please talk to a doctor or dietitian about how you have been feeling before you restart. If you feel unwell right now, get medical help.</p>
@@ -337,7 +337,7 @@ function Report({ units }: { units: Units }) {
         </>
       ) : (
         <div className="flex flex-col gap-3">
-          <article className="print-report rounded-2xl border-2 border-line p-4" aria-label="Doctor report">
+          <article className="print-report rounded-2xl border border-line p-4" aria-label="Doctor report">
             <h3 className="m-0 font-display text-h3">Bubbles plan summary</h3>
             <table className="mt-2 w-full border-collapse text-left text-body-sm">
               <tbody>

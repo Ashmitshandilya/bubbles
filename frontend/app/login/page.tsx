@@ -214,7 +214,7 @@ function LoginForm() {
 
   const heading = HEADINGS[mode];
   const inputClass =
-    "min-h-[52px] w-full rounded-[18px] border-2 border-line bg-surface px-4 text-body text-ink outline-none transition-colors focus:border-bubbles-grape";
+    "min-h-[52px] w-full rounded-[20px] border border-line bg-surface px-4 text-body text-ink outline-none transition-colors focus:border-bubbles-grape";
 
   return (
     <div className="w-full max-w-[440px] bubbles-rise">
@@ -224,7 +224,7 @@ function LoginForm() {
         <p className="m-0 text-body text-ink-soft">{heading.body}</p>
       </div>
 
-      <div className="rounded-[32px] border-2 border-line bg-surface p-6 shadow-md sm:p-8">
+      <div className="rounded-[24px] border border-line bg-surface p-6 shadow-md sm:p-8">
         {secondStep ? (
           <form onSubmit={handleSecondStep} className="flex flex-col gap-4">
             <p className="m-0 text-body font-semibold text-ink-soft">
@@ -277,7 +277,7 @@ function LoginForm() {
         </div>
 
         {!isSupabaseConfigured && (
-          <p role="alert" className="mb-4 rounded-[18px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
+          <p role="alert" className="mb-4 rounded-[20px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
             Sign-in isn&apos;t set up on this device yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to frontend/.env.local.
           </p>
         )}
@@ -313,7 +313,7 @@ function LoginForm() {
           )}
 
           {mode === "login" && (
-            <button type="button" onClick={() => switchMode("reset")} className="self-start text-body-sm font-extrabold text-bubbles-pink-ink underline">
+            <button type="button" onClick={() => switchMode("reset")} className="min-h-[44px] self-start text-body-sm font-extrabold text-bubbles-pink-ink underline">
               Forgot or never set a password?
             </button>
           )}
@@ -365,7 +365,7 @@ function LoginForm() {
         {message && (
           <p
             role={message.kind === "error" ? "alert" : "status"}
-            className={`mt-4 rounded-[18px] px-4 py-3 text-body-sm font-bold ${
+            className={`mt-4 rounded-[20px] px-4 py-3 text-body-sm font-bold ${
               message.kind === "error" ? "bg-tint-urgent text-bubbles-urgent" : "bg-tint-mint text-bubbles-mint-deep"
             }`}
           >
@@ -378,20 +378,20 @@ function LoginForm() {
             type="button"
             onClick={() => void resendConfirmation()}
             disabled={cooldown > 0 || !email}
-            className="bubbles-press mt-3 inline-flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-line bg-surface px-5 text-body-sm font-extrabold text-bubbles-pink-ink disabled:cursor-not-allowed disabled:opacity-60"
+            className="bubbles-press mt-3 inline-flex min-h-[48px] w-full items-center justify-center rounded-full border border-line bg-surface px-5 text-body-sm font-extrabold text-bubbles-pink-ink disabled:cursor-not-allowed disabled:opacity-60"
           >
             {cooldown > 0 ? `Send the email again in ${cooldown}s` : "Send the confirmation email again"}
           </button>
         )}
       </div>
 
-      <p className="mt-6 text-center text-body-sm font-semibold text-ink-soft">
-        Bubbles does not diagnose. <Link href="/" className="font-extrabold text-bubbles-pink-ink">Learn about Bubbles</Link>
+      <p className="mt-3 text-center text-body-sm font-semibold text-ink-soft">
+        Bubbles does not diagnose. <Link href="/" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink">Learn about Bubbles</Link>
       </p>
-      <p className="mt-2 text-center text-body-sm font-semibold text-ink-soft">
-        <Link href="/privacy" className="font-extrabold text-bubbles-pink-ink">Privacy</Link>
+      <p className="text-center text-body-sm font-semibold text-ink-soft">
+        <Link href="/privacy" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink">Privacy</Link>
         {" · "}
-        <Link href="/terms" className="font-extrabold text-bubbles-pink-ink">Terms</Link>
+        <Link href="/terms" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink">Terms</Link>
       </p>
     </div>
   );

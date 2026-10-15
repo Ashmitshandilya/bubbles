@@ -86,7 +86,7 @@ function MetricCard({ m }: { m: InsightMetric }) {
               </li>
             ))}
           </ul>
-          <p className="m-0 mt-2 text-[0.8125rem] text-muted">Bars are drawn relative to the highest phase. Numbers are averages of your logged days.</p>
+          <p className="m-0 mt-2 text-chip text-muted">Bars are drawn relative to the highest phase. Numbers are averages of your logged days.</p>
         </>
       )}
     </Card>

@@ -22,7 +22,7 @@ export function EducationSection({ mode, title, filter, emptyText }: { mode: Cyc
         {articles.map((a) => {
           const expanded = open === a.id;
           return (
-            <li key={a.id} className="rounded-2xl border-2 border-line">
+            <li key={a.id} className="rounded-2xl border border-line">
               <h4 className="m-0">
                 <button
                   type="button"

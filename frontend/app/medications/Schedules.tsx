@@ -144,7 +144,7 @@ export function ScheduleSheet({ target, suggestions, onClose, onSaved }: { targe
       </div>
 
       <details className="rounded-2xl bg-blush px-4 py-3">
-        <summary className="cursor-pointer text-body font-extrabold text-ink">Pill count and refill reminder</summary>
+        <summary className="-my-[11px] cursor-pointer py-[11px] text-body font-extrabold text-ink">Pill count and refill reminder</summary>
         <div className="mt-4 flex flex-col gap-4">
           <Stepper id="med-count" label="Tablets or doses left" value={form.pill_count} onChange={(v) => set("pill_count", v)} error={errors.pill_count} min={0} max={10000} step={1} fallback={30} signal="sky" optional hint="Bubbles counts down each time you mark a dose as taken." />
           <Stepper id="med-units" label="Tablets per dose" value={form.units_per_dose} onChange={(v) => set("units_per_dose", v)} error={errors.units_per_dose} min={0.25} max={10} step={0.25} fallback={1} signal="sky" optional hint="Leave empty for 1." />
@@ -201,7 +201,7 @@ function ScheduleCard({ s, onEdit, onChanged }: { s: Schedule; onEdit: () => voi
   }
 
   return (
-    <li className={`rounded-2xl border-2 p-4 ${s.active ? "border-line bg-surface" : "border-dashed border-line-strong bg-blush"}`}>
+    <li className={`rounded-2xl border p-4 ${s.active ? "border-line bg-surface" : "border-dashed border-line-strong bg-blush"}`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="m-0 break-words font-display text-h4 text-default">

@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Your personal health companion.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#FFF6FA",
-    theme_color: "#FFF6FA",
+    background_color: "#FBF8F6",
+    theme_color: "#FBF8F6",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
       { src: "/apple-icon.png", sizes: "180x180", type: "image/png" },

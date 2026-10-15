@@ -105,7 +105,7 @@ export function Glp1Panel({ data, onChanged, onAddSchedule }: { data: Glp1Overvi
 
       {data.recent_logs.length > 0 && (
         <details className="rounded-2xl bg-blush px-4 py-3 text-body-sm text-muted">
-          <summary className="cursor-pointer font-extrabold text-ink">Recent entries</summary>
+          <summary className="-my-[11px] cursor-pointer py-[11px] font-extrabold text-ink">Recent entries</summary>
           <ul className="m-0 mt-2 list-none space-y-1 p-0">
             {data.recent_logs.slice(0, 7).map((l) => (
               <li key={l.date}>
@@ -165,7 +165,7 @@ function LogbookView({ days }: { days: string }) {
               Print or save as PDF
             </button>
           </div>
-          <article className="bubbles-logbook rounded-2xl border-2 border-line bg-surface p-4 text-ink" aria-label="Medication logbook">
+          <article className="bubbles-logbook rounded-2xl border border-line bg-surface p-4 text-ink" aria-label="Medication logbook">
             <h3 className="m-0 font-display text-h3">Medication logbook</h3>
             <p className="m-0 text-body-sm text-muted">
               Last {b.window_days} days · generated {shortDay(b.generated_on)} by Bubbles

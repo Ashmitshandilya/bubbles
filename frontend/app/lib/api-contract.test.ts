@@ -198,13 +198,13 @@ describe("tracker lists: GET /health/<slug>", () => {
     expect(today.value).toBe("750 ml");
     const signal = summarizeSignal("hydration", readTracker(hydrationList).entries, NOW);
     expect(signal.weekDays).toBe(2);
-    expect(signal.value).toMatch(/^750 ml$|^0\.75 L$/); // average of 750 and 750 ml/day
+    expect(signal.value).toMatch(/^750\u00A0ml$|^0\.75\u00A0L$/); // average of 750 and 750 ml/day
   });
 
   it("activity is minutes, mood is 1-10, nutrition counts meals", () => {
     const activity = summarizeSignal("activity", readTracker(activityList).entries, NOW);
-    expect(activity.value).toBe("30 min");
-    expect(summarizeSignal("mood", readTracker(moodList).entries, NOW).value).toMatch(/^7 \/ 10$/);
+    expect(activity.value).toBe("30\u00A0min");
+    expect(summarizeSignal("mood", readTracker(moodList).entries, NOW).value).toMatch(/^7\u00A0\/\u00A010$/);
     expect(summarizeSignal("nutrition", readTracker(nutritionList).entries, NOW).value).toBe("1 meal");
   });
 

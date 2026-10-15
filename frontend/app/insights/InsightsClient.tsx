@@ -84,14 +84,10 @@ function Patterns() {
   const cards = analysis ? toCards(analysis, days) : [];
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? cards : cards.slice(0, CARD_LIMIT);
-  const mood = patterns.status === "loading" ? "thinking" : cards.length ? "happy" : "calm";
 
   return (
     <div className="space-y-8">
       <header className="bubbles-rise flex flex-wrap items-center gap-4">
-        <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-tint-grape">
-          <BubblesMascot size={60} mood={mood} animated={patterns.status === "loading"} />
-        </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-h1 text-ink">Patterns</h1>
           <p className="mt-1 text-body font-semibold text-muted">
@@ -108,7 +104,7 @@ function Patterns() {
             aria-pressed={days === value}
             onClick={() => setDays(value)}
             className={`bubbles-press min-h-[44px] rounded-full px-5 text-body-sm font-extrabold ${
-              days === value ? "bg-ink text-white" : "border-2 border-line bg-surface text-ink-soft hover:border-line-strong"
+              days === value ? "bg-bubbles-grape text-white" : "border border-line bg-surface text-ink-soft hover:border-line-strong"
             }`}
           >
             Last {value} days
@@ -256,7 +252,7 @@ function AssociationCard({ item }: { item: Association }) {
 
       <p className="m-0 text-body-sm text-muted">Based on {item.n_days} days where both were logged. An association in your logs, not a cause.</p>
 
-      <div className="rounded-2xl border-2 border-dashed border-line-strong p-4">
+      <div className="rounded-2xl border border-dashed border-line-strong p-4">
         <p className="m-0 text-label font-extrabold text-ink-soft">What to try</p>
         <p className="m-0 mt-1 text-body-sm text-ink">{whatToTry(item)}</p>
       </div>
@@ -377,7 +373,7 @@ function PatternCardView({ card }: { card: PatternCard }) {
     <article className={`${CARD} p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center gap-2">
         <span className={`${PILL} ${CONFIDENCE_PILL[card.confidence]}`}>{card.confidence} confidence</span>
-        <span className="text-[0.8125rem] font-bold text-muted">{card.window}</span>
+        <span className="text-chip font-bold text-muted">{card.window}</span>
       </div>
       <h3 className="mt-3 text-h3 text-ink">{card.headline}</h3>
       <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Signals involved">
@@ -466,7 +462,7 @@ function TrendView({ analysis, days }: { analysis: NonNullable<LongitudinalRespo
             {counts.map((count, i) => (
               <div key={i} className="flex h-full flex-1 items-end" title={`${weekLabel(i)}: ${count} logs`}>
                 <div
-                  className={`bubbles-bar w-full rounded-t ${count ? "bg-bubbles-grape" : "bg-line"}`}
+                  className={`bubbles-bar w-full rounded-t ${count ? "bg-bubbles-lilac" : "bg-line"}`}
                   style={{ height: count ? `${Math.max(6, (count / peak) * 100)}%` : "3px", animationDelay: `${i * 40}ms` }}
                 />
               </div>
@@ -502,7 +498,7 @@ function TrendView({ analysis, days }: { analysis: NonNullable<LongitudinalRespo
                   ? "bg-tint-mint text-bubbles-mint-deep"
                   : status === "sparse"
                     ? "bg-tint-sun text-bubbles-sun-deep"
-                    : "border-2 border-dashed border-line-strong text-ink-soft";
+                    : "border border-dashed border-line-strong text-ink-soft";
               const word = status === "observed" ? "regular logs" : status === "sparse" ? "a few logs" : "nothing yet";
               return (
                 <li key={key} className={`${PILL} ${style}`}>

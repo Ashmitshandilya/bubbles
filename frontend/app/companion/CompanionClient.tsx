@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Sidebar, MobileNav, ApiAlert } from "../../components/Navigation";
 import { useAuth, useApi } from "../../components/Providers";
 import { BubblesMascot } from "../../components/BubblesMascot";
+import { LoadingBubbles } from "../../components/hub/HubKit";
 import {
   adaptCorrection,
   adaptEvidence,
@@ -461,16 +462,15 @@ export function CompanionClient() {
   if (authLoading || !session) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-blush">
-        <div role="status" className="flex flex-col items-center gap-4 text-center">
-          <BubblesMascot size={80} mood="thinking" />
-          <p className="m-0 text-body font-bold text-ink-soft">{authLoading ? "Loading Bubbles…" : "Taking you to sign in…"}</p>
-        </div>
+        <LoadingBubbles label={authLoading ? "Loading Bubbles…" : "Taking you to sign in…"} />
       </main>
     );
   }
 
   const lastReply = [...messages].reverse().find((m) => m.role === "assistant");
   const urgent = lastReply !== undefined && isUrgentMessage(lastReply);
+  // Caution replies hide the header mascot too: no mascot near a safety banner.
+  const caution = lastReply?.safetyLevel === "AMBER" && !lastReply.retracted;
   // Follow-up chips sit under the newest reply only, and only while nothing is in flight. Never under an urgent or
   // withdrawn reply. Backend suggestions win; the static set is only for a calm, ordinary reply.
   const tail = messages.at(-1);
@@ -517,23 +517,23 @@ export function CompanionClient() {
                 aria-haspopup="dialog"
                 aria-expanded={drawerOpen}
                 aria-label="Your conversations"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-surface text-ink lg:hidden"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink lg:hidden"
               >
                 <Icon d={ICONS.menu} size={20} />
               </button>
-              {!urgent && <BubblesMascot size={44} />}
+              {!urgent && !caution && <BubblesMascot size={44} animated={false} />}
               <div className="min-w-0">
                 <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">Bubbles</h1>
                 <p
-                  className={`m-0 truncate text-[0.8125rem] font-extrabold ${
-                    memoryLine.startsWith("Memory on") ? "text-bubbles-mint-deep" : "text-ink-soft"
+                  className={`m-0 truncate font-mono text-xs ${
+                    "text-ink-soft"
                   }`}
                 >
                   {memoryLine}
                 </p>
               </div>
             </div>
-            <p className="m-0 rounded-2xl border-2 border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:rounded-full sm:text-[0.8125rem]">
+            <p className="m-0 rounded-2xl border border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:rounded-full sm:text-[0.8125rem]">
               Not a diagnosis · for emergencies call your local number
             </p>
           </header>
@@ -564,9 +564,8 @@ export function CompanionClient() {
               )}
 
               {conversationError && (
-                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-line bg-surface px-5 py-4">
+                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-surface px-5 py-4">
                   <div className="flex items-center gap-3">
-                    <BubblesMascot size={40} mood="resting" animated={false} />
                     <p className="m-0 text-body font-bold text-ink">{conversationError}</p>
                   </div>
                   <div className="flex gap-2">
@@ -577,7 +576,7 @@ export function CompanionClient() {
                     >
                       Try again
                     </button>
-                    <button type="button" onClick={startNewConversation} className="min-h-[44px] rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold">
+                    <button type="button" onClick={startNewConversation} className="min-h-[44px] rounded-full border border-line-strong bg-surface px-5 text-body-sm font-extrabold">
                       New conversation
                     </button>
                   </div>
@@ -588,11 +587,11 @@ export function CompanionClient() {
                 {messages.map((m, i) =>
                   m.role === "user" ? (
                     <li key={m.clientId ?? m.id} className="bubbles-rise flex max-w-[85%] flex-col items-end gap-1 self-end sm:max-w-[min(72%,34rem)]">
-                      <p data-private className="m-0 whitespace-pre-wrap break-words rounded-[22px_22px_8px_22px] bg-bubbles-pink-ink px-[18px] py-3.5 bubbles-glow text-body font-semibold leading-normal text-white">
+                      <p data-private className="m-0 whitespace-pre-wrap break-words rounded-[20px_20px_8px_20px] bg-bubbles-lilac px-[18px] py-3.5 text-body leading-normal text-ink">
                         <span className="sr-only">You: </span>
                         {m.content}
                       </p>
-                      {failed?.messageId === m.id && <span className="text-[0.8125rem] font-bold text-bubbles-urgent">Bubbles didn&apos;t reply to this yet</span>}
+                      {failed?.messageId === m.id && <span className="text-chip font-bold text-bubbles-urgent">Bubbles didn&apos;t reply to this yet</span>}
                     </li>
                   ) : (
                     <BubblesReply
@@ -625,13 +624,13 @@ export function CompanionClient() {
           <div className="shrink-0 border-t-2 border-line bg-blush px-4 pb-3 pt-3 lg:px-7 lg:pb-5">
             <div className="mx-auto flex w-full max-w-[860px] flex-col gap-2.5">
               {error && (
-                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border-2 border-bubbles-urgent/30 bg-tint-urgent px-4 py-2.5">
+                <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-bubbles-urgent/30 bg-tint-urgent px-4 py-2.5">
                   <p className="m-0 text-body-sm font-bold text-bubbles-urgent">{error}</p>
                   {failed && (
                     <button
                       type="button"
                       onClick={() => void sendMessage(failed.text, { messageId: failed.messageId, fresh: failed.fresh })}
-                      className="min-h-[44px] rounded-full border-2 border-ink bg-surface px-4 text-body-sm font-extrabold text-ink"
+                      className="min-h-[44px] rounded-full border border-line-strong bg-surface px-4 text-body-sm font-extrabold text-ink"
                     >
                       Try again
                     </button>
@@ -650,7 +649,7 @@ export function CompanionClient() {
                   <label htmlFor="bubbles-message" className="text-body-sm font-extrabold text-ink">
                     Message Bubbles
                   </label>
-                  <span id="bubbles-message-hint" className={`text-[0.8125rem] font-semibold ${nearLimit ? "text-bubbles-urgent" : "text-ink-soft"}`}>
+                  <span id="bubbles-message-hint" className={`text-chip font-semibold ${nearLimit ? "text-bubbles-urgent" : "text-ink-soft"}`}>
                     {nearLimit ? (
                       `${input.length.toLocaleString()} / ${MAX_MESSAGE.toLocaleString()} characters`
                     ) : (
@@ -658,7 +657,7 @@ export function CompanionClient() {
                     )}
                   </span>
                 </div>
-                <div className="flex items-end gap-2.5 rounded-[28px] border-2 border-ink bg-surface py-1.5 pl-5 pr-1.5 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-bubbles-grape focus-within:shadow-[var(--shadow-glow-accent)]">
+                <div className="flex items-end gap-2.5 rounded-[24px] border border-line-strong bg-surface py-1.5 pl-5 pr-1.5 shadow-[var(--shadow-sm)] transition-[border-color,box-shadow] focus-within:border-bubbles-grape focus-within:shadow-[var(--shadow-glow-accent)]">
                   <textarea
                     id="bubbles-message"
                     ref={inputRef}
@@ -667,7 +666,7 @@ export function CompanionClient() {
                     maxLength={MAX_MESSAGE}
                     disabled={composerDisabled}
                     aria-describedby="bubbles-message-hint"
-                    placeholder="Tell Bubbles how you're feeling…"
+                    placeholder="Ask Bubbles anything about your health…"
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
@@ -685,7 +684,7 @@ export function CompanionClient() {
                     className={`bubbles-press flex h-12 w-12 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed ${
                       sending || input.trim()
                         ? "bg-bubbles-pink-ink text-white bubbles-glow"
-                        : "bg-tint-pink text-bubbles-pink-deep shadow-none"
+                        : "bg-tint-grape text-bubbles-grape-deep shadow-none"
                     }`}
                   >
                     {sending ? (
@@ -722,7 +721,7 @@ export function CompanionClient() {
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close conversations"
-                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-line text-ink"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-line text-ink"
               >
                 <Icon d={ICONS.close} size={20} />
               </button>

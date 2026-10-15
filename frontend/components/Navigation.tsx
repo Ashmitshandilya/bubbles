@@ -36,6 +36,7 @@ const ICON_PATHS: Record<string, string> = {
   profile: "M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 21a7 7 0 0 1 14 0",
   fitness: "M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11",
   more: "M5 12h.01M12 12h.01M19 12h.01",
+  search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 16 16",
   settings: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1",
 };
 
@@ -80,8 +81,8 @@ export const SECTIONS: readonly Section[] = [
   { id: "today", label: "Today", icon: "dashboard", href: "/dashboard", match: ["/dashboard"] },
   { id: "talk", label: "Talk", icon: "companion", href: "/companion", match: ["/companion"] },
   {
-    id: "patterns", label: "Patterns", icon: "insights", href: "/insights", match: ["/insights", "/health"],
-    tabs: [{ label: "Patterns", href: "/insights" }, { label: "My health", href: "/health" }],
+    id: "patterns", label: "Patterns", icon: "insights", href: "/insights", match: ["/insights", "/health", "/body"],
+    tabs: [{ label: "Patterns", href: "/insights" }, { label: "My health", href: "/health" }, { label: "Body map", href: "/body" }],
   },
   {
     id: "track", label: "Track", icon: "activity", href: "/sleep",
@@ -131,10 +132,10 @@ const tabActive = (pathname: string, tab: SectionTab) => isActive(pathname, tab.
 
 function StatusLine({ apiStatus }: { apiStatus: "checking" | "online" | "offline" }) {
   const label = apiStatus === "online" ? "Bubbles is here" : apiStatus === "offline" ? "Can't reach Bubbles" : "Connecting…";
-  const dot = apiStatus === "online" ? "bg-bubbles-mint" : apiStatus === "offline" ? "bg-bubbles-urgent" : "bg-bubbles-sun";
+  const dot = apiStatus === "online" ? "bg-bubbles-grape" : apiStatus === "offline" ? "bg-bubbles-urgent" : "bg-bubbles-sun";
   return (
-    <span className="inline-flex items-center gap-2 text-body-sm font-bold text-muted" role="status">
-      <span className={`h-2.5 w-2.5 rounded-full ${dot}`} aria-hidden="true" />
+    <span className="inline-flex min-h-[32px] items-center gap-2 rounded-full border border-line bg-surface px-3 text-[0.8125rem] font-semibold text-muted" role="status">
+      <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden="true" />
       {label}
     </span>
   );
@@ -148,7 +149,7 @@ function SidebarLink({ section, current }: { section: Section; current?: Section
         href={section.href}
         aria-current={active ? "page" : undefined}
         className={`flex min-h-[48px] items-center gap-3 rounded-2xl px-3 text-nav font-extrabold no-underline transition-colors ${
-          active ? "bg-tint-pink text-bubbles-pink-ink" : "text-muted hover:bg-blush hover:text-default"
+          active ? "bg-tint-grape text-bubbles-grape-deep" : "text-muted hover:bg-blush hover:text-default"
         }`}
       >
         <NavIcon id={section.icon} size={20} />
@@ -158,7 +159,9 @@ function SidebarLink({ section, current }: { section: Section; current?: Section
   );
 }
 
-export function Sidebar({ apiStatus }: { apiStatus: "checking" | "online" | "offline" }) {
+// The connection status lives in the header pill; apiStatus is still accepted so every shell keeps compiling.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function Sidebar(_props: { apiStatus: "checking" | "online" | "offline" }) {
   const pathname = usePathname() ?? "";
   const current = sectionFor(pathname);
 
@@ -166,7 +169,7 @@ export function Sidebar({ apiStatus }: { apiStatus: "checking" | "online" | "off
     <aside className="hidden lg:flex w-[248px] shrink-0 border-r border-soft bg-surface min-h-dvh flex-col sticky top-0 h-dvh" aria-label="Bubbles navigation">
       <Link href="/dashboard" className="flex items-center gap-3 px-5 pt-5 pb-4 no-underline text-default">
         <BubblesMascot size={40} animated={false} />
-        <span className="font-display text-[1.625rem] font-bold tracking-tight">bubbles</span>
+        <span className="font-display text-[1.75rem] leading-none tracking-tight">bubbles</span>
       </Link>
       <nav className="flex-1 overflow-y-auto px-3 pb-4" style={{ scrollbarWidth: "thin" }}>
         <ul className="m-0 flex list-none flex-col gap-1 p-0">
@@ -179,9 +182,6 @@ export function Sidebar({ apiStatus }: { apiStatus: "checking" | "online" | "off
         <ul className="m-0 flex list-none flex-col gap-1 p-0">
           <SidebarLink section={ME} current={current} />
         </ul>
-      </div>
-      <div className="border-t border-soft px-5 py-4">
-        <StatusLine apiStatus={apiStatus} />
       </div>
     </aside>
   );
@@ -205,7 +205,7 @@ export function SectionTabs() {
               <Link
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full border-2 px-4 text-body-sm font-extrabold no-underline transition-colors ${
+                className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full border px-4 text-body-sm font-extrabold no-underline transition-colors ${
                   active
                     ? "border-bubbles-pink-ink bg-bubbles-pink-ink text-white"
                     : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink"
@@ -274,7 +274,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
       className="m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-y-auto overscroll-contain bg-transparent p-0 text-default backdrop:bg-ink/55"
     >
       {open && (
-        <div className="bubbles-sheet-up rounded-t-[36px] bg-surface px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
+        <div className="bubbles-sheet-up rounded-t-[24px] bg-surface px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4">
           <div className="mb-2 flex items-center justify-between gap-3">
             <h2 id="more-title" ref={heading} tabIndex={-1} className="m-0 font-display text-h2 outline-none">
               Everything in Bubbles
@@ -283,7 +283,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-surface text-muted"
+              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-muted"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                 <path d="M6 6l12 12M18 6 6 18" />
@@ -292,7 +292,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           </div>
           {[...SECTIONS, ME].map((section) => (
             <section key={section.id} aria-label={section.label} className="mb-3">
-              <h3 className="m-0 px-1 pb-1 text-label font-extrabold uppercase tracking-wide text-subtle">{section.label}</h3>
+              <h3 className="m-0 px-1 pb-1 text-label text-subtle">{section.label}</h3>
               <ul className="m-0 grid list-none grid-cols-2 gap-1 p-0">
                 {(section.tabs ?? [{ label: section.label, href: section.href }]).map((tab) => {
                   const active = tabActive(pathname, tab);
@@ -302,7 +302,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                         href={tab.href}
                         aria-current={active ? "page" : undefined}
                         className={`flex min-h-[44px] items-center gap-2 rounded-2xl px-3 text-body-sm font-extrabold no-underline ${
-                          active ? "bg-tint-pink text-bubbles-pink-ink" : "text-default hover:bg-blush"
+                          active ? "bg-tint-grape text-bubbles-grape-deep" : "text-default hover:bg-blush"
                         }`}
                       >
                         {tab.label}
@@ -337,7 +337,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
         <Link
           href={item.href}
           aria-current={active ? "page" : undefined}
-          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.8125rem] font-extrabold no-underline ${
+          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold no-underline ${
             active ? "text-bubbles-pink-ink" : "text-muted"
           }`}
         >
@@ -354,7 +354,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
         className="lg:hidden sticky bottom-0 z-sticky px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-blush via-blush/95 to-transparent"
         aria-label="Bubbles navigation"
       >
-        <ul className="m-0 flex list-none items-end justify-around gap-1 rounded-[26px] border-2 border-line bg-surface px-2 py-1.5 shadow-lg">
+        <ul className="m-0 flex list-none items-end justify-around gap-1 rounded-full border border-line bg-surface px-2 py-1.5 shadow-lg">
           {tabLink(MOBILE_TABS[0])}
           {tabLink(MOBILE_TABS[1])}
           <li>
@@ -374,7 +374,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
               aria-haspopup="dialog"
               aria-expanded={moreOpen}
               onClick={() => setMoreOpen(true)}
-              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-[0.8125rem] font-extrabold ${
+              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold ${
                 !onTab ? "text-bubbles-pink-ink" : "text-muted"
               }`}
             >
@@ -402,20 +402,31 @@ export function Header({
       <header className="sticky top-0 z-sticky w-full border-b border-soft bg-blush/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-gutter py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <Link href="/dashboard" className="lg:hidden flex items-center gap-2 no-underline text-default" aria-label="Bubbles home">
+            <Link href="/dashboard" className="lg:hidden -ml-1 flex h-11 w-11 shrink-0 items-center justify-center no-underline text-default" aria-label="Bubbles home">
               <BubblesMascot size={36} animated={false} />
             </Link>
             {currentPage && (
               <p className="m-0 truncate font-display text-h3 text-default">{currentPage}</p>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <span className="hidden sm:inline-flex"><StatusLine apiStatus={apiStatus} /></span>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            {/* The sidebar shows it from lg up */}
+            <span className="hidden sm:inline-flex lg:hidden"><StatusLine apiStatus={apiStatus} /></span>
             <VeilToggle />
+            {/* Opens the Ask Bubbles palette (AskBubbles.tsx); large screens use its floating button and Ctrl K instead. */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("bubbles:ask"))}
+              aria-label="Ask Bubbles or find a page"
+              aria-haspopup="dialog"
+              className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full border-2 border-line bg-surface text-muted hover:text-default lg:hidden"
+            >
+              <NavIcon id="search" size={20} />
+            </button>
             <NotificationBell />
             <Link
               href="/profile"
-              className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full border-2 border-line bg-surface text-muted no-underline hover:text-default"
+              className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-muted no-underline hover:text-default"
               aria-label="Your profile"
             >
               <NavIcon id="profile" size={20} />
@@ -430,7 +441,7 @@ export function Header({
   );
 }
 
-const BANNER_SHELL = "mx-auto mt-4 w-[calc(100%-2rem)] max-w-content rounded-3xl border-2 border-line px-5 py-4 bubbles-rise";
+const BANNER_SHELL = "mx-auto mt-4 w-[calc(100%-2rem)] max-w-content rounded-3xl border border-line px-5 py-4 bubbles-rise";
 const BANNER_BUTTON =
   "bubbles-press inline-flex min-h-[44px] items-center justify-center rounded-full px-5 text-body-sm font-extrabold disabled:opacity-60";
 const DISMISS_KEY = "bubbles.connection-notice.dismissed";
@@ -471,13 +482,13 @@ function OfflineBanner({ title, message, onRetry }: { title: string; message: st
   const busy = manual || retrying;
 
   return (
-    <div className={`${BANNER_SHELL} bg-tint-pink`}>
+    <div className={`${BANNER_SHELL} bg-surface shadow-sm`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Only the static text is the alert; the ticking countdown stays outside it so it is not re-announced. */}
         <div role="alert" className="flex min-w-0 flex-1 items-center gap-3">
-          <BubblesMascot size={40} mood="resting" animated={false} />
+          <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-bubbles-urgent" />
           <div className="min-w-0">
-            <strong className="block text-body font-extrabold text-bubbles-pink-deep">{title}</strong>
+            <strong className="block text-body font-semibold text-ink">{title}</strong>
             <span className="block text-body-sm text-muted">{message}</span>
           </div>
         </div>
@@ -520,7 +531,7 @@ function NoticeBanner({ kind, title, message, plain = false }: { kind: string; t
       </div>
       {!plain && <div className="flex items-center gap-2">
         {!pathname.startsWith("/settings") && (
-          <Link href="/settings" className={`${BANNER_BUTTON} border-2 border-ink bg-surface text-ink no-underline`}>
+          <Link href="/settings" className={`${BANNER_BUTTON} border border-line-strong bg-surface text-ink no-underline`}>
             Open Settings
           </Link>
         )}

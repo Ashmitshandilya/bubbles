@@ -45,8 +45,8 @@ const STATUS: Record<OrganStatus, { label: string; pill: string; dot: string }> 
   needs_attention: { label: "Needs attention", pill: "bg-tint-peach text-bubbles-peach-deep", dot: "bg-bubbles-peach" },
   unknown: {
     label: "Not enough data",
-    pill: "border-2 border-dashed border-line-strong text-ink-soft",
-    dot: "border-2 border-dashed border-ink-faint",
+    pill: "border border-dashed border-line-strong text-ink-soft",
+    dot: "border border-dashed border-ink-faint",
   },
 };
 
@@ -187,14 +187,14 @@ export function OrganTracker() {
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() => setPicked(system.organ)}
-                      className={`bubbles-lift flex min-h-[64px] w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left ${
+                      className={`bubbles-lift flex min-h-[64px] w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left ${
                         isSelected ? "border-bubbles-grape bg-tint-grape" : "border-line bg-surface hover:border-line-strong"
                       }`}
                     >
                       <span className={`h-3.5 w-3.5 shrink-0 rounded-full ${status.dot}`} aria-hidden="true" />
                       <span className="min-w-0">
                         <span className="block font-extrabold text-ink">{ORGAN_LABEL[system.organ] ?? humanize(system.organ)}</span>
-                        <span className="block text-[0.8125rem] font-bold text-muted">{status.label}</span>
+                        <span className="block text-chip font-bold text-muted">{status.label}</span>
                       </span>
                     </button>
                   </li>
@@ -235,7 +235,7 @@ function OrganDetail({ system }: { system: OrganAssessment }) {
         <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-surface" aria-hidden="true">
           <div className="h-full rounded-full bg-bubbles-grape" style={{ width: `${evidence}%` }} />
         </div>
-        <p className="mt-1.5 text-[0.8125rem] font-bold text-muted">
+        <p className="mt-1.5 text-chip font-bold text-muted">
           Confidence: {confidenceWord(system.confidence ?? 0)}
         </p>
       </div>
@@ -247,7 +247,7 @@ function OrganDetail({ system }: { system: OrganAssessment }) {
             {signals.slice(0, 4).map((signal) => (
               <li key={signal.factor + signal.direction} className="rounded-2xl bg-surface px-3 py-2 text-body-sm">
                 <span className="font-bold text-ink">{humanize(signal.factor)}</span>
-                <span className="block text-[0.8125rem] font-bold text-muted">{DIRECTION[signal.direction] ?? humanize(signal.direction)}</span>
+                <span className="block text-chip font-bold text-muted">{DIRECTION[signal.direction] ?? humanize(signal.direction)}</span>
               </li>
             ))}
           </ul>
@@ -261,7 +261,7 @@ function OrganDetail({ system }: { system: OrganAssessment }) {
         </div>
       )}
 
-      <p className="mt-4 text-[0.8125rem] text-muted">
+      <p className="mt-4 text-chip text-muted">
         {system.limitations?.[system.limitations.length - 1] ??
           "Bubbles needs more reliable data before saying anything stronger."}
       </p>

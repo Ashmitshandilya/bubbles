@@ -72,7 +72,7 @@ export function DueList({ today, glp1, onChanged, onAdd }: { today: MedsToday; g
       ))}
 
       <details className="rounded-2xl bg-blush px-4 py-3 text-body-sm text-muted">
-        <summary className="cursor-pointer font-extrabold text-ink">What if I miss a dose?</summary>
+        <summary className="-my-[11px] cursor-pointer py-[11px] font-extrabold text-ink">What if I miss a dose?</summary>
         <p className="m-0 mt-2">{today.missed_dose_help}</p>
       </details>
       <LiveRegion message={said} />
@@ -108,7 +108,7 @@ function DoseRow({ item, today, suggestedSite, onChanged, onSaid }: { item: DueI
   }
 
   return (
-    <li className="rounded-2xl border-2 border-line bg-surface p-4">
+    <li className="rounded-2xl border border-line bg-surface p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           <span className="font-display text-h3 text-default">{item.time}</span>
@@ -214,7 +214,7 @@ function AsNeededRow({ item, onChanged, onSaid }: { item: MedsToday["as_needed"]
     onChanged();
   }
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-line bg-surface p-4">
+    <li className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
       <div className="min-w-0">
         <p className="m-0 font-display text-h4 text-default">{item.name}</p>
         <p className="m-0 text-body-sm text-muted">
@@ -310,7 +310,7 @@ export function WarningsPanel({ warnings }: { warnings: Warnings }) {
       )}
       <Notice tone="info">{PHARMACIST_LINE}</Notice>
 
-      <div className="flex flex-col gap-3 rounded-2xl border-2 border-dashed border-line-strong p-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-line-strong p-4">
         <h3 className="m-0 font-display text-h4 text-default">Thinking of adding something?</h3>
         <TextField id="check-name" label="A medicine or supplement to check" value={name} onChange={setName} placeholder="For example ibuprofen" maxLength={100} hint="Bubbles will check it against your own medicines and your recorded allergies." />
         <div className="flex flex-wrap gap-2">

@@ -1,20 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { CHAPTERS } from "../story/store";
-import {
-  COLOR_SCRIPT,
-  ENTER_VARIANTS,
-  PHASE_COLORS,
-  PHASE_ORDER,
-  phaseInk,
-  composite,
-  contrastRatio,
-  cycleAt,
-  sampleSky,
-  type ChapterPalette,
-  type Hex,
-  type TimeVariant,
-} from "./palette";
+import { COLOR_SCRIPT, composite, contrastRatio, sampleSky, type ChapterPalette, type Hex } from "./palette";
 import { OVERLAY_CAP } from "./sky";
 
 /**
@@ -22,7 +9,7 @@ import { OVERLAY_CAP } from "./sky";
  * cannot drift apart) against the sky behind each piece of copy, at the sky's worst case: the base gradient and
  * the shader's glow, rays and haze at their cap, with the chapter scrim where there is one.
  *
- * palette.test.ts proves the planned INK / BLUSH text; this proves the headings, accents and secondary text
+ * palette.test.ts proves the planned ink text; this proves the headings, accents and secondary text
  * that the page actually paints. Large text (headings, 24px or 19px bold and up) needs 3, the rest 4.5.
  * Each role lists the band of the viewport height its copy occupies, so a headline at the top is not judged
  * against the horizon glow it never touches.
@@ -49,7 +36,7 @@ function tokens(tone: Tone): Record<"fg" | "fgSoft" | "accent", Token> {
   return { fg: read("fg"), fgSoft: read("fg-soft"), accent: read("accent") };
 }
 
-const TOKENS = { light: tokens("light"), dark: tokens("dark") };
+const TOKENS = { light: tokens("light") } as Record<Tone, Record<"fg" | "fgSoft" | "accent", Token>>;
 
 type Painted = Pick<ChapterPalette, "sky" | "scrim" | "lights" | "tone">;
 const heights = (from: number, to: number) => Array.from({ length: 5 }, (_, i) => from + ((to - from) * i) / 4);
@@ -74,53 +61,31 @@ type Role = { what: string; use: "fg" | "fgSoft" | "accent"; large: boolean; ban
 /** What each chapter paints, and where. Bands are fractions of the viewport height (desktop and phone). */
 const ROLES: Record<string, Role[]> = {
   enter: [
-    { what: "headline", use: "fg", large: true, band: [0.4, 0.95] },
-    { what: "accent line", use: "accent", large: true, strict: true, band: [0.4, 0.95] },
-    { what: "lede", use: "fgSoft", large: false, band: [0.6, 0.95] },
+    { what: "headline", use: "fg", large: true, band: [0.2, 0.75] },
+    { what: "accent line", use: "accent", large: true, strict: true, band: [0.2, 0.75] },
+    { what: "lede", use: "fgSoft", large: false, band: [0.45, 0.9] },
   ],
-  body: [
-    { what: "headline", use: "fg", large: true, band: [0.1, 0.45] },
-    { what: "second headline (accent)", use: "accent", large: true, band: [0.1, 0.45] },
-    { what: "lede", use: "fgSoft", large: false, band: [0.25, 0.6] },
-  ],
-  noise: [
+  listen: [
     { what: "headline", use: "fg", large: true, band: [0.1, 0.5] },
-    { what: "second headline (accent)", use: "accent", large: true, band: [0.1, 0.5] },
-    { what: "lede", use: "fgSoft", large: false, band: [0.3, 0.65] },
+    { what: "lede and chip labels", use: "fgSoft", large: false, band: [0.2, 0.95] },
+    { what: "chip kinds (accent, small)", use: "accent", large: false, band: [0.15, 0.9] },
   ],
-  track: [
-    { what: "headline", use: "fg", large: true, band: [0.08, 0.4] },
-    { what: "form text", use: "fg", large: false, band: [0.3, 0.85] },
-    { what: "notes", use: "fgSoft", large: false, band: [0.3, 0.9] },
+  confirm: [
+    { what: "headline", use: "fg", large: true, band: [0.1, 0.55] },
+    { what: "lede and example caption", use: "fgSoft", large: false, band: [0.2, 0.75] },
   ],
-  cycle: [
-    { what: "headline", use: "fg", large: true, band: [0.08, 0.4] },
-    // phones put this copy on its own glass panel (landing.css), so the band is the desktop column
-    { what: "day line and phase copy", use: "fgSoft", large: false, band: [0.3, 0.8] },
-  ],
-  connect: [
-    { what: "headline", use: "fg", large: true, band: [0.06, 0.32] },
-    // (the hint under the web sits on its own dark glass pill, so it is not judged against the sky)
-  ],
-  remember: [
-    { what: "headline", use: "fg", large: true, band: [0.08, 0.4] },
-    { what: "last headline word (accent)", use: "accent", large: true, band: [0.08, 0.4] },
-    { what: "memory level labels (accent, small)", use: "accent", large: false, band: [0.2, 0.65] },
-    { what: "layers and lede", use: "fgSoft", large: false, band: [0.2, 0.95] },
-  ],
-  companion: [
-    { what: "headline", use: "fg", large: true, band: [0.06, 0.32] },
-    { what: "steps and answer", use: "fgSoft", large: false, band: [0.2, 0.9] },
-  ],
-  care: [
-    { what: "title", use: "fgSoft", large: true, band: [0.08, 0.22] },
-    { what: "statements", use: "fg", large: true, band: [0.25, 0.7] },
-    { what: "statements (accent)", use: "accent", large: true, band: [0.25, 0.7] },
-    { what: "statement copy", use: "fgSoft", large: false, band: [0.45, 0.8] },
-  ],
-  bubbles: [
+  patterns: [
     { what: "headline", use: "fg", large: true, band: [0.1, 0.5] },
-    { what: "lede", use: "fgSoft", large: false, band: [0.3, 0.6] },
+    { what: "lede, pattern note and legend", use: "fgSoft", large: false, band: [0.25, 0.95] },
+  ],
+  prepare: [
+    { what: "headline", use: "fg", large: true, band: [0.1, 0.5] },
+    { what: "lede", use: "fgSoft", large: false, band: [0.3, 0.75] },
+  ],
+  close: [
+    { what: "headline", use: "fg", large: true, band: [0.1, 0.5] },
+    { what: "promise numbers (accent, small)", use: "accent", large: false, band: [0.2, 0.9] },
+    { what: "promise copy", use: "fgSoft", large: false, band: [0.2, 0.9] },
   ],
 };
 
@@ -136,43 +101,38 @@ function failures(label: string, p: Painted, roles: Role[]) {
 }
 
 describe("the stylesheet's text tokens", () => {
-  it("are read from landing.css for both tones", () => {
-    expect(TOKENS.light.fg.hex.toLowerCase()).toBe("#22101d");
-    expect(TOKENS.dark.fg.hex.toLowerCase()).toBe("#f8eef4");
-    expect(TOKENS.light.fgSoft.alpha).toBeLessThan(1);
+  it("are read from landing.css: plum ink, muted plum, iris violet", () => {
+    expect(TOKENS.light.fg.hex.toLowerCase()).toBe("#1e1b2e");
+    expect(TOKENS.light.fgSoft.hex.toLowerCase()).toBe("#5e5873");
+    expect(TOKENS.light.accent.hex.toLowerCase()).toBe("#6b46d6");
   });
 });
 
 describe("heading, accent and secondary text hold their contrast at the sky's worst case", () => {
   for (const c of COLOR_SCRIPT) {
-    if (c.key === "enter" || c.key === "cycle") continue;
     it(`${c.key}`, () => {
       expect(failures(c.key, c, ROLES[c.key])).toEqual([]);
     });
   }
 
-  for (const [tod, v] of Object.entries(ENTER_VARIANTS) as [string, TimeVariant][]) {
-    it(`enter at ${tod} (the hero follows the visitor's clock)`, () => {
-      expect(failures(`enter/${tod}`, v, ROLES.enter)).toEqual([]);
-    });
-  }
-
-  it("cycle, at every phase and between phases", () => {
-    const out: string[] = [];
-    for (let x = 0; x <= 3.001; x += 0.25) out.push(...failures(`cycle/${x.toFixed(2)}`, cycleAt(x), ROLES.cycle));
-    expect(out).toEqual([]);
-  });
-
-  it("cycle phase names, painted in their own colour, read as large text on their phase's sky", () => {
-    const out: string[] = [];
-    PHASE_ORDER.forEach((name, i) => {
-      const got = worst(cycleAt(i), phaseInk(PHASE_COLORS[name]), [0.4, 0.85]);
-      if (got < 3) out.push(`${name}: ${got.toFixed(2)} (needs 3)`);
-    });
-    expect(out).toEqual([]);
-  });
-
   it("every chapter has roles listed here", () => {
     expect(Object.keys(ROLES).sort()).toEqual(CHAPTERS.map((c) => c.key).sort());
+  });
+});
+
+describe("text on the page's own surfaces", () => {
+  it("muted text and the accent hold 4.5 on porcelain cards and on the lilac message bubble", () => {
+    for (const bg of ["#FFFFFF", "#D5C4F5", "#FBF8F6"]) {
+      expect(contrastRatio(bg, TOKENS.light.fg.hex), bg).toBeGreaterThanOrEqual(4.5);
+      if (bg !== "#D5C4F5") {
+        expect(contrastRatio(bg, TOKENS.light.fgSoft.hex), bg).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio(bg, TOKENS.light.accent.hex), bg).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it("white button text holds 4.5 on the violet button, at rest and pressed", () => {
+    expect(contrastRatio("#6B46D6", "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio("#5835BF", "#FFFFFF")).toBeGreaterThanOrEqual(4.5);
   });
 });

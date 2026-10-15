@@ -134,7 +134,7 @@ export function PlanView({ doc, plan, reload, onRemake }: { doc: WorkoutPlanDoc;
 
 export function StopCard() {
   return (
-    <div role="alert" className="rounded-3xl border-2 border-bubbles-urgent bg-tint-urgent p-5">
+    <div role="alert" className="rounded-3xl border border-bubbles-urgent bg-tint-urgent p-5">
       <p className="m-0 font-display text-h4 text-ink">Stop for now and get help</p>
       <p className="m-0 mt-1 text-body text-ink">{STOP_TEXT}</p>
       <p className="m-0 mt-2 text-body-sm text-ink-soft">Bubbles can&rsquo;t judge what is happening in your body. Please talk to a doctor before you do any more exercise.</p>
@@ -203,7 +203,7 @@ function AdaptSheet({ open, onClose, index, onResult }: { open: boolean; onClose
             </div>
           )}
           <SelectField id="ad-min" label="Time available" optional value={minutes} onChange={setMinutes} options={[{ value: "", label: "As planned" }, ...[10, 15, 20, 30, 45].map((n) => ({ value: String(n), label: `${n} minutes` }))]} />
-          <div className="rounded-2xl border-2 border-line p-4">
+          <div className="rounded-2xl border border-line p-4">
             <p className="m-0 mb-2 text-body-sm font-extrabold text-ink">Is something scary happening?</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" className={BTN_SECONDARY} onClick={() => setStop(true)}>Chest pain</button>

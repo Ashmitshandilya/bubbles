@@ -117,7 +117,7 @@ export function MessageBody({ content }: { content: string }) {
           return (
             <List
               key={i}
-              className={`m-0 flex flex-col gap-1.5 pl-5 ${block.ordered ? "list-decimal marker:font-extrabold" : "list-disc marker:text-bubbles-pink"}`}
+              className={`m-0 flex flex-col gap-1.5 pl-5 ${block.ordered ? "list-decimal marker:font-extrabold" : "list-disc marker:text-ink-soft"}`}
             >
               {block.items.map((item, j) => (
                 <li key={j}>
@@ -142,10 +142,9 @@ export function ThinkingBubble() {
     <li
       role="status"
       aria-live="polite"
-      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-[18px] py-3"
+      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border border-bubbles-grape/15 bg-surface px-[18px] py-3"
     >
-      <BubblesMascot size={32} mood="thinking" />
-      <span className="text-body-sm font-extrabold text-bubbles-grape-deep">Checking your history and trusted sources</span>
+      <span className="text-body-sm font-semibold text-ink-soft">Checking your history and trusted sources</span>
       <span className="inline-flex shrink-0 gap-1" aria-hidden="true">
         <span className="bubbles-thinking-dot" />
         <span className="bubbles-thinking-dot" />
@@ -164,17 +163,17 @@ export interface PromptCard {
 /** Empty-state starters. Each card sends its prompt as the user's first message. */
 export function PromptCards({ cards, disabled, onPick }: { cards: PromptCard[]; disabled: boolean; onPick: (text: string) => void }) {
   return (
-    <div role="group" aria-label="Ways to start" className="bubbles-stagger grid w-full max-w-2xl gap-3 sm:grid-cols-3">
+    <div role="group" aria-label="Ways to start" className="bubbles-stagger flex w-full max-w-xl flex-col gap-2.5">
       {cards.map((card) => (
         <button
           key={card.text}
           type="button"
           disabled={disabled}
           onClick={() => onPick(card.text)}
-          className="bubbles-lift flex min-h-[44px] flex-col items-start gap-2.5 rounded-3xl border-2 border-line bg-surface p-4 text-left hover:border-bubbles-grape/40 disabled:cursor-not-allowed disabled:opacity-60"
+          className="bubbles-press flex min-h-[56px] items-center gap-3 rounded-full border border-line bg-surface py-2 pl-2.5 pr-5 text-left shadow-sm hover:border-bubbles-grape/40 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.75rem] font-extrabold ${TONE[card.tone].chip}`}>{card.tag}</span>
-          <span className="text-body font-bold leading-snug text-ink">{card.text}</span>
+          <span className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-[0.75rem] font-semibold ${TONE[card.tone].chip}`}>{card.tag}</span>
+          <span className="text-body font-medium leading-snug text-ink">{card.text}</span>
         </button>
       ))}
     </div>
@@ -203,7 +202,7 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
               </>
             );
             const chip =
-              "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-left text-[0.8125rem] font-extrabold leading-snug text-bubbles-grape-deep no-underline";
+              "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-left text-chip font-extrabold leading-snug text-bubbles-grape-deep no-underline";
             return ev.sourceUrl ? (
               <a key={ev.chunkId ?? `${ev.title}-${idx}`} href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" className={`${chip} hover:bg-bubbles-grape/15`}>
                 {label}
@@ -218,7 +217,7 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
         </div>
       )}
       {confidence && (
-        <span className="inline-flex min-h-[32px] items-center rounded-full bg-tint-mint px-3 py-1.5 text-[0.8125rem] font-extrabold text-bubbles-mint-deep">
+        <span className="inline-flex min-h-[32px] items-center rounded-full bg-tint-mint px-3 py-1.5 text-chip font-extrabold text-bubbles-mint-deep">
           Confidence {confidence}
         </span>
       )}
@@ -264,10 +263,12 @@ function EventCard({
   if (resolved) {
     if (saved.length) {
       return (
-        <div ref={resultRef} tabIndex={-1} role="status" className="bubbles-pop-in flex items-center gap-3 rounded-3xl bg-tint-mint px-4 py-3 outline-offset-4">
-          <BubblesMascot size={44} mood="happy" />
+        <div ref={resultRef} tabIndex={-1} role="status" className="bubbles-pop-in flex items-center gap-3 rounded-3xl border border-line bg-surface px-4 py-3 outline-offset-4">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tint-grape text-bubbles-grape-deep">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          </span>
           <div className="min-w-0">
-            <strong className="block font-display text-h4 font-semibold text-bubbles-mint-deep">Saved to your health record</strong>
+            <strong className="block font-display text-h4 text-ink">Saved to your health record</strong>
             <span className="block text-body-sm text-ink-soft">
               {saved.map(eventLabel).join(", ")}
               {skipped.length ? ` · skipped ${skipped.length}` : ""}
@@ -277,7 +278,7 @@ function EventCard({
       );
     }
     return (
-      <div ref={resultRef} tabIndex={-1} role="status" className="rounded-3xl border-2 border-line bg-surface px-4 py-3 text-body-sm text-ink-soft outline-offset-4">
+      <div ref={resultRef} tabIndex={-1} role="status" className="rounded-3xl border border-line bg-surface px-4 py-3 text-body-sm text-ink-soft outline-offset-4">
         {withdrawn.length === confirmable.length
           ? "Bubbles withdrew this after your correction. Nothing was saved."
           : "Okay, nothing from this message was saved."}
@@ -289,7 +290,7 @@ function EventCard({
   return (
     <section
       aria-label="Health details Bubbles noticed"
-      className="flex flex-col gap-3 rounded-3xl border-2 border-dashed border-bubbles-pink/60 bg-blush px-4 py-4 sm:px-5"
+      className="flex flex-col gap-3 rounded-3xl border border-dashed border-bubbles-lilac bg-surface px-4 py-4 shadow-sm sm:px-5"
     >
       <h3 className="m-0 font-display text-h4 font-semibold">
         {confirmable.length ? `Should I save ${many ? "these" : "this"} to your health record?` : "Bubbles noticed"}
@@ -303,7 +304,7 @@ function EventCard({
           const denied = event.notPresent.length > 0;
           const struck = state === "retracted" ? "line-through" : "";
           return (
-            <li key={event.id ?? `${event.eventType}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-line bg-surface px-3 py-2">
+            <li key={event.id ?? `${event.eventType}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface px-3 py-2">
               <div data-private className="min-w-0 text-body-sm">
                 {denied ? (
                   <>
@@ -316,12 +317,12 @@ function EventCard({
                     <span className={`text-ink-soft ${struck}`}> · {event.description}</span>
                   </>
                 )}
-                {day && !denied && <span className={`block text-[0.8125rem] text-ink-soft ${struck}`}>For {day}</span>}
-                {conf && !denied && <span className="block text-[0.8125rem] text-ink-soft">Bubbles&apos; confidence: {conf}</span>}
-                {note && <span className="block text-[0.8125rem] text-ink-soft">{note}</span>}
+                {day && !denied && <span className={`block text-chip text-ink-soft ${struck}`}>For {day}</span>}
+                {conf && !denied && <span className="block text-chip text-ink-soft">Bubbles&apos; confidence: {conf}</span>}
+                {note && <span className="block text-chip text-ink-soft">{note}</span>}
               </div>
               {state === "saved" && (
-                <span className="inline-flex items-center gap-1 text-body-sm font-extrabold text-bubbles-mint-deep">
+                <span className="inline-flex items-center gap-1 text-body-sm font-extrabold text-bubbles-grape-deep">
                   <Icon d={ICONS.check} size={16} strokeWidth={3} />
                   Saved
                 </span>
@@ -331,7 +332,7 @@ function EventCard({
               {state === "busy" && <span className="text-body-sm font-extrabold text-ink-soft">Working…</span>}
               {many && event.isConfirmable && event.id && !state && (
                 <div className="flex gap-2">
-                  <button type="button" disabled={busy} onClick={() => onDecide([event.id!], true)} className={`${btn} bg-tint-mint text-bubbles-mint-deep`} aria-label={`Save ${eventLabel(event)}`}>
+                  <button type="button" disabled={busy} onClick={() => onDecide([event.id!], true)} className={`${btn} bg-tint-grape text-bubbles-grape-deep`} aria-label={`Save ${eventLabel(event)}`}>
                     Save
                   </button>
                   <button type="button" disabled={busy} onClick={() => onDecide([event.id!], false)} className={`${btn} text-ink-soft`} aria-label={`Don't save ${eventLabel(event)}`}>
@@ -349,7 +350,7 @@ function EventCard({
             type="button"
             disabled={busy}
             onClick={() => onDecide(pending.map((e) => e.id), true)}
-            className={`${btn} bg-bubbles-mint text-ink bubbles-glow bubbles-glow-mint`}
+            className={`${btn} bg-bubbles-grape text-white bubbles-glow`}
           >
             <Icon d={ICONS.check} size={16} strokeWidth={3} />
             {pending.length === 1 ? "Yes, save it" : "Yes, save all"}
@@ -375,7 +376,7 @@ function EventCard({
  */
 function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
   return (
-    <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[18px] bg-tint-sky p-4">
+    <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[20px] bg-tint-sky p-4">
       <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
         If you say yes, this message, your recent messages here and a short summary of your profile and notes (such as your date of birth, gender and
         recent entries) go to an outside AI model.
@@ -419,7 +420,7 @@ function ReplyFeedback({
       aria-label={label}
       disabled={busy}
       onClick={() => onRate(rating)}
-      className={`bubbles-press inline-flex h-11 w-11 items-center justify-center rounded-full border-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+      className={`bubbles-press inline-flex h-11 w-11 items-center justify-center rounded-full border disabled:cursor-not-allowed disabled:opacity-60 ${
         rated === rating ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
       }`}
     >
@@ -444,7 +445,7 @@ function ReplyFeedback({
               aria-pressed={feedback?.reason === r.id}
               disabled={busy}
               onClick={() => onRate("down", r.id)}
-              className={`bubbles-press min-h-[44px] rounded-full border-2 px-4 text-body-sm font-extrabold disabled:opacity-60 ${
+              className={`bubbles-press min-h-[44px] rounded-full border px-4 text-body-sm font-extrabold disabled:opacity-60 ${
                 feedback?.reason === r.id ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft hover:border-line-strong"
               }`}
             >
@@ -498,7 +499,7 @@ export function BubblesReply({
     // available behind a disclosure so nothing is silently erased.
     return (
       <li data-kind={message.kind} className="flex w-full flex-col gap-3 self-start sm:max-w-[88%]">
-        <div className="flex flex-col gap-2 rounded-[20px] border-2 border-line bg-surface px-5 py-4 text-ink">
+        <div className="flex flex-col gap-2 rounded-[20px] border border-line bg-surface px-5 py-4 text-ink">
           <div role="status" className="flex flex-col gap-1.5">
             <h3 className="m-0 font-display text-h4 font-semibold">Earlier warning withdrawn</h3>
             <p className="m-0 text-body-sm text-ink-soft">{retractionNote(message.retractionConcepts)}</p>
@@ -518,20 +519,20 @@ export function BubblesReply({
     // Plain and unmistakable: no mascot, no motion, no playful styling, nothing else competing.
     const today = message.safetyState === "URGENT";
     return (
-      <li data-kind={message.kind} className="flex w-full flex-col gap-3 self-start sm:max-w-[88%]">
-        <div role="alert" className="rounded-[20px] bg-bubbles-urgent px-5 py-4 text-white">
-          <h3 className="m-0 flex items-center gap-2 text-h3 font-extrabold text-white">
+      <li data-kind={message.kind} data-safety="urgent" className="flex w-full flex-col gap-3 self-start sm:max-w-[88%]">
+        <div role="alert" className="bg-bubbles-urgent px-5 py-5 text-white sm:px-6">
+          <h3 className="m-0 flex items-center gap-2 font-sans text-[1.125rem] leading-snug text-white">
             <Icon d={ICONS.urgent} size={22} />
             {today ? "Please get medical care today" : "Get urgent help now"}
           </h3>
-          <p className="m-0 mt-1.5 text-body font-bold">
+          <p className="m-0 mt-1.5 text-body font-medium">
             {reasonSentence(message.safetyReasons, message.safetyState)}
             {today
               ? "Please contact a clinician or urgent care today. If it gets worse or you feel unsafe, call your local emergency number."
               : "If this is happening now or feels severe, call your local emergency number or go to the nearest emergency department."}
           </p>
         </div>
-        <div className="rounded-[20px] border-2 border-bubbles-urgent bg-surface px-5 py-4 text-body leading-relaxed text-ink">
+        <div className="border border-line bg-surface px-5 py-4 text-body leading-relaxed text-ink sm:px-6">
           <MessageBody content={message.content} />
         </div>
       </li>
@@ -542,17 +543,18 @@ export function BubblesReply({
   return (
     <li data-kind={message.kind} className="bubbles-rise flex w-full items-start gap-2.5 self-start sm:max-w-[min(92%,44rem)]">
       {/* Fixed gutter so consecutive replies line up; only the first reply of a run shows Bubbles. */}
-      <span className="mt-1 flex w-9 shrink-0 justify-center">{showAvatar && <BubblesMascot size={36} animated={false} />}</span>
+      {/* Never beside a caution banner (DESIGN.md: no mascot near urgent or caution states). */}
+      <span className="mt-1 flex w-9 shrink-0 justify-center">{showAvatar && message.safetyLevel !== "AMBER" && <BubblesMascot size={36} animated={false} />}</span>
       <div className="flex min-w-0 flex-1 flex-col gap-3">
       {message.safetyLevel === "AMBER" && (
-        <div className="flex items-start gap-2.5 rounded-[18px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
+        <div data-safety="caution" className="flex items-start gap-2.5 bg-bubbles-caution px-4 py-3.5 text-body-sm font-medium text-white">
           <span className="mt-0.5">
             <Icon d={ICONS.warn} size={20} />
           </span>
           {unsure ? (
             <p className="m-0">
               <span className="sr-only">Caution. </span>
-              <span className="block font-extrabold">Bubbles isn&apos;t sure whether this is happening right now</span>
+              <span className="block font-semibold">Bubbles isn&apos;t sure whether this is happening right now</span>
               {reasonSentence(message.safetyReasons, message.safetyState)}If it is happening now or feels severe, call your local emergency number.
             </p>
           ) : (
@@ -563,7 +565,7 @@ export function BubblesReply({
           )}
         </div>
       )}
-      <div data-private className="flex flex-col gap-3 rounded-[22px_22px_22px_8px] border-2 border-bubbles-grape/15 bg-surface px-5 py-4 text-body leading-relaxed text-ink">
+      <div data-private className="flex flex-col gap-3 rounded-[20px_20px_20px_8px] border border-line bg-surface px-5 py-4 text-body leading-relaxed text-ink shadow-sm">
         <MessageBody content={message.content} />
         <EvidenceRow evidence={message.evidence ?? []} confidence={message.confidence} />
       </div>
@@ -582,7 +584,7 @@ export function BubblesReply({
               type="button"
               disabled={chipsDisabled}
               onClick={() => onChip(chip)}
-              className="bubbles-press min-h-[44px] rounded-full border-2 border-bubbles-grape/20 bg-surface px-4 text-left text-body-sm font-extrabold text-bubbles-grape-deep hover:border-bubbles-grape disabled:cursor-not-allowed disabled:opacity-60"
+              className="bubbles-press min-h-[44px] rounded-full border border-bubbles-grape/20 bg-surface px-4 text-left text-body-sm font-extrabold text-bubbles-grape-deep hover:border-bubbles-grape disabled:cursor-not-allowed disabled:opacity-60"
             >
               {chip}
             </button>
@@ -630,7 +632,7 @@ export function ConversationList({
       {state === "error" && (
         <div role="alert" className="flex flex-col items-start gap-2 rounded-2xl bg-tint-pink px-3.5 py-3 text-body-sm text-ink">
           Bubbles couldn&apos;t load your conversations.
-          <button type="button" onClick={onRetry} className="min-h-[44px] rounded-full border-2 border-ink bg-surface px-4 text-body-sm font-extrabold">
+          <button type="button" onClick={onRetry} className="min-h-[44px] rounded-full border border-line-strong bg-surface px-4 text-body-sm font-extrabold">
             Try again
           </button>
         </div>
@@ -653,7 +655,7 @@ export function ConversationList({
                   }`}
                 >
                   <strong className="block w-full truncate text-body-sm font-extrabold text-ink">{c.title}</strong>
-                  <span className="text-[0.8125rem] text-ink-soft">{c.when}</span>
+                  <span className="text-chip text-ink-soft">{c.when}</span>
                 </button>
               </li>
             );
