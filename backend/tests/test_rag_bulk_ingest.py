@@ -80,5 +80,6 @@ def test_hybrid_search_attaches_policy_drops_bypass_and_fails_closed(monkeypatch
     monkeypatch.setattr(rag, "_db", lambda: _FakeDB([dict(r) for r in rows], tags))
     out = rag.hybrid_search(query="q")
     assert [(r["document_id"], r["policy"]) for r in out] == [("a", "medication_safety_no_dosing"), ("c", "standard")]
+    rag._policy_cache.clear()   # remembered policies are right while they last; a read that fails for an unseen document fails closed
     monkeypatch.setattr(rag, "_db", lambda: _FakeDB([dict(r) for r in rows], tags, fail=True))
     assert {r["policy"] for r in rag.hybrid_search(query="q")} == {"unknown"}

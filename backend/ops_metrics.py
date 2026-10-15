@@ -54,7 +54,17 @@ def ai_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
         "timeouts": sum(1 for a in attempts if a["data"].get("outcome") in {"timeout", "budget_spent"}),
         "success_rate": _rate(len(answered), len(replies)),
         "reply_ms": _lat(totals),
+        "stage_ms": stage_latency(chats),
     }
+
+
+def stage_latency(api_events: list[dict[str, Any]]) -> dict[str, dict[str, float | None]]:
+    """p50 / p95 per chat stage (pre, ctx, rag, ai, post) from the numbers chat turns recorded. A stage nobody timed has no numbers."""
+    out: dict[str, dict[str, float | None]] = {}
+    for stage in ("pre", "ctx", "rag", "ai", "post"):
+        values = [float(d[f"stage_{stage}_ms"]) for d in api_events if isinstance(d.get(f"stage_{stage}_ms"), (int, float))]
+        out[stage] = {"n": len(values), **{k: v for k, v in _lat(values).items() if k in ("p50", "p95")}}
+    return out
 
 
 def provider_table(events: list[dict[str, Any]]) -> list[dict[str, Any]]:

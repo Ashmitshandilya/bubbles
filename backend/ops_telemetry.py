@@ -31,7 +31,9 @@ MAX_TEXT = 120             # any string in an event is cut to this: a row always
 
 # Every field an event of each kind may carry. Anything else passed to record() is dropped.
 FIELDS: dict[str, frozenset[str]] = {
-    "api": frozenset({"method", "route", "status", "latency_ms", "route_kind", "safety_level", "ai_called"}),
+    "api": frozenset({"method", "route", "status", "latency_ms", "route_kind", "safety_level", "ai_called",
+                      # chat only: where the time went, in milliseconds (numbers only; see STAGES)
+                      "stage_pre_ms", "stage_ctx_ms", "stage_rag_ms", "stage_ai_ms", "stage_post_ms"}),
     "ai_attempt": frozenset({"provider", "model", "position", "outcome", "error_category", "latency_ms",
                              "input_tokens", "output_tokens", "total_tokens", "cached_tokens"}),
     "ai_reply": frozenset({"provider", "model", "outcome", "attempts", "fallback_used", "total_ms"}),
@@ -92,11 +94,23 @@ NOTE_VALUES: dict[str, frozenset] = {
 }
 
 
+# Where a chat turn spends its time, in order: pre (sign-in to understood), ctx (own data), rag (evidence lookup), ai (the model), post
+# (saving). ctx and rag run side by side, so their sum can exceed the request's own time. Numbers only, a fixed set of names.
+STAGES = ("pre", "ctx", "rag", "ai", "post")
+NOTE_NUMBERS = frozenset(f"stage_{name}_ms" for name in STAGES)
+_MAX_STAGE_MS = 600_000.0
+
+
 def note(**fields: Any) -> None:
-    """Adds technical facts about the current request (chat: route_kind, safety_level, ai_called) to its api event."""
+    """Adds technical facts about the current request (chat: route_kind, safety_level, ai_called, stage_*_ms) to its api event."""
     current = _request_note.get()
-    if current is not None:
-        current.update({k: v for k, v in fields.items() if k in NOTE_VALUES and isinstance(v, (str, bool)) and v in NOTE_VALUES[k]})
+    if current is None:
+        return
+    for key, value in fields.items():
+        if key in NOTE_VALUES and isinstance(value, (str, bool)) and value in NOTE_VALUES[key]:
+            current[key] = value
+        elif key in NOTE_NUMBERS and isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value <= _MAX_STAGE_MS:
+            current[key] = round(float(value), 1)
 
 
 # ---------------------------------------------------------------- recording
