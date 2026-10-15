@@ -1529,3 +1529,33 @@
 @keyframes cf-wave { 0%, 100% { transform: rotate(-106deg); } 50% { transform: rotate(-130deg); } }
 @keyframes cf-glow { from { filter: drop-shadow(0 0 4px #ff9ccb); } to { filter: drop-shadow(0 0 10px #ff9ccb) drop-shadow(0 0 22px #ffc6e1); } }
 @keyframes cf-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-16px); } }
+
+/* ── Figma pass (Oct 2026): chapter eyebrow + scroll cue ─────────────────────────────────
+   The eyebrow is generated text (data-eyebrow), so headings keep their accessible names:
+   the "/ ''" alt text tells screen readers it is decoration. */
+.cw [data-eyebrow]::before {
+  content: attr(data-eyebrow);
+  content: attr(data-eyebrow) / "";
+  display: block;
+  margin-bottom: 18px;
+  font: 500 0.72rem/1 var(--font-m);
+  font-variation-settings: normal;
+  letter-spacing: 0.14em;
+  text-shadow: none;
+  color: var(--fg-soft);
+}
+.cw-scroll-cue {
+  margin: 28px 0 0;
+  font: 500 0.72rem/1 var(--font-m);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-soft);
+}
+.cw-scroll-cue span { display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  /* ease-in-out drift taken from the Figma keyframes: 0 → 5px → 0 over 2.5s */
+  .cw-scroll-cue span { animation: cw-cue 2.5s cubic-bezier(0.42, 0, 0.58, 1) infinite; }
+  @keyframes cw-cue { 50% { transform: translateY(5px); } }
+}
+/* The two chapters whose headline swaps between two lines keep no eyebrow (it would sit under the swapping text). */
+.cw .cw-swap[data-eyebrow]::before { display: none; }

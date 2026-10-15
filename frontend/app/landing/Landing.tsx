@@ -12,6 +12,7 @@ import { COLOR_SCRIPT, phaseInk } from "./atmosphere/palette";
 import { SkyMount } from "./atmosphere/SkyMount";
 import { calmBackground, skyGradient, skyVars } from "./atmosphere/sky";
 import { CHAPTERS, MOBILE_LEN_FACTOR } from "./story/store";
+import { eyebrow } from "./eyebrow";
 import { SpeechBubble } from "./story/SpeechBubble";
 import { BubblesHost } from "./story/BubblesHost";
 import { TravelRoutes } from "./story/TravelRoutes";
@@ -182,11 +183,12 @@ export function Landing() {
           <div className="cw-layer cw-front">
             <div className="cw-stage">
               <div className="cw-enter-copy">
-                <h1 id="cw-h-enter" className="cw-display">
+                <h1 id="cw-h-enter" data-eyebrow={eyebrow("enter")} className="cw-display">
                   Your body keeps a story. <span className="cw-accent">Bubbles remembers&nbsp;it.</span>
                 </h1>
                 <p className="cw-lede">A cycle-aware health companion that listens, remembers and connects the dots over time.</p>
                 <AuthCta variant="hero" />
+                <p className="cw-scroll-cue" aria-hidden="true">Scroll to continue <span>↓</span></p>
               </div>
               <div className="cw-calm-bubbles cw-calm-bubbles--enter">
                 <BubblesFigure uid="calm-enter" pose="wave" mood="happy" title={BUBBLES_ALT} />
@@ -200,7 +202,7 @@ export function Landing() {
           <div className="cw-layer cw-front">
             <div className="cw-stage">
               <div className="cw-body-copy">
-                <h2 id="cw-h-body" className="cw-h2 cw-swap">
+                <h2 id="cw-h-body" data-eyebrow={eyebrow("body")} className="cw-h2 cw-swap">
                   <span className="cw-swap-a">Your body is a living system.</span>{" "}
                   <span className="cw-swap-b">Every part of it is talking.</span>
                 </h2>
@@ -230,7 +232,7 @@ export function Landing() {
             </div>
             <div className="cw-stage">
               <div className="cw-noise-copy">
-                <h2 id="cw-h-noise" className="cw-h2 cw-swap">
+                <h2 id="cw-h-noise" data-eyebrow={eyebrow("noise")} className="cw-h2 cw-swap">
                   <span className="cw-swap-a">A number is a moment.</span>{" "}
                   <span className="cw-swap-b">Your health is the story between them.</span>
                 </h2>
@@ -246,7 +248,7 @@ export function Landing() {
         <section {...chapter("track")}>
           <div className="cw-layer cw-front">
             <div className="cw-stage">
-              <h2 id="cw-h-track" className="cw-h2 cw-track-title">Say it the way you would tell a friend.</h2>
+              <h2 id="cw-h-track" data-eyebrow={eyebrow("track")} className="cw-h2 cw-track-title">Say it the way you would tell a friend.</h2>
               <TypedIntake />
             </div>
           </div>
@@ -257,7 +259,7 @@ export function Landing() {
           <div className="cw-layer cw-front">
             <div className="cw-stage">
               <div className="cw-cycle-copy">
-                <h2 id="cw-h-cycle" className="cw-h2">Built around your rhythm, not an average one.</h2>
+                <h2 id="cw-h-cycle" data-eyebrow={eyebrow("cycle")} className="cw-h2">Built around your rhythm, not an average one.</h2>
                 <CycleDay />
                 <div className="cw-phases">
                   {PHASES.map((ph) => (
@@ -308,7 +310,7 @@ export function Landing() {
         <section {...chapter("connect")}>
           <div className="cw-layer cw-front">
             <div className="cw-stage">
-              <h2 id="cw-h-connect" className="cw-h2 cw-connect-title">Everything you track is connected. Bubbles notices how.</h2>
+              <h2 id="cw-h-connect" data-eyebrow={eyebrow("connect")} className="cw-h2 cw-connect-title">Everything you track is connected. Bubbles notices how.</h2>
               <ConnectWeb />
             </div>
           </div>
@@ -318,7 +320,7 @@ export function Landing() {
         <section {...chapter("remember")}>
           <div className="cw-layer cw-front">
             <div className="cw-stage">
-              <h2 id="cw-h-remember" className="cw-h2 cw-zoom-title">
+              <h2 id="cw-h-remember" data-eyebrow={eyebrow("remember")} className="cw-h2 cw-zoom-title">
                 <span className="cw-sr">Bubbles remembers your health over time: </span>
                 {ZOOM.map((z, k) => (
                   <span key={z.key} className="cw-zoom-word" style={{ "--k": k } as Vars}>
@@ -354,7 +356,7 @@ export function Landing() {
         <section {...chapter("companion")}>
           <div className="cw-layer cw-front">
             <div className="cw-stage">
-              <h2 id="cw-h-companion" className="cw-h2 cw-companion-title">Ask anything. Bubbles answers with your whole story in mind.</h2>
+              <h2 id="cw-h-companion" data-eyebrow={eyebrow("companion")} className="cw-h2 cw-companion-title">Ask anything. Bubbles answers with your whole story in mind.</h2>
               <CompanionDemo />
             </div>
           </div>
@@ -364,7 +366,7 @@ export function Landing() {
         <section {...chapter("care")}>
           <div className="cw-layer cw-front">
             <div className="cw-stage">
-              <h2 id="cw-h-care" className="cw-care-title">Cute on the outside. Careful on the inside.</h2>
+              <h2 id="cw-h-care" data-eyebrow={eyebrow("care")} className="cw-care-title">Cute on the outside. Careful on the inside.</h2>
               <div className="cw-care-track" style={{ "--n": STATEMENTS.length } as Vars}>
                 {STATEMENTS.map((s, k) => (
                   <article key={s.title} className="cw-statement" style={{ "--k": k } as Vars}>
@@ -386,7 +388,7 @@ export function Landing() {
           <div className="cw-layer cw-front">
             <div className="cw-stage">
               <div className="cw-final">
-                <h2 id="cw-h-bubbles" className="cw-display">Start your health story with Bubbles.</h2>
+                <h2 id="cw-h-bubbles" data-eyebrow={eyebrow("bubbles")} className="cw-display">Start your health story with Bubbles.</h2>
                 <p className="cw-lede">One message is enough to begin. Bubbles takes it from there.</p>
                 <div className="cw-final-actions">
                   <AuthCta variant="final" />
