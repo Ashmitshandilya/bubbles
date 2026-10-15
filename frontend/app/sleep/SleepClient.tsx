@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  Choices, DateField, DetailChips, Disclaimer, EmptyState, EntryNote, EntryRow, History, LogButton, LogSheet, SavedToast, StatGrid,
+  Choices, DateField, DetailChips, Disclaimer, EmptyState, EntryNote, EntryRow, Fold, History, LogButton, LogSheet, SavedToast, StatGrid,
   StatSkeleton, Stepper, TextArea, TrackerHero, TrackerShell, WeekBars,
 } from "../../components/tracking/kit";
 import { computeStat, formatNumber, todayISO, toNumber, useTracker, type Entry } from "../../components/tracking/data";
@@ -143,14 +143,16 @@ function Sleep() {
         {(data) => (
           <>
             <ScorePanel overview={data} />
-            <RhythmPanel overview={data} />
-            <WeekdayPanel overview={data} />
-            <InsightsPanel overview={data} />
-            <div className="grid items-start gap-6 lg:grid-cols-2">
+            <Fold title="Rhythm and patterns">
+              <RhythmPanel overview={data} />
+              <WeekdayPanel overview={data} />
+              <InsightsPanel overview={data} />
+            </Fold>
+            <Fold title="Goal and wind-down">
               <GoalEditor key={`${data.goal.hours}|${data.goal.bedtime ?? ""}|${data.goal.wake_time ?? ""}`} goal={data.goal} onSaved={reloadOverview} />
               <WinddownPanel overview={data} />
-            </div>
-            <p className="m-0 text-body-sm font-semibold text-muted">{data.disclaimer}</p>
+            </Fold>
+            <p className="m-0 text-chip font-semibold text-muted">{data.disclaimer}</p>
           </>
         )}
       </QueryView>

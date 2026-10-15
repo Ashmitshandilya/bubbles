@@ -347,6 +347,16 @@ New chat words (English and Hinglish): ear pain, ringing in the ears, hearing lo
 Please confirm both should be urgent, or tell us the right tier. Known gaps: "hearing loss in my grandfather" is read as the speaker's own (the existing other-person detection
 does not cover "X in my <relative>"); Hinglish for a breast lump (gaanth) is included but untested by a native speaker.
 
+## 13e. The Eyes area on the body map (added 2026-10-15; awaiting sign-off)
+
+The body map has an **Eyes** area (two eyes drawn in the 3D model; illustrative, not anatomy from a scan). It reads the Eyes tracker and chat words, the same way the "eyes" body system in 13c does. Same product thresholds, over the last **14 days**:
+
+* screen time averaging **6 h or more** a day on **3 or more logged days** = worth watching (an average over fewer days says nothing);
+* eye symptoms (chips or chat words) or eye comfort of **2 or less (of 5)** on **3 or more different days** = worth watching;
+* a severe-pain or sudden-sight-loss message goes through the safety engine again and makes the area "talk to a doctor", with the safety message first (same rule as chat);
+* a recorded eye-exam date is shown as a note only, never as evidence about the eyes; no entries is "no data", never "steady". The "headache" chip is not read as an eye symptom.
+* Wording shown: "Short breaks help tired eyes: look at something about 6 metres away for 20 seconds every 20 minutes. If it keeps coming back, an eye check is worth it." Please confirm or correct the thresholds and the wording.
+
 ## 13d. First-run setup suggestions (added 2026-10-15; awaiting sign-off)
 
 The setup builds a short Care checklist from what a person says. Each item is worded as "worth asking your doctor", never as an order or a finding. Please confirm the ages and wording.

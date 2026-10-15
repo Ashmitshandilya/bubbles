@@ -97,7 +97,7 @@ export function YourDataCard() {
       <h2 id="your-data-title" className="text-h3 text-ink">
         Your data
       </h2>
-      <p className="mt-1 text-body text-muted">It&apos;s yours. You can take a copy, or remove what Bubbles keeps for your Fitness, Cycle and plans.</p>
+      <p className="mt-1 text-body-sm text-muted">Take a copy, or remove your Fitness, Cycle and plan data.</p>
 
       <div className="mt-5 grid gap-6 lg:grid-cols-2">
         <div className="flex flex-col gap-3">

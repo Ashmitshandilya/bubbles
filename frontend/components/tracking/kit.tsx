@@ -147,7 +147,7 @@ export function TrackerHero({ signal, icon, kicker, title, why, action }: {
           <div className="min-w-0">
             <p className={`text-label font-extrabold ${s.ink}`}>{kicker}</p>
             <h1 id="tracker-title" className="mt-1 break-words font-display text-h1 text-default">{title}</h1>
-            <p className="mt-2 max-w-xl text-body text-muted">{why}</p>
+            <p className="mt-2 hidden max-w-xl text-body text-muted sm:line-clamp-2 sm:block">{why}</p>
           </div>
         </div>
         <div className="shrink-0">{action}</div>
@@ -615,8 +615,12 @@ export function History({ title = "History", status, error, onRetry, entries, fr
 }) {
   const headingId = useId();
   const s = SIGNALS[signal];
+  const [all, setAll] = useState(false);
+  const sorted = [...entries].sort(byNewest);
+  // Only the latest few show at first; the rest is one tap away, so a long log never becomes a long page.
+  const shown = all ? sorted : sorted.slice(0, HISTORY_FIRST);
   const groups: { key: number; label: string; items: Entry[] }[] = [];
-  for (const entry of [...entries].sort(byNewest)) {
+  for (const entry of shown) {
     const key = startOfDay(parseWhen(entry.date)).getTime();
     const last = groups[groups.length - 1];
     if (last && last.key === key) last.items.push(entry);
@@ -666,7 +670,30 @@ export function History({ title = "History", status, error, onRetry, entries, fr
         {title}
       </h2>
       {body}
+      {status !== "error" && sorted.length > HISTORY_FIRST && (
+        <button type="button" onClick={() => setAll((v) => !v)} aria-expanded={all} className="bubbles-press min-h-[48px] self-start rounded-full border border-line-strong bg-surface px-6 text-body font-extrabold text-default">
+          {all ? "Show fewer" : `Show all ${sorted.length}`}
+        </button>
+      )}
     </section>
+  );
+}
+
+const HISTORY_FIRST = 7;
+
+/** A titled card that opens on tap: the detail of a tracker page stays one tap away instead of stacking up. */
+export function Fold({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-[24px] border border-line bg-surface shadow-sm">
+      <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="font-display text-lg font-semibold text-default">{title}</span>
+        <span className="flex items-center gap-2 text-body-sm font-extrabold text-muted">
+          {hint}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-90"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </span>
+      </summary>
+      <div className="flex flex-col gap-6 px-3 pb-4 pt-1 sm:px-4">{children}</div>
+    </details>
   );
 }
 

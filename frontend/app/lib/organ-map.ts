@@ -46,6 +46,7 @@ export const ORGAN_PARTS: Record<string, readonly string[]> = {
   heart: ["heart"],
   lungs: ["lungs"],
   brain: ["brain"],
+  eyes: ["eye_left", "eye_right"],
   stomach_intestines: ["stomach", "intestines"],
   liver_pancreas: ["liver", "pancreas"],
   kidneys_bladder: ["kidneys", "bladder"],
@@ -105,6 +106,8 @@ export const STATUS_META: Record<OrganStatus, { label: string; meaning: string; 
 /** Keyed by drawn part. */
 export const ORGAN_TINT: Record<string, string> = {
   brain: "--tint-grape",
+  eye_left: "--bubbles-white",
+  eye_right: "--bubbles-white",
   heart: "--tint-pink",
   lungs: "--tint-pink",
   liver: "--tint-peach",

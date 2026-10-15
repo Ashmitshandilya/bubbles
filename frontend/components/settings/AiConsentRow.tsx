@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useState } from "react";
 import { useApi } from "../Providers";
-import { CARD } from "../hub/HubKit";
 
 /** Settings switch for "send my messages to an outside AI model". The server checks it before any message leaves; off means Bubbles still logs, shows patterns and handles emergencies. */
 export function AiConsentRow() {
@@ -43,15 +42,15 @@ export function AiConsentRow() {
 
   const on = state === "on";
   return (
-    <div className={`${CARD} flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4`}>
+    <div className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4`}>
       <div className="min-w-0 max-w-[30rem]">
         <p id={labelId} className="m-0 font-bold text-ink">
-          Outside AI model for open questions
+          Outside AI for open questions
         </p>
         <p id={hintId} className="m-0 mt-1 text-body-sm text-muted">
           {state === "error"
             ? "Bubbles couldn't check this just now."
-            : "When on, Bubbles sends your message, your recent messages in the chat and a short summary of your profile and notes (such as your date of birth, gender and recent entries) to an outside AI model to write its answer. When off, nothing is sent: logging, patterns and emergency help still work."}
+            : "On: your message, recent chat and a short summary of your profile and entries go to an outside AI to write its answer. Off: nothing is sent; logging, patterns and emergency help still work."}
         </p>
       </div>
       <button

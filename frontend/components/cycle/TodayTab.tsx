@@ -120,7 +120,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
             {showRing && o.cycle_day !== null && (
               <p className="m-0 font-display text-h3 text-ink">{cycleDayLine(o.cycle_day, o.stats.average_length)}</p>
             )}
-            {o.phase && <p className="m-0 text-body text-ink"><strong>{o.phase.label}.</strong> {o.phase.summary}{o.phase.estimated ? " (an estimate)" : ""}</p>}
+            {o.phase && <p className="m-0 text-body text-ink"><strong>{o.phase.label}</strong>{o.phase.estimated ? " (an estimate)" : ""}</p>}
             {np && (
               <div>
                 <p className="m-0 text-label text-muted">Next period</p>
@@ -131,7 +131,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
             )}
             <div className="flex flex-wrap items-center gap-2">
               <span className={`${PILL} ${CONF_TONE[o.confidence]}`}>{conf.label}</span>
-              <span className="text-body-sm text-muted">{o.confidence_note || conf.note}</span>
+              <span className="hidden text-body-sm text-muted sm:inline">{o.confidence_note || conf.note}</span>
             </div>
           </div>
         </div>

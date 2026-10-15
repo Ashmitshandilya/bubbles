@@ -414,6 +414,12 @@ STRESS_HIGH_AVERAGE = 7.0                 # 0-10 stress average at/above = worth
 HEADACHE_DAYS_WATCH = 4                   # headache days in the window                                             [BUBBLES]
 HEADACHE_DAYS_TALK = 15                   # 15+ headache days (ICHD-3 chronic headache is 15+ a month)              [LIT]
 ORGAN_MIN_ENTRIES_FOR_AVERAGE = 3         # an average needs this many entries                                      [BUBBLES]
+# eyes (the same product thresholds as the older body-systems list in organ_tracker.py)
+ORGAN_EYE_WINDOW_DAYS = 14                # screen time and eye symptoms are read over the last two weeks            [BUBBLES]
+ORGAN_EYE_SCREEN_HOURS_WATCH = 6.0        # average daily screen time at/above, on 3+ logged days = worth watching  [BUBBLES]
+ORGAN_EYE_MIN_SCREEN_DAYS = 3             # an average needs this many logged days                                  [BUBBLES]
+ORGAN_EYE_SYMPTOM_DAYS_WATCH = 3          # days with eye symptoms or low comfort = worth watching                   [BUBBLES]
+ORGAN_EYE_COMFORT_LOW = 2                 # a 1-5 comfort score at/below this counts as a bothered day               [BUBBLES]
 # stomach and intestines
 DIGESTIVE_DAYS_WATCH = 3                  # days with digestive symptoms in the window                              [BUBBLES]
 DIGESTIVE_DAYS_TALK = 14                  # [BUBBLES]

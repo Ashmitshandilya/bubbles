@@ -10,7 +10,7 @@ import { isSupabaseConfigured } from "../../../lib/supabase";
 import { SafetyBanner, type SafetyLevel } from "./SafetyBanner";
 import { LivingSignalMap } from "./LivingSignalMap";
 import {
-  BodyMapCard, ComingUp, Greeting, Patterns, QuickLog, SignalTiles, TodayBrief,
+  AlsoList, BodyMapCard, ComingUp, Greeting, MoreFold, Patterns, QuickLog, SignalTiles, TodayBrief,
   tileFromCycle, tileFromSignal, type HeroState, type Tile,
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
@@ -221,39 +221,47 @@ export function DashboardClient() {
 
           <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
 
-          {/* "Your week" sits under the tiles, so on wide screens the left column runs as long as the Patterns column */}
-          <div className="flex flex-wrap items-start gap-6">
-            <div className="flex min-w-0 flex-[2_1_520px] flex-col gap-6">
-              <SignalTiles tiles={tiles} />
-              <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} />
-            </div>
-            <aside aria-labelledby="today-patterns" className="flex min-w-0 flex-[1_1_300px] flex-col gap-3.5">
+          <SignalTiles tiles={tiles} />
+
+          {/* Everything else is one tap away: Today opens on a single next step, the quick logs and the week. */}
+          <div className="flex flex-col gap-3">
+            {items.length > 1 && (
+              <MoreFold title="Also worth a look" hint={String(items.length - 1)}>
+                <AlsoList items={items.slice(1)} onAddWater={addWater} waterBusy={water === "saving"} />
+              </MoreFold>
+            )}
+            <MoreFold title="Patterns" hint={patternsState === "ready" && patterns.length ? String(patterns.length) : undefined}>
               <Patterns
                 state={patternsState}
                 items={patterns}
                 note={weekly.status === "error" && brief.status !== "error" ? "Weekly insights couldn't load right now." : undefined}
                 onRetry={reload}
               />
+            </MoreFold>
+            <MoreFold title="Your week">
+              <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} />
+            </MoreFold>
+            <MoreFold title="Coming up">
               <ComingUp
                 cycle={cycle}
                 visits={visits.status === "ready" ? upcomingVisits(visits.data, now) : visits.status === "error" ? null : []}
                 loading={visits.status === "loading" || trackers.cycle.status === "loading"}
                 failed={visits.status === "error" || trackers.cycle.status === "error"}
               />
-            </aside>
-          </div>
-
-          <WholeHealthCards cycle={showCycle} />
-          {showCycle && <PartnerCard />}
-
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <LivingSignalMap state={livingMap.status} map={livingMap.status === "ready" ? livingMap.data : null} onRetry={reload} />
+            </MoreFold>
+            <MoreFold title="Whole health">
+              <WholeHealthCards cycle={showCycle} />
+              {showCycle && <PartnerCard />}
+            </MoreFold>
+            <MoreFold title="What Bubbles picked up from chat">
+              <LivingSignalMap state={livingMap.status} map={livingMap.status === "ready" ? livingMap.data : null} onRetry={reload} />
+            </MoreFold>
             {showBodyMap && <BodyMapCard />}
           </div>
 
-          <footer className="flex flex-col gap-1 text-chip font-semibold leading-relaxed text-ink-soft">
-            <p className="m-0">Bubbles shares patterns and general guidance, not diagnoses. Missing data is shown as a gap, never as &ldquo;all clear&rdquo;.</p>
-            {briefData?.companion?.safety_note && <p className="m-0">{briefData.companion.safety_note}</p>}
+          <footer className="text-chip font-semibold leading-relaxed text-ink-soft">
+            <p className="m-0">Patterns and guidance, not diagnoses. Missing data is a gap, never an all-clear.</p>
+            {briefData?.companion?.safety_note && <p className="m-0 mt-1">{briefData.companion.safety_note}</p>}
           </footer>
         </main>
 

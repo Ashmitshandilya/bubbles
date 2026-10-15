@@ -49,27 +49,25 @@ function HealthHub() {
 
   return (
     <div className="space-y-10">
-      <header className="bubbles-rise flex flex-wrap items-center gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-h1 text-ink">My health</h1>
-          <p className="mt-1 text-body font-semibold text-muted">Everything you log, in one friendly place.</p>
-        </div>
-      </header>
+      <h1 className="bubbles-rise text-h1 text-ink">My health</h1>
 
       <QuickLog items={DAILY} />
 
-      <section aria-labelledby="overview-title">
-        <h2 id="overview-title" className="text-h3 text-ink">
-          Your logging so far
-        </h2>
-        <div className="mt-3">
-          <Overview summary={summary} onRetry={reload} />
-        </div>
+      <section aria-label="Your logging so far">
+        <Overview summary={summary} onRetry={reload} />
       </section>
 
       <TrackerGroup id="care-records" title="Care records" items={CARE} />
 
-      <OrganTracker />
+      <details className="group rounded-[24px] border border-line bg-surface shadow-sm">
+        <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 font-display text-lg font-semibold text-ink [&::-webkit-details-marker]:hidden">
+          Body systems
+          <span className="transition-transform group-open:rotate-90"><Icon id="arrow" size={18} /></span>
+        </summary>
+        <div className="px-3 pb-4 sm:px-4">
+          <OrganTracker />
+        </div>
+      </details>
     </div>
   );
 }
@@ -95,9 +93,7 @@ function Overview({ summary, onRetry }: { summary: Query<unknown>; onRetry: () =
         <BubblesMascot size={56} mood="resting" animated={false} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-h4 text-ink">Nothing logged yet</p>
-          <p className="text-body-sm text-muted">
-            Tap Log on any tracker above. Even one entry gives Bubbles something to learn from.
-          </p>
+          <p className="text-body-sm text-muted">Tap any tracker above to start.</p>
         </div>
       </div>
     );
@@ -127,19 +123,18 @@ function TrackerGroup({ id, title, items }: { id: string; title: string; items: 
       <h2 id={`${id}-title`} className="text-h3 text-ink">
         {title}
       </h2>
-      <ul className="bubbles-stagger m-0 mt-3 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+      <ul className="bubbles-stagger m-0 mt-3 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3">
         {items.map((item) => (
           <li key={item.id}>
             <Link
               href={`/${item.id}`}
-              className={`${CARD} bubbles-lift group flex h-full items-start gap-4 p-4 no-underline hover:border-line-strong`}
+              className={`${CARD} bubbles-lift group flex h-full items-center gap-3 p-3 no-underline hover:border-line-strong`}
             >
               <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${TONE[item.tone].bubble}`}>
                 <Icon id={item.id} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block font-display text-h4 text-ink">{item.title}</span>
-                <span className="mt-0.5 block text-body-sm text-muted">{item.why}</span>
               </span>
               <span className="mt-1 text-ink-faint transition-colors group-hover:text-bubbles-pink-ink">
                 <Icon id="arrow" size={18} />

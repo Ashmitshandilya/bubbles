@@ -501,3 +501,71 @@ def test_any_other_setup_keeps_the_earlier_rule():
     cycle = {"phase": "luteal", "cycle_day": 20, "flags": []}
     assert _shown(reproductive=None) == _shown() and _shown(reproductive="by_use") == _shown()
     assert "uterus_ovaries" in _shown(cycle=cycle, reproductive="by_use")
+
+
+# --- eyes ---------------------------------------------------------------------------------------------------------------------------
+
+def eye_check(ago: int, **data) -> dict:
+    return ev("eye_check", {"name": "eye check", "category": "eyes", **data}, ago)
+
+
+def test_eyes_without_entries_are_a_gap_and_say_what_to_log():
+    o = organ("eyes")
+    assert o["status"] == "no_data" and o["confidence"]["level"] == "low"
+    assert any("Screen time" in m for m in o["missing"])
+    assert "eyes" in E.ORGANS and "eyes" in run()
+
+
+def test_long_screen_days_on_three_days_are_worth_watching():
+    o = organ("eyes", [eye_check(d, screen_hours=8) for d in (1, 2, 3)])
+    assert o["status"] == "worth_watching" and "8 hours a day" in o["summary"]
+
+
+def test_two_screen_days_are_too_few_for_an_average():
+    o = organ("eyes", [eye_check(d, screen_hours=9) for d in (1, 2)])
+    assert o["status"] == "steady"
+
+
+def test_short_screen_time_is_steady_not_an_all_clear():
+    o = organ("eyes", [eye_check(d, screen_hours=3) for d in (1, 2, 3)])
+    assert o["status"] == "steady" and "not an all-clear" not in o["summary"]  # steady needs data, and the panel adds the caveat
+
+
+def test_eye_symptom_chips_on_three_days_are_worth_watching_and_an_exam_date_is_only_a_note():
+    events = [eye_check(d, eye_symptoms="dry, strained") for d in (1, 3, 5)] + [eye_check(2, last_exam="2026-03-01")]
+    o = organ("eyes", events)
+    assert o["status"] == "worth_watching"
+    assert any("eye exam" in n for n in o["notes"])
+    assert all(e["label"] != "Eye exam" for e in o["evidence"])
+
+
+def test_an_eye_exam_alone_is_no_evidence_about_the_eyes():
+    o = organ("eyes", [eye_check(4, last_exam="2026-03-01")])
+    assert o["status"] == "no_data"
+
+
+def test_low_comfort_days_count_like_symptoms():
+    o = organ("eyes", [eye_check(d, eye_comfort=1) for d in (1, 2, 4)])
+    assert o["status"] == "worth_watching"
+
+
+def test_headache_chip_is_not_an_eye_symptom():
+    o = organ("eyes", [eye_check(d, eye_symptoms="headache") for d in (1, 2, 3)])
+    assert o["status"] == "no_data"
+
+
+def test_chat_words_reach_the_eyes_and_old_entries_do_not_count():
+    o = organ("eyes", [symptom("dry eyes", d) for d in (1, 2, 3)])
+    assert o["status"] == "worth_watching"
+    old = organ("eyes", [symptom("dry eyes", d) for d in (20, 21, 22)])
+    assert old["status"] != "worth_watching"
+
+
+def test_severe_eye_pain_goes_to_a_doctor_with_safety_first():
+    o = organ("eyes", [symptom("severe eye pain", 1)])
+    assert o["status"] == "talk_to_doctor" and o["safety"]
+
+
+def test_blurred_vision_is_read_by_both_the_brain_and_the_eyes():
+    events = [symptom("blurred vision", 1)]
+    assert run(events)["eyes"]["status"] != "no_data" and run(events)["brain"]["status"] != "no_data"

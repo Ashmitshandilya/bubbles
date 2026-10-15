@@ -10,7 +10,6 @@ export function CycleClient() {
       <CycleProvider>
         <header className="mb-5 print:hidden">
           <h1 className="m-0 text-h1 text-ink">Your cycle</h1>
-          <p className="m-0 mt-1 text-body font-semibold text-muted">Estimates from your own logs. They can be wrong and they are not birth control.</p>
         </header>
         <CycleTabs />
       </CycleProvider>
