@@ -66,6 +66,8 @@ unambiguous; everything else stays a current report.
 
 ## Also recommended (not changed)
 
-- Emergency and crisis replies are English-only, and the crisis reply names US 988. For an India-first product,
-  the copy should name **112** (emergency) and **Tele-MANAS 14416** (national mental-health line). Hindi/Hinglish
-  versions of the replies are also needed. The copy needs clinician sign-off before it changes.
+- Emergency and crisis replies are English-only. Hindi/Hinglish versions of the replies are still needed.
+- Done 2026-10-14 (branch `safety-india-crisis-lines`, pending a clinician glance): the crisis replies no longer name
+  US 988. They now name **112** (emergency) and **Tele-MANAS 14416 / 1-800-891-4416** (national mental-health line),
+  then the local emergency number or findahelpline.com outside India. One shared text: `CRISIS_LINES` in
+  `backend/safety_engine.py`.

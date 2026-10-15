@@ -37,7 +37,7 @@ _LEVEL = {
 POTENTIAL = "POTENTIAL_REDFLAG_NEEDS_CLARIFICATION"
 #: red-flag *events* (not ongoing symptoms): when one has just ended it still needs assessment.
 EVENT_LIKE = frozenset({"fainting", "seizure", "stroke_signs", "allergic_reaction"})
-#: red-flag symptoms a user can describe as plainly mild ("a little tightness"): URGENT (get assessed today), not "call 911 now".
+#: red-flag symptoms a user can describe as plainly mild ("a little tightness"): URGENT (get assessed today), not "call 112 now".
 MILD_SOFT = frozenset({"chest_pain", "shortness_of_breath", "allergic_reaction"})
 #: ...unless the same sentence carries a feature that makes a heart/airway/allergy emergency likely.
 _ACS_FEATURES = re.compile(
@@ -243,6 +243,12 @@ def _names(assessment: SafetyAssessment) -> str:
     return ", ".join(seen[:-1]) + (" and " if len(seen) > 1 else "") + seen[-1]
 
 
+#: crisis lines, India first (Bubbles is India-first), then a global fallback. One copy for every crisis reply.
+CRISIS_LINES = (
+    "In India, call 112 for emergency help, or Tele-MANAS, the free 24x7 mental health line, on 14416 or 1-800-891-4416. "
+    "Outside India, call your local emergency number, or find a free local line at findahelpline.com."
+)
+
 _NET = {
     "chest_pain": "it spreads to your arm, jaw or back, or comes with trouble breathing, sweating, nausea or fainting",
     "shortness_of_breath": "your lips look blue, you cannot speak in full sentences, or it is getting worse",
@@ -258,7 +264,7 @@ def emergency_response(assessment: SafetyAssessment) -> str:
             "What you're describing sounds heavy, and your safety matters most right now. "
             "If you might act on these thoughts or you are in immediate danger, please call your local emergency number now.\n\n"
             "### Reaching someone right now\n"
-            "- In the US you can call or text 988 (Suicide & Crisis Lifeline). Elsewhere, findahelpline.com lists free local lines.\n"
+            f"- {CRISIS_LINES}\n"
             "- If you can, tell someone you trust and ask them to stay with you.\n"
             "- If I've misunderstood you, tell me. I'd rather be corrected than miss something.\n\n"
             "I'm not a substitute for a crisis service or a clinician, but I'm here to keep talking."
@@ -301,7 +307,7 @@ def clarification_response(assessment: SafetyAssessment) -> str:
         for concept in dict.fromkeys(assessment.concepts):
             lines.append(f"- You mentioned something that sounds like {display_name(concept)}. Is it happening right now, and how strong is it from 0 to 10?")
     if assessment.crisis:
-        lines.append("- If you are thinking about harming yourself, please contact a crisis line or your local emergency number now (in the US, call or text 988).")
+        lines.append(f"- If you are thinking about harming yourself, please reach out now. {CRISIS_LINES}")
     lines.append("\nIf it's happening now and it's severe, don't wait for my reply: call your local emergency number.")
     if nets:
         lines.append("\n**Go to emergency care straight away if:**\n" + "\n".join(dict.fromkeys(nets)))
