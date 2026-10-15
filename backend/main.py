@@ -44,6 +44,7 @@ from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
 from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
+from onboarding_api import build_router as build_onboarding_router, style_block_for
 from consent import consent_needed_reply, has_ai_consent
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
@@ -295,7 +296,7 @@ def _record_api_event(request, response, started: float) -> None:
 
 
 # Coarse protection for the Whole-Health OS routes: a request-size cap and a per-user request budget (the chat has its own limiter).
-_GUARDED_PREFIXES = ("/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback")
+_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback")
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing
@@ -543,6 +544,7 @@ app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_consent_router(get_authenticated_user, supabase))
+app.include_router(build_onboarding_router(get_authenticated_user, supabase))
 app.include_router(build_import_router(get_authenticated_user, supabase))
 # Cycle: calendar, daily log, predictions with ranges, modes, insights, report, partner view.
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
@@ -860,7 +862,7 @@ def chat(
             user_message,
             memory_context=memory_context,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction(),
+            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else ""),
             conversation_context=conversation_context,
         )
         timings["ai_ms"] = round((perf_counter() - t0) * 1000, 1)

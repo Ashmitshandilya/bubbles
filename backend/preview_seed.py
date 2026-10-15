@@ -79,4 +79,9 @@ def seed(app, db, user_id: str) -> dict:
         db.table("chat_messages").insert({"id": f"22222222-2222-2222-2222-22222222220{n}", "conversation_id": conv, "user_id": user_id, "role": role, "content": text,
                                           "metadata": {}, "created_at": (now - timedelta(hours=3, minutes=-n)).isoformat()}).execute()
     counts["chat_messages"] = len(thread)
+    # the demo person has finished first-run setup (a female body), so every screen is reachable in the preview
+    client.put("/onboarding/answers", json={"answers": {"preferred_name": "Riya", "birth_date": "1999-03-14", "body": "female", "language": "english",
+                                                         "goals": ["sleep", "stress_mood"], "conditions": ["none"], "tone": "gentle_warm", "periods": "regular"}}, headers=H)
+    if client.post("/onboarding/complete", headers=H).status_code < 300:
+        counts["onboarding"] = 1
     return counts

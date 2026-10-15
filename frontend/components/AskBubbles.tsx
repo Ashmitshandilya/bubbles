@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth, useApi } from "./Providers";
+import { useAuth, useApi, useExperience } from "./Providers";
 import { BubblesMascot } from "./BubblesMascot";
 import { askHref } from "../app/lib/ask-handoff";
 import { ME, SECTIONS } from "./Navigation";
+import { filterSections } from "../app/lib/experience";
 import { buildItems, buildRows, loadRecents, recordRecent, type PaletteRow } from "./commandPalette";
 
 const FALLBACK_SUGGESTIONS = [
@@ -44,7 +45,8 @@ export function AskBubbles() {
   const openerRef = useRef<HTMLElement | null>(null);
   const listId = useId();
 
-  const items = useMemo(() => buildItems([...SECTIONS, ME]), []);
+  const { experience } = useExperience();
+  const items = useMemo(() => buildItems([...filterSections(SECTIONS, experience), ME]), [experience]);
   const rows = useMemo(() => buildRows(items, query, recentIds), [items, query, recentIds]);
   const activeIndex = Math.min(active, rows.length - 1);
   const optionId = (i: number) => `${listId}-opt-${i}`;

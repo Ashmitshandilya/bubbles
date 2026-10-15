@@ -813,13 +813,21 @@ def assess_organ(organ_id: str, obs: list[dict], *, today: date, window_days: in
 
 
 def build_organ_map(events: Iterable[dict] = (), *, labs: Iterable[dict] = (), conditions: Iterable[dict] = (),
-                    cycle: dict | None = None, today: date, window_days: int = K.ORGAN_WINDOW_DEFAULT_DAYS) -> dict:
-    """Every organ, in a fixed order. ``window_days`` is clamped to clinical_constants.ORGAN_WINDOW_DAYS."""
+                    cycle: dict | None = None, today: date, window_days: int = K.ORGAN_WINDOW_DEFAULT_DAYS,
+                    reproductive: str | None = None) -> dict:
+    """Every organ, in a fixed order. ``window_days`` is clamped to clinical_constants.ORGAN_WINDOW_DAYS.
+
+    ``reproductive`` comes from the person's first-run setup: "uterus_ovaries" always shows the uterus and ovaries (a female body),
+    "none" never does (a male body), anything else keeps the earlier rule (shown once they use Cycle or log something for the area)."""
     lo, hi = K.ORGAN_WINDOW_DAYS
     window_days = max(lo, min(hi, int(window_days)))
     obs = observations(events, labs, conditions, today=today, window_days=window_days)
     organs = [assess_organ(o, obs, today=today, window_days=window_days, cycle=cycle) for o in ORGANS]
-    organs = [o for o in organs if o["organ_id"] not in OPT_IN_ORGANS or o["status"] != "no_data" or _uses_cycle(cycle)]
+    if reproductive == "none":
+        organs = [o for o in organs if o["organ_id"] not in OPT_IN_ORGANS]
+    else:
+        always = reproductive == "uterus_ovaries"
+        organs = [o for o in organs if o["organ_id"] not in OPT_IN_ORGANS or always or o["status"] != "no_data" or _uses_cycle(cycle)]
     return {
         "window_days": window_days,
         "as_of": today.isoformat(),

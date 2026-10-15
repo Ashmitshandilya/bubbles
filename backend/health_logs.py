@@ -151,6 +151,60 @@ def _nutrition_row(b: dict) -> dict:
             "data": _clean({"meal_type": _text(b, "meal_type", 30), "description": description, "calories": calories})}
 
 
+EYE_SYMPTOMS = ("dry", "itchy", "red", "strained", "blurry", "watery", "headache")
+
+
+def _eye_symptoms(raw: Any) -> list[str]:
+    """Symptom chips from a list or a comma-separated string. Only the fixed vocabulary is accepted, each at most once."""
+    if raw in (None, ""):
+        return []
+    parts = raw if isinstance(raw, list) else str(raw).split(",")
+    chosen: list[str] = []
+    for part in parts:
+        word = str(part).strip().lower()
+        if not word:
+            continue
+        if word not in EYE_SYMPTOMS:
+            raise HTTPException(status_code=422, detail=f"eye symptom must be one of {', '.join(EYE_SYMPTOMS)}")
+        if word not in chosen:
+            chosen.append(word)
+    return chosen
+
+
+def _yes_no(b: dict, key: str) -> str | None:
+    value = b.get(key)
+    if value in (None, ""):
+        return None
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    word = str(value).strip().lower()
+    if word not in {"yes", "no"}:
+        raise HTTPException(status_code=422, detail=f"{key} must be yes or no")
+    return word
+
+
+def _eyes_row(b: dict) -> dict:
+    """One eye check: screen time, comfort, symptoms, glasses, 20-20-20 breaks and (optionally) the date of the last eye exam.
+    Nothing is scored or interpreted here; it is the person's own record."""
+    screen = _num(b, "screen_hours", 0, 18, "screen hours")
+    comfort = _num(b, "comfort", 1, 5)
+    breaks = _num(b, "breaks", 0, 48)
+    symptoms = _eye_symptoms(b.get("symptoms"))
+    glasses = _yes_no(b, "glasses")
+    exam = None
+    if b.get("last_exam") not in (None, ""):
+        exam = _when(b, "last_exam")[:10]
+        if exam > datetime.now(timezone.utc).date().isoformat():
+            raise HTTPException(status_code=422, detail="last eye exam cannot be in the future")
+    notes = _text(b, "notes")
+    if screen is None and comfort is None and not symptoms and exam is None and breaks is None and glasses is None:
+        raise HTTPException(status_code=422, detail="Add at least one detail about your eyes")
+    data = _clean({"screen_hours": screen, "comfort": round(comfort) if comfort is not None else None,
+                   "symptoms": ", ".join(symptoms) or None, "glasses": glasses,
+                   "breaks": round(breaks) if breaks is not None else None, "last_exam": exam})
+    return {"event_type": "eye_check", "event_date": _when(b, "date"), "title": "Eye check", "description": notes, "data": data}
+
+
 def _weight_row(b: dict) -> dict:
     lbs = _need(_num(b, "weight", 50, 700, "weight"), "weight")
     notes = " | ".join(p for p in (_text(b, "notes"), _text(b, "time_of_day", 20)) if p) or None
@@ -251,6 +305,8 @@ DOMAINS: dict[str, dict[str, Any]] = {
                  to_entry=lambda r: {"mood": r.get("intensity"), "notes": r.get("notes")}),
     "nutrition": dict(table="health_events", date="event_date", windowed=True, to_row=_nutrition_row, filters={"event_type": "nutrition"},
                       to_entry=lambda r: _clean({**(r.get("data") or {}), "notes": r.get("description")})),
+    "eyes": dict(table="health_events", date="event_date", windowed=True, to_row=_eyes_row, filters={"event_type": "eye_check"},
+                 to_entry=lambda r: _clean({**(r.get("data") or {}), "notes": r.get("description")})),
     "weight": dict(table="weight_logs", date="logged_at", windowed=True, to_row=_weight_row,
                    to_entry=lambda r: {"weight": round(r["weight_kg"] * LBS_PER_KG, 1) if r.get("weight_kg") is not None else None, "notes": r.get("notes")}),
     "vitals": dict(table="vital_signs", date="measured_at", windowed=True, to_row=_vitals_row,
@@ -338,6 +394,13 @@ def _ev_nutrition(r: dict) -> dict:
                    "description": meal, "calories": data.get("calories"), "date": _day(r["event_date"]), "notes": r.get("description")})
 
 
+def _ev_eyes(r: dict) -> dict:
+    data = r.get("data") or {}
+    return _clean({"name": "eye check", "category": "eyes", "screen_hours": data.get("screen_hours"), "eye_comfort": data.get("comfort"),
+                   "eye_symptoms": data.get("symptoms"), "glasses": data.get("glasses"), "breaks": data.get("breaks"),
+                   "last_exam": data.get("last_exam"), "date": _day(r["event_date"]), "notes": r.get("description")})
+
+
 def _ev_weight(r: dict) -> dict:
     kg = r["weight_kg"]
     return _clean({"name": "weight", "weight_kg": kg, "value": kg, "amount": kg, "unit": "kg",
@@ -393,7 +456,7 @@ def _ev_report(r: dict) -> dict:
 COMPAT_EVENTS: dict[str, tuple[str, Callable[[dict], dict]]] = {
     "sleep": ("sleep", _ev_sleep), "symptoms": ("symptom", _ev_symptom), "activity": ("activity", _ev_activity),
     "cycle": ("menstrual_symptom", _ev_cycle), "hydration": ("hydration", _ev_hydration), "mood": ("mood", _ev_mood),
-    "nutrition": ("food", _ev_nutrition), "weight": ("weight", _ev_weight), "vitals": ("vital_sign", _ev_vitals),
+    "nutrition": ("food", _ev_nutrition), "eyes": ("eye_check", _ev_eyes), "weight": ("weight", _ev_weight), "vitals": ("vital_sign", _ev_vitals),
     "medications": ("medication", _ev_medication), "conditions": ("medical_condition", _ev_condition),
     "allergies": ("allergy", _ev_allergy), "labs": ("lab_result", _ev_lab), "visits": ("doctor_visit", _ev_visit),
     "reports": ("lab_result", _ev_report),

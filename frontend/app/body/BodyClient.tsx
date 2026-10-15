@@ -4,6 +4,7 @@ import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { CARD, ErrorCard, HubPage, Skeleton, useBubblesQuery } from "../../components/hub/HubKit";
+import { useExperience } from "../../components/Providers";
 import { BodyFallback2D } from "../../components/anatomy/BodyFallback2D";
 import { OrganList } from "../../components/anatomy/OrganList";
 import { OrganPanel, SafetyNotice } from "../../components/anatomy/OrganPanel";
@@ -35,14 +36,32 @@ const STAGE = "relative h-[440px] overflow-hidden rounded-3xl border-2 border-li
 const PEARL = { background: "radial-gradient(120% 90% at 50% 30%, var(--bubbles-white) 0%, var(--bubbles-blush) 55%, var(--tint-pink) 100%)" };
 
 export function BodyClient() {
+  const { experience } = useExperience();
   return (
     <HubPage title="Body map">
-      <BodyMap />
+      {experience && !experience.bodyMap.visible ? <BodyMapOff /> : <BodyMap />}
     </HubPage>
   );
 }
 
+/** A profile that chose no body map: say so plainly and show how to change it. Nothing is loaded or drawn. */
+function BodyMapOff() {
+  return (
+    <section className={`${CARD} bubbles-rise max-w-2xl p-6 sm:p-8`} aria-labelledby="body-off-title">
+      <h1 id="body-off-title" className="text-h2 text-ink">The body map is switched off</h1>
+      <p className="mt-2 text-body text-muted">
+        Your setup says Bubbles should not show a body map for you. Everything else in Bubbles works the same. You can change this any time.
+      </p>
+      <Link href="/onboarding?edit=1" className="bubbles-press bubbles-glow mt-5 inline-flex min-h-[52px] items-center rounded-full bg-bubbles-pink-ink px-6 font-extrabold text-white no-underline">
+        Change my setup
+      </Link>
+    </section>
+  );
+}
+
 function BodyMap() {
+  const { experience } = useExperience();
+  const anatomy = experience?.bodyMap.anatomy ?? "neutral";
   const [query, reload] = useBubblesQuery<unknown>("/organs/map");
   const organs = useMemo(() => (query.status === "ready" ? readOrganMap(query.data) : []), [query]);
   const unavailable = query.status === "ready" ? readUnavailable(query.data) : [];
@@ -63,7 +82,7 @@ function BodyMap() {
   const counts = countByStatus(organs);
   const nothingYet = organs.length > 0 && counts.no_data === organs.length;
   const show3D = mode === "3d" && !failed;
-  const view = { organs, selected: selectedId, hovered, onSelect: setPicked, onHover: setHovered };
+  const view = { anatomy, organs, selected: selectedId, hovered, onSelect: setPicked, onHover: setHovered };
   const caption = organs.find((o) => o.id === (hovered ?? selectedId));
   const urgent = selected?.status === "talk_to_doctor" ? selected : null;
 

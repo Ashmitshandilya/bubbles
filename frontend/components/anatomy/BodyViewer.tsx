@@ -3,9 +3,11 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Bvh, Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
-import { Box3, Color, FrontSide, MeshPhysicalMaterial, NeutralToneMapping, Vector3, type Mesh, type Object3D } from "three";
+import { Box3, Color, FrontSide, Group, MeshPhysicalMaterial, NeutralToneMapping, Vector3, type BufferGeometry, type Mesh, type Object3D } from "three";
 import { ORGAN_TINT, STATUS_META, partOwners, partsOf, type Organ } from "../../app/lib/organ-map";
 import type { BodyViewProps } from "./BodyFallback2D";
+import { protrudes } from "./groin";
+import { SELECTED_SCALE, isSettled, pulse, stepSpring, type SpringState } from "./motion";
 
 // Load with next/dynamic({ ssr: false }) behind an error boundary. A failed model, a lost WebGL context or a missing
 // decoder all surface as a thrown error, and the page swaps in the flat body.
@@ -25,7 +27,8 @@ const HOME_DISTANCE = 2.3;
 const homeDistance = (aspect: number) => HOME_DISTANCE * Math.max(1, 0.95 / aspect);
 const homePosition = (side: View, aspect: number) =>
   new Vector3(...VIEWS[side]).normalize().multiplyScalar(homeDistance(aspect)).add(HOME_TARGET);
-const SHELL_OPACITY: Record<string, number> = { skin: 0.08, skeleton: 0.26 };
+// The skin is a soft pink veil: visible enough to read as a body against the pearl stage, light enough to see the organs through it.
+const SHELL_OPACITY: Record<string, number> = { skin: 0.17, skeleton: 0.28 };
 // The skin and skeleton wrap everything; a pointer only lands on them when no organ sits under it.
 const SHELLS = new Set(["skin", "skeleton"]);
 
@@ -62,15 +65,21 @@ function pick(event: ThreeEvent<PointerEvent | MouseEvent>, owners: ReadonlyMap<
 
 interface BodyProps extends BodyViewProps {
   onReady: () => void;
+  reduced: boolean;
 }
 
-function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyProps) {
+function Body({ anatomy = "neutral", organs, selected, hovered, onSelect, onHover, onReady, reduced }: BodyProps) {
   const { scene } = useGLTF(MODEL_URL, false, false);
   const invalidate = useThree((s) => s.invalidate);
   const canvas = useThree((s) => s.gl.domElement);
   const owners = useMemo(() => partOwners(organs), [organs]);
   const opening = useRef<string | null | undefined>(undefined);
   const moved = useRef(false);
+  // The organ the person chose (never the page's opening pick): it bumps up and, on a computer, gently pulses.
+  const pumpId = useRef<string | null>(null);
+  const springs = useRef(new Map<string, SpringState>());
+  const pivots = useRef(new Map<string, Group>());
+  const phone = useRef(false);
 
   // One soft material per mesh. Organs are opaque satin; the skeleton is translucent ivory; the skin a faint pearl shell.
   const materials = useMemo(() => {
@@ -83,7 +92,7 @@ function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyPro
       const id = mesh.name;
       let material: MeshPhysicalMaterial;
       if (id === "skin") {
-        material = new MeshPhysicalMaterial({ color: white, roughness: 0.4, transparent: true, opacity: SHELL_OPACITY.skin, depthWrite: false, side: FrontSide });
+        material = new MeshPhysicalMaterial({ color: white.clone().lerp(token("--tint-pink"), 0.45), roughness: 0.4, transparent: true, opacity: SHELL_OPACITY.skin, depthWrite: false, side: FrontSide });
       } else if (id === "skeleton") {
         material = new MeshPhysicalMaterial({ color: token("--tint-sun").lerp(white, 0.35), roughness: 0.55, transparent: true, opacity: SHELL_OPACITY.skeleton, depthWrite: false });
       } else if (phone) {
@@ -113,6 +122,70 @@ function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyPro
       for (const material of materials.values()) material.dispose();
     };
   }, [scene, materials, onReady]);
+
+  // Each organ part sits in a pivot at its own centre, so scaling it swells the organ in place instead of drifting it.
+  useEffect(() => {
+    phone.current = window.matchMedia("(pointer: coarse)").matches;
+    const meshes: Mesh[] = [];
+    scene.traverse((object: Object3D) => {
+      const mesh = object as Mesh;
+      if (mesh.isMesh && !SHELLS.has(mesh.name)) meshes.push(mesh);
+    });
+    for (const mesh of meshes) {
+      let pivot = mesh.userData.pivot as Group | undefined;
+      if (!pivot) {
+        const parent = mesh.parent;
+        if (!parent) continue;
+        pivot = new Group();
+        pivot.name = `pivot-${mesh.name}`;
+        const center = new Box3().setFromObject(mesh).getCenter(new Vector3());
+        pivot.position.copy(parent.worldToLocal(center));
+        parent.add(pivot);
+        mesh.position.sub(pivot.position);
+        pivot.add(mesh);
+        mesh.userData.pivot = pivot;
+      }
+      pivots.current.set(mesh.name, pivot);
+    }
+  }, [scene]);
+
+  // A female profile leaves the protruding groin patch out of the skin shell (groin.ts); any other profile gets the model as it is.
+  useEffect(() => {
+    const skin = scene.getObjectByName("skin") as Mesh | undefined;
+    if (!skin?.isMesh) return;
+    const original = (skin.userData.originalGeometry ??= skin.geometry) as BufferGeometry;
+    if (anatomy !== "female") {
+      skin.geometry = original;
+      invalidate();
+      return;
+    }
+    const position = original.getAttribute("position");
+    skin.updateWorldMatrix(true, false);
+    const point = new Vector3();
+    const out = new Uint8Array(position.count);
+    for (let i = 0; i < position.count; i += 1) {
+      point.fromBufferAttribute(position, i).applyMatrix4(skin.matrixWorld);
+      out[i] = protrudes(point.x, point.y, point.z) ? 1 : 0;
+    }
+    const index = original.getIndex();
+    const total = index ? index.count : position.count;
+    const kept: number[] = [];
+    for (let t = 0; t + 2 < total; t += 3) {
+      const a = index ? index.getX(t) : t;
+      const b = index ? index.getX(t + 1) : t + 1;
+      const c = index ? index.getX(t + 2) : t + 2;
+      if (!out[a] && !out[b] && !out[c]) kept.push(a, b, c);
+    }
+    
+    const trimmed = original.clone();
+    trimmed.setIndex(kept);
+    skin.geometry = trimmed;
+    invalidate();
+    return () => {
+      skin.geometry = original;
+      trimmed.dispose();
+    };
+  }, [scene, anatomy, invalidate]);
 
   // Status shows as a calm emissive glow over the organ's own tint. "No data" organs are muted and never glow.
   useEffect(() => {
@@ -150,8 +223,26 @@ function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyPro
       material.emissive.copy(glow);
       material.emissiveIntensity = status === "no_data" ? 0 : active ? 0.7 : near ? 0.45 : 0.22;
     }
+    pumpId.current = focus ? selected : null;
     invalidate();
   }, [scene, materials, owners, selected, hovered, invalidate]);
+
+  // The bump: a slightly under-damped spring to a larger size, then (on a computer) a gentle pulse. Reduced motion just takes the larger size.
+  useFrame((state, delta) => {
+    let moving = false;
+    for (const organ of organs) {
+      const chosen = organ.id === pumpId.current;
+      const target = chosen ? SELECTED_SCALE : 1;
+      const spring = springs.current.get(organ.id) ?? { x: 1, v: 0 };
+      const next = reduced ? { x: target, v: 0 } : stepSpring(spring, target, delta);
+      springs.current.set(organ.id, next);
+      const beating = chosen && !reduced && !phone.current;
+      const scale = next.x * (1 + (beating ? pulse(organ.id, state.clock.elapsedTime) : 0));
+      for (const part of partsOf(organ.id)) pivots.current.get(part)?.scale.setScalar(scale);
+      if (beating || !isSettled(next, target)) moving = true;
+    }
+    if (moving) state.invalidate();
+  });
 
   useEffect(() => () => void (canvas.style.cursor = ""), [canvas]);
 
@@ -303,7 +394,7 @@ export default function BodyViewer(props: BodyViewProps) {
           <directionalLight position={[1.2, 2.8, 2.4]} intensity={0.9} />
 
           <Suspense fallback={null}>
-            <Body {...props} onReady={onReady} />
+            <Body {...props} onReady={onReady} reduced={reduced} />
           </Suspense>
 
           <OrbitControls

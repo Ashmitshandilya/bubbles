@@ -38,6 +38,7 @@ FORM_BODIES = {
     "hydration": {"volume": "500", "type": "water", "notes": "", "date": "2026-10-05T10:00:00.000Z"},
     "mood": {"mood": "7", "stress": "3", "anxiety": "", "notes": "fine", "date": "2026-10-05T10:00:00.000Z"},
     "nutrition": {"meal_type": "lunch", "description": "Dal and rice", "calories": "450", "notes": "", "date": "2026-10-05T10:00:00.000Z"},
+    "eyes": {"screen_hours": "7", "comfort": "3", "symptoms": "dry,red", "glasses": "yes", "breaks": "4", "notes": "", "date": "2026-10-05T10:00:00.000Z"},
     "weight": {"weight": "140.5", "time_of_day": "morning", "notes": "", "date": "2026-10-05T10:00:00.000Z"},
     "vitals": {"heart_rate": "72", "blood_pressure": "120/80", "temperature": "98.6", "notes": "", "date": "2026-10-05T10:00:00.000Z"},
     "medications": {"name": "Ibuprofen", "dosage": "200mg", "reason": "pain", "notes": "", "date": "2026-10-05T10:00:00.000Z"},
