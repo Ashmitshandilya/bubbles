@@ -1,15 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { CHAPTERS } from "../story/store";
 import {
+  BLUSH,
   COLOR_SCRIPT,
   COPY_ZONE,
+  ENTER_VARIANTS,
   INK,
+  PHASE_COLORS,
   backdropAt,
   contrastRatio,
+  cycleAt,
   mixOklab,
+  phaseColorAt,
   sampleSky,
   skyAt,
   skyCss,
+  timeOfDay,
   type ChapterPalette,
 } from "./palette";
 
@@ -46,7 +52,7 @@ describe("colour script", () => {
 
   it("uses only valid hex colours and sane grade values", () => {
     const hexes: string[] = [];
-    for (const c of COLOR_SCRIPT as readonly ChapterPalette[]) {
+    for (const c of [...COLOR_SCRIPT, ...Object.values(ENTER_VARIANTS)]) {
       hexes.push(c.sky.top, c.sky.mid, c.sky.horizon, c.lights.key, c.lights.rim, c.lights.sun, c.accent, c.accent2, c.text);
       if (c.scrim) hexes.push(c.scrim.color);
       expect(c.bloom).toBeGreaterThanOrEqual(0);
@@ -56,25 +62,46 @@ describe("colour script", () => {
     for (const h of hexes) expect(h).toMatch(/^#[0-9A-F]{6}$/i);
   });
 
-  it("is Pearl Lab: light only, plum ink, pearl skies, gentle bloom", () => {
-    for (const c of COLOR_SCRIPT as readonly ChapterPalette[]) {
-      expect(c.tone, c.key).toBe("light");
-      expect(c.text, c.key).toBe("#1E1B2E");
-      expect(c.scrim, c.key).toBeNull();
-      expect(c.bloom, c.key).toBeLessThanOrEqual(0.3);
-      // every sky stop stays pale (pearl), so the page never turns dark or neon
-      for (const h of [c.sky.top, c.sky.mid, c.sky.horizon]) expect(contrastRatio(h, "#000000"), `${c.key} ${h}`).toBeGreaterThan(18);
-    }
+  it("matches the plan for anchor values", () => {
+    const by = Object.fromEntries(COLOR_SCRIPT.map((c) => [c.key, c]));
+    expect(by.enter.sky).toEqual({ top: "#E6D3FF", mid: "#FFC9E3", horizon: "#FFD9B5" });
+    expect(by.companion.bloom).toBe(0.9);
+    expect(by.noise.bloom).toBe(0.15);
+    expect(by.noise.grade.saturation).toBe(-15);
+    expect(by.remember.grade.vignette).toBe(0.14);
+    expect(by.cycle.sky).toEqual({ top: "#2B1038", mid: "#5A2058", horizon: "#B8467A" });
   });
 });
 
 describe("text contrast through the copy zone (12 to 78 percent of the height)", () => {
   for (const c of COLOR_SCRIPT) {
-    it(`${c.key}: ink text holds 4.5 for body and 3 for large`, () => {
-      expect(c.text).toBe(INK);
+    it(`${c.key}: ${c.tone === "light" ? "ink" : "blush"} text holds 4.5 for body and 3 for large`, () => {
+      expect(c.text).toBe(c.tone === "light" ? INK : BLUSH);
       expectReadable(c.key, c);
     });
   }
+
+  for (const [tod, v] of Object.entries(ENTER_VARIANTS)) {
+    it(`enter at ${tod} holds contrast`, () => {
+      expectReadable(`enter/${tod}`, v);
+    });
+  }
+
+  it("cycle holds contrast (with its scrim) at every phase and between phases", () => {
+    for (let x = 0; x <= 3.001; x += 0.25) {
+      expectReadable(`cycle/phase ${x.toFixed(2)}`, cycleAt(x));
+    }
+  });
+
+  it("cycle needs its scrim: without it the planned sky fails with blush text", () => {
+    let failed = 0;
+    for (let x = 0; x <= 3.001; x += 0.25) {
+      const p = cycleAt(x);
+      if (worst({ sky: p.sky, scrim: null, text: p.text }).min < BODY) failed += 1;
+    }
+    expect(failed).toBeGreaterThan(0);
+    expect(cycleAt(0).scrim).not.toBeNull();
+  });
 });
 
 describe("OKLab mixing", () => {
@@ -114,7 +141,7 @@ describe("contrastRatio", () => {
   });
 
   it("is symmetric", () => {
-    expect(contrastRatio(INK, "#FBF8F6")).toBeCloseTo(contrastRatio("#FBF8F6", INK), 10);
+    expect(contrastRatio(INK, BLUSH)).toBeCloseTo(contrastRatio(BLUSH, INK), 10);
   });
 });
 
@@ -138,11 +165,44 @@ describe("skyAt", () => {
   });
 
   it("moves bloom smoothly through a hand-over", () => {
-    expect(skyAt(4, 0.5).bloom).toBeCloseTo((COLOR_SCRIPT[4].bloom + COLOR_SCRIPT[5].bloom) / 2, 5); // prepare to close
+    expect(skyAt(7, 0.5).bloom).toBeCloseTo((0.9 + 0.2) / 2, 5); // companion to care
+  });
+
+  it("walks the cycle sky through the four phase colours", () => {
+    const horizons = [0, 1, 2, 3].map((p) => skyAt(4, 0, p).horizon);
+    expect(new Set(horizons).size).toBe(4);
+    (["period", "follicular", "ovulation", "luteal"] as const).forEach((name, i) => {
+      expect(phaseColorAt(i)).toBe(PHASE_COLORS[name]);
+      expect(skyAt(4, 0, i).horizon).toBe(cycleAt(i).sky.horizon);
+    });
+    // without a phase the planned base sky is untouched
+    expect(skyAt(4, 0).horizon).toBe(COLOR_SCRIPT[4].sky.horizon);
+  });
+
+  it("fades the cycle scrim in and out across the hand-overs", () => {
+    const alpha = COLOR_SCRIPT[4].scrim.alpha;
+    expect(skyAt(3, 0).scrim).toBeNull();
+    expect(skyAt(3, 1).scrim?.alpha).toBeCloseTo(alpha, 5);
+    expect(skyAt(3, 0.5).scrim?.alpha).toBeCloseTo(alpha / 2, 5);
+    expect(skyAt(4, 1).scrim).toBeNull();
+  });
+
+  it("applies an opening-chapter time-of-day variant", () => {
+    expect(skyAt(0, 0, undefined, "night").top).toBe(ENTER_VARIANTS.night.sky.top);
+    expect(skyAt(0, 0).top).toBe(ENTER_VARIANTS.dawn.sky.top);
   });
 });
 
 describe("helpers", () => {
+  it("maps the local hour to four variants", () => {
+    expect(timeOfDay(6)).toBe("dawn");
+    expect(timeOfDay(12)).toBe("day");
+    expect(timeOfDay(18)).toBe("dusk");
+    expect(timeOfDay(23)).toBe("night");
+    expect(timeOfDay(3)).toBe("night");
+    expect(timeOfDay(29)).toBe("dawn");
+  });
+
   it("samples the sky at its stops and writes an OKLab CSS gradient", () => {
     const s = COLOR_SCRIPT[0].sky;
     expect(sampleSky(s, 0)).toBe(s.top);

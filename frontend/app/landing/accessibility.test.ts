@@ -9,8 +9,12 @@ import { CHAPTERS } from "./story/store";
 // vitest compiles JSX with the classic runtime (tsconfig has jsx: "preserve"), so components expect `React` in scope.
 (globalThis as { React?: typeof React }).React = React;
 
-// The page imports Next-only modules (links, lazy client chunks) and the Supabase client. None of them
+// The page imports Next-only modules (fonts, links, lazy client chunks) and the Supabase client. None of them
 // changes the markup this test is about, so they are replaced by plain stand-ins.
+vi.mock("next/font/google", () => ({
+  Bricolage_Grotesque: () => ({ variable: "font-display" }),
+  Geist_Mono: () => ({ variable: "font-mono" }),
+}));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children?: React.ReactNode } & Record<string, unknown>) =>
     createElement("a", { href, ...rest }, children),
@@ -62,76 +66,49 @@ describe("the calm page (what reduced motion and a screen reader get)", () => {
     }
   });
 
-  it("offers one call to action, Get started, in the hero and the close; the nav offers Sign in", () => {
-    expect(html.match(/href="\/login\?mode=signup"/g)).toHaveLength(2);
-    expect(text.match(/Get started/g)).toHaveLength(2);
-    const nav = html.match(/<header[^>]*class="cw-nav"[\s\S]*?<\/header>/)?.[0] ?? "";
-    expect(nav).toContain('href="/login"');
-    expect(nav).toContain("Sign in");
-    expect(nav).not.toContain("mode=signup");
+  it("reaches the sign-up flow from the hero, the nav and the finale", () => {
+    expect(html.match(/href="\/login\?mode=signup"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(text).toContain("Start with Bubbles");
   });
 
   it("keeps the whole story as text: every chapter's copy is there", () => {
     for (const phrase of [
       "Your body keeps a story.",
-      "Bubbles remembers",
-      "Just talk. Bubbles listens.",
-      "2 rotis, dal and curd",
-      "slept 7h 12m",
-      "cramps since morning",
-      "water 5 of 8",
-      "Nothing becomes memory until you confirm",
-      "Confirm",
-      "Edit",
-      "Patterns across weeks, not",
-      "Walk into your appointment prepared.",
-      "Bubbles does not diagnose.",
-      "Start your story with Bubbles.",
+      "Your body is a living system.",
+      "A number is a moment.",
+      "Say it the way you would tell a friend.",
+      "Built around your rhythm, not an average one.",
+      "Everything you track is connected.",
+      "Nothing becomes memory until you confirm it.",
+      "Ask anything. Bubbles answers with your whole story in mind.",
+      "Red flags first.",
+      "Honest when unsure.",
+      "Start your health story with Bubbles.",
     ]) {
       expect(text, phrase).toContain(phrase);
     }
   });
 
-  it("repeats the safety note in the footer, with the Privacy and Terms links", () => {
+  it("repeats the safety note in the footer", () => {
     expect(text).toContain("not a medical device, and does not diagnose");
     expect(text).toContain("In an emergency, contact your local emergency number");
-    const footer = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? "";
-    expect(footer).toContain('href="/privacy"');
-    expect(footer).toContain('href="/terms"');
   });
 
   it("labels example data as an example", () => {
-    expect(text).toContain("Example message");
-    expect(text).toContain("Example conversation");
+    expect(text).toContain("Example cycle.");
     expect(text).toContain("Example pattern");
-    expect(text).toMatch(/Example\s+Cycle summary for my clinician/);
-    expect(text).toContain("An estimate, never birth control".replace("An estimate", "an estimate"));
   });
 
-  it("makes only promises the privacy page keeps", () => {
-    const promises = html.match(/<ol class="cw-promises">[\s\S]*?<\/ol>/)?.[0] ?? "";
-    expect(promises.match(/<li/g)).toHaveLength(3);
-    expect(promises).toContain("Nothing becomes memory until you confirm it.");
-    expect(promises).toContain("You choose what a partner sees.");
-    expect(promises).toContain("no analytics");
-    const privacy = readFileSync(join(__dirname, "..", "privacy", "page.tsx"), "utf8");
-    expect(privacy).toMatch(/no\s+analytics/);
-    expect(privacy).toContain("Partner sharing is off by default");
-    expect(privacy).toMatch(/designed not to contain your message text/);
-  });
-
-  it("gives Bubbles a text alternative, and hides the decoration", () => {
-    expect(html).toMatch(/<img[^>]*alt="Bubbles, a baby unicorn doctor/);
-    for (const hidden of ["cw-bg", "cw-grain"]) {
+  it("gives the drawn hero a text alternative, and hides the decoration", () => {
+    expect(html).toMatch(/role="img"[^>]*aria-label="Bubbles, a baby unicorn doctor/);
+    for (const hidden of ["cw-bg", "cw-portal cw-portal--dive", "cw-grain", "cw-soapcss"]) {
       expect(html, hidden).toContain(`class="${hidden}" aria-hidden="true"`);
     }
-    expect(html).toMatch(/class="cw-orb cw-close-orb" data-orb="true" aria-hidden="true"/);
   });
 
-  it("describes the example ring that is drawn as an image, and does not use colour alone for the phases", () => {
-    expect(html).toMatch(/<svg[^>]*role="img"[^>]*aria-labelledby="cw-ring-cap"/);
-    expect(html).toContain('id="cw-ring-cap"');
-    for (const name of ["Period", "Follicular", "Ovulation (estimate)", "Luteal"]) expect(html).toContain(`>${name}</text>`);
+  it("describes the example chart that is drawn as an image", () => {
+    expect(html).toMatch(/<svg[^>]*role="img"[^>]*aria-labelledby="cw-history-cap"/);
+    expect(html).toContain('id="cw-history-cap"');
   });
 });
 

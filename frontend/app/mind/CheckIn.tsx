@@ -24,10 +24,10 @@ const FACE_FILL: Record<number, string> = { 1: "#FBCFC6", 2: "#F1E2C2", 3: "#F4E
 function Face({ n }: { n: number }) {
   return (
     <svg width="44" height="44" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <circle cx="16" cy="16" r="14" fill={FACE_FILL[n]} stroke="#1E1B2E" strokeWidth="1.8" />
-      <circle cx="11.5" cy="12.5" r="1.7" fill="#1E1B2E" />
-      <circle cx="20.5" cy="12.5" r="1.7" fill="#1E1B2E" />
-      <path d={FACE_MOUTH[n]} fill="none" stroke="#1E1B2E" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="16" cy="16" r="14" fill={FACE_FILL[n]} stroke="#2B1A3F" strokeWidth="1.8" />
+      <circle cx="11.5" cy="12.5" r="1.7" fill="#2B1A3F" />
+      <circle cx="20.5" cy="12.5" r="1.7" fill="#2B1A3F" />
+      <path d={FACE_MOUTH[n]} fill="none" stroke="#2B1A3F" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }

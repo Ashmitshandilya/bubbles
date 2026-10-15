@@ -12,12 +12,16 @@ export const KEEP_OUT_PAD = 14;
 
 /** Selectors (inside the chapter's section) of the blocks bubbles must not cover. */
 export const KEEP_OUT: Record<ChapterKey, string> = {
-  enter: ".cw-copy, .cw-hero-orb",
-  listen: ".cw-copy, .cw-listen-orb, .cw-say",
-  confirm: ".cw-copy, .cw-chat",
-  patterns: ".cw-copy, .cw-ring",
-  prepare: ".cw-copy, .cw-sheet",
-  close: ".cw-copy, .cw-close-orb, .cw-promises",
+  enter: ".cw-enter-copy",
+  body: ".cw-body-copy",
+  noise: ".cw-noise-copy",
+  track: ".cw-track-title, .cw-intake",
+  cycle: ".cw-cycle-copy, .cw-history",
+  connect: ".cw-connect-title",
+  remember: ".cw-zoom-title, .cw-zoom, .cw-memory-side",
+  companion: ".cw-companion-title, .cw-companion",
+  care: ".cw-care-title",
+  bubbles: ".cw-final .cw-display, .cw-final .cw-lede, .cw-final .cw-cta",
 };
 
 /** Rects of a chapter's copy blocks. Reuses `out` (cleared first). */
