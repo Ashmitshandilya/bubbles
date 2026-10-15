@@ -313,7 +313,7 @@ function LoginForm() {
           )}
 
           {mode === "login" && (
-            <button type="button" onClick={() => switchMode("reset")} className="self-start text-body-sm font-extrabold text-bubbles-pink-ink underline">
+            <button type="button" onClick={() => switchMode("reset")} className="min-h-[44px] self-start text-body-sm font-extrabold text-bubbles-pink-ink underline">
               Forgot or never set a password?
             </button>
           )}
@@ -385,13 +385,13 @@ function LoginForm() {
         )}
       </div>
 
-      <p className="mt-6 text-center text-body-sm font-semibold text-ink-soft">
-        Bubbles does not diagnose. <Link href="/" className="font-extrabold text-bubbles-pink-ink">Learn about Bubbles</Link>
+      <p className="mt-3 text-center text-body-sm font-semibold text-ink-soft">
+        Bubbles does not diagnose. <Link href="/" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink">Learn about Bubbles</Link>
       </p>
-      <p className="mt-2 text-center text-body-sm font-semibold text-ink-soft">
-        <Link href="/privacy" className="font-extrabold text-bubbles-pink-ink">Privacy</Link>
+      <p className="text-center text-body-sm font-semibold text-ink-soft">
+        <Link href="/privacy" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink">Privacy</Link>
         {" · "}
-        <Link href="/terms" className="font-extrabold text-bubbles-pink-ink">Terms</Link>
+        <Link href="/terms" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink">Terms</Link>
       </p>
     </div>
   );
