@@ -13,6 +13,7 @@ import fitness_api
 import health_logs
 import import_api
 import partner_sharing
+import push_api
 import wellness_api
 
 PUBLIC = {("GET", "/cycle/partner/{token}"), ("POST", "/cycle/partner-view"), ("GET", "/partner/{token}")}  # token-based, rate-limited public partner link
@@ -31,7 +32,7 @@ def refuse(_authorization=None):
 
 
 BUILDERS = [health_logs.build_router, fitness_api.build_router, data_rights.build_router, wellness_api.build_router,
-            import_api.build_router, cycle_api.build_router, partner_sharing.build_router]
+            import_api.build_router, cycle_api.build_router, partner_sharing.build_router, push_api.build_router]
 
 
 def find_leaks(router):

@@ -1,4 +1,4 @@
-"""In-app notifications (zero cost), with an optional SMTP email channel and a documented web-push stub.
+"""In-app notifications (zero cost), with an optional SMTP email channel and Android push (FCM).
 
 Rules this module enforces:
   * GENERIC TEXT ONLY. A notification body/title is chosen from fixed templates; custom text is accepted only if it passes
@@ -9,14 +9,16 @@ Rules this module enforces:
     here is a safety path, and any failure here is swallowed rather than allowed to affect a request.
 
 Channels: ``in_app`` (default on). ``email`` is off by default and only works when SMTP_HOST (and optionally SMTP_PORT,
-SMTP_USER, SMTP_PASSWORD, SMTP_FROM) are set; it fails soft. ``push`` is a stub: browser web push needs VAPID keys that the
-project owner generates (``npx web-push generate-vapid-keys``) plus a service worker and a ``push_subscriptions`` store;
-none of that exists yet, so ``send_web_push`` always reports ``not_configured``.
+SMTP_USER, SMTP_PASSWORD, SMTP_FROM) are set; it fails soft. ``push`` is Android push through Firebase Cloud Messaging
+(push_fcm.py, device tokens in push_devices.py). It is off by default, is the person's own switch (and the push consent), and
+sends nothing unless FCM_SERVICE_ACCOUNT_B64 is set and the person has a registered device. Quiet hours, the daily cap,
+de-duplication and the type switches are decided once here, for every channel. Web push is out of scope.
 
 Docs: ``notification`` / key = id, ``notification_settings`` / key = ``me``.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import smtplib
@@ -30,6 +32,8 @@ import clinical_constants as K
 import doc_store
 import hydration_engine as H
 import med_schedule as M
+import push_devices
+import push_fcm
 import sleep_engine as S
 import wellness_common as W
 from condition_rules import _pattern
@@ -90,7 +94,7 @@ def smtp_configured() -> bool:
 
 def channel_status() -> dict[str, Any]:
     return {"in_app": {"available": True}, "email": {"available": smtp_configured(), "note": "Needs SMTP_HOST on the server."},
-            "push": {"available": False, "note": "Browser push isn't set up yet; in-app notifications are used."}}
+            "push": {"available": push_fcm.configured(), "note": "Phone notifications are for the Android app and need Firebase set up on the server."}}
 
 
 def normalize_settings(body: dict, current: dict | None = None) -> dict[str, Any]:
@@ -147,7 +151,13 @@ def load_settings(db: Any, uid: str) -> dict[str, Any]:
 
 
 def save_settings(db: Any, uid: str, settings: dict) -> dict:
+    was_on = bool(load_settings(db, uid)["channels"].get("push"))
     doc_store.put(db, uid, "notification_settings", "me", settings)
+    if was_on and not settings["channels"].get("push"):   # withdrawing the push choice stops every device at once
+        try:
+            push_devices.revoke_all(db, uid)
+        except push_devices.PushUnavailable:
+            pass
     return settings
 
 
@@ -183,9 +193,21 @@ def send_email(to: str | None, subject: str, body: str, *, smtp_factory: Callabl
         return False
 
 
-def send_web_push(subscription: Any, title: str, body: str) -> dict[str, Any]:
-    """Stub: needs owner-generated VAPID keys, a service worker and stored subscriptions. Always a no-op for now."""
-    return {"sent": False, "reason": "not_configured"}
+def send_push(db: Any, uid: str, kind: str, title: str, body: str, *, pusher: Callable[..., Any] | None = None) -> dict[str, Any]:
+    """Push one already-sanitised notification to the person's registered phones. Fail-soft: never raises. Tokens the push service
+    says are gone are revoked. ``pusher`` is injectable (tests); the default is push_fcm.send."""
+    try:
+        if pusher is None and not push_fcm.configured():
+            return {"sent": 0, "failed": 0, "invalid": [], "reason": "not_configured"}
+        tokens = push_devices.active_tokens(db, uid)
+        if not tokens:
+            return {"sent": 0, "failed": 0, "invalid": [], "reason": "no_devices"}
+        out = (pusher or push_fcm.send)(tokens, title, body, kind)
+        if out.get("invalid"):
+            push_devices.revoke_tokens(db, list(out["invalid"]))
+        return out
+    except Exception:  # noqa: BLE001 - a push problem never affects the in-app copy or the request
+        return {"sent": 0, "failed": 0, "invalid": [], "reason": "error"}
 
 
 # --- create / list / read --------------------------------------------------------------------------------------------------
@@ -194,16 +216,33 @@ def _recent(db: Any, uid: str, limit: int = 200) -> list[dict]:
     return doc_store.list_docs(db, uid, "notification", limit=limit)
 
 
+def _claim(db: Any, uid: str, nid: str, mine: Any) -> bool:
+    """True when this run's row is the earliest one for this notification id. Two overlapping scheduler runs can both pass the
+    read-then-write duplicate check; the later row is removed here, so exactly one run goes on to send."""
+    try:
+        rows = (db.table(doc_store.TABLE).select("id,created_at").eq("user_id", uid).eq("event_type", doc_store.EVENT_TYPE)
+                .eq("title", f"notification:{nid}").limit(10).execute().data or [])
+        first = min(rows, key=lambda r: (str(r.get("created_at") or ""), str(r.get("id"))), default=None)
+        if first is None or str(first.get("id")) == str(mine):
+            return True
+        db.table(doc_store.TABLE).delete().eq("id", mine).eq("user_id", uid).execute()
+        return False
+    except Exception:  # noqa: BLE001 - if the check itself fails, prefer a rare duplicate over a lost reminder
+        return True
+
+
 def create_notification(db: Any, uid: str, kind: str, *, title: str | None = None, body: str | None = None, dedupe_key: str | None = None,
                         now: datetime | None = None, settings: dict | None = None, email: str | None = None,
-                        mailer: Callable[..., Any] | None = None) -> dict | None:
-    """Create one notification, or None when it is suppressed (type off, quiet hours, daily cap reached, duplicate)."""
+                        mailer: Callable[..., Any] | None = None, pusher: Callable[..., Any] | None = None) -> dict | None:
+    """Create one notification, or None when it is suppressed (type off, quiet hours, daily cap reached, duplicate).
+    The in-app copy is always the record (it is what the cap and de-duplication count); email and push follow it."""
     if kind not in K.NOTIFY_KINDS:
         raise InputError("unknown notification kind")
     settings = settings or load_settings(db, uid)
     if kind in SETTING_TYPES and not settings["types"].get(kind, True):
         return None
-    if not settings["channels"].get("in_app", True) and not settings["channels"].get("email"):
+    ch = settings["channels"]
+    if not ch.get("in_app", True) and not ch.get("email") and not ch.get("push"):
         return None
     now = now or datetime.now(timezone.utc)
     local = W.local_now(now, settings["tz_offset_minutes"])
@@ -216,12 +255,19 @@ def create_notification(db: Any, uid: str, kind: str, *, title: str | None = Non
     if sum(1 for p in existing if p.get("local_date") == today) >= settings["daily_cap"]:
         return None
     t, b = sanitise(kind, title, body)
-    nid = uuid.uuid4().hex[:16]
+    # A notification with a de-duplication key has a deterministic id (user + kind + slot), so two overlapping runs aim at the same document.
+    nid = hashlib.sha256(f"{uid}|{dedupe_key}".encode()).hexdigest()[:16] if dedupe_key else uuid.uuid4().hex[:16]
+    if dedupe_key and doc_store.get(db, uid, "notification", nid) is not None:
+        return None
     payload = {"id": nid, "kind": kind, "title": t, "body": b, "created_at": now.astimezone(timezone.utc).isoformat(),
                "local_date": today, "read": False, "dedupe_key": dedupe_key}
-    doc_store.put(db, uid, "notification", nid, payload, when=payload["created_at"])
-    if settings["channels"].get("email"):
+    saved = doc_store.put(db, uid, "notification", nid, payload, when=payload["created_at"])
+    if dedupe_key and not _claim(db, uid, nid, saved.get("id")):
+        return None
+    if ch.get("email"):
         send_email(email, t, b, smtp_factory=mailer)   # fail-soft; the in-app copy above already exists
+    if ch.get("push"):
+        send_push(db, uid, kind, t, b, pusher=pusher)
     return payload
 
 
@@ -245,8 +291,14 @@ def mark_read(db: Any, uid: str, ids: list[str] | None = None, all_: bool = Fals
 
 # --- due reminders ---------------------------------------------------------------------------------------------------------
 
+# The scheduler (a GitHub cron every 10 minutes) is best effort and often 5 to 15 minutes late, so the windows around a reminder are
+# wider than "exactly now". The per-slot de-duplication key keeps a wide window from sending twice.
+WINDDOWN_WINDOW_MIN = 45   # from the wind-down time until this long after it
+WATER_WINDOW_MIN = 90      # a needed water slot is still "due" this long after it (the app's own view keeps 60)
+
+
 def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str | None = None,
-                 mailer: Callable[..., Any] | None = None) -> list[dict]:
+                 mailer: Callable[..., Any] | None = None, pusher: Callable[..., Any] | None = None) -> list[dict]:
     """Create the reminders that are due right now (medicine, wind-down, water) and return them. Safe to call as often as you like:
     it respects the user's settings, quiet hours and daily cap, and de-duplicates per slot. Other modules call this."""
     now = now or datetime.now(timezone.utc)
@@ -258,7 +310,7 @@ def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str |
     made: list[dict] = []
 
     def emit(kind: str, key: str) -> None:
-        n = create_notification(db, uid, kind, dedupe_key=key, now=now, settings=settings, email=email, mailer=mailer)
+        n = create_notification(db, uid, kind, dedupe_key=key, now=now, settings=settings, email=email, mailer=mailer, pusher=pusher)
         if n:
             made.append(n)
 
@@ -274,7 +326,7 @@ def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str |
         details = S.load_details(db, uid, 30)
         beds = [details[k]["bedtime"] for k in sorted(details, reverse=True)[:14] if details[k].get("bedtime")]
         wd = parse_hhmm(S.winddown(goal["hours"], bedtime=goal.get("bedtime"), wake=goal.get("wake_time"), recent_bedtimes=beds)["winddown"])
-        if 0 <= (now_min - wd) % 1440 < 30:
+        if 0 <= (now_min - wd) % 1440 < WINDDOWN_WINDOW_MIN:
             emit("winddown", f"winddown:{day}")
     if settings["types"].get("water", True):
         profile = W.load_profile(db, uid)
@@ -285,7 +337,7 @@ def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str |
             totals = H.day_totals(H.load_entries(db, uid, 2), day, settings["tz_offset_minutes"])
             q = settings["quiet_hours"]
             wake, sleep = (parse_hhmm(q["end"]), parse_hhmm(q["start"])) if q.get("enabled") else (7 * 60, 22 * 60)
-            slot = H.reminder_plan(goal["goal_ml"], totals["effective_ml"], now_min, wake, sleep)["due_now"]
+            slot = H.reminder_plan(goal["goal_ml"], totals["effective_ml"], now_min, wake, sleep, due_window_min=WATER_WINDOW_MIN)["due_now"]
             if slot:
                 emit("water", f"water:{day}:{slot}")
     return made

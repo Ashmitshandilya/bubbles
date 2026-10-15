@@ -42,6 +42,7 @@ from health_logs import build_router as build_health_logs_router
 from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
+from push_api import build_router as build_push_router
 from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
 from onboarding_api import build_router as build_onboarding_router, style_block_for
@@ -542,6 +543,7 @@ app.include_router(build_fitness_router(get_authenticated_user, supabase))
 app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 # Sleep, hydration, medications, mind check-ins and notifications.
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
+app.include_router(build_push_router(get_authenticated_user, supabase))   # /notifications/push/register and /internal/push/run
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_consent_router(get_authenticated_user, supabase))
 app.include_router(build_onboarding_router(get_authenticated_user, supabase))
