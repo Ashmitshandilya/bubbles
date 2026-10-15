@@ -46,7 +46,7 @@ export function PartnerShareClient({ token }: { token: string }) {
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-blush px-4 py-10 text-ink">
-      <div className="w-full max-w-md rounded-3xl border-2 border-line bg-surface p-6 text-center sm:p-8">
+      <div className="w-full max-w-md rounded-3xl border border-line bg-surface p-6 text-center sm:p-8">
         {state.status === "loading" && (
           <div role="status">
             <BubblesMascot size={80} mood="thinking" className="mx-auto" />
@@ -62,7 +62,7 @@ export function PartnerShareClient({ token }: { token: string }) {
               {state.gone ? "The person who shared it may have stopped sharing, or the link may have expired. You can ask them for a new one." : state.message}
             </p>
             {!state.gone && (
-              <button type="button" onClick={() => void load()} className="bubbles-press mt-4 inline-flex min-h-[44px] items-center rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold">
+              <button type="button" onClick={() => void load()} className="bubbles-press mt-4 inline-flex min-h-[44px] items-center rounded-full border border-line-strong bg-surface px-5 text-body-sm font-extrabold">
                 Try again
               </button>
             )}

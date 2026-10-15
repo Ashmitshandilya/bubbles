@@ -17,8 +17,8 @@ export function Card({ children, className = "", as: Tag = "section", labelledBy
 export function Notice({ children, tone = "sky", title }: { children: ReactNode; tone?: "sky" | "sun" | "grape"; title?: string }) {
   const style = { sky: "bg-tint-sky text-bubbles-sky-deep", sun: "bg-tint-sun text-bubbles-sun-deep", grape: "bg-tint-grape text-bubbles-grape-deep" }[tone];
   return (
-    <div className={`rounded-3xl border-2 border-current p-4 ${style}`}>
-      {title && <p className="m-0 text-body-sm font-extrabold uppercase tracking-wide">{title}</p>}
+    <div className={`rounded-3xl border border-current p-4 ${style}`}>
+      {title && <p className="m-0 text-label">{title}</p>}
       <div className="text-body font-semibold">{children}</div>
     </div>
   );
@@ -43,9 +43,9 @@ export function FlagList({ flags, hideIds = [] }: { flags: Flag[]; hideIds?: str
           <li
             key={flag.id}
             role={flag.severity === "urgent" ? "alert" : undefined}
-            className={`rounded-3xl border-2 p-4 ${s.box} ${flag.severity === "urgent" ? "" : "border-current"}`}
+            className={`rounded-3xl border p-4 ${s.box} ${flag.severity === "urgent" ? "" : "border-current"}`}
           >
-            <p className="m-0 text-chip font-extrabold uppercase tracking-wide">{s.label}</p>
+            <p className="m-0 text-label">{s.label}</p>
             <p className={`m-0 mt-1 font-display text-h4 ${flag.severity === "urgent" ? "text-bubbles-urgent" : ""}`}>{flag.title}</p>
             <p className={`m-0 mt-1 text-body ${flag.severity === "urgent" ? "font-extrabold" : "font-semibold"}`}>{flag.message}</p>
             {flag.detail && <p className="m-0 mt-1 text-body-sm font-semibold">{flag.detail}</p>}
@@ -58,7 +58,7 @@ export function FlagList({ flags, hideIds = [] }: { flags: Flag[]; hideIds?: str
 
 export function SafetyAlert({ safety }: { safety: SafetySignal }) {
   return (
-    <div role="alert" className="rounded-3xl border-2 border-bubbles-urgent bg-tint-urgent p-5 text-ink">
+    <div role="alert" className="rounded-3xl border border-bubbles-urgent bg-tint-urgent p-5 text-ink">
       <p className="m-0 font-display text-h3 text-bubbles-urgent">Please read this first</p>
       <p className="m-0 mt-2 text-body font-extrabold">{safety.message}</p>
     </div>

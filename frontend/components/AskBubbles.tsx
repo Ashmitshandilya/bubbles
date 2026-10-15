@@ -19,7 +19,7 @@ const FALLBACK_SUGGESTIONS = [
 ];
 
 const chip =
-  "min-h-[44px] rounded-full border-2 border-bubbles-grape/20 bg-surface px-3.5 text-left text-body-sm font-extrabold text-bubbles-grape-deep transition-colors hover:border-bubbles-grape";
+  "min-h-[44px] rounded-full border border-bubbles-grape/20 bg-surface px-3.5 text-left text-body-sm font-extrabold text-bubbles-grape-deep transition-colors hover:border-bubbles-grape";
 
 /**
  * "Ask or jump": a keyboard-first command palette on every app page (Ctrl+K or Cmd+K, or the floating button).
@@ -209,10 +209,10 @@ export function AskBubbles() {
           aria-expanded={isOpen}
           className="bubbles-ask-fab bubbles-press fixed bottom-6 right-6 z-sticky hidden h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 pr-5 text-white bubbles-glow bubbles-glow-grape lg:flex"
         >
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-surface">
-            <BubblesMascot size={40} />
+          <span className="flex h-12 w-12 items-center justify-center rounded-full" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 15a3 3 0 0 1-3 3H8l-4 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" /></svg>
           </span>
-          <span className="text-body font-extrabold">Ask Bubbles</span>
+          <span className="hidden text-[0.9375rem] font-semibold lg:inline">Ask Bubbles</span>
         </button>
       )}
 
@@ -229,7 +229,7 @@ export function AskBubbles() {
         className="mx-auto mb-0 mt-auto w-full max-w-none border-0 bg-transparent p-0 backdrop:bg-ink/40 sm:my-auto sm:w-[calc(100%-2rem)] sm:max-w-lg"
       >
         {isOpen && (
-          <div className="bubbles-rise flex flex-col gap-4 rounded-t-[28px] border-2 border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 text-ink sm:rounded-[28px] sm:p-6">
+          <div className="bubbles-rise flex flex-col gap-4 rounded-t-[24px] border border-line bg-surface px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-5 text-ink sm:rounded-[24px] sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <BubblesMascot size={48} />
@@ -246,7 +246,7 @@ export function AskBubbles() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-line text-ink-soft hover:text-ink"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line text-ink-soft hover:text-ink"
               >
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6 6 18" />
@@ -258,7 +258,7 @@ export function AskBubbles() {
               <label htmlFor="ask-bubbles-input" className="text-body-sm font-extrabold">
                 Search pages or ask a question
               </label>
-              <div className="flex items-center gap-2 rounded-full border-2 border-ink bg-surface py-1.5 pl-4 pr-1.5 focus-within:border-bubbles-grape">
+              <div className="flex items-center gap-2 rounded-full border border-line-strong bg-surface py-1.5 pl-4 pr-1.5 focus-within:border-bubbles-grape">
                 <input
                   ref={inputRef}
                   id="ask-bubbles-input"

@@ -8,7 +8,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation";
 import { Header, Sidebar, MobileNav, ApiAlert, SectionTabs } from "../Navigation";
 import { useAuth, useApi } from "../Providers";
-import { BubblesMascot } from "../BubblesMascot";
 import { classifyFailure, failureFromError } from "../../app/lib/connection";
 import { responseFailure } from "../../lib/api";
 
@@ -26,10 +25,7 @@ export function HubPage({ title, children }: { title: string; children: ReactNod
   if (loading || !session) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-blush">
-        <div role="status" className="text-center">
-          <BubblesMascot size={88} mood="thinking" className="mx-auto" />
-          <p className="mt-4 text-body font-bold text-muted">{loading ? "Opening Bubbles…" : "Taking you to sign in…"}</p>
-        </div>
+        <LoadingBubbles label={loading ? "Opening Bubbles…" : "Taking you to sign in…"} />
       </main>
     );
   }
@@ -135,12 +131,12 @@ export function toneFor(signal: string): Tone {
 
 /* ── Small UI ───────────────────────────────────────────── */
 
-export const CARD = "rounded-3xl border-2 border-line bg-surface";
+export const CARD = "rounded-3xl border border-line bg-surface shadow-sm";
 export const BTN_PRIMARY =
-  "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white bubbles-glow disabled:opacity-60";
+  "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-6 text-[0.9375rem] font-semibold text-white bubbles-glow disabled:opacity-40";
 export const BTN_SECONDARY =
-  "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold text-ink disabled:opacity-60";
-export const PILL = "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-chip font-extrabold";
+  "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-line-strong bg-surface px-6 text-[0.9375rem] font-semibold text-ink hover:border-bubbles-grape disabled:opacity-40";
+export const PILL = "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.8125rem] font-extrabold";
 
 export function SignOutButton() {
   const { signOut } = useAuth();
@@ -164,6 +160,20 @@ export function SignOutButton() {
   );
 }
 
+/** Page-level loading: three soft dots and one plain line. Loading never shows the mascot (DESIGN.md: empty and onboarding only). */
+export function LoadingBubbles({ label }: { label: string }) {
+  return (
+    <div role="status" className="flex flex-col items-center gap-4 px-4 text-center">
+      <span className="inline-flex gap-1.5" aria-hidden="true">
+        <span className="bubbles-thinking-dot" />
+        <span className="bubbles-thinking-dot" />
+        <span className="bubbles-thinking-dot" />
+      </span>
+      <p className="m-0 text-body font-semibold text-muted">{label}</p>
+    </div>
+  );
+}
+
 export function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`bubbles-skeleton ${className}`} aria-hidden="true" />;
 }
@@ -172,7 +182,6 @@ export function Skeleton({ className = "" }: { className?: string }) {
 export function ErrorCard({ title, message, onRetry, inset = false }: { title: string; message: string; onRetry: () => void; inset?: boolean }) {
   return (
     <div role="alert" className={`${inset ? "rounded-3xl bg-blush" : CARD} flex flex-wrap items-center gap-4 p-5`}>
-      <BubblesMascot size={52} mood="resting" animated={false} />
       <div className="min-w-[10rem] flex-1">
         <p className="font-display text-h4 text-ink">{title}</p>
         <p className="text-body-sm text-muted">{message}</p>

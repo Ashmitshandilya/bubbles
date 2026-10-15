@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ApiAlert, Header, MobileNav, SectionTabs, Sidebar } from "../Navigation";
 import { BubblesMascot } from "../BubblesMascot";
 import { SoapPop } from "../SoapPop";
+import { LoadingBubbles } from "../hub/HubKit";
 import { useApi, useAuth } from "../Providers";
 import {
   byNewest, dayLabel, daysAgo, formatNumber, parseWhen, present, startOfDay, toNumber,
@@ -19,39 +20,39 @@ export type Signal = "pink" | "grape" | "sun" | "mint" | "sky" | "peach";
 const SIGNALS: Record<Signal, { tint: string; ink: string; button: string; solid: string; border: string; dashed: string; chipOn: string; bar: string; barSoft: string }> = {
   pink: {
     tint: "bg-tint-pink", ink: "text-bubbles-pink-deep",
-    button: "bg-bubbles-pink-ink text-white bubbles-glow", solid: "bg-bubbles-pink-ink text-white",
-    border: "border-line-pink", dashed: "border-line-pink-strong", chipOn: "border-bubbles-pink-ink bg-tint-pink text-bubbles-pink-deep",
-    bar: "bg-bubbles-pink", barSoft: "bg-line-pink-strong",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
+    border: "border-line", dashed: "border-[#F2A9C0]", chipOn: "border-bubbles-pink-ink bg-tint-pink text-bubbles-pink-deep",
+    bar: "bg-bubbles-pink", barSoft: "bg-[#F7C8D6]",
   },
   grape: {
     tint: "bg-tint-grape", ink: "text-bubbles-grape-deep",
-    button: "bg-bubbles-grape text-white bubbles-glow bubbles-glow-grape", solid: "bg-bubbles-grape text-white",
-    border: "border-line-grape", dashed: "border-line-grape-strong", chipOn: "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep",
-    bar: "bg-bubbles-grape", barSoft: "bg-line-grape-strong",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
+    border: "border-[#E7E0EC]", dashed: "border-[#C9B6F2]", chipOn: "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep",
+    bar: "bg-bubbles-grape", barSoft: "bg-[#C9B6F2]",
   },
   sun: {
     tint: "bg-tint-sun", ink: "text-bubbles-sun-deep",
-    button: "bg-bubbles-sun text-ink bubbles-glow bubbles-glow-sun", solid: "bg-bubbles-sun text-ink",
-    border: "border-line-sun", dashed: "border-line-sun-strong", chipOn: "border-bubbles-sun-deep bg-tint-sun text-bubbles-sun-deep",
-    bar: "bg-bubbles-sun", barSoft: "bg-line-sun",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
+    border: "border-[#F1E2C2]", dashed: "border-[#E9C98B]", chipOn: "border-bubbles-sun-deep bg-tint-sun text-bubbles-sun-deep",
+    bar: "bg-bubbles-sun", barSoft: "bg-[#F1E2C2]",
   },
   mint: {
     tint: "bg-tint-mint", ink: "text-bubbles-mint-deep",
-    button: "bg-bubbles-mint-deep text-white bubbles-glow bubbles-glow-mint", solid: "bg-bubbles-mint-deep text-white",
-    border: "border-line-mint", dashed: "border-line-mint-strong", chipOn: "border-bubbles-mint-deep bg-tint-mint text-bubbles-mint-deep",
-    bar: "bg-bubbles-mint", barSoft: "bg-line-mint-strong",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
+    border: "border-[#E7DED2]", dashed: "border-[#CDBDA8]", chipOn: "border-bubbles-mint-deep bg-tint-mint text-bubbles-mint-deep",
+    bar: "bg-bubbles-mint", barSoft: "bg-[#E3D8CA]",
   },
   sky: {
     tint: "bg-tint-sky", ink: "text-bubbles-sky-deep",
-    button: "bg-bubbles-sky-deep text-white bubbles-glow bubbles-glow-sky", solid: "bg-bubbles-sky-deep text-white",
-    border: "border-line-sky", dashed: "border-line-sky-strong", chipOn: "border-bubbles-sky-deep bg-tint-sky text-bubbles-sky-deep",
-    bar: "bg-bubbles-sky", barSoft: "bg-line-sky-strong",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
+    border: "border-[#E9DFEE]", dashed: "border-[#CDB9DA]", chipOn: "border-bubbles-sky-deep bg-tint-sky text-bubbles-sky-deep",
+    bar: "bg-bubbles-sky", barSoft: "bg-[#CDB9DA]",
   },
   peach: {
     tint: "bg-tint-peach", ink: "text-bubbles-peach-deep",
-    button: "bg-bubbles-peach-deep text-white bubbles-glow bubbles-glow-peach", solid: "bg-bubbles-peach-deep text-white",
-    border: "border-line-peach", dashed: "border-line-peach-strong", chipOn: "border-bubbles-peach-deep bg-tint-peach text-bubbles-peach-deep",
-    bar: "bg-bubbles-peach", barSoft: "bg-line-peach-strong",
+    button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",
+    border: "border-[#F8D9D0]", dashed: "border-[#F5B5A6]", chipOn: "border-bubbles-peach-deep bg-tint-peach text-bubbles-peach-deep",
+    bar: "bg-bubbles-peach", barSoft: "bg-[#FBCFC6]",
   },
 };
 
@@ -104,29 +105,27 @@ export function TrackerShell({ title, children }: { title: string; children: Rea
   if (loading) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-blush px-4">
-        <div className="flex flex-col items-center gap-4 text-center" role="status">
-          <BubblesMascot size={88} mood="thinking" />
-          <p className="text-body font-bold text-muted">Opening {title.toLowerCase()}…</p>
-        </div>
+        <LoadingBubbles label={`Opening ${title.toLowerCase()}…`} />
       </main>
     );
   }
   if (!session) return null;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-blush">
-      <Header apiStatus={apiStatus} currentPage={title} />
-      <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
-      <div className="flex flex-1">
-        <Sidebar apiStatus={apiStatus} />
-        <main className="min-w-0 flex-1 px-4 pb-10 pt-5 sm:px-6 lg:px-10 lg:pt-8">
+    // Same frame as HubPage: sidebar on the left, then header, notices and the page in one column.
+    <div className="flex min-h-dvh bg-blush">
+      <Sidebar apiStatus={apiStatus} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Header apiStatus={apiStatus} currentPage={title} />
+        <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
+        <main className="min-w-0 flex-1 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
           <div className="mx-auto flex w-full max-w-[920px] flex-col gap-6">
             <SectionTabs />
             {children}
           </div>
         </main>
+        <MobileNav />
       </div>
-      <MobileNav />
     </div>
   );
 }
@@ -136,7 +135,7 @@ export function TrackerHero({ signal, icon, kicker, title, why, action }: {
 }) {
   const s = SIGNALS[signal];
   return (
-    <section aria-labelledby="tracker-title" className={`bubbles-rise relative overflow-hidden rounded-[32px] p-5 sm:p-7 ${s.tint}`}>
+    <section aria-labelledby="tracker-title" className={`bubbles-rise relative overflow-hidden rounded-[24px] p-5 sm:p-7 ${s.tint}`}>
       <span aria-hidden="true" className="bubbles-drift-slow pointer-events-none absolute -right-12 -top-14 h-44 w-44 rounded-full bg-white/45" />
       <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-4">
@@ -190,7 +189,7 @@ export function StatGrid({ stats, signal }: { stats: StatValue[]; signal: Signal
   return (
     <dl aria-label="Summary" className={`bubbles-stagger m-0 grid grid-cols-2 gap-3 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 ${cols}`}>
       {stats.map((st) => (
-        <div key={st.label} className={`flex min-w-0 flex-col gap-1 rounded-[24px] border-2 bg-surface p-4 ${st.value === null ? `border-dashed ${s.dashed}` : s.border}`}>
+        <div key={st.label} className={`flex min-w-0 flex-col gap-1 rounded-[24px] border bg-surface p-4 ${st.value === null ? `border-dashed ${s.dashed}` : s.border}`}>
           <dt className={`text-body-sm font-extrabold ${s.ink}`}>{st.label}</dt>
           <dd className="m-0 break-words">
             {st.value === null ? (
@@ -313,10 +312,10 @@ export function LogSheet({ open, onClose, signal, icon, title, subtitle, submitL
       className="m-0 mt-auto max-h-[94dvh] w-full max-w-none overflow-y-auto overscroll-contain bg-transparent p-0 text-default backdrop:bg-ink/55 sm:m-auto sm:w-[calc(100%-2rem)] sm:max-w-[560px]"
     >
       {open && (
-        <div className="bubbles-sheet-up flex flex-col gap-5 rounded-t-[36px] bg-surface px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3 sm:rounded-[32px] sm:px-7 sm:pb-7 sm:pt-6">
+        <div className="bubbles-sheet-up flex flex-col gap-5 rounded-t-[24px] bg-surface px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3 sm:rounded-[24px] sm:px-7 sm:pb-7 sm:pt-6">
           <span aria-hidden="true" className="mx-auto h-1.5 w-12 rounded-full bg-line sm:hidden" />
           <div className="flex items-center gap-3">
-            <span className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] ${s.tint} ${s.ink}`}>
+            <span className={`flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[20px] ${s.tint} ${s.ink}`}>
               <Icon name={icon} size={26} />
             </span>
             <div className="min-w-0 flex-1">
@@ -330,7 +329,7 @@ export function LogSheet({ open, onClose, signal, icon, title, subtitle, submitL
               onClick={onClose}
               disabled={saving}
               aria-label="Close"
-              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-surface text-muted hover:text-default disabled:opacity-50"
+              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-muted hover:text-default disabled:opacity-50"
             >
               <Icon name="close" size={20} />
             </button>
@@ -369,7 +368,7 @@ export function LogSheet({ open, onClose, signal, icon, title, subtitle, submitL
 /* ── Form controls ─────────────────────────────────────────────────── */
 
 const BOX =
-  "w-full min-w-0 rounded-[20px] border-2 border-line bg-surface px-4 py-3 text-body text-default placeholder:text-ink-faint hover:border-line-strong focus:border-bubbles-grape aria-[invalid=true]:border-bubbles-pink-ink";
+  "w-full min-w-0 rounded-[20px] border border-line bg-surface px-4 py-3 text-body text-default placeholder:text-ink-faint hover:border-line-strong focus:border-bubbles-grape aria-[invalid=true]:border-bubbles-pink-ink";
 
 function describedBy(id: string, hint?: string, error?: string) {
   return [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(" ") || undefined;
@@ -493,8 +492,8 @@ function Chip({ signal, on, onClick, children, tall = false }: { signal: Signal;
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={`bubbles-press min-h-[48px] border-2 font-extrabold leading-tight ${
-        tall ? "min-h-[60px] rounded-[18px] px-1 text-chip break-words sm:text-[0.9375rem]" : "rounded-full px-4 text-body-sm"
+      className={`bubbles-press min-h-[48px] border font-extrabold leading-tight ${
+        tall ? "min-h-[60px] rounded-[20px] px-1 text-[0.8125rem] break-words sm:text-[0.9375rem]" : "rounded-full px-4 text-body-sm"
       } ${on ? SIGNALS[signal].chipOn : "border-line bg-surface text-muted hover:border-line-strong hover:text-default"}`}
     >
       {children}
@@ -597,7 +596,7 @@ export function Stepper({ id, label, value, onChange, hint, error, optional, min
 
 export function EmptyState({ title, text, action }: { title: string; text: string; action: ReactNode }) {
   return (
-    <div className="bubbles-rise flex flex-col items-center gap-3 rounded-[28px] border-2 border-dashed border-line-strong bg-surface px-5 py-8 text-center">
+    <div className="bubbles-rise flex flex-col items-center gap-3 rounded-[24px] border border-dashed border-line-strong bg-surface px-5 py-8 text-center">
       <BubblesMascot size={84} mood="resting" animated={false} />
       <p className="m-0 font-display text-h3 text-default">{title}</p>
       <p className="m-0 max-w-md text-body text-muted">{text}</p>
@@ -632,11 +631,10 @@ export function History({ title = "History", status, error, onRetry, entries, fr
     );
   } else if (status === "error") {
     body = (
-      <div role="alert" className="flex flex-col items-center gap-3 rounded-[28px] border-2 border-line bg-surface px-5 py-8 text-center">
-        <BubblesMascot size={72} mood="resting" animated={false} />
+      <div role="alert" className="flex flex-col items-center gap-3 rounded-[24px] border border-line bg-surface px-5 py-8 text-center">
         <p className="m-0 font-display text-h3 text-default">Couldn&apos;t load your entries</p>
         <p className="m-0 max-w-md text-body text-muted">{error}</p>
-        <button type="button" onClick={onRetry} className="bubbles-press min-h-[48px] rounded-full border-2 border-ink bg-surface px-6 text-body font-extrabold text-default">
+        <button type="button" onClick={onRetry} className="bubbles-press min-h-[48px] rounded-full border border-line-strong bg-surface px-6 text-body font-extrabold text-default">
           Try again
         </button>
       </div>
@@ -649,7 +647,7 @@ export function History({ title = "History", status, error, onRetry, entries, fr
         <h3 className="m-0 text-body-sm font-extrabold text-muted">{group.label}</h3>
         <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
           {group.items.map((entry) => (
-            <li key={entry.id} className={`rounded-[24px] border-2 bg-surface p-4 ${s.border} ${entry.id === freshId ? "bubbles-rise" : ""}`}>
+            <li key={entry.id} className={`rounded-[24px] border bg-surface p-4 ${s.border} ${entry.id === freshId ? "bubbles-rise" : ""}`}>
               {renderEntry(entry)}
             </li>
           ))}
@@ -721,10 +719,10 @@ export function SavedToast({ trigger, message }: { trigger: string | null; messa
   return (
     <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-28 z-[70] flex justify-center px-4 lg:bottom-8">
       {shown && (
-        <div key={shown} className="bubbles-pop-in flex max-w-full items-center gap-3 rounded-full border-2 border-line bg-surface py-2 pl-2 pr-5 shadow-lg">
-          <span className="relative flex shrink-0">
+        <div key={shown} className="bubbles-pop-in flex max-w-full items-center gap-3 rounded-full border border-line bg-surface py-2 pl-2 pr-5 shadow-lg">
+          <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tint-grape text-bubbles-grape-deep">
             <SoapPop />
-            <BubblesMascot size={40} mood="happy" />
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </span>
           <span className="text-body-sm font-extrabold text-default">{message}</span>
         </div>
@@ -751,7 +749,7 @@ export function WeekBars({ title, entries, field, unit, signal, minScale, decima
   }
   const max = Math.max(minScale, ...totals);
   return (
-    <section aria-labelledby={headingId} className={`rounded-[28px] border-2 bg-surface p-5 ${s.border}`}>
+    <section aria-labelledby={headingId} className={`rounded-[24px] border bg-surface p-5 ${s.border}`}>
       <h2 id={headingId} className="m-0 font-display text-h3 text-default">
         {title}
       </h2>
@@ -766,7 +764,7 @@ export function WeekBars({ title, entries, field, unit, signal, minScale, decima
                 {logged[i] ? (
                   <span className={`bubbles-bar block w-full max-w-[36px] rounded-[10px] ${i === 6 ? s.bar : s.barSoft}`} style={{ height: `${Math.max(6, (total / max) * 100)}%`, animationDelay: `${i * 50}ms` }} />
                 ) : (
-                  <span className="block h-2 w-full max-w-[36px] rounded-full border-2 border-dashed border-line-strong" />
+                  <span className="block h-2 w-full max-w-[36px] rounded-full border border-dashed border-line-strong" />
                 )}
               </div>
               <span className={`text-[0.75rem] font-bold ${i === 6 ? "text-default" : "text-muted"}`}>{name}</span>

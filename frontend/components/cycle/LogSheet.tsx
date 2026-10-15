@@ -36,7 +36,7 @@ export function LogSheet({ open, date, onDateChange, onClose }: { open: boolean;
       className="m-0 mt-auto max-h-[94dvh] w-full max-w-none overflow-y-auto overscroll-contain bg-transparent p-0 text-default backdrop:bg-ink/55 sm:m-auto sm:w-[calc(100%-2rem)] sm:max-w-[640px] print:hidden"
     >
       {open && (
-        <div className="bubbles-sheet-up flex flex-col gap-5 rounded-t-[36px] bg-surface px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3 sm:rounded-[32px] sm:px-7 sm:pb-7 sm:pt-6">
+        <div className="bubbles-sheet-up flex flex-col gap-5 rounded-t-[24px] bg-surface px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3 sm:rounded-[24px] sm:px-7 sm:pb-7 sm:pt-6">
           <span aria-hidden="true" className="mx-auto h-1.5 w-12 rounded-full bg-line sm:hidden" />
           <div className="flex items-center gap-3">
             <h2 id={titleId} ref={headingRef} tabIndex={-1} className="m-0 min-w-0 flex-1 font-display text-h2 text-default outline-none">
@@ -46,7 +46,7 @@ export function LogSheet({ open, date, onDateChange, onClose }: { open: boolean;
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-line bg-surface text-lg text-muted hover:text-default"
+              className="bubbles-press flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-lg text-muted hover:text-default"
             >
               <span aria-hidden="true">×</span>
             </button>

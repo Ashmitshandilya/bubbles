@@ -55,7 +55,7 @@ function LocalOnly() {
           aria-describedby="cycle-local-help"
           disabled={busy || !settings}
           onClick={toggle}
-          className={`relative inline-flex h-11 w-[84px] shrink-0 items-center rounded-full border-2 px-1.5 text-[0.75rem] font-extrabold disabled:opacity-60 ${on ? "justify-start border-bubbles-pink-ink bg-tint-pink text-bubbles-pink-deep" : "justify-end border-line-strong bg-surface text-ink-soft"}`}
+          className={`relative inline-flex h-11 w-[84px] shrink-0 items-center rounded-full border px-1.5 text-[0.75rem] font-extrabold disabled:opacity-60 ${on ? "justify-start border-bubbles-pink-ink bg-tint-pink text-bubbles-pink-deep" : "justify-end border-line-strong bg-surface text-ink-soft"}`}
         >
           {on ? "On" : "Off"}
         </button>
@@ -141,7 +141,7 @@ function DeleteData() {
       {step === 0 ? (
         <button type="button" onClick={() => { setStep(1); setDone(""); }} className={`${BTN_SECONDARY} mt-3 border-bubbles-urgent text-bubbles-urgent`}>Delete all my cycle data…</button>
       ) : (
-        <div className="mt-3 space-y-3 rounded-3xl border-2 border-bubbles-urgent bg-tint-urgent p-4 text-ink">
+        <div className="mt-3 space-y-3 rounded-3xl border border-bubbles-urgent bg-tint-urgent p-4 text-ink">
           <label htmlFor="cycle-delete" className="block text-body-sm font-extrabold">To confirm, type DELETE</label>
           <input id="cycle-delete" value={text} autoComplete="off" onChange={(e) => setText(e.target.value)} className={`${INPUT} max-w-[14rem]`} />
           <div className="flex flex-wrap gap-3">

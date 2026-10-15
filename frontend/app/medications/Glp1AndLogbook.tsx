@@ -165,7 +165,7 @@ function LogbookView({ days }: { days: string }) {
               Print or save as PDF
             </button>
           </div>
-          <article className="bubbles-logbook rounded-2xl border-2 border-line bg-surface p-4 text-ink" aria-label="Medication logbook">
+          <article className="bubbles-logbook rounded-2xl border border-line bg-surface p-4 text-ink" aria-label="Medication logbook">
             <h3 className="m-0 font-display text-h3">Medication logbook</h3>
             <p className="m-0 text-body-sm text-muted">
               Last {b.window_days} days · generated {shortDay(b.generated_on)} by Bubbles

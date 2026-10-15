@@ -9,10 +9,10 @@ import { OrbitControls } from "@react-three/drei";
 // rendered by the caller; this canvas is a visual extra.
 
 const STATUS_COLOR: Record<string, string> = {
-  unknown: "#E6DDF0",
-  no_major_risk_signal: "#22C39A",
-  watch: "#FFC83D",
-  needs_attention: "#FF9F6B",
+  unknown: "#E7E0EC",
+  no_major_risk_signal: "#D9CBB8",
+  watch: "#E9C98B",
+  needs_attention: "#FF8A7A",
 };
 
 // Organ positions inside a simple standing body (y up, ~2 units tall).
@@ -77,12 +77,12 @@ export default function Anatomy3D({
           </mesh>
           <mesh position={[0, 0.05, 0]}>
             <capsuleGeometry args={[0.42, 0.9, 12, 24]} />
-            <meshStandardMaterial color="#FFE3EF" transparent opacity={0.45} />
+            <meshStandardMaterial color="#FBEEF3" transparent opacity={0.45} />
           </mesh>
           {[-0.2, 0.2].map((x) => (
             <mesh key={x} position={[x, -0.95, 0]}>
               <capsuleGeometry args={[0.13, 0.7, 8, 16]} />
-              <meshStandardMaterial color="#FFE3EF" transparent opacity={0.45} />
+              <meshStandardMaterial color="#FBEEF3" transparent opacity={0.45} />
             </mesh>
           ))}
         </group>
@@ -104,7 +104,7 @@ export default function Anatomy3D({
               <sphereGeometry args={[0.1, 32, 32]} />
               <meshStandardMaterial
                 color={STATUS_COLOR[organStatus[organ] ?? "unknown"] ?? STATUS_COLOR.unknown}
-                emissive={isSelected ? "#6A45F5" : "#000000"}
+                emissive={isSelected ? "#6B46D6" : "#000000"}
                 emissiveIntensity={isSelected ? 0.35 : 0}
               />
             </mesh>

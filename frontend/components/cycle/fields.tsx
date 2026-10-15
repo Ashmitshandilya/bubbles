@@ -7,17 +7,17 @@ import { useId, useState, type ReactNode } from "react";
 import type { TagResult } from "../../app/lib/cycle-chips";
 
 const CHOICE =
-  "relative inline-flex min-h-[44px] min-w-[44px] cursor-pointer select-none items-center justify-center gap-1.5 rounded-full border-2 px-4 text-body-sm";
+  "relative inline-flex min-h-[44px] min-w-[44px] cursor-pointer select-none items-center justify-center gap-1.5 rounded-full border px-4 text-body-sm";
 const OFF = "border-line bg-surface font-bold text-ink-soft hover:border-line-strong";
 const ON = "border-bubbles-pink-ink bg-tint-pink font-extrabold text-bubbles-pink-deep";
 const FOCUS = "has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-bubbles-grape";
 
 export const INPUT =
-  "min-h-[48px] w-full rounded-2xl border-2 border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none";
+  "min-h-[48px] w-full rounded-2xl border border-line bg-surface px-4 text-body text-ink focus:border-bubbles-grape focus:outline-none";
 
 export function FieldSection({ legend, hint, children }: { legend: string; hint?: ReactNode; children: ReactNode }) {
   return (
-    <fieldset className="m-0 min-w-0 rounded-3xl border-2 border-line p-4 sm:p-5">
+    <fieldset className="m-0 min-w-0 rounded-3xl border border-line p-4 sm:p-5">
       <legend className="px-2 font-display text-h4 text-ink">{legend}</legend>
       {hint && <p className="mb-3 mt-0 text-body-sm text-muted">{hint}</p>}
       <div className="space-y-4">{children}</div>
@@ -138,7 +138,7 @@ export function TagInput({
           }}
           className={INPUT}
         />
-        <button type="button" onClick={commit} className="bubbles-press min-h-[48px] shrink-0 rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold text-ink">
+        <button type="button" onClick={commit} className="bubbles-press min-h-[48px] shrink-0 rounded-full border border-line-strong bg-surface px-5 text-body-sm font-extrabold text-ink">
           Add
         </button>
       </div>

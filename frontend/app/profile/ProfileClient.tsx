@@ -2,7 +2,6 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { BubblesMascot } from "../../components/BubblesMascot";
 import { useApi, useAuth } from "../../components/Providers";
 import {
   BTN_PRIMARY,
@@ -111,9 +110,6 @@ function Me() {
   return (
     <div className="space-y-8">
       <header className="bubbles-rise flex flex-wrap items-center gap-4">
-        <div className="bubbles-breathe flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-tint-pink">
-          <BubblesMascot size={60} mood="happy" animated={false} />
-        </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-h1 text-ink">{name ? `Hi, ${name}` : "Me"}</h1>
           <p className="mt-1 break-words text-body font-semibold text-muted">

@@ -91,8 +91,8 @@ export function Screens({ screen, onSaved }: { screen: MindOverview["screen"]; o
                       onChange={() => setAnswers((cur) => cur.map((a, i) => (i === qi ? o.value : a)))}
                       className="peer sr-only"
                     />
-                    <span className="bubbles-press flex min-h-[48px] cursor-pointer items-center gap-2 rounded-2xl border-2 border-line bg-surface px-4 py-2 text-body-sm font-extrabold text-ink-soft peer-checked:border-bubbles-sun-deep peer-checked:bg-tint-sun peer-checked:text-ink peer-focus-visible:ring-4 peer-focus-visible:ring-bubbles-grape/40">
-                      <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${answers[qi] === o.value ? "border-bubbles-sun-deep bg-bubbles-sun-deep" : "border-line-strong"}`}>
+                    <span className="bubbles-press flex min-h-[48px] cursor-pointer items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-2 text-body-sm font-extrabold text-ink-soft peer-checked:border-bubbles-sun-deep peer-checked:bg-tint-sun peer-checked:text-ink peer-focus-visible:ring-4 peer-focus-visible:ring-bubbles-grape/40">
+                      <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${answers[qi] === o.value ? "border-bubbles-sun-deep bg-bubbles-sun-deep" : "border-line-strong"}`}>
                         {answers[qi] === o.value && <span className="h-2 w-2 rounded-full bg-white" />}
                       </span>
                       {o.label}

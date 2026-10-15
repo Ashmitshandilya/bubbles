@@ -47,7 +47,7 @@ function Tabs({ tab, onTab }: { tab: TabId; onTab: (t: TabId, push?: boolean) =>
         return (
           <button key={t.id} ref={(el) => { refs.current[t.id] = el; }} type="button" role="tab" id={`tab-${t.id}`} aria-selected={active}
             aria-controls="admin-panel" tabIndex={active ? 0 : -1} onClick={() => onTab(t.id)}
-            className={`bubbles-press inline-flex min-h-[44px] shrink-0 items-center rounded-full border-2 px-4 text-body-sm font-extrabold transition-colors ${
+            className={`bubbles-press inline-flex min-h-[44px] shrink-0 items-center rounded-full border px-4 text-body-sm font-extrabold transition-colors ${
               active ? "border-bubbles-pink-ink bg-bubbles-pink-ink text-white" : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink"}`}>
             {t.label}
           </button>
@@ -63,7 +63,7 @@ function RangePicker({ range, onRange }: { range: RangeId; onRange: (r: RangeId)
       className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {RANGES.map((r) => (
         <button key={r.id} type="button" aria-pressed={r.id === range} onClick={() => onRange(r.id)}
-          className={`min-h-[44px] shrink-0 rounded-full border-2 px-3 text-body-sm font-extrabold ${
+          className={`min-h-[44px] shrink-0 rounded-full border px-3 text-body-sm font-extrabold ${
             r.id === range ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft hover:border-line-strong"}`}>
           {r.label}
         </button>

@@ -112,8 +112,8 @@ export function VeilToggle({ className = "" }: { className?: string }) {
       aria-pressed={covered}
       aria-label="Hide private details"
       onClick={toggleCover}
-      className={`bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border-2 px-4 text-sm font-extrabold ${
-        covered ? "border-bubbles-grape bg-bubbles-grape text-white" : "border-line-grape bg-surface text-bubbles-grape-deep"
+      className={`bubbles-press inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 text-sm font-extrabold ${
+        covered ? "border-bubbles-grape bg-bubbles-grape text-white" : "border-[#E7E0EC] bg-surface text-bubbles-grape-deep"
       } ${className}`}
     >
       <Eye off={covered} />
@@ -136,7 +136,7 @@ export function VeilSwitch({ labelledBy, describedBy }: { labelledBy: string; de
       className="bubbles-press inline-flex min-h-[44px] items-center gap-3 rounded-full px-1"
     >
       <span className="text-body-sm font-bold text-muted">{enabled ? "On" : "Off"}</span>
-      <span aria-hidden="true" className={`relative block h-7 w-12 rounded-full border-2 transition-colors ${enabled ? "border-bubbles-grape bg-bubbles-grape" : "border-ink-faint bg-surface"}`}>
+      <span aria-hidden="true" className={`relative block h-7 w-12 rounded-full border transition-colors ${enabled ? "border-bubbles-grape bg-bubbles-grape" : "border-ink-faint bg-surface"}`}>
         <span className={`absolute left-0 top-1 block h-4 w-4 rounded-full transition-transform motion-reduce:transition-none ${enabled ? "translate-x-6 bg-white" : "translate-x-1 bg-ink-faint"}`} />
       </span>
     </button>

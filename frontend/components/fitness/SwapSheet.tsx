@@ -62,7 +62,7 @@ export function SwapSheet({ open, onClose, day, meal, onSwapped }: {
       ) : (
         <ul className="m-0 flex list-none flex-col gap-3 p-0">
           {options.map((o) => (
-            <li key={o.template_id} className="rounded-3xl border-2 border-line p-4">
+            <li key={o.template_id} className="rounded-3xl border border-line p-4">
               <p className="m-0 font-display text-h4 text-ink">{o.name}</p>
               <p className="m-0 mt-1 text-body-sm text-muted">
                 <RangeBadge value={o.totals.kcal} low={o.totals.kcal_low} high={o.totals.kcal_high} /> · {Math.round(o.totals.protein_g)} g protein

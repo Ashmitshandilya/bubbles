@@ -55,7 +55,7 @@ const ROW = "flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 ga
 function Group({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-24">
-      <h2 id={`${id}-title`} className="mb-2 px-1 text-body-sm font-extrabold uppercase tracking-wide text-ink-soft">
+      <h2 id={`${id}-title`} className="mb-2 px-1 text-label text-ink-soft">
         {title}
       </h2>
       {children}
@@ -99,7 +99,7 @@ function Settings() {
           <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
             {GROUPS.map(([id, label]) => (
               <li key={id}>
-                <a href={`#${id}`} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border-2 border-line bg-surface px-4 text-body-sm font-extrabold text-ink no-underline hover:border-line-strong">
+                <a href={`#${id}`} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-ink no-underline hover:border-line-strong">
                   {label}
                 </a>
               </li>

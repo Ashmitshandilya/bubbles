@@ -17,8 +17,8 @@ const HASH_COMMANDS = [
   { os: "Linux", command: "sha256sum bubbles.apk" },
 ];
 
-const CARD = "rounded-[32px] border-2 border-line bg-surface p-6 shadow-md sm:p-8";
-const CODE = "block select-all wrap-anywhere rounded-[18px] bg-blush px-4 py-3 font-mono text-body-sm text-ink";
+const CARD = "rounded-[24px] border border-line bg-surface p-6 shadow-md sm:p-8";
+const CODE = "block select-all wrap-anywhere rounded-[20px] bg-blush px-4 py-3 font-mono text-body-sm text-ink";
 const LINK = "font-extrabold text-bubbles-pink-ink underline underline-offset-2";
 
 export default function AndroidPage() {
@@ -145,7 +145,7 @@ function Published() {
             Tap Install, then Open, and sign in with your Bubbles account.
           </Step>
         </ol>
-        <p className="m-0 rounded-[18px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
+        <p className="m-0 rounded-[20px] bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
           Google Play Protect may say it doesn&apos;t recognise the app or its developer, because Bubbles doesn&apos;t come from Google Play. To be sure
           your file is the real one before you continue, check it with Verify your download below.
         </p>

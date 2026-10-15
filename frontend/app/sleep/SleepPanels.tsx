@@ -89,7 +89,7 @@ export function RhythmPanel({ overview }: { overview: SleepOverview }) {
 
 function Stat({ label, value, note, gap }: { label: string; value: string | null; note?: string; gap?: string }) {
   return (
-    <div className={`flex min-w-0 flex-col gap-1 rounded-[20px] border-2 bg-surface p-3 ${value === null ? "border-dashed border-line-grape-strong" : "border-line-grape"}`}>
+    <div className={`flex min-w-0 flex-col gap-1 rounded-[20px] border bg-surface p-3 ${value === null ? "border-dashed border-[#C9B6F2]" : "border-[#E7E0EC]"}`}>
       <dt className="text-body-sm font-extrabold text-bubbles-grape-deep">{label}</dt>
       <dd className="m-0 break-words">
         {value === null ? <span className="font-display text-h4 text-muted">{gap ?? "Not logged yet"}</span> : <span className="font-display text-metric text-default">{value}</span>}

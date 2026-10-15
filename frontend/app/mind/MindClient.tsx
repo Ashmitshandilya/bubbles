@@ -63,7 +63,7 @@ function Mind() {
         <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
           {SECTIONS.map((s) => (
             <li key={s.id}>
-              <a href={`#${s.id}`} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border-2 border-line bg-surface px-4 text-body-sm font-extrabold text-ink-soft hover:border-line-strong hover:text-ink">
+              <a href={`#${s.id}`} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-ink-soft hover:border-line-strong hover:text-ink">
                 {s.label}
               </a>
             </li>

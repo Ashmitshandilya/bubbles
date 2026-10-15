@@ -98,7 +98,7 @@ function SharedWithYou({ data, reload }: { data: SharedWithMe; reload: () => voi
       <h2 id="with-you" className="m-0 font-display text-h3 text-ink">Shared with you</h2>
       {data.shares.length === 0 && <p className="m-0 text-body-sm text-muted">Nobody is sharing with you yet. If someone gave you a code, enter it below.</p>}
       {data.shares.map((share) => (
-        <article key={share.id} aria-label={`Shared by ${share.from_name}`} className="rounded-3xl border-2 border-line p-4">
+        <article key={share.id} aria-label={`Shared by ${share.from_name}`} className="rounded-3xl border border-line p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="m-0 font-display text-h4 text-ink">From {share.from_name}</p>
             <button type="button" className={BTN_SECONDARY} disabled={busy} onClick={() => void leave(share.id)}>Leave</button>
@@ -194,7 +194,7 @@ function YourSharing({ data, reload }: { data: PartnerSharingStatus; reload: () 
 
           {revealed && <Reveal reveal={revealed} onDone={() => setRevealed(null)} />}
 
-          <div className="space-y-3 rounded-3xl border-2 border-line p-4">
+          <div className="space-y-3 rounded-3xl border border-line p-4">
             <h3 className="m-0 text-body font-extrabold text-ink">Connect their Bubbles account (recommended)</h3>
             {data.connection ? (
               <>
@@ -213,7 +213,7 @@ function YourSharing({ data, reload }: { data: PartnerSharingStatus; reload: () 
             )}
           </div>
 
-          <div className="space-y-3 rounded-3xl border-2 border-line p-4">
+          <div className="space-y-3 rounded-3xl border border-line p-4">
             <h3 className="m-0 text-body font-extrabold text-ink">Or a quick link (no account needed)</h3>
             <p className="m-0 text-body-sm text-muted">Anyone who has the link can see your summary until it expires, so send it only to someone you trust.</p>
             {data.link.active && (
@@ -313,7 +313,7 @@ function Reveal({ reveal, onDone }: { reveal: { kind: "code" | "link"; value: st
     try { await navigator.clipboard.writeText(reveal.value); setCopied(true); } catch { setCopied(false); }
   }
   return (
-    <div role="status" className="space-y-3 rounded-3xl border-2 border-bubbles-mint bg-tint-mint p-4">
+    <div role="status" className="space-y-3 rounded-3xl border border-bubbles-mint bg-tint-mint p-4">
       <p className="m-0 text-body font-extrabold text-ink">{reveal.kind === "code" ? "Your invite code" : "Your link"}</p>
       <p className="m-0 text-body-sm font-semibold text-ink-soft">Copy it now. For your privacy we show it only this once.</p>
       <input readOnly aria-label={reveal.kind === "code" ? "Your invite code" : "Your partner link"} className={`${INPUT} ${reveal.kind === "code" ? "text-center font-display text-h3 tracking-widest" : ""}`} value={reveal.value} onFocus={(e) => e.currentTarget.select()} />

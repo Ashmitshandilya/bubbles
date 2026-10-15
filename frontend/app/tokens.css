@@ -4,43 +4,60 @@
    shadows, radius, motion. No magic numbers in components.
    ============================================================ */
 
-/* ── Bubbles palette: bright & cute (see the "Bubbles Bright Redesign" canvas) ──
-   Fills (pink/grape/sun/mint/sky/peach) are decorative; text-safe "ink"
-   variants are used for any text or icon on white. Never put white text on
-   --bubbles-pink, --bubbles-sun or --bubbles-mint. */
+/* ── Pearl Lab palette (D:/COCO/bubbles-stitch-kit/DESIGN.md) ──
+   The old family names (pink, grape, sun, mint, sky, peach) are kept so every class keeps working, but each now
+   holds a Pearl Lab value: one violet primary, plum text on pearl and porcelain, hairlines, and a few warm fills.
+   Never blue or cold, never green for "all clear". Fills are decorative; "-deep"/"-ink" are the text-safe inks
+   (contrast pairs are checked in app/lib/pearl-contrast.test.ts). White text only on violet, the deep inks and the
+   two signal colours. */
 :root {
   color-scheme: light;
 
-  --bubbles-pink: #FF5FA2;
-  --bubbles-pink-ink: #D6246F;      /* white text 4.9:1 */
-  --bubbles-pink-deep: #A8155A;
-  --bubbles-grape: #6A45F5;         /* white text 5.5:1 */
-  --bubbles-grape-deep: #4A2BC7;
-  --bubbles-sun: #FFC83D;
-  --bubbles-sun-deep: #7A5300;
-  --bubbles-mint: #22C39A;
-  --bubbles-mint-deep: #0D6B52;
-  --bubbles-sky: #1F7FD6;
-  --bubbles-sky-deep: #11589A;
-  --bubbles-peach: #FF9F6B;
+  /* Primary: iris violet. "pink-ink"/"pink-deep" were the brand inks, so they become the violet primary. */
+  --bubbles-pink: #E8336F;          /* period phase: fills and dots only, always with a text label */
+  --bubbles-pink-ink: #6B46D6;      /* primary; white text 6.0:1 */
+  --bubbles-pink-deep: #5835BF;     /* primary hover, ink on blush and lilac washes */
+  --bubbles-grape: #6B46D6;
+  --bubbles-grape-deep: #5835BF;
+  /* Warm gold (the horn). Fill only; text on it is plum. */
+  --bubbles-sun: #E9C98B;
+  --bubbles-sun-deep: #7A5208;
+  /* Sand: a warm neutral, used where the old palette said "mint". Green never means "all clear". */
+  --bubbles-mint: #D9CBB8;
+  --bubbles-mint-deep: #5C4A33;
+  /* Dusk mauve: replaces the old sky blue (water, care, notes). Warm-leaning lilac, never blue. */
+  --bubbles-sky: #B79FCB;
+  --bubbles-sky-deep: #5F4372;
+  /* Coral (follicular). */
+  --bubbles-peach: #FF8A7A;
   --bubbles-peach-deep: #9A3A12;
-  --bubbles-urgent: #C42B3B;
+  /* Signals: urgent and caution only. Never decorative. */
+  --bubbles-urgent: #B42318;
+  --bubbles-caution: #B45309;
+  --bubbles-lilac: #D5C4F5;         /* your own chat messages, selected fills; plum text 10.4:1 */
+  --bubbles-gold-line: #E9C98B;
 
-  --bubbles-ink: #2B1A3F;
-  --bubbles-ink-soft: #5E4E73;      /* 7.5:1 on white */
-  --bubbles-ink-faint: #7A6B8C;     /* 4.9:1 on white: smallest allowed text */
-  --bubbles-blush: #FFF6FA;
-  --bubbles-white: #FFFFFF;
-  --bubbles-line: #F6DCE9;
-  --bubbles-line-strong: #EBC3D7;
+  --bubbles-ink: #1E1B2E;           /* plum; 15.9:1 on pearl */
+  --bubbles-ink-soft: #5E5873;      /* 6.4:1 on pearl */
+  --bubbles-ink-faint: #6B6580;     /* 5.2:1 on pearl: smallest allowed text */
+  --bubbles-blush: #FBF8F6;         /* pearl: the page */
+  --bubbles-white: #FFFFFF;         /* porcelain: cards, inputs */
+  --bubbles-line: #E7E0EC;          /* hairline */
+  --bubbles-line-strong: #D6CCE0;
 
-  --tint-pink: #FFE3EF;
-  --tint-grape: #EEE8FF;
-  --tint-sun: #FFF1C2;
-  --tint-mint: #DDF7EE;
-  --tint-sky: #E0F1FF;
-  --tint-peach: #FFE9DF;
-  --tint-urgent: #FDE2E4;
+  --tint-pink: #FBEEF3;             /* blush wash */
+  --tint-grape: #F1ECFB;            /* lilac wash */
+  --tint-sun: #FAF1DF;
+  --tint-mint: #F4EFE8;
+  --tint-sky: #F3ECF5;
+  --tint-peach: #FDEDE8;
+  --tint-urgent: #FDECEA;
+
+  /* Cycle phases: fills, dots and ring segments only, always next to a text label. */
+  --phase-period: #E8336F;
+  --phase-follicular: #FF8A7A;
+  --phase-ovulation: #FFC37A;
+  --phase-luteal: #B49BFF;
 
   /* Area outlines: --line-* edges a card that belongs to an area; --line-*-strong is its dashed "not logged" edge
      and the colour of past days in a week chart. Pink uses the ordinary Petal Line. */
@@ -62,10 +79,10 @@
   --color-bg-elevated: var(--bubbles-white);
   --color-surface: var(--bubbles-white);
   --color-surface-strong: var(--tint-pink);
-  --color-surface-soft: #FFFBFD;
+  --color-surface-soft: #FDFBFA;
   --color-border: var(--bubbles-line-strong);
   --color-border-soft: var(--bubbles-line);
-  --color-border-strong: #D9A3BF;
+  --color-border-strong: #C9BCD8;
 
   /* ── Color: Brand ── */
   --color-brand: var(--bubbles-pink-ink);
@@ -85,7 +102,7 @@
   /* ── Color: Semantic (text-safe) ── */
   --color-success: var(--bubbles-mint-deep);
   --color-success-muted: var(--tint-mint);
-  --color-warning: var(--bubbles-sun-deep);
+  --color-warning: var(--bubbles-caution);
   --color-warning-muted: var(--tint-sun);
   --color-danger: var(--bubbles-urgent);
   --color-danger-muted: var(--tint-urgent);
@@ -100,8 +117,8 @@
   --color-text-on-brand: var(--bubbles-white);
 
   /* ── Color: Overlay ── */
-  --color-overlay: rgba(255, 246, 250, 0.92);
-  --color-overlay-strong: rgba(255, 246, 250, 0.97);
+  --color-overlay: rgba(251, 248, 246, 0.92);
+  --color-overlay-strong: rgba(251, 248, 246, 0.97);
 
   /* ── "Gradients": names kept for compatibility, now flat bright fills ── */
   --gradient-brand: var(--bubbles-pink-ink);
@@ -145,9 +162,9 @@
   --space-nav-group-gap: var(--space-5);
 
   /* ── Typography: Font Families ── */
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --font-display: var(--font-fredoka), var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
 
   /* ── Typography: Scale ── */
   --text-display: 3.5rem;
@@ -165,10 +182,10 @@
 
   /* ── Typography: Weights ── */
   --weight-normal: 400;
-  --weight-medium: 600;
-  --weight-semibold: 700;
-  --weight-bold: 800;
-  --weight-display: 600;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-display: 500;
 
   /* ── Typography: Line Heights ── */
   --leading-tight: 1.05;
@@ -187,10 +204,10 @@
   --radius-none: 0;
   --radius-sm: 8px;
   --radius-md: 14px;
-  --radius-lg: 18px;
+  --radius-lg: 20px;
   --radius-xl: 24px;
-  --radius-2xl: 28px;
-  --radius-3xl: 36px;
+  --radius-2xl: 24px;
+  --radius-3xl: 24px;
   --radius-full: 9999px;
   --radius-card: var(--radius-xl);
   --radius-button: var(--radius-full);
@@ -198,20 +215,19 @@
   --radius-badge: var(--radius-full);
   --radius-avatar: var(--radius-xl);
 
-  /* ── Shadows ── */
-  --shadow-xs: 0 1px 2px rgba(43,26,63,.06);
-  --shadow-sm: 0 4px 12px rgba(43,26,63,.06);
-  --shadow-md: 0 10px 24px rgba(43,26,63,.08);
-  --shadow-lg: 0 16px 40px rgba(43,26,63,.12);
-  --shadow-xl: 0 24px 56px rgba(43,26,63,.16);
+  /* ── Shadows: lilac-tinted, never grey ── */
+  --shadow-xs: 0 1px 2px rgba(107,70,214,.06);
+  --shadow-sm: 0 1px 2px rgba(107,70,214,.06), 0 8px 24px rgba(107,70,214,.08);
+  --shadow-md: 0 1px 2px rgba(107,70,214,.06), 0 12px 28px rgba(107,70,214,.1);
+  --shadow-lg: 0 16px 40px rgba(107,70,214,.14);
+  --shadow-xl: 0 24px 56px rgba(107,70,214,.16);
   --shadow-inner: inset 0 1px 0 rgba(255,255,255,.6);
-  --shadow-glow-brand: 0 10px 24px rgba(214,36,111,.18);
-  --shadow-glow-accent: 0 10px 24px rgba(106,69,245,.2);
-  --shadow-glow-success: 0 10px 24px rgba(34,195,154,.18);
-  /* Soft press (DESIGN.md "The Soft Press Rule"): an inner top highlight plus a blurred glow in the fill's own deep
-     colour. The glow itself lives in .bubbles-glow (globals.css), which reads --press-rgb on the element. */
-  --press-highlight: inset 0 1px 0 rgb(255 255 255 / 0.28);
-  --press-rgb: 168 21 90;
+  --shadow-glow-brand: 0 8px 20px rgba(107,70,214,.16);
+  --shadow-glow-accent: 0 8px 20px rgba(107,70,214,.16);
+  --shadow-glow-success: 0 8px 20px rgba(107,70,214,.12);
+  /* Soft press: an inner top highlight plus a soft lilac shadow under coloured fills (.bubbles-glow in globals.css). */
+  --press-highlight: inset 0 1px 0 rgb(255 255 255 / 0.2);
+  --press-rgb: 107 70 214;
 
   /* ── Motion ── */
   --duration-instant: 0ms;
@@ -219,7 +235,7 @@
   --duration-normal: 200ms;
   --duration-slow: 300ms;
   --duration-slower: 400ms;
-  --ease-standard: cubic-bezier(0.2, 0.75, 0.25, 1);
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -243,7 +259,7 @@
   /* ── Layout ── */
   --header-height: 64px;
   --header-height-mobile: 56px;
-  --sidebar-width: 220px;
+  --sidebar-width: 248px;
   --sidebar-width-collapsed: 64px;
   --content-max-width: 1180px;
   --content-gutter: var(--space-5);
@@ -286,7 +302,7 @@
 .text-body { font-size: var(--text-body); font-weight: var(--weight-normal); line-height: var(--leading-normal); }
 .text-body-sm { font-size: var(--text-body-sm); font-weight: var(--weight-normal); line-height: var(--leading-normal); }
 .text-caption { font-size: var(--text-caption); font-weight: var(--weight-medium); line-height: var(--leading-normal); }
-.text-label { font-size: var(--text-label); font-weight: var(--weight-semibold); line-height: var(--leading-normal); letter-spacing: var(--tracking-wider); text-transform: uppercase; }
+.text-label { font-family: var(--font-sans); font-size: var(--text-label); font-weight: var(--weight-semibold); line-height: var(--leading-normal); letter-spacing: var(--tracking-wider); text-transform: uppercase; }
 .text-metric { font-size: var(--text-metric); font-weight: var(--weight-bold); line-height: var(--leading-tight); letter-spacing: var(--tracking-tight); }
 .text-nav { font-size: var(--text-nav); font-weight: var(--weight-medium); line-height: var(--leading-normal); }/* Shadows */
 

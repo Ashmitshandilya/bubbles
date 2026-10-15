@@ -45,8 +45,8 @@ const STATUS: Record<OrganStatus, { label: string; pill: string; dot: string }> 
   needs_attention: { label: "Needs attention", pill: "bg-tint-peach text-bubbles-peach-deep", dot: "bg-bubbles-peach" },
   unknown: {
     label: "Not enough data",
-    pill: "border-2 border-dashed border-line-strong text-ink-soft",
-    dot: "border-2 border-dashed border-ink-faint",
+    pill: "border border-dashed border-line-strong text-ink-soft",
+    dot: "border border-dashed border-ink-faint",
   },
 };
 
@@ -187,7 +187,7 @@ export function OrganTracker() {
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() => setPicked(system.organ)}
-                      className={`bubbles-lift flex min-h-[64px] w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left ${
+                      className={`bubbles-lift flex min-h-[64px] w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left ${
                         isSelected ? "border-bubbles-grape bg-tint-grape" : "border-line bg-surface hover:border-line-strong"
                       }`}
                     >

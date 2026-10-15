@@ -141,7 +141,7 @@ export function TwoStepCard() {
       {phase === "on" && <p className="m-0 text-body-sm font-bold text-bubbles-mint-deep">On. Keep your authenticator app safe: if you lose it you will need help to get back in.</p>}
 
       {phase === "enrolling" && enrolment && (
-        <form onSubmit={confirm} className="space-y-3 rounded-[18px] bg-blush p-4">
+        <form onSubmit={confirm} className="space-y-3 rounded-[20px] bg-blush p-4">
           <p className="m-0 text-body-sm font-bold text-ink">
             1. Scan this picture with an authenticator app (Google Authenticator, Microsoft Authenticator, Authy or similar).
           </p>
@@ -160,7 +160,7 @@ export function TwoStepCard() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               maxLength={9}
-              className="min-h-[48px] w-full max-w-[14rem] rounded-[14px] border-2 border-line bg-surface px-4 text-body tracking-[0.3em] text-ink outline-none focus:border-bubbles-grape"
+              className="min-h-[48px] w-full max-w-[14rem] rounded-[14px] border border-line bg-surface px-4 text-body tracking-[0.3em] text-ink outline-none focus:border-bubbles-grape"
             />
           </label>
           <p className="m-0 text-body-sm text-muted">If you lose the app, you will not be able to sign in without help. Save the key above somewhere safe.</p>
@@ -203,7 +203,7 @@ export function KeepSignedInRow({ labelledBy, describedBy }: { labelledBy: strin
         setKeepSignedIn(!on);
         setOn(!on);
       }}
-      className={`bubbles-press relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border-2 transition-colors ${
+      className={`bubbles-press relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors ${
         on ? "border-bubbles-grape bg-bubbles-grape" : "border-line-strong bg-surface"
       }`}
     >

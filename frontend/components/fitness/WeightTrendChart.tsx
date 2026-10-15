@@ -67,7 +67,7 @@ export function WeightTrendChart({ weights, trend, units = "metric" }: {
         </button>
       </div>
       {table && (
-        <div id={tableId} className="max-h-72 overflow-auto rounded-2xl border-2 border-line">
+        <div id={tableId} className="max-h-72 overflow-auto rounded-2xl border border-line">
           <table className="w-full border-collapse text-left text-body-sm">
             <caption className="sr-only">Weigh-ins and smoothed trend</caption>
             <thead className="sticky top-0 bg-blush">

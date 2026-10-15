@@ -46,7 +46,7 @@ export function ReportTab() {
       <Card as="div" className="flex flex-wrap items-end gap-4">
         <div>
           <label htmlFor="cycle-report-months" className="block text-body-sm font-extrabold text-ink">Time covered</label>
-          <select id="cycle-report-months" value={months} onChange={(e) => setMonths(Number(e.target.value))} className="mt-2 min-h-[48px] rounded-2xl border-2 border-line bg-surface px-4 text-body text-ink">
+          <select id="cycle-report-months" value={months} onChange={(e) => setMonths(Number(e.target.value))} className="mt-2 min-h-[48px] rounded-2xl border border-line bg-surface px-4 text-body text-ink">
             {[3, 6, 12].map((m) => <option key={m} value={m}>Last {m} months</option>)}
           </select>
         </div>
@@ -88,7 +88,7 @@ function Report({ r }: { r: ReportResponse }) {
   ];
 
   return (
-    <article className="cycle-print rounded-3xl border-2 border-line bg-surface p-5 text-ink sm:p-8" aria-labelledby="cycle-report-title">
+    <article className="cycle-print rounded-3xl border border-line bg-surface p-5 text-ink sm:p-8" aria-labelledby="cycle-report-title">
       <header>
         <h2 id="cycle-report-title" className="m-0 font-display text-h2">Cycle summary for my clinician</h2>
         <p className="m-0 mt-1 text-body-sm text-muted">
@@ -152,7 +152,7 @@ function Report({ r }: { r: ReportResponse }) {
         <Section title="Things worth mentioning">
           <ul className="m-0 list-none space-y-2 p-0">
             {r.flags.map((f) => (
-              <li key={f.id} className="rounded-2xl border-2 border-line p-3 text-body-sm">
+              <li key={f.id} className="rounded-2xl border border-line p-3 text-body-sm">
                 <strong>{SEVERITY_WORDS[f.severity]}: {f.title}.</strong> {f.message} {f.detail ?? ""}
               </li>
             ))}

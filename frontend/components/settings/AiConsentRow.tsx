@@ -62,7 +62,7 @@ export function AiConsentRow() {
         aria-describedby={hintId}
         disabled={busy || state === "loading" || state === "error"}
         onClick={() => void change(!on)}
-        className={`bubbles-press relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+        className={`bubbles-press relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
           on ? "border-bubbles-grape bg-bubbles-grape" : "border-line-strong bg-surface"
         }`}
       >

@@ -49,7 +49,7 @@ export default function PasswordPage() {
   }
 
   const inputClass =
-    "min-h-[52px] w-full rounded-[18px] border-2 border-line bg-surface px-4 text-body text-ink outline-none transition-colors focus:border-bubbles-grape";
+    "min-h-[52px] w-full rounded-[20px] border border-line bg-surface px-4 text-body text-ink outline-none transition-colors focus:border-bubbles-grape";
   const buttonClass =
     "bubbles-press mt-2 inline-flex min-h-[56px] items-center justify-center rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white bubbles-glow disabled:cursor-wait disabled:opacity-70";
 
@@ -68,7 +68,7 @@ export default function PasswordPage() {
           </p>
         </div>
 
-        <div className="rounded-[32px] border-2 border-line bg-surface p-6 shadow-md sm:p-8">
+        <div className="rounded-[24px] border border-line bg-surface p-6 shadow-md sm:p-8">
           {!ready ? (
             <p role="status" className="m-0 text-center text-ink-soft">Loading…</p>
           ) : saved ? (
@@ -95,7 +95,7 @@ export default function PasswordPage() {
           {message && (
             <p
               role={message.kind === "error" ? "alert" : "status"}
-              className={`mt-4 rounded-[18px] px-4 py-3 text-body-sm font-bold ${
+              className={`mt-4 rounded-[20px] px-4 py-3 text-body-sm font-bold ${
                 message.kind === "error" ? "bg-tint-urgent text-bubbles-urgent" : "bg-tint-mint text-bubbles-mint-deep"
               }`}
             >

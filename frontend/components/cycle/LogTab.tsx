@@ -62,7 +62,7 @@ function Recent({ selected, onPick }: { selected: string; onPick: (iso: string) 
                 type="button"
                 onClick={() => onPick(d.date)}
                 aria-current={d.date === selected ? "true" : undefined}
-                className={`bubbles-press flex min-h-[44px] w-full flex-col rounded-2xl border-2 px-4 py-2 text-left ${d.date === selected ? "border-bubbles-grape bg-tint-grape" : "border-line bg-surface"}`}
+                className={`bubbles-press flex min-h-[44px] w-full flex-col rounded-2xl border px-4 py-2 text-left ${d.date === selected ? "border-bubbles-grape bg-tint-grape" : "border-line bg-surface"}`}
               >
                 <span className="text-body-sm font-extrabold text-ink">{fmtDay(d.date, { weekday: "short", day: "numeric", month: "short" })}</span>
                 <span className="text-body-sm text-muted">{describe(d)}</span>

@@ -28,7 +28,7 @@ const STATUS_PILL: Record<OrganSystem["status"], string> = {
   no_major_risk_signal: "bg-tint-mint text-bubbles-mint-deep",
   watch: "bg-tint-sun text-bubbles-sun-deep",
   needs_attention: "bg-tint-urgent text-bubbles-urgent",
-  unknown: "border-2 border-dashed border-line-strong text-ink-soft",
+  unknown: "border border-dashed border-line-strong text-ink-soft",
 };
 
 const STATUS_TEXT: Record<OrganSystem["status"], string> = {
@@ -56,7 +56,7 @@ export function OrganPanel({
   const completeness = Math.round((selectedRow?.data_completeness ?? 0) * 100);
 
   return (
-    <section className="flex flex-col gap-5 rounded-[24px] border-2 border-line bg-surface p-5 sm:p-6" aria-labelledby="organ-panel-title">
+    <section className="flex flex-col gap-5 rounded-[24px] border border-line bg-surface p-5 sm:p-6" aria-labelledby="organ-panel-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 id="organ-panel-title" className="m-0 font-display text-[1.375rem] font-semibold">Your body map</h2>
@@ -67,7 +67,7 @@ export function OrganPanel({
         </span>
       </div>
       <div className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
-        <div className="relative min-h-[420px] overflow-hidden rounded-[20px] border-2 border-line bg-blush sm:min-h-[560px]">
+        <div className="relative min-h-[420px] overflow-hidden rounded-[20px] border border-line bg-blush sm:min-h-[560px]">
           <Anatomy3D
             onSelect={onSelect}
             organStatus={Object.fromEntries(systems.map((sys) => [sys.organ, sys.status ?? "unknown"]))}

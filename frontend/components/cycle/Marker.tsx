@@ -4,9 +4,9 @@
 
 import type { MarkerKind } from "../../app/lib/cycle-markers";
 
-const PINK = "var(--bubbles-pink-ink)";
-const MINT = "var(--bubbles-mint-deep)";
-const SUN = "var(--bubbles-sun-deep)";
+const PINK = "var(--phase-period)";
+const MINT = "var(--bubbles-sun-deep)";
+const SUN = "#A8700F"; // gold, 4.2:1 on porcelain
 const INK = "var(--bubbles-ink-soft)";
 
 const STAR = "M6 1.2l1.4 3 3.2.4-2.4 2.2.7 3.2L6 8.4 3.1 10l.7-3.2L1.4 4.6l3.2-.4z";

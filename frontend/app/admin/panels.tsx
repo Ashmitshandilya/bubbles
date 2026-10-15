@@ -477,7 +477,7 @@ function Select({ label, value, onChange, options }: { label: string; value: str
   return (
     <label className="flex flex-col gap-1 text-body-sm font-bold text-ink-soft">
       {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="min-h-[44px] rounded-2xl border-2 border-line bg-surface px-3 text-ink">
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="min-h-[44px] rounded-2xl border border-line bg-surface px-3 text-ink">
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
     </label>
@@ -544,7 +544,7 @@ export function LogsPanel({ range }: { range: RangeId }) {
         <label className="flex flex-col gap-1 text-body-sm font-bold text-ink-soft">
           Request id
           <input value={requestId} onChange={(e) => setRequestId(e.target.value.toLowerCase())} inputMode="text" maxLength={12} placeholder="8 characters"
-            className="min-h-[44px] rounded-2xl border-2 border-line bg-surface px-3 font-mono text-ink" />
+            className="min-h-[44px] rounded-2xl border border-line bg-surface px-3 font-mono text-ink" />
         </label>
       </form>
       {state === "loading" && <p className="m-0 text-body-sm text-muted">Loading…</p>}
@@ -573,7 +573,7 @@ export function RequestDialog({ id, onClose }: { id: string; onClose: () => void
   const start = rows.length ? new Date(rows[0].at).getTime() : 0;
   return (
     <dialog ref={ref} aria-labelledby="request-title" onClose={onClose} onClick={(e) => { if (e.target === e.currentTarget) ref.current?.close(); }}
-      className="m-auto w-[min(40rem,calc(100vw-2rem))] rounded-[28px] bg-surface p-0 text-ink backdrop:bg-ink/55">
+      className="m-auto w-[min(40rem,calc(100vw-2rem))] rounded-[24px] bg-surface p-0 text-ink backdrop:bg-ink/55">
       <div className="p-6">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 id="request-title" className="m-0 font-display text-h3">Request <span className="font-mono">{shortId(id)}</span></h2>
@@ -632,13 +632,13 @@ function SettingRow({ s, onSave }: { s: Setting; onSave: (key: string, value: bo
         {s.type === "bool" ? (
           <button type="button" role="switch" aria-labelledby={`label-${s.key}`} aria-checked={provider ? s.value !== true : s.value === true} disabled={busy}
             onClick={() => (provider && s.value !== true ? setAsking(true) : void save(!(s.value as boolean)))}
-            className={`min-h-[44px] rounded-full border-2 px-4 text-body-sm font-extrabold ${(provider ? s.value !== true : s.value === true) ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft"}`}>
+            className={`min-h-[44px] rounded-full border px-4 text-body-sm font-extrabold ${(provider ? s.value !== true : s.value === true) ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft"}`}>
             {provider ? (s.value ? "Paused" : "Running") : s.value ? "On" : "Off"}
           </button>
         ) : (
           <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); void save(Number(draft)); }}>
             <input type="number" min={s.min} max={s.max} value={draft} onChange={(e) => setDraft(e.target.value)} aria-label={s.label}
-              className="min-h-[44px] w-24 rounded-2xl border-2 border-line bg-surface px-3" />
+              className="min-h-[44px] w-24 rounded-2xl border border-line bg-surface px-3" />
             <button type="submit" className={BTN_SECONDARY} disabled={busy}>Save</button>
           </form>
         )}
