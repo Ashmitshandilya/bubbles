@@ -6,7 +6,7 @@ import Link from "next/link";
 import { CARD, ErrorCard, HubPage, Skeleton, useBubblesQuery } from "../../components/hub/HubKit";
 import { BodyFallback2D } from "../../components/anatomy/BodyFallback2D";
 import { OrganList } from "../../components/anatomy/OrganList";
-import { OrganPanel } from "../../components/anatomy/OrganPanel";
+import { OrganPanel, SafetyNotice } from "../../components/anatomy/OrganPanel";
 import { STATUS_META, countByStatus, defaultOrganId, prefer3D, readDeviceHints, readOrganMap, readUnavailable, type DeviceHints } from "../lib/organ-map";
 
 // three.js and the model only download when the device is going to show them.
@@ -28,6 +28,7 @@ class ViewerBoundary extends Component<{ children: ReactNode; onError: () => voi
   }
 }
 
+const LINK = "underline underline-offset-2 hover:text-ink";
 const SOURCE_NAME: Record<string, string> = { labs: "lab results", conditions: "conditions", cycle: "cycle data" };
 const STAGE = "relative h-[440px] overflow-hidden rounded-3xl border-2 border-line sm:h-[540px]";
 // Pearl studio backdrop from the palette: white light falling onto blush.
@@ -64,6 +65,7 @@ function BodyMap() {
   const show3D = mode === "3d" && !failed;
   const view = { organs, selected: selectedId, hovered, onSelect: setPicked, onHover: setHovered };
   const caption = organs.find((o) => o.id === (hovered ?? selectedId));
+  const urgent = selected?.status === "talk_to_doctor" ? selected : null;
 
   return (
     <div className="space-y-8">
@@ -93,6 +95,10 @@ function BodyMap() {
 
       {query.status === "ready" && organs.length > 0 && (
         <>
+          {/* On a phone the panel sits under a tall body, so its safety message is repeated up here (the panel's copy is
+              hidden below lg, so it is read once). */}
+          {urgent && <SafetyNotice organ={urgent} titled className="lg:hidden" />}
+
           {unavailable.length > 0 && (
             <p role="status" className="rounded-2xl bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
               Bubbles couldn&apos;t read your {unavailable.map((u) => SOURCE_NAME[u] ?? u.replaceAll("_", " ")).join(" and ")} just now, so this map may be missing
@@ -163,27 +169,30 @@ function BodyMap() {
                   The 3D body couldn&apos;t load on this device, so here is the flat view. Everything else works the same.
                 </p>
               )}
-              <p className="mt-3 text-caption text-muted">
-                {show3D ? "Drag to turn, pinch or scroll to zoom, tap a part to open it. " : "Tap a part to open it. "}
-                3D anatomy from{" "}
-                <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">
-                  BodyParts3D
-                </a>{" "}
-                (&copy; The Database Center for Life Science, CC BY-SA 2.1 JP) and{" "}
-                <a href="https://github.com/Z-Anatomy/Models-of-human-anatomy" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">
-                  Z-Anatomy
-                </a>{" "}
-                (Gauthier Kervyn and contributors). Uterus and ovaries are illustrative. Model licence{" "}
-                <a
-                  href="https://creativecommons.org/licenses/by-sa/4.0/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline underline-offset-2 hover:text-ink"
-                >
-                  CC BY-SA 4.0
-                </a>
-                .
-              </p>
+              {show3D ? (
+                <p className="mt-3 text-caption text-muted">
+                  Drag to turn, pinch or scroll to zoom, tap a part to open it. 3D anatomy adapted from{" "}
+                  <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noopener noreferrer" className={LINK}>
+                    BodyParts3D
+                  </a>{" "}
+                  (&copy; The Database Center for Life Science,{" "}
+                  <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en" target="_blank" rel="noopener noreferrer" className={LINK}>
+                    CC BY-SA 2.1 JP
+                  </a>
+                  ) and{" "}
+                  <a href="https://github.com/Z-Anatomy/Models-of-human-anatomy" target="_blank" rel="noopener noreferrer" className={LINK}>
+                    Z-Anatomy
+                  </a>{" "}
+                  (Gauthier Kervyn and contributors), changed for Bubbles.
+                  {organs.some((o) => o.id === "uterus_ovaries") && " Uterus and ovaries are illustrative."} Model licence{" "}
+                  <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className={LINK}>
+                    CC BY-SA 4.0
+                  </a>
+                  .
+                </p>
+              ) : (
+                <p className="mt-3 text-caption text-muted">Tap a part to open it.</p>
+              )}
             </section>
 
             <div className="space-y-6">

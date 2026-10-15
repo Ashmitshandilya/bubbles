@@ -101,8 +101,15 @@ def test_unknown_organ_is_404(env):
 def test_empty_account_is_all_gaps(env):
     client, _db = env
     body = client.get("/organs/map", headers=HA).json()
-    assert body["not_a_diagnosis"] is True and body["counts"]["no_data"] == len(E.ORGANS) and body["unavailable"] == []
-    assert [o["organ_id"] for o in body["organs"]] == list(E.ORGANS)
+    shown = [o for o in E.ORGANS if o not in E.OPT_IN_ORGANS]
+    assert body["not_a_diagnosis"] is True and body["counts"]["no_data"] == len(shown) and body["unavailable"] == []
+    assert [o["organ_id"] for o in body["organs"]] == shown
+
+
+def test_hidden_opt_in_organ_detail_is_404_not_500(env):
+    client, _db = env
+    r = client.get("/organs/uterus_ovaries", headers=HA)
+    assert r.status_code == 404 and "Cycle" in r.json()["detail"]
 
 
 def test_owner_only(env):

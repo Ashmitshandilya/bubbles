@@ -51,7 +51,7 @@ const mirror = (d: string) => {
 };
 
 const KIDNEY = "M80 142C86 140 90 146 89 152C88 156 86 157 86 160C87 163 86 166 82 166C77 165 75 158 75 152C75 146 76 143 80 142Z";
-const OVARY = "M84 195C88 192 93 194 93 198C93 202 88 203 85 202C82 201 81 197 84 195Z";
+const OVARY = "M85 196C88 194 91 195 91 198C91 201 88 202 86 201C84 200 83 198 85 196Z";
 const RIBS = [0, 1, 2, 3, 4, 5].map((i) => {
   const y = 80 + i * 10;
   return `M98 ${y}C86 ${y - 5} 72 ${y} 70 ${y + 11 + i}`;
@@ -65,9 +65,12 @@ interface Shape {
   optional?: boolean;
 }
 
-// Paint order = stacking order: kidneys sit behind the gut, the heart in front of the lungs, the bladder in front.
+// Paint order = stacking order: kidneys, uterus and ovaries sit behind the gut, the heart in front of the lungs, the
+// bladder in front. The chosen organ is lifted to the top (see below), so a part behind the gut still shows once picked.
 const SHAPES: ReadonlyArray<readonly [string, Shape]> = [
   ["kidneys", { paths: [KIDNEY, mirror(KIDNEY)] }],
+  ["uterus", { paths: ["M94 194C94 190 106 190 106 194C106 201 103 205 101 209L99 209C97 205 94 201 94 194Z"], optional: true }],
+  ["ovaries", { paths: [OVARY, mirror(OVARY)], optional: true }],
   [
     "lungs",
     {
@@ -92,8 +95,6 @@ const SHAPES: ReadonlyArray<readonly [string, Shape]> = [
       detail: "M80 174C88 168 96 180 104 172C112 166 120 178 118 186M80 190C88 184 96 196 104 188C112 182 120 194 116 202",
     },
   ],
-  ["uterus", { paths: ["M94 194C94 190 106 190 106 194C106 201 103 205 101 209L99 209C97 205 94 201 94 194Z"], optional: true }],
-  ["ovaries", { paths: [OVARY, mirror(OVARY)], optional: true }],
   ["bladder", { paths: ["M92 214C92 209 108 209 108 214C108 219 104 222 100 222C96 222 92 219 92 214Z"] }],
   [
     "brain",
@@ -165,6 +166,8 @@ export function BodyFallback2D({ organs, selected, hovered, onSelect, onHover }:
     };
   };
 
+  // Only a selection reorders (a hover must not move the element under the pointer).
+  const shapes = [...SHAPES.filter(([part]) => !isSelected(part)), ...SHAPES.filter(([part]) => isSelected(part))];
   const skin = owners.get("skin");
   const skeleton = owners.get("skeleton");
   const skeletonStyle = organStyle(skeleton, "skeleton", isSelected("skeleton"), isHovered("skeleton"));
@@ -221,7 +224,7 @@ export function BodyFallback2D({ organs, selected, hovered, onSelect, onHover }:
           ))}
         </g>
 
-        {SHAPES.map(([part, shape]) => {
+        {shapes.map(([part, shape]) => {
           const organ = owners.get(part);
           if (shape.optional && !organ) return null;
           return (

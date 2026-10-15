@@ -223,9 +223,37 @@ describe("formatEvidenceDate", () => {
     expect(formatEvidenceDate("2026-10-12", now)).toBe("12 Oct");
     expect(formatEvidenceDate("2026-10-02T00:00:00+00:00", now)).toBe("2 Oct");
     expect(formatEvidenceDate("2025-03-01", now)).toBe("1 Mar 2025");
+    expect(formatEvidenceDate("2026-09-14", now)).toBe("14 Sep"); // the server's spelling, not en-GB "Sept"
   });
   it("returns null for nothing usable", () => {
     expect(formatEvidenceDate(null, now)).toBeNull();
     expect(formatEvidenceDate("not a date", now)).toBeNull();
+  });
+});
+
+describe("body.glb guard", () => {
+  // The model ships as a static file and is fetched by every 3D visit; these catch a rebuild that breaks the page.
+  const glb = readFileSync(new URL("../../public/models/body.glb", import.meta.url));
+  const json = (() => {
+    expect(glb.toString("ascii", 0, 4)).toBe("glTF");
+    const length = glb.readUInt32LE(12);
+    expect(glb.toString("ascii", 16, 20)).toBe("JSON");
+    return JSON.parse(glb.toString("utf8", 20, 20 + length)) as {
+      nodes?: { name?: string; mesh?: number }[];
+      extensionsRequired?: string[];
+    };
+  })();
+
+  it("stays under 6 MB", () => {
+    expect(glb.length).toBeLessThan(6_000_000);
+  });
+
+  it("has exactly one named mesh for every drawn part", () => {
+    const meshes = (json.nodes ?? []).filter((n) => n.mesh !== undefined).map((n) => n.name);
+    expect([...meshes].sort()).toEqual(Object.values(ORGAN_PARTS).flat().sort());
+  });
+
+  it("needs no decoder: only KHR_mesh_quantization (meshopt and Draco break under the site's CSP)", () => {
+    expect(json.extensionsRequired ?? []).toEqual(["KHR_mesh_quantization"]);
   });
 });

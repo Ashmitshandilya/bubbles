@@ -272,14 +272,14 @@ export function readDeviceHints(): DeviceHints {
   };
 }
 
+// The server writes "14 Sep" in its sentences; en-GB would say "14 Sept" here, so the months are spelled out once.
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 /** "12 Oct" (or "12 Oct 2025" for another year). Unreadable dates come back as null rather than "Invalid Date". */
 export function formatEvidenceDate(iso: string | null, now: Date = new Date()): string | null {
   if (!iso) return null;
   const d = parseWhen(iso); // calendar days stay on their day in every time zone
   if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    ...(d.getFullYear() !== now.getFullYear() ? { year: "numeric" } : {}),
-  });
+  const day = `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  return d.getFullYear() !== now.getFullYear() ? `${day} ${d.getFullYear()}` : day;
 }

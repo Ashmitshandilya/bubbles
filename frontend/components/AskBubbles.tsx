@@ -191,8 +191,8 @@ export function AskBubbles() {
 
   return (
     <>
-      {/* The Today dashboard has its own inline Ask Bubbles box, so the floating button would only cover content there. */}
-      {pathname !== "/dashboard" && (
+      {/* Today and the body map have their own Ask Bubbles buttons, so the floating one would only cover content there. */}
+      {pathname !== "/dashboard" && pathname !== "/body" && (
         <button
           ref={triggerRef}
           type="button"

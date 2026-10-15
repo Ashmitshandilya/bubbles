@@ -50,6 +50,14 @@ ORGANS: dict[str, str] = {
 CHAT_NAMES = {"stomach_intestines": "stomach and intestines", "liver_pancreas": "liver and pancreas",
               "kidneys_bladder": "kidneys and bladder", "uterus_ovaries": "uterus and ovaries", "skeleton_muscles": "bones and muscles"}
 
+# Shown only to people who use Cycle or have logged something for the area (not everyone has these organs).
+OPT_IN_ORGANS = frozenset({"uterus_ovaries"})
+
+
+def _uses_cycle(cycle: dict | None) -> bool:
+    return bool(cycle and (cycle.get("phase") or cycle.get("flags")))
+
+
 NOT_A_DIAGNOSIS = ("This map only reflects what you have logged. It is not a diagnosis, and an area with no entries "
                    "is a gap, not a sign that all is well.")
 
@@ -332,7 +340,9 @@ class _Organ:
 
 def _confidence(org: _Organ) -> dict:
     n = len(org.evidence)
-    window = f"the last {org.window} days"
+    start = (org.today - timedelta(days=org.window - 1)).isoformat()
+    # Labs and conditions count from any date, so only an all-recent set can be described as "the last N days".
+    window = f"the last {org.window} days" if all(e["date"] >= start for e in org.evidence) else "your records"
     if n == 0:
         return {"level": "low", "reason": f"Nothing logged in {window} touches this area."}
     span = f"{_plural(n, 'entry', 'entries')} from {_plural(len(org.kinds), 'kind')} of data"
@@ -680,10 +690,9 @@ def _uterus(org: _Organ, obs: list[dict], cycle: dict | None) -> None:
     org.add("symptoms", map(_item, symptoms))
     org.add("conditions", map(_item, pcos))
     cycle = cycle or {}
-    if cycle.get("phase"):
+    if cycle.get("phase"):  # a prediction from past period starts, not an entry: a note, never evidence or "last entry"
         day = f", day {cycle['cycle_day']}" if cycle.get("cycle_day") else ""
-        org.add("cycle", [{"id": None, "date": org.today.isoformat(), "label": "Cycle phase", "value": f"{cycle['phase']}{day}",
-                           "unit": None, "source": "cycle tracker"}])
+        org.notes.append(f"Cycle predicts you are in the {cycle['phase']} phase{day}. That is an estimate from the period starts you marked, not an entry.")
     org.need(bool(cycle_obs or cycle.get("phase")), "Period start dates")
     org.need(bool(symptoms), "Cramps, pain or flow on period days")
     _red_flags(org, symptoms)
@@ -706,7 +715,8 @@ def _uterus(org: _Organ, obs: list[dict], cycle: dict | None) -> None:
         "talk_to_doctor": "Please contact a doctor today; the details above will help them.",
         "worth_watching": "Keep logging period days and pain; two or three cycles of notes make a doctor's visit much more useful.",
         "steady": "Keep marking period starts; predictions get sharper with each cycle.",
-        "no_data": "Mark the first day of your last period in Cycle to start this area.",
+        "no_data": ("Log period days, flow or pain in Cycle to fill this area in." if cycle.get("phase")
+                    else "Mark the first day of your last period in Cycle to start this area."),
     }[org.status]
 
 
@@ -809,6 +819,7 @@ def build_organ_map(events: Iterable[dict] = (), *, labs: Iterable[dict] = (), c
     window_days = max(lo, min(hi, int(window_days)))
     obs = observations(events, labs, conditions, today=today, window_days=window_days)
     organs = [assess_organ(o, obs, today=today, window_days=window_days, cycle=cycle) for o in ORGANS]
+    organs = [o for o in organs if o["organ_id"] not in OPT_IN_ORGANS or o["status"] != "no_data" or _uses_cycle(cycle)]
     return {
         "window_days": window_days,
         "as_of": today.isoformat(),

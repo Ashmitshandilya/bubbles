@@ -1,12 +1,10 @@
 // Prints node names, triangle counts, bounds and file size of frontend/public/models/body.glb.
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { MeshoptDecoder } from 'meshoptimizer';
 import { statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const file = process.argv[2] ?? fileURLToPath(new URL('../../frontend/public/models/body.glb', import.meta.url));
-await MeshoptDecoder.ready;
-const doc = await new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder }).read(file);
+const doc = await new NodeIO().registerExtensions(ALL_EXTENSIONS).read(file);
 let total = 0;
 for (const node of doc.getRoot().listNodes()) {
   const mesh = node.getMesh();

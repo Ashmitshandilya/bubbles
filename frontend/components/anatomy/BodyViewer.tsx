@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { Bvh, Environment, Lightformer, OrbitControls, useGLTF } from "@react-three/drei";
 import { Box3, Color, FrontSide, MeshPhysicalMaterial, NeutralToneMapping, Vector3, type Mesh, type Object3D } from "three";
@@ -75,6 +75,7 @@ function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyPro
   // One soft material per mesh. Organs are opaque satin; the skeleton is translucent ivory; the skin a faint pearl shell.
   const materials = useMemo(() => {
     const white = token("--bubbles-white");
+    const phone = window.matchMedia("(pointer: coarse)").matches;
     const made = new Map<string, MeshPhysicalMaterial>();
     scene.traverse((object: Object3D) => {
       const mesh = object as Mesh;
@@ -85,6 +86,10 @@ function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyPro
         material = new MeshPhysicalMaterial({ color: white, roughness: 0.4, transparent: true, opacity: SHELL_OPACITY.skin, depthWrite: false, side: FrontSide });
       } else if (id === "skeleton") {
         material = new MeshPhysicalMaterial({ color: token("--tint-sun").lerp(white, 0.35), roughness: 0.55, transparent: true, opacity: SHELL_OPACITY.skeleton, depthWrite: false });
+      } else if (phone) {
+        // ponytail: clearcoat and sheen are two extra lighting passes per pixel over ~400k triangles; phones get plain satin.
+        // Unmeasured on a real mid-range Android: profile one there before bringing them back.
+        material = new MeshPhysicalMaterial({ roughness: 0.5 });
       } else {
         material = new MeshPhysicalMaterial({ roughness: 0.48, clearcoat: 0.45, clearcoatRoughness: 0.45, sheen: 0.6, sheenColor: white, sheenRoughness: 0.6 });
       }
@@ -116,6 +121,10 @@ function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyPro
     if (opening.current === undefined) opening.current = selected;
     else if (selected !== opening.current) moved.current = true;
     const focus = moved.current && selected !== null && partsOf(selected).some((part) => !SHELLS.has(part) && materials.has(part));
+    // A part with no organ in the map (uterus and ovaries for someone who doesn't use Cycle) is not drawn at all.
+    scene.traverse((object: Object3D) => {
+      if ((object as Mesh).isMesh) object.visible = owners.has(object.name);
+    });
     for (const [id, material] of materials) {
       const organ = owners.get(id);
       const status = organ?.status ?? "no_data";
@@ -142,7 +151,7 @@ function Body({ organs, selected, hovered, onSelect, onHover, onReady }: BodyPro
       material.emissiveIntensity = status === "no_data" ? 0 : active ? 0.7 : near ? 0.45 : 0.22;
     }
     invalidate();
-  }, [materials, owners, selected, hovered, invalidate]);
+  }, [scene, materials, owners, selected, hovered, invalidate]);
 
   useEffect(() => () => void (canvas.style.cursor = ""), [canvas]);
 
@@ -260,6 +269,12 @@ export default function BodyViewer(props: BodyViewProps) {
   const [view, setView] = useState<{ side: View; nonce: number }>({ side: "front", nonce: 0 });
   const [lost, setLost] = useState(false);
   const onReady = useMemo(() => () => setReady(true), []);
+  const glCanvas = useRef<HTMLCanvasElement | null>(null);
+  const onContextLost = useCallback((event: Event) => {
+    event.preventDefault();
+    setLost(true);
+  }, []);
+  useEffect(() => () => glCanvas.current?.removeEventListener("webglcontextlost", onContextLost), [onContextLost]);
   const turning = spin && !reduced;
 
   if (lost) throw new Error("WebGL context lost"); // the page's boundary swaps in the flat body
@@ -273,10 +288,8 @@ export default function BodyViewer(props: BodyViewProps) {
           camera={{ position: [0, HOME_TARGET.y + 0.11, HOME_DISTANCE], fov: 32, near: 0.05, far: 20 }}
           gl={{ antialias: true, alpha: true, powerPreference: "high-performance", toneMapping: NeutralToneMapping }}
           onCreated={({ gl }) => {
-            gl.domElement.addEventListener("webglcontextlost", (event) => {
-              event.preventDefault();
-              setLost(true);
-            });
+            glCanvas.current = gl.domElement;
+            gl.domElement.addEventListener("webglcontextlost", onContextLost);
           }}
         >
           {/* Studio light built in the scene itself: no HDR file is fetched. */}

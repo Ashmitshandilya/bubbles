@@ -34,15 +34,22 @@ def run(events=(), labs=(), conditions=(), cycle=None, window=30) -> dict:
     return {o["organ_id"]: o for o in result["organs"]}
 
 
-def organ(organ_id: str, *args, **kwargs) -> dict:
-    return run(*args, **kwargs)[organ_id]
+def organ(organ_id: str, events=(), labs=(), conditions=(), cycle=None, window=30) -> dict:
+    """One organ's assessment, opt-in organs included (the map itself may leave those out)."""
+    obs = E.observations(list(events), labs, conditions, today=TODAY, window_days=window)
+    result = E.assess_organ(organ_id, obs, today=TODAY, window_days=window, cycle=cycle)
+    json.dumps(result)
+    return result
+
+
+ALWAYS = [o for o in E.ORGANS if o not in E.OPT_IN_ORGANS]
 
 
 # ---- shared contract ------------------------------------------------------------------------------------------------
 
 def test_every_organ_is_present_in_a_fixed_order_with_the_full_shape():
     result = E.build_organ_map([], today=TODAY)
-    assert [o["organ_id"] for o in result["organs"]] == list(E.ORGANS)
+    assert [o["organ_id"] for o in result["organs"]] == ALWAYS
     assert result["not_a_diagnosis"] is True and result["window_days"] == K.ORGAN_WINDOW_DEFAULT_DAYS
     for o in result["organs"]:
         assert list(o)[0] == "safety"  # safety guidance always comes first
@@ -362,9 +369,35 @@ def test_thyroid_chat_lab_older_than_window_still_counts():
 
 # ---- uterus and ovaries ---------------------------------------------------------------------------------------------
 
-def test_uterus_phase_only_is_steady():
+def test_uterus_phase_is_a_note_not_an_entry():
+    # A predicted phase is dated today; as evidence it made "Last entry" claim today and padded the confidence count.
     o = organ("uterus_ovaries", cycle={"phase": "luteal", "cycle_day": 20, "flags": []})
-    assert o["status"] == "steady" and o["evidence"][0]["value"] == "luteal, day 20"
+    assert o["status"] == "no_data" and o["evidence"] == [] and o["evidence_count"] == 0 and o["updated_at"] is None
+    assert any("luteal phase, day 20" in n and "estimate" in n for n in o["notes"])
+    assert "Mark the first day" not in o["next_step"] and "Period start dates" not in " ".join(o["missing"])
+
+
+def test_uterus_phase_does_not_move_last_entry_or_confidence():
+    old = ev("menstrual_symptom", {"symptom": "cramps", "name": "cramps"}, ago=8, source="user_message")
+    o = organ("uterus_ovaries", [old], cycle={"phase": "luteal", "cycle_day": 20, "flags": []})
+    assert o["updated_at"] == (TODAY - timedelta(days=8)).isoformat() and o["evidence_count"] == 1
+
+
+def test_uterus_shows_only_for_cycle_users_or_with_entries():
+    assert "uterus_ovaries" not in run()
+    assert "uterus_ovaries" not in run(cycle={"phase": None, "cycle_day": None, "flags": []})
+    assert run(cycle={"phase": "follicular", "flags": []})["uterus_ovaries"]["status"] == "no_data"
+    cramps = ev("menstrual_symptom", {"symptom": "cramps", "name": "cramps"}, source="user_message")
+    assert run([cramps])["uterus_ovaries"]["status"] == "steady"
+    result = E.build_organ_map([], today=TODAY)
+    assert sum(result["counts"].values()) == len(result["organs"]) == len(ALWAYS)
+
+
+def test_confidence_names_the_window_only_when_every_entry_is_inside_it():
+    lab = {"id": "l1", "date": (TODAY - timedelta(days=31)).isoformat(), "test_name": "TSH", "value": 2.1, "unit": "mIU/L"}
+    reason = organ("thyroid", labs=[lab])["confidence"]["reason"]
+    assert "last 30 days" not in reason and "your records" in reason
+    assert "last 30 days" in organ("heart", [bp(120, 80)])["confidence"]["reason"]
 
 
 def test_uterus_cramps_are_common_not_alarming():
@@ -378,7 +411,7 @@ def test_uterus_pcos_and_talk_flags_are_worth_watching():
     assert organ("uterus_ovaries", cycle={"phase": None, "flags": [flag]})["status"] == "worth_watching"
     info = {"id": "spotting_between", "severity": "info", "title": "Spotting", "message": "You logged spotting between periods."}
     o = organ("uterus_ovaries", cycle={"phase": "follicular", "flags": [info]})
-    assert o["status"] == "steady" and info["message"] in o["notes"]
+    assert o["status"] == "no_data" and info["message"] in o["notes"]  # an info flag is background, it never raises the status
 
 
 def test_uterus_heavy_bleeding_flag_is_urgent_with_its_own_copy_first():

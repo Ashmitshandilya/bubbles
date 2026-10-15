@@ -27,6 +27,19 @@ function EvidenceRows({ items }: { items: Organ["evidence"] }) {
   );
 }
 
+/** The safety message for a "Talk to a doctor" organ: the server's own wording, else a general emergency line. */
+export function SafetyNotice({ organ, className = "", titled = false }: { organ: Organ; className?: string; titled?: boolean }) {
+  return (
+    <div className={`rounded-2xl border-l-4 border-bubbles-peach-deep bg-tint-urgent p-4 ${className}`} data-testid="organ-safety">
+      <p className="font-extrabold text-ink">{titled ? `${organ.name}: please check this with a doctor.` : "Please check this with a doctor."}</p>
+      <p className="mt-1 text-body-sm text-ink-soft">
+        {organ.safety ??
+          "If you feel severely unwell right now, for example chest pain, trouble breathing or fainting, call 112 or go to the nearest emergency department."}
+      </p>
+    </div>
+  );
+}
+
 export function StatusPill({ organ }: { organ: Pick<Organ, "status"> }) {
   const meta = STATUS_META[organ.status];
   return (
@@ -65,15 +78,8 @@ export function OrganPanel({ organ }: { organ: Organ | null }) {
 
   return (
     <article aria-labelledby={titleId} className="rounded-3xl border-2 border-line bg-surface p-5 sm:p-6" data-organ={organ.id}>
-      {urgent && (
-        <div className="mb-5 rounded-2xl border-l-4 border-bubbles-peach-deep bg-tint-urgent p-4" data-testid="organ-safety">
-          <p className="font-extrabold text-ink">Please check this with a doctor.</p>
-          <p className="mt-1 text-body-sm text-ink-soft">
-            {organ.safety ??
-              "If you feel severely unwell right now, for example chest pain, trouble breathing or fainting, call 112 or go to the nearest emergency department."}
-          </p>
-        </div>
-      )}
+      {/* Below lg the page shows this above the body instead, so it is never a scroll away. */}
+      {urgent && <SafetyNotice organ={organ} className="mb-5 hidden lg:block" />}
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 id={titleId} className="text-h3 text-ink">

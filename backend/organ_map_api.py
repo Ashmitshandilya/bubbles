@@ -79,7 +79,9 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         if organ_id not in ORGANS:
             raise HTTPException(status_code=404, detail="Unknown organ. Use one of: " + ", ".join(ORGANS))
         result = load_organ_map(db, uid, days)
-        organ = next(o for o in result.pop("organs") if o["organ_id"] == organ_id)
+        organ = next((o for o in result.pop("organs") if o["organ_id"] == organ_id), None)
+        if organ is None:  # an opt-in area (uterus and ovaries) for someone who has not used it
+            raise HTTPException(status_code=404, detail="This area shows once you use Cycle or log something about it.")
         result.pop("counts")
         return {"status": "success", **result, "organ": organ}
 
