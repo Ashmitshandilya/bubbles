@@ -459,3 +459,11 @@ html[data-native] .nw-actions .cw-fineprint { text-align: center; }
 
 /* Safety first: while an urgent or caution block is on screen, no mascot anywhere on the page (logo included). */
 body:has([data-safety]) [data-mascot] { display: none; }
+
+/* Landing-page button look inside the app: filled buttons use its face (Bricolage Grotesque, narrow and bold) and its inset highlight. */
+:is(a, button):is(.bubbles-glow, .bg-bubbles-pink-ink) {
+  font-family: var(--font-btn), var(--font-sans);
+  font-weight: 650;
+  font-variation-settings: "wdth" 90;
+  letter-spacing: -0.005em;
+}
