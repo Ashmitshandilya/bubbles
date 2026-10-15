@@ -5,6 +5,8 @@ import { ORGAN_TINT, STATUS_META, partOwners, type Organ } from "../../app/lib/o
 
 /** Shared by the 3D viewer and this flat body, so the page can swap one for the other without changing anything else. */
 export interface BodyViewProps {
+  /** Which body to draw: female (a smoothed groin and the uterus and ovaries), male (the model as it is), or the general body. */
+  anatomy?: "female" | "male" | "neutral";
   organs: readonly Organ[];
   selected: string | null;
   hovered: string | null;

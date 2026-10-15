@@ -7,7 +7,8 @@ import { usePathname } from "next/navigation";
 import { AskBubbles } from "./AskBubbles";
 import { NotificationBell } from "./wellness/NotificationBell";
 import { BubblesMascot } from "./BubblesMascot";
-import { useApi } from "./Providers";
+import { useApi, useExperience } from "./Providers";
+import { filterSections } from "../app/lib/experience";
 import { connectionBanner, reconnectStatus } from "../app/lib/connection";
 
 // Stroke-based 24x24 icon paths. One consistent set instead of platform-dependent
@@ -164,6 +165,7 @@ function SidebarLink({ section, current }: { section: Section; current?: Section
 export function Sidebar(_props: { apiStatus: "checking" | "online" | "offline" }) {
   const pathname = usePathname() ?? "";
   const current = sectionFor(pathname);
+  const { experience } = useExperience();
 
   return (
     <aside className="hidden lg:flex w-[248px] shrink-0 border-r border-soft bg-surface min-h-dvh flex-col sticky top-0 h-dvh" aria-label="Bubbles navigation">
@@ -173,7 +175,7 @@ export function Sidebar(_props: { apiStatus: "checking" | "online" | "offline" }
       </Link>
       <nav className="flex-1 overflow-y-auto px-3 pb-4" style={{ scrollbarWidth: "thin" }}>
         <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {SECTIONS.map((section) => (
+          {filterSections(SECTIONS, experience).map((section) => (
             <SidebarLink key={section.id} section={section} current={current} />
           ))}
         </ul>
@@ -193,7 +195,10 @@ export function Sidebar(_props: { apiStatus: "checking" | "online" | "offline" }
  */
 export function SectionTabs() {
   const pathname = usePathname() ?? "";
-  const section = sectionFor(pathname);
+  const { experience } = useExperience();
+  // a page the person can still open keeps its section's tabs; only a switched-off Body map tab is left out
+  const found = sectionFor(pathname);
+  const section = found ? filterSections([found], experience ? { ...experience, hiddenSections: [] } : null)[0] : undefined;
   if (!section?.tabs || section.tabs.length < 2) return null;
   return (
     <nav aria-label={`${section.label} pages`} className="-mx-4 mb-1 sm:mx-0">
@@ -233,6 +238,7 @@ const MOBILE_TABS = [
  * the page behind is inert and focus returns to the More button. Links are 44px tall.
  */
 function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { experience } = useExperience();
   const ref = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const pathname = usePathname() ?? "";
@@ -290,7 +296,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
               </svg>
             </button>
           </div>
-          {[...SECTIONS, ME].map((section) => (
+          {[...filterSections(SECTIONS, experience), ME].map((section) => (
             <section key={section.id} aria-label={section.label} className="mb-3">
               <h3 className="m-0 px-1 pb-1 text-label text-subtle">{section.label}</h3>
               <ul className="m-0 grid list-none grid-cols-2 gap-1 p-0">

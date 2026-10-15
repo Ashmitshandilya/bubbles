@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useApi, useAuth } from "../../components/Providers";
+import { useApi, useAuth, useExperience } from "../../components/Providers";
 import {
   BTN_PRIMARY,
   BTN_SECONDARY,
@@ -60,6 +60,7 @@ export function ProfileClient() {
 function Me() {
   const { user } = useAuth();
   const { fetchBubbles } = useApi();
+  const { experience } = useExperience();
   const [profileQuery, reloadProfile] = useBubblesQuery<{ profile?: Profile }>("/profile");
   const [memoryQuery, reloadMemory] = useBubblesQuery<MemoryResponse>("/memory/diagnostics");
   const [busy, setBusy] = useState<string | null>(null);
@@ -264,9 +265,14 @@ function Me() {
               Account
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-3">
-              <Link href="/partner" className={`${BTN_SECONDARY} no-underline`}>
-                Partner sharing
+              <Link href="/onboarding?edit=1" className={`${BTN_SECONDARY} no-underline`}>
+                Your setup
               </Link>
+              {experience?.cycleVisible !== false && (
+                <Link href="/partner" className={`${BTN_SECONDARY} no-underline`}>
+                  Partner sharing
+                </Link>
+              )}
               <Link href="/settings" className={`${BTN_SECONDARY} no-underline`}>
                 Settings
               </Link>

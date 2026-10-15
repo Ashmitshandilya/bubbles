@@ -59,7 +59,14 @@ def load_organ_map(db: Any, uid: str, days: int) -> dict:
     labs = optional("labs", lambda: list_domain(db, "labs", DOMAINS["labs"], uid, 730)["entries"], [])
     conditions = optional("conditions", lambda: list_domain(db, "conditions", DOMAINS["conditions"], uid, 730)["entries"], [])
     cycle = optional("cycle", lambda: _cycle(db, uid, today), None)
-    result = build_organ_map(events, labs=labs, conditions=conditions, cycle=cycle, today=today, window_days=days)
+    def setup_body() -> str | None:
+        import doc_store
+        doc = doc_store.get(db, uid, "experience", "main") or {}
+        value = (doc.get("body_map") or {}).get("reproductive") if isinstance(doc.get("body_map"), dict) else None
+        return value if value in ("uterus_ovaries", "none") else None
+
+    reproductive = optional("setup", setup_body, None)
+    result = build_organ_map(events, labs=labs, conditions=conditions, cycle=cycle, today=today, window_days=days, reproductive=reproductive)
     result["unavailable"] = unavailable
     return result
 

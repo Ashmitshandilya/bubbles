@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header, Sidebar, MobileNav, ApiAlert } from "../../../components/Navigation";
-import { useAuth, useApi } from "../../../components/Providers";
+import { useAuth, useApi, useExperience } from "../../../components/Providers";
 import { LoadingBubbles } from "../../../components/hub/HubKit";
 import { isSupabaseConfigured } from "../../../lib/supabase";
 import { SafetyBanner, type SafetyLevel } from "./SafetyBanner";
@@ -46,6 +46,10 @@ export function DashboardClient() {
   const router = useRouter();
   const { loading: authLoading, session, user } = useAuth();
   const { apiStatus, connectionError, fetchBubbles, checkApiHealth, reconnects } = useApi();
+  const { experience } = useExperience();
+  // the person's body decides what Today shows: no Cycle or Partner cards for a male body, no body-map card when the map is off
+  const showCycle = experience?.cycleVisible !== false;
+  const showBodyMap = experience?.bodyMap.visible !== false;
   const [reloadKey, setReloadKey] = useState(0);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [trackers, setTrackers] = useState(allLoading);
@@ -167,7 +171,7 @@ export function DashboardClient() {
     const t = trackers[slug];
     return t.status === "ready" ? [summarizeSignal(slug, t.data.entries ?? [], now)] : [];
   });
-  const cycle = trackers.cycle.status === "ready" ? summarizeCycle(trackers.cycle.data, now) : null;
+  const cycle = showCycle && trackers.cycle.status === "ready" ? summarizeCycle(trackers.cycle.data, now) : null;
   const briefData = brief.status === "ready" ? brief.data : null;
 
   const trackersLoading = TILE_ORDER.some((slug) => trackers[slug].status === "loading");
@@ -179,7 +183,7 @@ export function DashboardClient() {
     : !signals.some((s) => s.logged) && !cycle?.logged ? "empty"
     : items.length ? "items" : "clear";
 
-  const tiles = TILE_ORDER.map((slug): Tile => {
+  const tiles = TILE_ORDER.filter((slug) => showCycle || slug !== "cycle").map((slug): Tile => {
     const pending = { slug, state: trackers[slug].status === "error" ? "error" : "loading" } as const;
     if (slug === "cycle") return cycle ? tileFromCycle(cycle) : pending;
     const summary = signals.find((s) => s.slug === slug);
@@ -239,12 +243,12 @@ export function DashboardClient() {
             </aside>
           </div>
 
-          <WholeHealthCards />
-          <PartnerCard />
+          <WholeHealthCards cycle={showCycle} />
+          {showCycle && <PartnerCard />}
 
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
             <LivingSignalMap state={livingMap.status} map={livingMap.status === "ready" ? livingMap.data : null} onRetry={reload} />
-            <BodyMapCard />
+            {showBodyMap && <BodyMapCard />}
           </div>
 
           <footer className="flex flex-col gap-1 text-chip font-semibold leading-relaxed text-ink-soft">

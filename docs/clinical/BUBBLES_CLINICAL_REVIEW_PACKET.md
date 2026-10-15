@@ -347,6 +347,20 @@ New chat words (English and Hinglish): ear pain, ringing in the ears, hearing lo
 Please confirm both should be urgent, or tell us the right tier. Known gaps: "hearing loss in my grandfather" is read as the speaker's own (the existing other-person detection
 does not cover "X in my <relative>"); Hinglish for a breast lump (gaanth) is included but untested by a native speaker.
 
+## 13d. First-run setup suggestions (added 2026-10-15; awaiting sign-off)
+
+The setup builds a short Care checklist from what a person says. Each item is worded as "worth asking your doctor", never as an order or a finding. Please confirm the ages and wording.
+* **Blood pressure and sugar check** from age **30** when the last check was over a year ago or unknown (follows India's national NCD screening programme, which targets adults 30 and over).
+* **Cervical screening** for women aged **30 to 65** who answer longer ago, never or not sure.
+* **Eye exam for diabetes** when someone says they have diabetes and the last eye exam was not in the last year (ADA: dilated exam at diagnosis, then regularly, often yearly). Bubbles states no interval.
+* **An eye check** when daily screen time is 6 h or more and the last exam was long ago or unknown (6 h is a product choice).
+* **A dental and oral check** for people who smoke or chew tobacco.
+* **Night-time urination or weaker flow** (male, age 45 and over, answered yes): "worth mentioning at your next visit".
+* Alcohol: the three drinking questions follow the AUDIT-C items (frequency, usual amount, six or more drinks). The answers are stored but **no score or label is shown**.
+* Mood: the first-run mood check re-uses the existing PHQ-2 / GAD-2 screens (score only, supportive wording, no label).
+* Under 18: nothing is stored and no health content is shown (the Terms already say 18 and over).
+* Cycle mode from setup: not now + pregnant = pregnancy; recently gave birth or breastfeeding = postpartum; contraception stops periods = birth control; menopause = perimenopause; trying to conceive = conceive. Pregnancy, postpartum and "avoid weight or calories" switch off calorie deficits in Fitness.
+
 ## 14. Sign-off
 
 | Role | Name | Registration no. | Sections reviewed | Date | Signature |

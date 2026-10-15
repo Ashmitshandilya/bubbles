@@ -85,11 +85,11 @@ function CycleCard() {
   );
 }
 
-export function WholeHealthCards() {
+export function WholeHealthCards({ cycle = true }: { cycle?: boolean } = {}) {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className={`grid gap-6 ${cycle ? "md:grid-cols-2" : ""}`}>
       <FitnessCard />
-      <CycleCard />
+      {cycle && <CycleCard />}
     </div>
   );
 }

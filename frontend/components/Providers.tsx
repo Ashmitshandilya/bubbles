@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
 import { needsSecondStep } from "../lib/mfa";
 import {
@@ -9,6 +9,8 @@ import {
   shareInFlight, type DatabaseStatus, type HealthPayload,
 } from "../app/lib/connection";
 import { createApiCache } from "../app/lib/api-cache";
+import { gateDecision, readExperience, readSetupState, type Experience, type SetupState } from "../app/lib/experience";
+import { BubblesMascot } from "./BubblesMascot";
 
 type User = {
   id: string;
@@ -152,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     apiCache.clear();
+    resetExperience();
     await supabase.auth.signOut();
     router.push("/login");
   }
@@ -463,9 +466,88 @@ export function ApiProvider({ children }: { children: ReactNode }) {
         nextRetryAt, retrying, reconnects, waking,
       }}
     >
-      {children}
+      <ExperienceProvider>{children}</ExperienceProvider>
     </ApiContext.Provider>
   );
+}
+
+/* ── First-run setup: the gate and what the person's answers decided ──────────────────────────────────────────────── */
+
+type SetupLoad = SetupState | "loading" | "error";
+type ExperienceContextType = { experience: Experience | null; setup: SetupLoad; refresh: () => Promise<void> };
+
+const ExperienceContext = createContext<ExperienceContextType | undefined>(undefined);
+/** Kept across page navigations (each page mounts its own providers), per person, and re-read every few minutes. */
+let experienceCache: { uid: string; setup: SetupState; experience: Experience | null; at: number } | null = null;
+const EXPERIENCE_TTL_MS = 5 * 60_000;
+
+/** Forget what was read: the next read asks the server again (after finishing or changing the setup, and on sign-out). */
+export function resetExperience() {
+  experienceCache = null;
+}
+
+function ExperienceProvider({ children }: { children: ReactNode }) {
+  const { session } = useAuth();
+  const { fetchBubbles, waking } = useApi();
+  const pathname = usePathname() ?? "";
+  const router = useRouter();
+  const uid = session?.user?.id ?? null;
+  const cached = uid && experienceCache?.uid === uid ? experienceCache : null;
+  const [setup, setSetup] = useState<SetupLoad>(cached ? cached.setup : "loading");
+  const [experience, setExperience] = useState<Experience | null>(cached?.experience ?? null);
+
+  const load = useCallback(async () => {
+    if (!uid) return;
+    try {
+      const stateResponse = await fetchBubbles("/onboarding/state");
+      if (!stateResponse.ok) throw new Error("state");
+      const state = readSetupState(await stateResponse.json());
+      if (!state) throw new Error("state");
+      let profile: Experience | null = null;
+      if (state.complete) {
+        const experienceResponse = await fetchBubbles("/experience");
+        if (experienceResponse.ok) profile = readExperience(((await experienceResponse.json()) as { experience?: unknown })?.experience);
+      }
+      experienceCache = { uid, setup: state, experience: profile, at: Date.now() };
+      setSetup(state);
+      setExperience(profile);
+    } catch {
+      setSetup((current) => (current === "loading" ? "error" : current));   // a failed check never locks anyone out
+    }
+  }, [uid, fetchBubbles]);
+
+  useEffect(() => {
+    if (!uid) return;
+    const fresh = experienceCache && experienceCache.uid === uid && Date.now() - experienceCache.at < EXPERIENCE_TTL_MS;
+    if (!fresh) void load();
+  }, [uid, load]);
+
+  const decision = uid ? gateDecision(pathname, setup) : "pass";
+  useEffect(() => {
+    if (decision === "setup") router.replace("/onboarding");
+  }, [decision, router]);
+
+  const value = useMemo<ExperienceContextType>(
+    () => ({ experience, setup, refresh: async () => { experienceCache = null; await load(); } }),
+    [experience, setup, load],
+  );
+
+  if (decision !== "pass") {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-blush">
+        <div role="status" className="text-center">
+          <BubblesMascot size={88} mood="thinking" className="mx-auto" />
+          <p className="mt-4 text-body font-bold text-muted">{waking ? "Bubbles is waking up…" : decision === "setup" ? "Setting up Bubbles for you…" : "Opening Bubbles…"}</p>
+        </div>
+      </main>
+    );
+  }
+  return <ExperienceContext.Provider value={value}>{children}</ExperienceContext.Provider>;
+}
+
+/** The person's setup: `experience` is null until it is known (or when they have not finished setup); `setup` says which. */
+export function useExperience(): ExperienceContextType {
+  return useContext(ExperienceContext) ?? { experience: null, setup: "error", refresh: async () => {} };
 }
 
 export function useApi() {

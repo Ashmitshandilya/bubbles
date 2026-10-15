@@ -478,3 +478,26 @@ def test_a_condition_saved_by_the_tracker_and_mirrored_counts_once():
     mirror = ev("medical_condition", {"condition_name": "PCOS", "status": "Active"}, 8)
     o = organ("uterus_ovaries", [mirror], conditions=[{"id": "c", "condition_name": "PCOS", "status": "Active", "date": "2026-10-14"}])
     assert [e["label"] for e in o["evidence"]].count("PCOS") == 1
+
+
+# --- the first-run setup decides who sees the reproductive organs ---------------------------------------------------------------
+
+def _shown(**kw):
+    return {o["organ_id"] for o in E.build_organ_map(today=TODAY, **kw)["organs"]}
+
+
+def test_a_female_setup_always_shows_the_uterus_and_ovaries_even_with_nothing_logged():
+    assert "uterus_ovaries" not in _shown()
+    assert "uterus_ovaries" in _shown(reproductive="uterus_ovaries")
+
+
+def test_a_male_setup_never_shows_them_even_with_cycle_data():
+    cycle = {"phase": "luteal", "cycle_day": 20, "flags": []}
+    assert "uterus_ovaries" in _shown(cycle=cycle)
+    assert "uterus_ovaries" not in _shown(cycle=cycle, reproductive="none")
+
+
+def test_any_other_setup_keeps_the_earlier_rule():
+    cycle = {"phase": "luteal", "cycle_day": 20, "flags": []}
+    assert _shown(reproductive=None) == _shown() and _shown(reproductive="by_use") == _shown()
+    assert "uterus_ovaries" in _shown(cycle=cycle, reproductive="by_use")

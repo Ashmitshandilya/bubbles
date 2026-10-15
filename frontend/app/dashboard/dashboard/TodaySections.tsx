@@ -520,7 +520,7 @@ export function BodyMapCard() {
       <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-bubbles-grape-deep"><Icon name="body" size={24} /></span>
       <h2 id="today-body-map" className="m-0 font-display text-xl font-semibold">Your body map</h2>
       <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">See which body systems Bubbles has evidence for, and where it still needs data. It organises evidence; it doesn&apos;t measure organ health.</p>
-      <Link href="/health" className={`${BTN_QUIET} self-start`}>See your body map <Icon name="arrow" size={18} /></Link>
+      <Link href="/body" className={`${BTN_QUIET} self-start`}>See your body map <Icon name="arrow" size={18} /></Link>
     </section>
   );
 }
