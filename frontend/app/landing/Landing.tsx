@@ -319,6 +319,7 @@ export function Landing() {
                   Bubbles turns what you logged into one page for your doctor: your cycles, symptoms, pain and the questions you want to ask. Print it or save it as a PDF.
                 </p>
                 <p className="cw-strong">Bubbles does not diagnose. It organises what you told it.</p>
+                <p className="cw-lede">Red flags first. Urgent symptoms get clear, urgent guidance from fixed safety rules, before any AI is involved.</p>
               </div>
               <figure className="cw-sheet" aria-labelledby="cw-sheet-title">
                 <span className="cw-mono cw-sheet-tag">Example</span>

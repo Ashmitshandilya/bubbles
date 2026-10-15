@@ -24,7 +24,7 @@ def test_public_landing_explains_memory_and_safety():
     landing = (ROOT.parent / "frontend/app/landing/Landing.tsx").read_text(encoding="utf-8")
     assert "<Landing" in page
     # Wording changed in the scroll-story redesign; the memory model and safety framing must still be visible.
-    assert "five layers of memory" in landing.lower()
+    assert "Nothing becomes memory until you confirm it" in landing
     assert "does not diagnose" in landing
     assert "Red flags first" in landing
 
