@@ -31,6 +31,8 @@ export interface ChatMessage {
   clientId?: string;
   role: "user" | "assistant";
   content: string;
+  /** When the server stored it (ISO). Used for the older-messages cursor and the "continuing" line. */
+  createdAt?: string;
   /** Effective level: RED covers URGENT and EMERGENCY. Check `retracted` before treating it as an alert. */
   safetyLevel?: SafetyLevel;
   safetyState?: SafetyState | null;
