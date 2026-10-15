@@ -6,6 +6,7 @@ import {
   Choices, DateField, DetailChips, Disclaimer, EmptyState, EntryNote, EntryRow, History, LastLogged, LogButton, LogSheet, SavedToast,
   StatGrid, StatSkeleton, Stepper, TextArea, TextField, TrackerHero, TrackerShell, type IconName, type Signal,
 } from "./tracking/kit";
+import { choiceLabels } from "./tracking/choices";
 import {
   byNewest, computeStat, dateLabel, formatNumber, parseRange, present, timeLabel, toNumber, useTracker,
   type Entry, type StatSpec,
@@ -32,6 +33,8 @@ export interface TrackerField {
   /** select: chips; `scale` lays them out as an equal row (e.g. Drained…Great mapped to 2…10). */
   options?: { value: string; label: string }[];
   scale?: boolean;
+  /** select: pick any number of chips (the value is a comma-separated string). */
+  multi?: boolean;
   /** Pre-selected value. */
   initial?: string;
   maxLength?: number;
@@ -68,6 +71,8 @@ interface GenericTrackingClientProps {
   /** At least one of these must be filled (vitals). */
   requireOneOf?: string[];
   historyTitle?: string;
+  /** A note shown above the history that is not part of the form (for example when to seek urgent care). */
+  callout?: { title: string; text: string };
 }
 
 export function GenericTrackingClient(props: GenericTrackingClientProps) {
@@ -90,6 +95,7 @@ function rangeText(f: TrackerField): string {
 
 function displayValue(f: TrackerField, entry: Entry): string {
   const v = entry[f.id];
+  if (f.multi && f.options) return choiceLabels(String(v), f.options);
   const option = f.options?.find((o) => o.value === String(v));
   if (option) return option.label;
   if (f.type === "date" && typeof v === "string") return dateLabel(v);
@@ -114,7 +120,7 @@ function humanize(key: string): string {
 
 function GenericTracker({
   title, kicker, description, endpoint, signal, icon, fields, stats, logLabel, sheetTitle, submitLabel,
-  emptyTitle, entryLabel, titleField, requireOneOf, historyTitle,
+  emptyTitle, entryLabel, titleField, requireOneOf, historyTitle, callout,
 }: GenericTrackingClientProps) {
   const { entries, status, error, retry, save, freshId } = useTracker(endpoint, 30);
   const { databaseStatus } = useApi();
@@ -210,6 +216,7 @@ function GenericTracker({
             legend={f.label}
             options={f.options ?? []}
             columns={f.scale ? f.options?.length : undefined}
+            multi={f.multi}
             signal={signal}
           />
         );
@@ -254,6 +261,12 @@ function GenericTracker({
   return (
     <>
       <TrackerHero signal={signal} icon={icon} kicker={kicker} title={title} why={description} action={log} />
+      {callout && (
+        <aside role="note" className="rounded-3xl border-2 border-[#FFD3C2] bg-tint-urgent p-4 sm:p-5">
+          <h2 className="m-0 text-body font-extrabold text-bubbles-urgent">{callout.title}</h2>
+          <p className="m-0 mt-1 text-body-sm text-ink-soft">{callout.text}</p>
+        </aside>
+      )}
       {status === "ready" && <LastLogged entries={entries} />}
       {status === "loading" && entries.length === 0 && <StatSkeleton count={stats.length} />}
       {status === "ready" && entries.length > 0 && <StatGrid signal={signal} stats={stats.map((spec) => computeStat(spec, entries))} />}

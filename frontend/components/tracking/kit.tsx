@@ -11,6 +11,7 @@ import {
   type Entry, type EntryValue, type LoadStatus, type StatValue,
 } from "./data";
 import { buildPulse, lastLoggedText, weekText } from "../../app/lib/track-pulse";
+import { isChosen, toggleChoice } from "./choices";
 
 /* ── Signal colours (literal class strings so Tailwind can see them) ─── */
 
@@ -74,6 +75,7 @@ const ICONS = {
   labs: "M9 3v6l-4.5 8A2 2 0 0 0 6.2 20h11.6a2 2 0 0 0 1.7-3L15 9V3M8 3h8M7.5 14h9",
   reports: "M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6",
   visits: "M4 21V8l8-5 8 5v13M9 21v-6h6v6",
+  eyes: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
   plus: "M12 5v14M5 12h14",
   minus: "M5 12h14",
   close: "M6 6l12 12M18 6 6 18",
@@ -503,9 +505,11 @@ function Chip({ signal, on, onClick, children, tall = false }: { signal: Signal;
 }
 
 /** Single-choice chips in a fieldset/legend. `columns` lays them out as an equal grid (scales). */
-export function Choices({ id, legend, options, value, onChange, signal, columns, hint, error, optional, allowDeselect = true }: {
+export function Choices({ id, legend, options, value, onChange, signal, columns, hint, error, optional, allowDeselect = true, multi = false }: {
   id: string; legend: string; options: { value: string; label: string }[]; value: string; onChange: (value: string) => void;
   signal: Signal; columns?: number; hint?: string; error?: string; optional?: boolean; allowDeselect?: boolean;
+  /** Pick any number of chips; the value is then a comma-separated string. */
+  multi?: boolean;
 }) {
   return (
     <fieldset
@@ -522,9 +526,9 @@ export function Choices({ id, legend, options, value, onChange, signal, columns,
         style={columns ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
       >
         {options.map((o) => {
-          const on = o.value === value;
+          const on = isChosen(value, o.value, multi);
           return (
-            <Chip key={o.value} signal={signal} on={on} tall={Boolean(columns)} onClick={() => onChange(on && allowDeselect ? "" : o.value)}>
+            <Chip key={o.value} signal={signal} on={on} tall={Boolean(columns)} onClick={() => onChange(toggleChoice(value, o.value, multi, allowDeselect))}>
               {o.label}
             </Chip>
           );

@@ -40,7 +40,7 @@ CRISIS = frozenset({"suicidal_ideation", "self_harm"})
 #: hedged mentions of these ("I think I'm having a heart attack") still escalate.
 POSSIBLE_IS_EMERGENCY = frozenset({"heart_attack", "stroke_signs", "allergic_reaction", "suicidal_ideation", "self_harm"})
 #: concepts whose severity adjective ("severe", 9/10) makes them urgent.
-PAIN_CONCEPTS = frozenset({"headache", "abdominal_pain", "pelvic_pain", "cramps", "back_pain", "joint_pain", "muscle_pain", "chest_pain", "severe_pain"})
+PAIN_CONCEPTS = frozenset({"headache", "abdominal_pain", "pelvic_pain", "cramps", "back_pain", "joint_pain", "muscle_pain", "chest_pain", "severe_pain", "eye_pain"})
 
 DISPLAY = {
     "chest_pain": "chest pain", "shortness_of_breath": "shortness of breath", "headache": "headache",
@@ -55,6 +55,7 @@ DISPLAY = {
     "heart_attack": "a possible heart attack", "anxiety": "anxiety", "low_mood": "low mood", "insomnia": "trouble sleeping",
     "diarrhea": "diarrhea", "constipation": "constipation", "rash": "rash", "swelling": "swelling",
     "numbness": "numbness", "blurred_vision": "blurred vision", "period": "your period",
+    "eye_strain": "eye strain", "dry_eyes": "dry eyes", "red_eye": "red eyes", "eye_pain": "eye pain", "eye_itch": "itchy eyes",
     "medication_use": "medication", "severe_pain": "severe pain",
 }
 
@@ -120,6 +121,9 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
     ("stroke_signs", "red", "possible stroke warning signs", (
         "stroke|face droop\\w*|facial droop\\w*|droop\\w* face|face (?:\\w+ ){1,2}droop\\w*|(?:side of )?(?:my |the )?face (?:is |has |feels )?(?:sagging|drooping|dropping)|slurred speech|slurring (?:my )?(?:words|speech)",
         "sudden weakness (?:on|in) (?:one|my (?:left|right)) (?:side|arm|leg)|weakness on (?:one|my (?:left|right)) side|one[\\s-]sided weakness|sudden (?:loss of|trouble with) (?:vision|speech)",
+        # sudden loss of sight, said in everyday words (additive; needs clinician review). Always with a "sudden" cue: "I can't see the board" is not this.
+        "(?:sudden(?:ly)?|all of a sudden|out of nowhere|just now) (?:i )?(?:can'?t|cannot|couldn'?t|could not|am unable to|was unable to|unable to) see (?:anything|at all|properly|clearly|out of (?:my |the )?(?:left |right |one )?eye|with (?:my |the )?(?:left |right |one )?eye)",
+        "(?:can'?t|cannot|couldn'?t|could not) see (?:out of|with) (?:my |the )?(?:left |right |one )eye (?:suddenly|all of a sudden)|(?:suddenly|all of a sudden) (?:lost|losing) (?:all |my )?(?:vision|sight)|(?:lost|losing) (?:all |my )?(?:vision|sight)(?: in (?:my |the |one )?(?:left |right )?eye)? (?:suddenly|all of a sudden|just now)|(?:suddenly|all of a sudden) (?:went|gone|going|go) blind|curtain (?:coming |falling |came |fell |dropped )?(?:(?:down|over|across) ){1,2}(?:my |the )?(?:vision|eye)",
         # inability to feel/move a limb or half the face is the same warning in other words (additive; needs clinician review)
         "(?:can'?t|cannot|unable to|not able to|no longer) (?:feel|move) (?:my |the )?(?:left |right )?(?:arm|leg|hand|side of (?:my )?face|face)|(?:my |the )?(?:left |right )?(?:arm|leg|hand|side of (?:my )?face) (?:suddenly )?(?:went|has gone|became) (?:numb|dead|limp|weak)")),
     ("allergic_reaction", "red", "possible severe allergic reaction", (
@@ -192,6 +196,23 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
     ("numbness", None, "numbness", ("numb\\w*|tingling|pins and needles",)),
     ("blurred_vision", None, "blurred vision", (
         "bl(?:urred|urry) vision|vision (?:is |was )?blurr\\w+|double vision|vision (?:changes?|loss)|loss of vision|can't see (?:properly|clearly)",)),
+    # Eyes. Everyday wording only: sudden loss of vision stays a RED stroke pattern (see stroke_signs), never a plain eye symptom.
+    # Hinglish spellings ride along (aankh / aankhen / aankhon): "aankhon mein jalan" = burning eyes.
+    ("eye_strain", None, "eye strain", (
+        "eye[\\s-]?strain|digital eye strain|(?:tired|strained|fatigued|burning|heavy) eyes?|eyes? (?:are |feel |feels |is |get |gets |were )?(?:tired|strained|fatigued|burning|heavy)|eyes? burn\\w*",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:jalan|jalna|jal rah\\w*|thak\\w*|thaki|thakan|bhaari|bhari)",)),
+    ("dry_eyes", None, "dry eyes", (
+        "dry (?:and \\w+ )?eyes?|eyes? (?:are |feel |feels |is |get |gets |were )?(?:dry|gritty|scratchy)|dry eye syndrome",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:sukh\\w*|sookh\\w*|dryness)",)),
+    ("red_eye", None, "red eyes", (
+        "red[\\s-]?eyes?(?! flight)|bloodshot eyes?|eyes? (?:are |look |looks |is |turned |went |were |got )?(?:red|bloodshot|pink)|pink eye|conjunctivitis",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma|ka|ki|ke) )?(?:laa?l\\w*|gulabi)",)),
+    ("eye_pain", None, "eye pain", (
+        "eye (?:pain|ache|aches|soreness)|(?:pain|ache|pressure) (?:in|behind) (?:my |the |both |one )?eyes?|eyes? (?:hurt|hurts|hurting|ache|aches|aching|are sore|is sore|feel sore)|sore eyes?",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:\\w+ )?(?:dard|dardh|drd|dukh\\w*)",)),
+    ("eye_itch", None, "itchy eyes", (
+        "itchy,? (?:and )?(?:watery |red )?eyes?|eyes? (?:are |feel |feels |is |get |gets |were )?(?:itchy|itching|watery|watering)|watery eyes?|itchy eye",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:khujl\\w*|khujal\\w*|paani|pani)|aa?nkh(?:e|en|ein|on)? se (?:paani|pani)",)),
     ("period", None, "period", (
         "(?:still |currently )?bleeding (?:today|now|again)|(?:still|currently) bleeding",
         "(?:cycle|period) day \\d{1,2}|day \\d{1,2} of (?:my )?(?:period|cycle)|menstruat\\w+",

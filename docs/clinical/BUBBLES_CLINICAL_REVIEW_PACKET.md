@@ -306,6 +306,32 @@ and the wellness constants at the end of `clinical_constants.py` (sleep score we
 medication dose windows and refill alerts, mind check-in thresholds, notification caps and quiet hours). The Cycle section's pregnancy,
 trying-to-conceive and postpartum modes also switch off any calorie deficit.
 
+## 13c. Eyes and the body map (added 2026-10-15; awaiting sign-off)
+
+Bubbles now tracks the eyes (Track > Eyes, the "eyes" body system, chat understanding). Nothing here diagnoses; please confirm or correct each rule.
+
+* **Eye tracker (what a person logs):** screen time today (0-18 h), eye comfort (1 = very uncomfortable to 5 = very comfortable), symptom chips
+  (dry, itchy, red, strained, blurry, watery, headache), glasses yes/no, break count, date of the last eye exam. Stored as the person's own record.
+* **Eyes body-system signals (`organ_tracker.RISK_FACTORS`, product weights, not odds ratios):** high screen time = average of at least **6 h/day**
+  over at least 3 logged days in the last 14 (weight 0.14); frequent eye symptoms = eye symptoms or comfort of 2 or less on at least **3 different days
+  in the last 14** (weight 0.16); persistent high blood glucose 0.14; persistent high blood pressure 0.12; smoking 0.06. Status bands are the existing
+  ones (0.25 = "watch", 0.45 = "needs attention"). Both 6 h and 3 days are product choices, not clinical cut-offs. A recorded exam date is **not** counted as
+  evidence about the eyes. Please confirm the thresholds or give better ones.
+* **Wording shown with the eyes system:** "Short screen breaks, such as looking at something about 6 metres away for 20 seconds every 20 minutes, are a common
+  habit for tired eyes. If symptoms keep coming back, an eye check is worth considering." (the 20-20-20 habit has limited trial evidence; we say "common habit".)
+  With high BP or glucose: "High blood pressure and high blood sugar can affect the eyes, so it is worth asking your doctor how often you should have an eye exam."
+  (The ADA advises a dilated eye exam at type 2 diabetes diagnosis, within 5 years for type 1, then at least yearly, or every 1-2 years after clean exams. Bubbles
+  does not state an interval; please say whether it should.)
+* **Chat symptom words (`health_semantics`):** eye strain (tired, burning, heavy), dry eyes, red eyes (incl. pink eye / conjunctivitis), eye pain, itchy or watery
+  eyes, with Hinglish spellings (aankh / aankhen / aankhon: jalan, dard, lal, khujli, sookhi, thakan). **Severe eye pain** (the word "severe" or 8/10 or more) now
+  joins the existing "severe pain" rule and gives the urgent (AMBER) response. Mild or ordinary eye discomfort does not escalate. Please confirm severe eye pain
+  should be urgent.
+* **Sudden loss of sight (RED, existing rule extended):** the stroke-warning pattern already caught "sudden loss of vision". It now also catches everyday wordings when
+  a "sudden" cue is present: "I suddenly can't see out of my left eye", "all of a sudden I cannot see anything", "I suddenly lost my vision", "a curtain fell over my vision",
+  "suddenly went blind". Known gaps (please advise): "a curtain **came / is coming down** over my vision" is read as a resolved symptom ("came down" is on the existing
+  resolution list); Hinglish "bahut tez" (very severe) is not read as a severity word for eye pain, so Hinglish severe eye pain does not escalate yet.
+* **Patterns:** two new links are checked: screen time with eye comfort (same day), and screen time with the next night's sleep rating. They are worded as associations only.
+
 ## 14. Sign-off
 
 | Role | Name | Registration no. | Sections reviewed | Date | Signature |

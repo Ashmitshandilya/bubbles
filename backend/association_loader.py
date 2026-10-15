@@ -70,6 +70,8 @@ def load_series(db: Any, uid: str, days: int = 90, tz_offset_minutes: int | None
     out["calories"] = _daily(db, uid, "nutrition", days, off, "calories", "sum")
     out["symptom_severity"] = _daily(db, uid, "symptoms", days, off, "severity", "max")
     out["resting_hr"] = _daily(db, uid, "vitals", days, off, "heart_rate", "mean")
+    out["screen_hours"] = _daily(db, uid, "eyes", days, off, "screen_hours", "max")   # the longest the person logged that day
+    out["eye_comfort"] = _daily(db, uid, "eyes", days, off, "comfort", "mean")           # 1 (very uncomfortable) to 5 (very comfortable)
     try:   # estimated phase per day (cycle logs + sleep-day details): 1 for luteal, 0 for any other known phase
         phases = {d: p["cycle_phase"] for d, p in S.load_details(db, uid).items() if p.get("cycle_phase")}
         out["luteal"] = {date.fromisoformat(d[:10]): 1.0 if str(p).lower() == "luteal" else 0.0 for d, p in phases.items()}

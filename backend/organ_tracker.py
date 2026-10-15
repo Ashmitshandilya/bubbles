@@ -15,6 +15,7 @@ from typing import Any
 
 ORGANS = (
     "brain",
+    "eyes",
     "heart",
     "lungs",
     "liver",
@@ -28,7 +29,7 @@ ORGANS = (
 # Risk multipliers are deliberately conservative product weights, not clinical odds ratios.
 # They rank attention areas only. Evidence-backed clinical rules belong in the evidence layer.
 RISK_FACTORS = {
-    "smoking": {"lungs": 0.30, "heart": 0.22, "brain": 0.16, "kidneys": 0.08},
+    "smoking": {"lungs": 0.30, "heart": 0.22, "brain": 0.16, "kidneys": 0.08, "eyes": 0.06},
     "nicotine": {"lungs": 0.18, "heart": 0.16, "brain": 0.12},
     "poor_sleep": {"brain": 0.16, "heart": 0.12, "pancreas": 0.08},
     "low_activity": {"heart": 0.12, "pancreas": 0.10, "musculoskeletal_system": 0.10},
@@ -36,14 +37,20 @@ RISK_FACTORS = {
     "high_sugar_pattern": {"pancreas": 0.14, "liver": 0.10, "heart": 0.06},
     "highly_processed_diet": {"heart": 0.08, "liver": 0.08, "pancreas": 0.08},
     "overweight_or_obesity": {"heart": 0.12, "liver": 0.16, "pancreas": 0.14},
-    "persistent_high_bp": {"heart": 0.22, "brain": 0.20, "kidneys": 0.16},
-    "persistent_high_glucose": {"pancreas": 0.20, "kidneys": 0.18, "heart": 0.14, "brain": 0.08},
+    "persistent_high_bp": {"heart": 0.22, "brain": 0.20, "kidneys": 0.16, "eyes": 0.12},
+    "persistent_high_glucose": {"pancreas": 0.20, "kidneys": 0.18, "heart": 0.14, "brain": 0.08, "eyes": 0.14},
     "alcohol_excess": {"liver": 0.25, "heart": 0.08, "brain": 0.08, "pancreas": 0.14},
+    # Eyes: product weights awaiting clinician review (docs/clinical). 6 h of daily screen time and 3 days of eye symptoms
+    # in 14 days are product thresholds, not clinical cut-offs.
+    "high_screen_time": {"eyes": 0.14},
+    "frequent_eye_symptoms": {"eyes": 0.16},
 }
 
 # These are product-level evidence weights, not diagnostic thresholds.
 DIRECT_EVIDENCE_FIELDS = {
     "brain": ("neurologic_diagnosis", "brain_imaging", "clinician_neurologic_finding"),
+    # a date of the last eye exam is NOT evidence of eye health, so it is not listed here (it feeds the Care checklist instead)
+    "eyes": ("vision_prescription", "eye_diagnosis", "eye_pressure"),
     "heart": ("blood_pressure", "lipids", "ecg", "cardiac_diagnosis"),
     "lungs": ("spirometry", "oxygen_saturation", "lung_imaging", "respiratory_diagnosis"),
     "liver": ("alt", "ast", "bilirubin", "alp", "liver_imaging", "liver_diagnosis"),
@@ -130,6 +137,12 @@ def _factor_present(snapshot: dict[str, Any], factor: str) -> bool:
         return _truthy(snapshot, "persistent_high_glucose")
     if factor == "alcohol_excess":
         return _truthy(snapshot, "alcohol_excess")
+    if factor == "high_screen_time":
+        hours = snapshot.get("screen_hours_avg")
+        return isinstance(hours, (int, float)) and not isinstance(hours, bool) and hours >= 6
+    if factor == "frequent_eye_symptoms":
+        days = snapshot.get("eye_symptom_days")
+        return isinstance(days, (int, float)) and not isinstance(days, bool) and days >= 3
     return False
 
 
@@ -225,6 +238,11 @@ def _actions_for(organ: str, signals: list[OrganSignal]) -> list[str]:
         actions.append("Improve diet quality with more minimally processed foods and appropriate fruit, vegetables, fibre and protein.")
     if "persistent_high_bp" in factors or "persistent_high_glucose" in factors:
         actions.append("Discuss persistent abnormal measurements with a clinician rather than relying on the app score.")
+    if organ == "eyes":
+        if "high_screen_time" in factors or "frequent_eye_symptoms" in factors:
+            actions.append("Short screen breaks, such as looking at something about 6 metres away for 20 seconds every 20 minutes, are a common habit for tired eyes. If symptoms keep coming back, an eye check is worth considering.")
+        if "persistent_high_bp" in factors or "persistent_high_glucose" in factors:
+            actions.append("High blood pressure and high blood sugar can affect the eyes, so it is worth asking your doctor how often you should have an eye exam.")
     if not actions:
         actions.append("Continue collecting reliable health data; improve the assessment when measurements or clinical records become available.")
     return actions
