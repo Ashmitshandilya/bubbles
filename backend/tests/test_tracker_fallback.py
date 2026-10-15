@@ -28,7 +28,7 @@ DOMAIN_TABLES = sorted({d["table"] for d in DOMAINS.values()})
 LIVE_DENIED = set(DOMAIN_TABLES) | {"profiles", "rl_interactions", "rl_arm_stats", "organ_assessments", "exercise_logs"}
 MODES = ("primary", "compat")
 EVENT_TYPES = {"sleep": "sleep", "symptoms": "symptom", "activity": "activity", "cycle": "menstrual_symptom",
-               "hydration": "hydration", "mood": "mood", "nutrition": "food", "weight": "weight", "vitals": "vital_sign",
+               "hydration": "hydration", "mood": "mood", "nutrition": "food", "eyes": "eye_check", "weight": "weight", "vitals": "vital_sign",
                "medications": "medication", "conditions": "medical_condition", "allergies": "allergy",
                "labs": "lab_result", "visits": "doctor_visit", "reports": "lab_result"}
 H1 = {"Authorization": "Bearer user-1"}
@@ -200,6 +200,7 @@ def test_superset_keys_per_domain():
         "activity": {"name": "Walk", "activity": "Walk", "duration_minutes": 30, "minutes": 30, "unit": "min", "date": "2026-10-05"},
         "cycle": {"name": "period", "symptom": "menstrual flow", "start_date": "2026-10-05", "date": "2026-10-05", "phase": "period"},
         "nutrition": {"name": "Dal and rice", "category": "lunch", "meal_type": "lunch", "calories": 450.0, "date": "2026-10-05"},
+        "eyes": {"name": "eye check", "category": "eyes", "screen_hours": 7.0, "eye_comfort": 3, "eye_symptoms": "dry, red", "glasses": "yes", "date": "2026-10-05"},
         "vitals": {"name": "vitals", "heart_rate_bpm": 72, "systolic_bp": 120, "diastolic_bp": 80, "temperature_c": 37.0, "date": "2026-10-05"},
         "medications": {"name": "Ibuprofen", "category": "medication", "dosage": "200mg", "reason": "pain"},
         "conditions": {"name": "Asthma", "category": "condition", "status": "managed", "diagnosed_date": "2020-01-02"},

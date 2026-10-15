@@ -81,12 +81,15 @@ PAIRS: list[tuple[str, str, int, str, str, str]] = [
     ("mood", "sleep_quality", 1, "On days your mood was higher, your next sleep rating tended to be better", "On days your mood was higher, your next sleep rating tended to be worse", ""),
     ("calories", "sleep_quality", 1, "After days you logged more food, your next sleep rating tended to be better", "After days you logged more food, your next sleep rating tended to be worse", "Only meals you logged are counted, so a day with a missed log looks lighter than it was."),
     ("sleep_hours", "resting_hr", 0, "After longer sleep, your logged heart rate tended to be higher", "After longer sleep, your logged heart rate tended to be lower", "Heart rate depends heavily on when and how it was measured."),
+    ("screen_hours", "eye_comfort", 0, "On days you logged more screen time, your logged eye comfort tended to be higher", "On days you logged more screen time, your logged eye comfort tended to be lower", "Screen time is only what you logged in the Eyes tracker."),
+    ("screen_hours", "sleep_quality", 1, "After days you logged more screen time, your next sleep rating tended to be better", "After days you logged more screen time, your next sleep rating tended to be worse", "Screen time is only what you logged in the Eyes tracker."),
     ("luteal", "mood", 0, "In the luteal phase of your cycle, your logged mood tended to be higher", "In the luteal phase of your cycle, your logged mood tended to be lower", "Cycle phase is an estimate, not a measurement."),
     ("luteal", "sleep_quality", 0, "In the luteal phase of your cycle, your sleep rating tended to be better", "In the luteal phase of your cycle, your sleep rating tended to be worse", "Cycle phase is an estimate, not a measurement."),
     ("luteal", "symptom_severity", 0, "In the luteal phase of your cycle, your logged symptoms tended to be more severe", "In the luteal phase of your cycle, your logged symptoms tended to be milder", "Cycle phase is an estimate, not a measurement. Only days you logged a symptom are compared."),
 ]
 TOPIC = {"sleep_hours": "sleep", "sleep_quality": "sleep ratings", "mood": "mood", "activity_minutes": "activity", "hydration_ml": "drinks",
-         "symptom_severity": "symptoms", "calories": "meals", "resting_hr": "heart rate", "luteal": "cycle phase"}
+         "symptom_severity": "symptoms", "calories": "meals", "resting_hr": "heart rate", "luteal": "cycle phase",
+         "screen_hours": "screen time", "eye_comfort": "eye comfort"}
 _LOG_MORE = "Log {x} and {y} on the same days to check this link (you have {n} of the {need} days needed)."
 
 

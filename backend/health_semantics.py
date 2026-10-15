@@ -40,7 +40,7 @@ CRISIS = frozenset({"suicidal_ideation", "self_harm"})
 #: hedged mentions of these ("I think I'm having a heart attack") still escalate.
 POSSIBLE_IS_EMERGENCY = frozenset({"heart_attack", "stroke_signs", "allergic_reaction", "suicidal_ideation", "self_harm"})
 #: concepts whose severity adjective ("severe", 9/10) makes them urgent.
-PAIN_CONCEPTS = frozenset({"headache", "abdominal_pain", "pelvic_pain", "cramps", "back_pain", "joint_pain", "muscle_pain", "chest_pain", "severe_pain"})
+PAIN_CONCEPTS = frozenset({"headache", "abdominal_pain", "pelvic_pain", "cramps", "back_pain", "joint_pain", "muscle_pain", "chest_pain", "severe_pain", "eye_pain"})
 
 DISPLAY = {
     "chest_pain": "chest pain", "shortness_of_breath": "shortness of breath", "headache": "headache",
@@ -55,6 +55,11 @@ DISPLAY = {
     "heart_attack": "a possible heart attack", "anxiety": "anxiety", "low_mood": "low mood", "insomnia": "trouble sleeping",
     "diarrhea": "diarrhea", "constipation": "constipation", "rash": "rash", "swelling": "swelling",
     "numbness": "numbness", "blurred_vision": "blurred vision", "period": "your period",
+    "eye_strain": "eye strain", "dry_eyes": "dry eyes", "red_eye": "red eyes", "eye_pain": "eye pain", "eye_itch": "itchy eyes",
+    "ear_pain": "ear pain", "tinnitus": "ringing in the ears", "hearing_loss": "hearing loss", "sudden_hearing_loss": "sudden hearing loss",
+    "mouth_ulcer": "mouth ulcers", "toothache": "toothache", "gum_bleeding": "bleeding gums",
+    "burning_urination": "burning when urinating", "frequent_urination": "frequent urination",
+    "breast_lump": "a breast lump", "breast_pain": "breast pain",
     "medication_use": "medication", "severe_pain": "severe pain",
 }
 
@@ -120,6 +125,9 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
     ("stroke_signs", "red", "possible stroke warning signs", (
         "stroke|face droop\\w*|facial droop\\w*|droop\\w* face|face (?:\\w+ ){1,2}droop\\w*|(?:side of )?(?:my |the )?face (?:is |has |feels )?(?:sagging|drooping|dropping)|slurred speech|slurring (?:my )?(?:words|speech)",
         "sudden weakness (?:on|in) (?:one|my (?:left|right)) (?:side|arm|leg)|weakness on (?:one|my (?:left|right)) side|one[\\s-]sided weakness|sudden (?:loss of|trouble with) (?:vision|speech)",
+        # sudden loss of sight, said in everyday words (additive; needs clinician review). Always with a "sudden" cue: "I can't see the board" is not this.
+        "(?:sudden(?:ly)?|all of a sudden|out of nowhere|just now) (?:i )?(?:can'?t|cannot|couldn'?t|could not|am unable to|was unable to|unable to) see (?:anything|at all|properly|clearly|out of (?:my |the )?(?:left |right |one )?eye|with (?:my |the )?(?:left |right |one )?eye)",
+        "(?:can'?t|cannot|couldn'?t|could not) see (?:out of|with) (?:my |the )?(?:left |right |one )eye (?:suddenly|all of a sudden)|(?:suddenly|all of a sudden) (?:lost|losing) (?:all |my )?(?:vision|sight)|(?:lost|losing) (?:all |my )?(?:vision|sight)(?: in (?:my |the |one )?(?:left |right )?eye)? (?:suddenly|all of a sudden|just now)|(?:suddenly|all of a sudden) (?:went|gone|going|go) blind|curtain (?:coming |falling |came |fell |dropped )?(?:(?:down|over|across) ){1,2}(?:my |the )?(?:vision|eye)",
         # inability to feel/move a limb or half the face is the same warning in other words (additive; needs clinician review)
         "(?:can'?t|cannot|unable to|not able to|no longer) (?:feel|move) (?:my |the )?(?:left |right )?(?:arm|leg|hand|side of (?:my )?face|face)|(?:my |the )?(?:left |right )?(?:arm|leg|hand|side of (?:my )?face) (?:suddenly )?(?:went|has gone|became) (?:numb|dead|limp|weak)")),
     ("allergic_reaction", "red", "possible severe allergic reaction", (
@@ -192,6 +200,57 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
     ("numbness", None, "numbness", ("numb\\w*|tingling|pins and needles",)),
     ("blurred_vision", None, "blurred vision", (
         "bl(?:urred|urry) vision|vision (?:is |was )?blurr\\w+|double vision|vision (?:changes?|loss)|loss of vision|can't see (?:properly|clearly)",)),
+    # Eyes. Everyday wording only: sudden loss of vision stays a RED stroke pattern (see stroke_signs), never a plain eye symptom.
+    # Hinglish spellings ride along (aankh / aankhen / aankhon): "aankhon mein jalan" = burning eyes.
+    ("eye_strain", None, "eye strain", (
+        "eye[\\s-]?strain|digital eye strain|(?:tired|strained|fatigued|burning|heavy) eyes?|eyes? (?:are |feel |feels |is |get |gets |were )?(?:tired|strained|fatigued|burning|heavy)|eyes? burn\\w*",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:jalan|jalna|jal rah\\w*|thak\\w*|thaki|thakan|bhaari|bhari)",)),
+    ("dry_eyes", None, "dry eyes", (
+        "dry (?:and \\w+ )?eyes?|eyes? (?:are |feel |feels |is |get |gets |were )?(?:dry|gritty|scratchy)|dry eye syndrome",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:sukh\\w*|sookh\\w*|dryness)",)),
+    ("red_eye", None, "red eyes", (
+        "red[\\s-]?eyes?(?! flight)|bloodshot eyes?|eyes? (?:are |look |looks |is |turned |went |were |got )?(?:red|bloodshot|pink)|pink eye|conjunctivitis",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma|ka|ki|ke) )?(?:laa?l\\w*|gulabi)",)),
+    ("eye_pain", None, "eye pain", (
+        "eye (?:pain|ache|aches|soreness)|(?:pain|ache|pressure) (?:in|behind) (?:my |the |both |one )?eyes?|eyes? (?:hurt|hurts|hurting|ache|aches|aching|are sore|is sore|feel sore)|sore eyes?",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:\\w+ )?(?:dard|dardh|drd|dukh\\w*)",)),
+    ("eye_itch", None, "itchy eyes", (
+        "itchy,? (?:and )?(?:watery |red )?eyes?|eyes? (?:are |feel |feels |is |get |gets |were )?(?:itchy|itching|watery|watering)|watery eyes?|itchy eye",
+        "aa?nkh(?:e|en|ein|on)? (?:(?:mein|me|mai|main|ma) )?(?:khujl\\w*|khujal\\w*|paani|pani)|aa?nkh(?:e|en|ein|on)? se (?:paani|pani)",)),
+    # Ears, mouth, urine and breasts (additive; every rule is listed in docs/clinical section 13c for sign-off).
+    # Two are "urgent" (prompt assessment, not an emergency call): sudden hearing loss and a new breast lump.
+    ("sudden_hearing_loss", "urgent", "sudden hearing loss", (
+        "sudden(?:ly)? (?:lost|loss of|losing|lose) (?:my |the )?hearing|sudden(?:ly)? hearing loss|sudden deafness|(?:my )?hearing (?:suddenly )?(?:dropped|went|has gone|disappeared|vanished) (?:suddenly|overnight|all of a sudden|out of nowhere)|(?:sudden|suddenly) (?:can't|cannot|couldn't|could not) hear (?:out of|with|in) (?:my |the )?(?:one |left |right )?ear|"
+        "(?:lost|losing) (?:my )?hearing (?:suddenly|overnight|all of a sudden)|hearing loss (?:suddenly|overnight|all of a sudden)|woke up (?:deaf|unable to hear) (?:in|out of) (?:one|my (?:left|right)) ear",)),
+    ("breast_lump", "urgent", "a new breast lump", (
+        "(?:a |the )?(?:new |hard |painless )?lump (?:in|on|near|under) (?:my |the |her )?(?:left |right )?(?:breast|armpit)|breast lumps?|(?:found|feel|felt|feeling|noticed|have|got|detected) (?:a |an )?(?:new |hard |painless )?(?:lump|mass)s? (?:in|on) (?:my |the )?(?:left |right )?breast",
+        "(?:seene|stan|chhati) (?:mein |me |par |pe )?(?:ek )?(?:gaanth|ganth|lump)|(?:gaanth|ganth) (?:seene|stan|chhati) (?:mein |me )?",)),
+    ("ear_pain", None, "ear pain", (
+        "ear[\\s-]?aches?|ear pain|pain in (?:my |the )?(?:left |right )?ears?|(?:my )?(?:left |right )?ears? (?:hurts?|are hurting|is hurting|aches?|is aching|are aching)",
+        "kaan (?:mein |me |ma )?(?:dard|dardh|drd)",)),
+    ("tinnitus", None, "ringing in the ears", (
+        "tinnitus|ringing in (?:my |the )?(?:left |right )?ears?|(?:my )?ears? (?:are |is )?ringing|buzzing in (?:my |the )?ears?",
+        "kaan(?:o|on)? (?:mein |me )?(?:ghanti|siti|seeti|sitti|bhanbhan\\w*)",)),
+    ("hearing_loss", None, "hearing loss", (
+        "hearing loss|trouble hearing|difficulty hearing|hard of hearing|muffled hearing|(?:can't|cannot|couldn't) hear (?:well|properly|clearly)|(?:i|we) (?:am|are|have been) going deaf",
+        "kam sunai (?:deta|dena|de raha|de rha|deti)|sunai (?:kam|nahi|nhi) (?:deta|dena|de raha|de rha|deti)",)),
+    ("toothache", None, "toothache", (
+        "tooth[\\s-]?aches?|(?:my )?tooth (?:hurts|is hurting|aches|pain)|tooth pain|dental pain|(?:wisdom )?tooth (?:is )?(?:sensitive|throbbing)",
+        "(?:dant|daant) (?:mein |me )?(?:dard|dardh|drd)",)),
+    ("mouth_ulcer", None, "mouth ulcers", (
+        "mouth ulcers?|canker sores?|ulcers? in (?:my )?mouth|(?:sores?|blisters?) in (?:my )?mouth|aphthous",
+        "(?:munh|mooh|muh|mu) (?:mein |me |ke )?(?:chhale|chale|chhaale|chaale)",)),
+    ("gum_bleeding", None, "bleeding gums", (
+        "bleeding gums?|gums? (?:are |is |were )?bleed\\w*|gum bleeding|(?:my )?gums? bleed",
+        "(?:masoo?dh?on?|masude|masoode) (?:se |mein |me )?(?:khoon|blood)",)),
+    ("burning_urination", None, "burning when urinating", (
+        "(?:burning|stinging|pain)(?: sensation)? (?:when|while|during|on|with) (?:urinating|peeing|passing urine|i pee|i urinate)|painful urination|burning urination|dysuria|(?:burning|painful) (?:pee|urine)",
+        "(?:peshab|pesab|urine) (?:mein |me |ke time |karte time |karte waqt )?(?:jalan|jalna|burning)",)),
+    ("frequent_urination", None, "frequent urination", (
+        "frequent urination|(?:urinat\\w+|peeing|pee|going to the (?:toilet|bathroom|loo)) (?:a lot|more often|very often|too often|frequently|all the time)|(?:need|have|having) to (?:pee|urinate|pass urine|go to the (?:toilet|bathroom)) (?:often|a lot|all the time|every hour)",
+        "(?:baar baar|bar bar) (?:peshab|pesab|toilet|bathroom)",)),
+    ("breast_pain", None, "breast pain", (
+        "breast (?:pain|tenderness|soreness)|(?:painful|tender|sore) breasts?|breasts? (?:hurt|hurts|are sore|are tender|feel tender|feel sore)",)),
     ("period", None, "period", (
         "(?:still |currently )?bleeding (?:today|now|again)|(?:still|currently) bleeding",
         "(?:cycle|period) day \\d{1,2}|day \\d{1,2} of (?:my )?(?:period|cycle)|menstruat\\w+",
