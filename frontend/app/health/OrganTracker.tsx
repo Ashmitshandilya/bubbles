@@ -3,7 +3,7 @@
 import { Component, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { CARD, PILL, ErrorCard, Skeleton, humanize, useBubblesQuery } from "../../components/hub/HubKit";
-import { organLabel, type Anatomy } from "../../components/anatomy/presets";
+import { organLabel, systemsForAnatomy, type Anatomy } from "../../components/anatomy/presets";
 
 // three.js only downloads when someone asks for the 3D view.
 const Anatomy3D = dynamic(() => import("../../components/Anatomy3D"), {
@@ -70,7 +70,7 @@ export function OrganTracker({ anatomy = "neutral" }: { anatomy?: Anatomy } = {}
   const [show3D, setShow3D] = useState(false);
   const [threeFailed, setThreeFailed] = useState(false);
 
-  const systems = query.status === "ready" ? query.data.intelligence?.systems ?? [] : [];
+  const systems = query.status === "ready" ? systemsForAnatomy(query.data.intelligence?.systems ?? [], anatomy) : [];
   const withData = systems.filter((s) => s.status !== "unknown");
   const selected = systems.find((s) => s.organ === picked) ?? withData[0] ?? systems[0];
 

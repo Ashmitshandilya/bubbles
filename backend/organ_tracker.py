@@ -16,20 +16,36 @@ from typing import Any
 ORGANS = (
     "brain",
     "eyes",
+    "ears",
+    "mouth",
+    "thyroid",
     "heart",
     "lungs",
+    "breasts",
     "liver",
-    "kidneys",
     "pancreas",
+    "kidneys",
     "digestive_system",
+    "bladder",
     "reproductive_system",
     "musculoskeletal_system",
+    "skin",
 )
+
+#: factor -> snapshot key holding the number of days (of the last 14) with a symptom for that system (organ_intelligence builds them)
+SYMPTOM_DAY_KEYS = {
+    "frequent_eye_symptoms": "eye_symptom_days",
+    "frequent_ear_symptoms": "ears_symptom_days",
+    "frequent_mouth_symptoms": "mouth_symptom_days",
+    "frequent_urinary_symptoms": "bladder_symptom_days",
+    "frequent_skin_symptoms": "skin_symptom_days",
+    "frequent_breast_symptoms": "breasts_symptom_days",
+}
 
 # Risk multipliers are deliberately conservative product weights, not clinical odds ratios.
 # They rank attention areas only. Evidence-backed clinical rules belong in the evidence layer.
 RISK_FACTORS = {
-    "smoking": {"lungs": 0.30, "heart": 0.22, "brain": 0.16, "kidneys": 0.08, "eyes": 0.06},
+    "smoking": {"lungs": 0.30, "heart": 0.22, "brain": 0.16, "kidneys": 0.08, "eyes": 0.06, "mouth": 0.10},
     "nicotine": {"lungs": 0.18, "heart": 0.16, "brain": 0.12},
     "poor_sleep": {"brain": 0.16, "heart": 0.12, "pancreas": 0.08},
     "low_activity": {"heart": 0.12, "pancreas": 0.10, "musculoskeletal_system": 0.10},
@@ -38,12 +54,19 @@ RISK_FACTORS = {
     "highly_processed_diet": {"heart": 0.08, "liver": 0.08, "pancreas": 0.08},
     "overweight_or_obesity": {"heart": 0.12, "liver": 0.16, "pancreas": 0.14},
     "persistent_high_bp": {"heart": 0.22, "brain": 0.20, "kidneys": 0.16, "eyes": 0.12},
-    "persistent_high_glucose": {"pancreas": 0.20, "kidneys": 0.18, "heart": 0.14, "brain": 0.08, "eyes": 0.14},
-    "alcohol_excess": {"liver": 0.25, "heart": 0.08, "brain": 0.08, "pancreas": 0.14},
+    "persistent_high_glucose": {"pancreas": 0.20, "kidneys": 0.18, "heart": 0.14, "brain": 0.08, "eyes": 0.14, "bladder": 0.08},
+    "alcohol_excess": {"liver": 0.25, "heart": 0.08, "brain": 0.08, "pancreas": 0.14, "mouth": 0.06},
     # Eyes: product weights awaiting clinician review (docs/clinical). 6 h of daily screen time and 3 days of eye symptoms
     # in 14 days are product thresholds, not clinical cut-offs.
     "high_screen_time": {"eyes": 0.14},
     "frequent_eye_symptoms": {"eyes": 0.16},
+    # Ears, mouth, bladder, skin and breasts: the person's own symptom days (3 or more in the last 14), same product threshold as the eyes.
+    "frequent_ear_symptoms": {"ears": 0.16},
+    "frequent_mouth_symptoms": {"mouth": 0.16},
+    "frequent_urinary_symptoms": {"bladder": 0.16},
+    "frequent_skin_symptoms": {"skin": 0.16},
+    "frequent_breast_symptoms": {"breasts": 0.16},
+    "tobacco_chewing": {"mouth": 0.16},
 }
 
 # These are product-level evidence weights, not diagnostic thresholds.
@@ -51,6 +74,13 @@ DIRECT_EVIDENCE_FIELDS = {
     "brain": ("neurologic_diagnosis", "brain_imaging", "clinician_neurologic_finding"),
     # a date of the last eye exam is NOT evidence of eye health, so it is not listed here (it feeds the Care checklist instead)
     "eyes": ("vision_prescription", "eye_diagnosis", "eye_pressure"),
+    # a visit date (dentist, hearing test, mammogram) is not evidence about the organ, so only results and diagnoses are listed
+    "ears": ("hearing_test_result", "ear_diagnosis"),
+    "mouth": ("oral_diagnosis", "oral_exam_finding"),
+    "thyroid": ("tsh", "t3", "t4", "thyroid_diagnosis"),
+    "breasts": ("mammogram_result", "breast_diagnosis", "breast_exam_finding"),
+    "bladder": ("urine_test_result", "urinary_diagnosis"),
+    "skin": ("skin_diagnosis",),
     "heart": ("blood_pressure", "lipids", "ecg", "cardiac_diagnosis"),
     "lungs": ("spirometry", "oxygen_saturation", "lung_imaging", "respiratory_diagnosis"),
     "liver": ("alt", "ast", "bilirubin", "alp", "liver_imaging", "liver_diagnosis"),
@@ -137,12 +167,14 @@ def _factor_present(snapshot: dict[str, Any], factor: str) -> bool:
         return _truthy(snapshot, "persistent_high_glucose")
     if factor == "alcohol_excess":
         return _truthy(snapshot, "alcohol_excess")
+    if factor in SYMPTOM_DAY_KEYS:
+        days = snapshot.get(SYMPTOM_DAY_KEYS[factor])
+        return isinstance(days, (int, float)) and not isinstance(days, bool) and days >= 3
+    if factor == "tobacco_chewing":
+        return _truthy(snapshot, "tobacco_chewing")
     if factor == "high_screen_time":
         hours = snapshot.get("screen_hours_avg")
         return isinstance(hours, (int, float)) and not isinstance(hours, bool) and hours >= 6
-    if factor == "frequent_eye_symptoms":
-        days = snapshot.get("eye_symptom_days")
-        return isinstance(days, (int, float)) and not isinstance(days, bool) and days >= 3
     return False
 
 
@@ -238,6 +270,10 @@ def _actions_for(organ: str, signals: list[OrganSignal]) -> list[str]:
         actions.append("Improve diet quality with more minimally processed foods and appropriate fruit, vegetables, fibre and protein.")
     if "persistent_high_bp" in factors or "persistent_high_glucose" in factors:
         actions.append("Discuss persistent abnormal measurements with a clinician rather than relying on the app score.")
+    if organ == "mouth" and ("tobacco_chewing" in factors or "smoking" in factors):
+        actions.append("Tobacco in the mouth is a well-known oral-health risk, so a regular dental and oral check is worth asking your dentist or doctor about.")
+    if organ in {"ears", "mouth", "bladder", "skin", "breasts"} and any(f.startswith("frequent_") for f in factors):
+        actions.append("These symptoms keep coming back in your logs. If they continue, it is worth mentioning to a clinician.")
     if organ == "eyes":
         if "high_screen_time" in factors or "frequent_eye_symptoms" in factors:
             actions.append("Short screen breaks, such as looking at something about 6 metres away for 20 seconds every 20 minutes, are a common habit for tired eyes. If symptoms keep coming back, an eye check is worth considering.")

@@ -162,7 +162,7 @@ def test_body_systems_report_includes_eyes_from_the_logs():
     events = [check(i, screen_hours=8, eye_symptoms="strained") for i in range(1, 5)]
     report = build_body_system_intelligence(events)
     eyes = next(s for s in report["systems"] if s["organ"] == "eyes")
-    assert report["total_systems"] == len(ORGANS) == 10
+    assert report["total_systems"] == len(ORGANS) == 16
     assert eyes["status"] == "watch" and {s["factor"] for s in eyes["signals"]} == {"high_screen_time", "frequent_eye_symptoms"}
 
 

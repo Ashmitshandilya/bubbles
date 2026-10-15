@@ -332,6 +332,21 @@ Bubbles now tracks the eyes (Track > Eyes, the "eyes" body system, chat understa
   resolution list); Hinglish "bahut tez" (very severe) is not read as a severity word for eye pain, so Hinglish severe eye pain does not escalate yet.
 * **Patterns:** two new links are checked: screen time with eye comfort (same day), and screen time with the next night's sleep rating. They are worded as associations only.
 
+### 13c-2. Ears, mouth, thyroid, bladder, skin and breasts (added 2026-10-15; awaiting sign-off)
+
+The body map now has 16 systems. For ears, mouth, bladder, skin and breasts the only signal is **the person's own symptom days: 3 or more different days in the last 14**
+(weight 0.16, a product threshold, not a clinical cut-off), with the advice line "These symptoms keep coming back in your logs. If they continue, it is worth mentioning to a
+clinician." The mouth also counts chewed tobacco (0.16), smoking (0.10) and alcohol excess (0.06) and says "a regular dental and oral check is worth asking your dentist or doctor
+about". High blood glucose adds 0.08 to the bladder. The thyroid has **no** symptom signals (only results: TSH, T3, T4, a diagnosis). A dentist visit, hearing test, mammogram or
+exam **date** is never counted as evidence about the organ. Breasts are shown only for the female body map (or if the person chooses it).
+
+New chat words (English and Hinglish): ear pain, ringing in the ears, hearing loss, toothache, mouth ulcers, bleeding gums, burning when urinating, frequent urination, breast pain.
+**Two are "urgent" (the existing AMBER tier: prompt assessment, not an emergency call):**
+* **Sudden hearing loss** ("sudden hearing loss", "I suddenly lost my hearing in one ear", "my hearing suddenly dropped overnight").
+* **A new breast lump** ("I found a lump in my breast", "a hard lump on my left breast", "breast lump"). Past, denied and other-person mentions do not escalate.
+Please confirm both should be urgent, or tell us the right tier. Known gaps: "hearing loss in my grandfather" is read as the speaker's own (the existing other-person detection
+does not cover "X in my <relative>"); Hinglish for a breast lump (gaanth) is included but untested by a native speaker.
+
 ## 14. Sign-off
 
 | Role | Name | Registration no. | Sections reviewed | Date | Signature |

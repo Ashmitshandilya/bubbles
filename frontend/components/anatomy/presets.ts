@@ -167,3 +167,16 @@ export function organsFor(anatomy: Anatomy, ids?: readonly string[]): OrganSpec[
   const chosen = all.filter((o) => wanted.has(o.id));
   return chosen.length > 0 ? chosen : all;
 }
+
+/** Body systems that only exist for some anatomies (breasts: female). The list and the map both use this so they never disagree. */
+const ANATOMY_ONLY: Record<string, readonly Anatomy[]> = { breasts: ["female"] };
+
+export function systemAppliesTo(id: string, anatomy: Anatomy): boolean {
+  const only = ANATOMY_ONLY[id];
+  return !only || only.includes(anatomy);
+}
+
+/** `systems` without the ones that do not apply to this anatomy. */
+export function systemsForAnatomy<T extends { organ: string }>(systems: readonly T[], anatomy: Anatomy): T[] {
+  return systems.filter((system) => systemAppliesTo(system.organ, anatomy));
+}

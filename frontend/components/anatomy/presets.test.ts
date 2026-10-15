@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ANATOMIES, REPRODUCTIVE_LABEL, figure, isAnatomy, organLabel, organsFor } from "./presets";
+import { ANATOMIES, REPRODUCTIVE_LABEL, figure, isAnatomy, organLabel, organsFor, systemAppliesTo, systemsForAnatomy } from "./presets";
 
 const ids = (anatomy: "female" | "male" | "neutral", list?: string[]) => organsFor(anatomy, list).map((o) => o.id);
 
@@ -104,5 +104,25 @@ describe("labels", () => {
     expect(isAnatomy("female")).toBe(true);
     expect(isAnatomy("other")).toBe(false);
     expect(isAnatomy(undefined)).toBe(false);
+  });
+});
+
+describe("systems that depend on the anatomy", () => {
+  const systems = [{ organ: "heart" }, { organ: "breasts" }, { organ: "eyes" }];
+
+  it("shows breasts only for the female anatomy, and never drops anything else", () => {
+    expect(systemsForAnatomy(systems, "female").map((s) => s.organ)).toEqual(["heart", "breasts", "eyes"]);
+    expect(systemsForAnatomy(systems, "male").map((s) => s.organ)).toEqual(["heart", "eyes"]);
+    expect(systemsForAnatomy(systems, "neutral").map((s) => s.organ)).toEqual(["heart", "eyes"]);
+  });
+
+  it("agrees with what the map draws", () => {
+    for (const anatomy of ANATOMIES) {
+      expect(organsFor(anatomy).some((o) => o.id === "breasts")).toBe(systemAppliesTo("breasts", anatomy));
+    }
+  });
+
+  it("keeps an unknown future system for every anatomy", () => {
+    expect(systemAppliesTo("some_new_system", "male")).toBe(true);
   });
 });

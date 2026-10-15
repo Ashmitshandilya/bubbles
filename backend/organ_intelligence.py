@@ -8,6 +8,14 @@ from event_filters import clean_data, counts_as_observation
 
 EYE_WINDOW_DAYS = 14
 MIN_SCREEN_DAYS = 3        # an average over fewer logged days says too little
+#: symptom names (health_semantics display names) that count towards each system's "symptom days". Eyes also read their own tracker (eye_snapshot).
+SYSTEM_SYMPTOM_NAMES: dict[str, frozenset[str]] = {
+    "ears": frozenset({"ear pain", "ringing in the ears", "hearing loss", "sudden hearing loss"}),
+    "mouth": frozenset({"mouth ulcers", "toothache", "bleeding gums"}),
+    "bladder": frozenset({"burning when urinating", "frequent urination"}),
+    "skin": frozenset({"rash"}),
+    "breasts": frozenset({"breast pain", "a breast lump"}),
+}
 #: names a chat or a symptom log gives to eye complaints (health_semantics display names + the tracker's own vocabulary)
 EYE_SYMPTOM_NAMES = frozenset({"eye strain", "dry eyes", "red eyes", "eye pain", "itchy eyes", "blurred vision"})
 
@@ -54,6 +62,27 @@ def eye_snapshot(events: list[dict[str, Any]], today: datetime | None = None) ->
     return out
 
 
+def symptom_day_snapshot(events: list[dict[str, Any]], today: datetime | None = None) -> dict[str, Any]:
+    """`<system>_symptom_days`: how many different days in the last two weeks the person logged or told Bubbles about a symptom of that
+    system. Only live, positive, first-person events count (denials, other people and rejected rows never do); no events means no key."""
+    since = ((today or datetime.now(timezone.utc)).date() - timedelta(days=EYE_WINDOW_DAYS)).isoformat()
+    days: dict[str, set[str]] = {system: set() for system in SYSTEM_SYMPTOM_NAMES}
+    for event in events or []:
+        if not isinstance(event, dict) or not counts_as_observation(event):
+            continue
+        if str(event.get("event_type") or "") not in {"symptom", "menstrual_symptom"}:
+            continue
+        data = clean_data(event.get("extracted_data") if isinstance(event.get("extracted_data"), dict) else {})
+        day = _event_day(event, data)
+        if day < since:
+            continue
+        name = str(data.get("name") or data.get("symptom") or "").strip().lower()
+        for system, names in SYSTEM_SYMPTOM_NAMES.items():
+            if name in names:
+                days[system].add(day)
+    return {f"{system}_symptom_days": len(found) for system, found in days.items() if found}
+
+
 def build_body_system_intelligence(events: list[dict[str, Any]]) -> dict[str, Any]:
     snapshot: dict[str, Any] = {}
     source_ids: dict[str, list[str]] = {}
@@ -67,6 +96,7 @@ def build_body_system_intelligence(events: list[dict[str, Any]]) -> dict[str, An
                 if value is not None:
                     snapshot[key] = value
                     source_ids.setdefault(key, []).append(str(event.get("id")))
+    snapshot.update(symptom_day_snapshot(events))
     snapshot.update(eye_snapshot(events))   # derived from the eye logs, so a single latest value never stands in for a pattern
     snapshot["source_ids"] = source_ids
     assessments = assess_all(snapshot)
