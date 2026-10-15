@@ -32,23 +32,23 @@ describe("tiers and chapter levels", () => {
     expect(bubbleCount("static")).toBe(0);
   });
 
-  it("has a level for every chapter: busiest in the hero and the finale, none in care", () => {
+  it("has a level for every chapter: busiest at the close, none behind the ring and the summary", () => {
     expect(Object.keys(BUBBLE_LEVEL).sort()).toEqual(CHAPTERS.map((c) => c.key).sort());
-    expect(BUBBLE_LEVEL.enter).toBe(1);
-    expect(BUBBLE_LEVEL.bubbles).toBe(1);
-    expect(BUBBLE_LEVEL.care).toBe(0);
+    expect(BUBBLE_LEVEL.close).toBe(1);
+    expect(BUBBLE_LEVEL.patterns).toBe(0);
+    expect(BUBBLE_LEVEL.prepare).toBe(0);
     for (const v of Object.values(BUBBLE_LEVEL)) expect(v).toBeGreaterThanOrEqual(0);
   });
 
   it("glides between chapter levels through a hand-over and clamps bad input", () => {
-    expect(levelAt(0, 0)).toBe(1);
-    expect(levelAt(0, 1)).toBeCloseTo(BUBBLE_LEVEL.body, 6);
+    expect(levelAt(0, 0)).toBe(BUBBLE_LEVEL.enter);
+    expect(levelAt(0, 1)).toBeCloseTo(BUBBLE_LEVEL.listen, 6);
     const mid = levelAt(0, 0.5);
-    expect(mid).toBeGreaterThan(BUBBLE_LEVEL.body);
-    expect(mid).toBeLessThan(1);
-    expect(levelAt(8, 1)).toBeCloseTo(BUBBLE_LEVEL.bubbles, 6); // care into the finale
-    expect(levelAt(99, 5)).toBe(BUBBLE_LEVEL.bubbles);
-    expect(levelAt(-3, -1)).toBe(1);
+    expect(mid).toBeGreaterThan(BUBBLE_LEVEL.listen);
+    expect(mid).toBeLessThan(BUBBLE_LEVEL.enter);
+    expect(levelAt(4, 1)).toBeCloseTo(BUBBLE_LEVEL.close, 6); // prepare into the close
+    expect(levelAt(99, 5)).toBe(BUBBLE_LEVEL.close);
+    expect(levelAt(-3, -1)).toBe(BUBBLE_LEVEL.enter);
   });
 });
 
@@ -218,11 +218,17 @@ describe("soap shader source", () => {
     for (const a of ["aSeed", "aPop", "aAlpha", "aHover"]) expect(SOAP_VERT).toContain(`attribute float ${a}`);
   });
 
-  it("builds the film from a cosine palette, fresnel, a window highlight, and dithers", () => {
-    expect(SOAP_FRAG).toContain("cos(6.28318");
+  it("builds the film from thin-film interference, fresnel, both faces, a window, and dithers", () => {
+    expect(SOAP_FRAG).toContain("filmColor(");
     expect(SOAP_FRAG).toContain("fres");
+    expect(SOAP_FRAG).toContain("gl_FrontFacing");
     expect(SOAP_FRAG).toContain("win");
     expect(SOAP_FRAG).toContain("gl_FragCoord");
     expect(SOAP_VERT).toContain("instanceMatrix");
+  });
+
+  it("takes the same values as uniforms for the orb (a single, non-instanced mesh)", () => {
+    for (const u of ["uSeed", "uPop", "uAlpha", "uHover"]) expect(SOAP_VERT).toContain(`uniform float ${u}`);
+    expect(SOAP_VERT).toContain("#ifdef USE_INSTANCING");
   });
 });

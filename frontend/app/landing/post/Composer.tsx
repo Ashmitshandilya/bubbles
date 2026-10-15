@@ -52,6 +52,10 @@ function Composer({ wanted, onGone }: { wanted: MutableRefObject<boolean>; onGon
     latest.current = { w: size.width, h: size.height, dpr };
   });
 
+  useEffect(() => () => {
+    story.postLive = false;
+  }, []);
+
   useEffect(() => {
     // The bloom code is only fetched when the full tier actually needs it (lite and static visitors never download it).
     let cancelled = false;
@@ -82,6 +86,7 @@ function Composer({ wanted, onGone }: { wanted: MutableRefObject<boolean>; onGon
     const s = stack.current;
     if (s && !broken && !gone) {
       try {
+        story.postLive = true;
         s.render(dt, story.sky.bloom, story.sky.grade, amount.current);
         return;
       } catch {
@@ -89,6 +94,7 @@ function Composer({ wanted, onGone }: { wanted: MutableRefObject<boolean>; onGon
       }
     }
     // No stack to draw with (faded out, failed, or not built yet): the plain render, then let go of the render.
+    story.postLive = false;
     gl.render(scene, camera);
     if (gone || broken) onGone();
   }, 1);

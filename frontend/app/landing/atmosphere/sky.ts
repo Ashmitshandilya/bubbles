@@ -12,10 +12,8 @@ import {
   COPY_ZONE,
   SKY_MID_STOP,
   hexToRgb,
-  mixOklab,
   sampleSky,
   skyCss,
-  type BlendedSky,
   type ChapterPalette,
   type Hex,
   type Scrim,
@@ -24,53 +22,6 @@ import {
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-
-/* ---------------------------------------------------------------------- the example cycle day */
-
-/** Day (0..28, fractional) at the middle of each phase band: period 1-5, follicular 6-13, ovulation 14-16, luteal 17-28. */
-const PHASE_CENTRES = [2.5, 9, 14.5, 22] as const;
-
-/**
- * Where on the four-phase scale (0 period .. 3 luteal, see `phaseColorAt`) the example day is: each
- * phase colour peaks at its own centre and neighbours mix in between. Clamps outside the cycle.
- */
-export function phaseMixAtDay(day: number): number {
-  const d = Number.isFinite(day) ? day : 0;
-  if (d <= PHASE_CENTRES[0]) return 0;
-  for (let i = 1; i < PHASE_CENTRES.length; i += 1) {
-    if (d <= PHASE_CENTRES[i]) return i - 1 + (d - PHASE_CENTRES[i - 1]) / (PHASE_CENTRES[i] - PHASE_CENTRES[i - 1]);
-  }
-  return PHASE_CENTRES.length - 1;
-}
-
-/* ---------------------------------------------------------------------- blending skies */
-
-/** Mix two on-screen skies. Colours mix in OKLab; discrete things (tone, text, scrim) follow the nearer one. */
-export function mixSky(a: BlendedSky, b: BlendedSky, t: number): BlendedSky {
-  const k = clamp01(t);
-  const near = k < 0.5 ? a : b;
-  const grade = {
-    warmth: lerp(a.grade.warmth, b.grade.warmth, k),
-    saturation: lerp(a.grade.saturation, b.grade.saturation, k),
-    contrast: lerp(a.grade.contrast, b.grade.contrast, k),
-    lift: lerp(a.grade.lift, b.grade.lift, k),
-    vignette: lerp(a.grade.vignette, b.grade.vignette, k),
-  };
-  return {
-    top: mixOklab(a.top, b.top, k),
-    mid: mixOklab(a.mid, b.mid, k),
-    horizon: mixOklab(a.horizon, b.horizon, k),
-    key: mixOklab(a.key, b.key, k),
-    rim: mixOklab(a.rim, b.rim, k),
-    sun: mixOklab(a.sun, b.sun, k),
-    accent: mixOklab(a.accent, b.accent, k),
-    text: near.text,
-    tone: near.tone,
-    scrim: near.scrim,
-    grade,
-    bloom: lerp(a.bloom, b.bloom, k),
-  };
-}
 
 /* ---------------------------------------------------------------------- CSS */
 
@@ -131,8 +82,11 @@ export type SkyParams = {
  */
 export const OVERLAY_CAP: Record<Tone, number> = { light: 0.3, dark: 0.1 };
 
-/** Sun top-left on light skies (the painting's key light), a small moon top-right on dark ones, away from the left-hand copy. */
-const LIGHT_SUN = { x: 0.22, y: 0.8, size: 0.055, disc: 0.85, rays: 0.55, haze: 0.6 } as const;
+/**
+ * Warm daylight from the top left on light skies (Pearl Lab's key light): no visible disc, only a soft wash and faint
+ * rays. A small moon top-right on dark ones (the landing has none now; kept so the shader stays general).
+ */
+const LIGHT_SUN = { x: 0.16, y: 0.86, size: 0.055, disc: 0, rays: 0.3, haze: 0.55 } as const;
 const DARK_SUN = { x: 0.82, y: 0.82, size: 0.026, disc: 0.55, rays: 0.3, haze: 0.45 } as const;
 
 /** Shader parameters for a sky that is `dark` (0 light .. 1 dark) and a tier. Writes into `out` (no allocation per frame). */

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Nunito } from "next/font/google";
+import { Figtree, Fraunces, Fredoka, JetBrains_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 import { PrivacyVeilProvider } from "../components/PrivacyVeil";
 import { AuthLinkRedirect } from "../components/AuthLinkRedirect";
@@ -19,6 +19,28 @@ const fredoka = Fredoka({
   subsets: ["latin"],
   variable: "--font-fredoka",
   display: "swap",
+});
+
+// Pearl Lab type (DESIGN.md in bubbles-stitch-kit): Fraunces for headlines and big numbers, Figtree for UI and body,
+// JetBrains Mono only for tiny data labels.
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
+  axes: ["SOFT", "opsz"],
+});
+
+const figtree = Figtree({
+  subsets: ["latin"],
+  variable: "--font-figtree",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+  weight: ["500"],
 });
 
 export const metadata: Metadata = {
@@ -46,7 +68,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FFF6FA",
+  themeColor: "#FBF8F6",
   colorScheme: "light",
   width: "device-width",
   initialScale: 1,
@@ -61,7 +83,7 @@ export default function RootLayout({
 }) {
   return (
     // data-native switches on the Android app's own styles (the end of globals.css); the website never renders it.
-    <html lang="en" className={`${nunito.variable} ${fredoka.variable}`} data-native={isNativeApp ? "" : undefined}>
+    <html lang="en" className={`${nunito.variable} ${fredoka.variable} ${fraunces.variable} ${figtree.variable} ${jetbrainsMono.variable}`} data-native={isNativeApp ? "" : undefined}>
       <body className="bubbles-shell min-h-dvh flex flex-col">
         <AuthLinkRedirect />
         <PrivacyVeilProvider>{children}</PrivacyVeilProvider>

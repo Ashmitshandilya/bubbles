@@ -15,7 +15,7 @@ import { MAX_BUBBLES, SoapField, bubbleCount, levelAt } from "./soap";
  * The iridescent soap bubbles. One instanced sphere mesh (bubbles first, then the droplets of popped ones),
  * parented to the camera so every bubble keeps its place on screen however the chapter rigs move the camera.
  * Bubble motion is the pure SoapField (viewport px); this only maps px to camera space and uploads.
- * Tiers: full draws 12 with refraction, lite 6 with plain reflection, static none (CSS bubbles show instead).
+ * Tiers: full draws 12, lite 6, static none (CSS bubbles show instead).
  */
 
 const CAP = MAX_BUBBLES + MAX_DROPS;
@@ -43,11 +43,12 @@ export function SoapBubbles() {
     const hover = attr("aHover");
     const uniforms = {
       uTime: { value: 0 },
-      uTop: { value: new THREE.Vector3(0.9, 0.83, 1) },
-      uMid: { value: new THREE.Vector3(1, 0.79, 0.89) },
-      uHor: { value: new THREE.Vector3(1, 0.85, 0.71) },
-      uDark: { value: 0 },
-      uFull: { value: 0 },
+      uWobble: { value: 1 },
+      uTop: { value: new THREE.Vector3(0.96, 0.93, 0.98) },
+      uMid: { value: new THREE.Vector3(0.98, 0.97, 0.96) },
+      uHor: { value: new THREE.Vector3(0.99, 0.95, 0.92) },
+      // display colours straight to the canvas: the bubbles sit on the overlay layer, outside the post stack
+      uLinear: { value: 0 },
     };
     const material = new THREE.ShaderMaterial({
       vertexShader: SOAP_VERT,
@@ -55,6 +56,8 @@ export function SoapBubbles() {
       uniforms,
       transparent: true,
       depthWrite: false,
+      // both faces: three.js draws the inner (back) face first, so each bubble shows the far side's reflection too
+      side: THREE.DoubleSide,
     });
     const mesh = new THREE.InstancedMesh(geometry, material, CAP);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -166,8 +169,6 @@ export function SoapBubbles() {
     drops.step(dt);
 
     uniforms.uTime.value = time;
-    uniforms.uDark.value = story.sky.dark;
-    uniforms.uFull.value = story.tier === "full" ? 1 : 0;
     if (l.skySeen !== story.sky.v) {
       l.skySeen = story.sky.v;
       uniforms.uTop.value.set(...hexToUnit(story.sky.top));
