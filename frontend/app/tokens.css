@@ -204,7 +204,7 @@
   --shadow-glow-success: 0 10px 24px rgba(34,195,154,.18);
   /* Soft press (DESIGN.md "The Soft Press Rule"): an inner top highlight plus a blurred glow in the fill's own deep
      colour. The glow itself lives in .bubbles-glow (globals.css), which reads --press-rgb on the element. */
-  --press-highlight: inset 0 1px 0 rgb(255 255 255 / 0.28);
+  --press-highlight: inset 0 1px 0 rgb(255 255 255 / 0.28), inset 0 -2px 0 rgb(0 0 0 / 0.14);
   --press-rgb: 168 21 90;
 
   /* ── Motion ── */

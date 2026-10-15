@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Fraunces, Fredoka, JetBrains_Mono, Nunito } from "next/font/google";
+import { Bricolage_Grotesque, Figtree, Fraunces, Fredoka, JetBrains_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 import { PrivacyVeilProvider } from "../components/PrivacyVeil";
 import { AuthLinkRedirect } from "../components/AuthLinkRedirect";
@@ -29,6 +29,9 @@ const fraunces = Fraunces({
   display: "swap",
   axes: ["SOFT", "opsz"],
 });
+
+// Landing-page button face, kept inside the app for filled buttons only.
+const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-btn", axes: ["opsz", "wdth"], display: "swap" });
 
 const figtree = Figtree({
   subsets: ["latin"],
@@ -83,7 +86,7 @@ export default function RootLayout({
 }) {
   return (
     // data-native switches on the Android app's own styles (the end of globals.css); the website never renders it.
-    <html lang="en" className={`${nunito.variable} ${fredoka.variable} ${fraunces.variable} ${figtree.variable} ${jetbrainsMono.variable}`} data-native={isNativeApp ? "" : undefined}>
+    <html lang="en" className={`${nunito.variable} ${fredoka.variable} ${fraunces.variable} ${figtree.variable} ${bricolage.variable} ${jetbrainsMono.variable}`} data-native={isNativeApp ? "" : undefined}>
       <body className="bubbles-shell min-h-dvh flex flex-col">
         <AuthLinkRedirect />
         <PrivacyVeilProvider>{children}</PrivacyVeilProvider>
