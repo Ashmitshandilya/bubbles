@@ -1,0 +1,95 @@
+# DECISIONS.md — Bubbles decision log
+
+Read this first. It records what we changed, what we added, why, and the rules we decided to keep, so any session
+(human or Claude) can pick up without re-deriving context. **Update it in the same PR as the change.**
+Newest entries first. Keep each entry short: *what*, *why*, *use case*, *where*.
+
+Entry template:
+
+```
+### YYYY-MM-DD · Title (PR #n)
+- What:  the change, one or two lines
+- Why:   the reason or the owner's request
+- Use:   what it is for / who benefits
+- Where: files or folders
+- Notes: trade-offs, rejected options, follow-ups
+```
+
+---
+
+## 1. Standing rules (do not break without the owner saying so)
+
+| Rule | Why |
+|---|---|
+| Bubbles (this repo, `main` → heybubbles.in) is the main product. `D:\COCO\coco` and the old GitHub COCO repo are an archive: no commits, no pushes. | One source of truth. |
+| Work on a branch, pass the gates, open a PR, then merge. Never push to `main` directly. | `main` deploys the live site. |
+| Gates before any merge: backend `pytest`, frontend `tsc --noEmit`, `eslint`, `vitest`, `next build`. CI runs backend + frontend + Vercel preview. | Catch regressions early. |
+| Bubbles is not a diagnostic engine. Copy keeps uncertainty ("how sure", "missing data") and never claims diagnosis or treatment. | Safety and honesty. |
+| RED/AMBER/GREEN safety triage runs before any AI. RED never sends the message to a model. | Urgent symptoms get fixed, reliable guidance. |
+| $0 AI by default: `ALLOW_PAID_AI`, `ALLOW_KEYLESS_AI`, `ALLOW_KEYLESS_HEALTH_DATA` stay `false`. | Privacy and cost. |
+| No analytics, no ad or tracking cookies. The privacy notice promises it. Do **not** merge the Vercel Web Analytics branch (`vercel/install-vercel-web-analytics-cayiic`). | Promise to users. |
+| No Supabase schema or RLS weakening without an explicit decision. New tables enable RLS, owner-scoped reads, backend-only writes. | Health data isolation. |
+| No secrets, `.env` files, real health records, screenshots of private data in git. | Security. |
+| Do not use the other Claude session's folder `D:\COCO\bubbles`. Isolated clone `D:\COCO\bubbles-organ` is used for this session's work. | Avoids clobbering parallel work. |
+| Merges are the owner's call: Claude opens the PR and reports green checks; Claude merges only when the owner says so in chat. | Auto-mode blocked an unreviewed merge once; the owner now merges or says "merge it". |
+
+## 2. Design system snapshot (current, live)
+
+- **Palette (pink "bright & cute"):** pink `#FF5FA2`, deep pink `#D6246F` (buttons, 4.9:1 on white), ink `#2B1A3F`, blush `#FFF6FA`, grape `#6A45F5`, sun `#FFC83D`, mint `#22C39A`, sky `#1F7FD6`, peach `#FF9F6B`, urgent `#C42B3B`.
+- **Fonts:** Fraunces (headlines, big numbers), Figtree (UI and body), JetBrains Mono (tiny data labels), Bricolage Grotesque 650 (filled buttons, landing display). Tokens live in `frontend/app/tokens.css`; font loading in `frontend/app/layout.tsx`.
+- **Shape and depth:** pill buttons, 20–24px card radius, pink-tinted shadows (never grey), soft inset highlight on filled buttons (`--press-highlight`).
+- **Landing:** scroll-driven story in 10 chapters (`frontend/app/landing/story/store.ts`): enter, body, noise, track, cycle, connect, remember, companion, care, start. Sky is a WebGL canvas, bubbles are CSS/WebGL, motion respects reduced-motion.
+
+---
+
+## 3. Decision log
+
+### 2026-10-15 · Figma pass: chapter eyebrows and scroll cue (this PR)
+- What: every landing headline (except the two swapping ones) gets a small mono line above it, e.g. `01 / 10 · CYCLE-AWARE. ALWAYS HUMAN.`; the hero gets a "Scroll to continue ↓" cue that drifts 5px over 2.5s (ease-in-out).
+- Why: the owner designed a landing in Figma (`Untitled.fig`) and asked to bring over only the parts that are useful. We decoded the file: it contained the six-chapter copy, mono eyebrow labels, honest "illustrative" captions, and ambient keyframes (ease-in-out cubic, 0→5→0 over ~2.5s). The 105 bitmaps inside were Figma's stock Apple-icon kit and were ignored.
+- Use: gives the story an editorial "chapter x of y" rhythm and tells visitors the page scrolls, without changing the existing scroll engine.
+- Where: `frontend/app/landing/eyebrow.ts` (+ test), `Landing.tsx` (`data-eyebrow` on headings, `.cw-scroll-cue`), `landing.css` (bottom block).
+- Notes: eyebrow is CSS generated content with empty alt text (`content: attr(data-eyebrow) / ""`) so headings keep clean accessible names. Hidden on `.cw-swap` headings (body, noise) because it sat under the swapping text. Taken from Figma: copy lines, cue motion. **Not** taken: its layouts (they drop the body/noise/companion chapters we already have), stock imagery, Roboto/SF Pro UI-kit styles.
+
+### 2026-10-15 · Filled app buttons use the landing button look (PR #23)
+- What: in-app filled buttons (`.bubbles-glow`, `.bg-bubbles-pink-ink`) use Bricolage Grotesque 650 and a stronger inset highlight.
+- Why: owner: "keep a little button and font theme of the landing page inside".
+- Use: the app and the landing feel like one product; only buttons changed, headings and body keep Fraunces/Figtree.
+- Where: `layout.tsx` (font), `tokens.css` (`--press-highlight`), `globals.css` (bottom rule).
+- Notes: the first attempt was cut from a stale local `main` and conflicted with PR #22 (it would have reintroduced violet tokens). Rebuilt on fresh `origin/main`. Lesson: always `git fetch` before branching.
+
+### 2026-10-15 · Revert landing and in-app theme to pink, keep new fonts (PR #22)
+- What: restored the previous pink landing (`frontend/app/landing/**`, `NativeWelcome.tsx`) and the pink in-app palette; kept Fraunces / Figtree / JetBrains Mono; kept the organ tracker and restyled screens' structure. Removed `pearl-contrast.test.ts` (it tested the violet palette).
+- Why: owner after seeing the "Pearl Lab" redesign live: change the landing back, fonts are good, inside theme back to pink, everything else looks good.
+- Use: brand continuity (pink unicorn identity) and a faster first load (home page cold load was ~9.8s on the heavy Pearl Lab landing; ~0.3s after revert, measured with curl).
+- Where: `frontend/app/tokens.css`, `globals.css`, `manifest.ts`, `layout.tsx` (theme colour `#FFF6FA`), landing folder.
+- Notes: Pearl Lab (pearl `#FBF8F6`, plum `#1E1B2E`, violet `#6B46D6`, lilac `#C9B6F2`, gold `#E9C98B`) is kept only as a reference checkout (commit `b48b7cd`, folder `D:\COCO\bubbles-pearl-landing`).
+
+### 2026-10 · 3D organ tracker (merged via release PR #21)
+- What: `/body` page with a premium 3D anatomy viewer and an organ intelligence engine (per-organ context from the user's own logs).
+- Why: owner wanted a living body map that connects tracked signals to organs.
+- Use: users explore organs and see what their logged data does and does not say about them.
+- Where: `frontend/app/body/`, `frontend/components/Anatomy3D.tsx`, `public/models/`, `docs/organ-tracker/`, `HANDOFF-ORGAN.md`.
+- Notes: model from BodyParts3D (CC BY-SA 2.1 JP) and Z-Anatomy (CC BY-SA 4.0), compressed with meshopt/quantization. **Open:** the `/body` credit links both sources; confirm it also states the CC BY-SA 4.0 / 2.1 JP licences.
+
+### 2026-10 · Whole-Health OS (Fitness, Cycle, wellness)
+- What: fitness (diet, exercise, calories, strict Transformation mode), cycle section, sleep, hydration, medications, mind check-ins, notifications, chat integration, clinician review packet, schema proposal kept as separate files.
+- Why: owner asked for a whole-health companion beyond chat.
+- Use: daily tracking that feeds longitudinal insights; strict mode has hard safety exclusions.
+- Where: backend modules `clinical_constants.py`, `plan_engine.py`, `transformation.py`, `doc_store.py`, routers `fitness_api.py`, `cycle_api.py`, `wellness_api.py`; docs under `docs/plans`, `docs/clinical`, `docs/proposals`.
+- Notes: **clinical constants still need clinician sign-off** (pending banner stays until `BUBBLES_CLINICALLY_REVIEWED=true`). Schema is only proposed (`docs/proposals/whole-health-os-schema.sql`); data is stored as signed JSON documents in the existing events table.
+
+### 2026-10 · Working method decisions
+- Isolated clone for this session (`D:\COCO\bubbles-organ`) so two Claude sessions do not edit the same working tree.
+- Heavy but simple chores (screenshots, uploading, dragging files into Figma) are handed to the owner with exact steps when they would cost many tokens; Claude does reasoning and code.
+- Figma cannot produce real scroll effects. Plan: owner generates frames in Figma; Claude analyses them, keeps only what helps, and builds motion in code on the existing scroll engine (`ScrollDirector`, sky canvas, soap bubbles), polished with the Emil Kowalski / taste / impeccable skills when available.
+- Figma kit: `D:\COCO\bubbles-figma-kit` (10 upload images, final prompt `upload-10/PROMPT-FINAL.txt`, decoded `.fig` notes in `fig/`).
+
+---
+
+## 4. Open items
+
+- Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.
+- Clinician sign-off for `clinical_constants.py` before removing the "pending review" banner.
+- Decide which further Figma ideas to build (see the Figma entry: only copy lines and the cue motion are in so far).
+- Owner to fix `~/.claude/settings.json` model aliases only when wanting the free router back (currently reset to defaults).

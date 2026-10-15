@@ -1,3 +1,5 @@
+> **Read [DECISIONS.md](DECISIONS.md) first** for the standing rules and the log of what changed and why. Update it in the same PR as any notable change.
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
