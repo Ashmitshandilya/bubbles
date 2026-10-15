@@ -20,7 +20,8 @@ from typing import Any
 import clinical_constants as K
 import doc_store
 from health_logs import DOMAINS, list_domain
-from safety_engine import assess_safety, emergency_response, urgent_fallback_response
+from safety_engine import CRISIS_LINES
+from safety_gate import safety_gate  # noqa: F401 - re-exported: wellness_api and the tests call Mind.safety_gate
 from wellness_common import InputError, choice, local_date_of, number, parse_date, text
 
 SCREENS = {"phq2": {"questions": K.PHQ2_QUESTIONS, "positive_at": K.PHQ2_POSITIVE_AT, "topic": "low mood"},
@@ -47,24 +48,10 @@ EXERCISES = (
      "steps": ["Tighten your fists for a few seconds, then let go.", "Do the same for shoulders, then jaw, then legs.", "Notice the difference as you release."]},
 )
 EXERCISE_NOTE = "Stop and breathe normally if you feel dizzy or uncomfortable. These are relaxation tools, not treatment."
-SUPPORT_NOTE = "If you ever feel you might harm yourself, please contact your local emergency number or a crisis line right away."
+SUPPORT_NOTE = "If you ever feel you might harm yourself, please reach out right away. " + CRISIS_LINES
 
 
 # --- safety gate ---------------------------------------------------------------------------------------------------------
-
-def safety_gate(*texts: str | None) -> dict[str, Any] | None:
-    """Run every non-empty free-text field through the deterministic safety engine. Returns the safety response to send back
-    (and the caller must stop) when any text is URGENT / EMERGENCY or carries crisis wording; None when it is safe to continue."""
-    for t in texts:
-        if not t:
-            continue
-        a = assess_safety(t)
-        if a.state in ("URGENT", "EMERGENCY") or a.crisis:
-            msg = emergency_response(a) if a.state == "EMERGENCY" or a.crisis else urgent_fallback_response(a)
-            return {"status": "safety", "state": a.state, "level": a.level, "crisis": a.crisis, "message": msg,
-                    "saved": False, "note": "Nothing was saved from this message."}
-    return None
-
 
 # --- check-ins -----------------------------------------------------------------------------------------------------------
 

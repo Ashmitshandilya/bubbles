@@ -119,7 +119,15 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         "don't want to (?:live|be alive|be here|wake up)|better off dead|no reason to live|end(?:ing)? it all",
         # passive ideation
         "better off without me|wish i (?:was|were) never born|wish i had never been born|(?:there's |there is )?no point (?:in )?(?:living|going on|continuing|any ?more)|"
-        "(?:can't|cannot) go on|(?:want|wanted|wish) to (?:just )?disappear|(?:give|giving|gave) up on (?:life|living)")),
+        "(?:can't|cannot) go on|(?:want|wanted|wish) to (?:just )?disappear|(?:give|giving|gave) up on (?:life|living)",
+        # passive ideation, second list (additive; needs clinician review, see docs/drafts/l3-clinical.md). Each pattern needs a first-person
+        # feeling or being cue, so "I don't want to be a burden" (a wish) and "a worthless product" stay quiet.
+        "(?:i am|i'm|i feel|i feel like|feel like|feeling like|felt like|i have become|i've become|i am becoming|i'm becoming|"
+        "i think i am|i think i'm|i feel i am|i feel i'm)(?: (?:such|just|only|really|so|an?|nothing but|nothing more than|huge|big|real|total|complete))* burden",
+        "(?:no one|noone|nobody) (?:would|will)(?: even)? miss me",
+        "(?:no one|noone|nobody) (?:would|will)(?: even)? (?:notice|care|know)(?: if| when| that)? i (?:was|were|am|died|die|disappeared?|"
+        "am gone|was gone|were gone|vanished?)",
+        "(?:i am|i'm|i feel|feel|feeling|felt|i feel so|i feel like i am|i feel like i'm)(?: (?:so|really|completely|totally|just|absolutely|utterly|very|truly))* worthless")),
     ("self_harm", "red", "possible self-harm crisis language", (
         "self[\\s-]?harm\\w*|(?:harm|hurt|cut)(?:ting|ing)? (?:myself|himself|herself|themselves|yourself)|overdos\\w+",)),
     ("stroke_signs", "red", "possible stroke warning signs", (
