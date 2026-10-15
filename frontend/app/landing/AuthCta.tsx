@@ -8,8 +8,7 @@ import { warmApi } from "../../lib/warm-api";
 /**
  * Auth-aware call to action. Renders the signed-out version on the server and
  * on first paint (no hydration mismatch), then switches to "Open my Bubbles" when
- * a session exists. Signed out, the nav offers "Sign in" and the hero and the close
- * offer the one call to action, "Get started".
+ * a session exists.
  */
 export function AuthCta({ variant }: { variant: "nav" | "hero" | "final" }) {
   const [signedIn, setSignedIn] = useState(false);
@@ -44,16 +43,15 @@ export function AuthCta({ variant }: { variant: "nav" | "hero" | "final" }) {
 
   return (
     <div className={`cw-cta cw-cta--${variant}`}>
-      {variant === "nav" ? (
+      {variant !== "hero" && (
         <Link href="/login" className={`cw-btn cw-btn--ghost ${size}`}>
           Sign in
         </Link>
-      ) : (
-        <Link href="/login?mode=signup" className={`cw-btn cw-btn--primary ${size}`}>
-          Get started
-          <ArrowIcon />
-        </Link>
       )}
+      <Link href="/login?mode=signup" className={`cw-btn cw-btn--primary ${size}`}>
+        Start with Bubbles
+        <ArrowIcon />
+      </Link>
     </div>
   );
 }

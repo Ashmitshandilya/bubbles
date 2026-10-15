@@ -1,11 +1,11 @@
 /**
- * Colour script for the landing: "Pearl Lab", a sunlit pearl laboratory (bubbles-stitch-kit DESIGN.md).
- * Light only: every chapter is pearl with a slightly different light (lilac morning, porcelain noon, warm
- * gold at the close), so the hand-overs feel like the light moving, not like the page changing colour.
- * Pure data and pure helpers, no DOM and no dependencies. Gradients are mixed in OKLab, never in sRGB.
+ * Colour script for the landing: "A day in Bubbles' sky" (docs/autonomy/LANDING_PREMIUM_PLAN.md, 2.3).
+ * Pure data and pure helpers, no DOM and no dependencies. Gradients are mixed in OKLab, never in
+ * sRGB, which is what made the old chapter hand-overs muddy.
  *
- * Contrast is enforced by palette.test.ts and contrast.test.ts: every chapter's sky, sampled through the
- * copy zone, must hold WCAG 4.5 for body text and 3 for large text against the text colours.
+ * Contrast is enforced by palette.test.ts: every chapter's sky, sampled through the copy zone,
+ * must hold WCAG 4.5 for body text and 3 for large text against the chapter's text colour
+ * (after its scrim, where it has one).
  */
 import type { Tone } from "../story/store";
 
@@ -34,8 +34,8 @@ export type ChapterPalette = {
   bloom: number;
 };
 
-/** Ink-plum: all body text and headlines. Never pure black. */
-export const INK: Hex = "#1E1B2E";
+export const INK: Hex = "#2B1A3F";
+export const BLUSH: Hex = "#FFF6FA";
 
 /** Where the middle stop sits in the sky gradient (0 = top, 1 = horizon). */
 export const SKY_MID_STOP = 0.5;
@@ -50,84 +50,144 @@ const g = (warmth: number, saturation: number, contrast: number, lift: number, v
   vignette,
 });
 
-/** In chapter order (same order and keys as CHAPTERS in story/store.ts). */
+/**
+ * Section 2.3, in chapter order (same order and keys as CHAPTERS in story/store.ts).
+ *
+ * Adjustments made to the plan's starting values, all found by palette.test.ts (see the test for the numbers):
+ *  - cycle: the sky colours are exactly as planned, but with the phase tint (45 percent of the phase
+ *    colour into mid and horizon) blush text falls to about 3.3:1 at ovulation (apricot) and below
+ *    4.5 at most phases except the first. A dark plum scrim (alpha 0.4, the top of the plan's 25 to 40
+ *    percent range) behind the copy lifts the worst case to about 4.5:1 or better at every phase, down to
+ *    the horizon end of the copy band (contrast.test.ts). This is the plan's own remedy; no sky colour was
+ *    changed. Every other chapter passes as planned.
+ */
 export const COLOR_SCRIPT = [
   {
     key: "enter",
     tone: "light",
-    sky: { top: "#F4EEFA", mid: "#FBF8F6", horizon: "#FCF2EA" },
-    lights: { key: "#FFF6EA", rim: "#E9DDF7", sun: "#FFF4E4" },
-    accent: "#C9B6F2",
-    accent2: "#E9C98B",
+    sky: { top: "#E6D3FF", mid: "#FFC9E3", horizon: "#FFD9B5" },
+    lights: { key: "#FFF2DC", rim: "#FFB6D5", sun: "#FFF0D2" },
+    accent: "#FFB6D5",
+    accent2: "#FFF0D2",
     text: INK,
     scrim: null,
-    grade: g(0.25, 0, 0, 0.02, 0),
-    bloom: 0.2,
+    grade: g(0.5, 0, 0, 0.04, 0),
+    bloom: 0.35,
   },
   {
-    key: "listen",
-    tone: "light",
-    sky: { top: "#F1ECFA", mid: "#FAF6F8", horizon: "#F6EFF8" },
-    lights: { key: "#FFF8F0", rim: "#D5C4F5", sun: "#FFF6EC" },
-    accent: "#C9B6F2",
-    accent2: "#F7C8D6",
-    text: INK,
+    key: "body",
+    tone: "dark",
+    sky: { top: "#13294B", mid: "#2A3E86", horizon: "#6E5BC9" },
+    lights: { key: "#B8D8FF", rim: "#6E5BC9", sun: "#66E0E6" },
+    accent: "#66E0E6", // aqua core glow
+    accent2: "#FF8CC2", // nerves
+    text: BLUSH,
     scrim: null,
-    grade: g(0.1, 0, 0, 0.02, 0),
-    bloom: 0.2,
+    grade: g(-0.5, 8, 0, 0, 0.06),
+    bloom: 0.5,
   },
   {
-    key: "confirm",
+    key: "noise",
     tone: "light",
-    sky: { top: "#F8F4F1", mid: "#FBF8F6", horizon: "#F6F0F6" },
-    lights: { key: "#FFFFFF", rim: "#E7E0EC", sun: "#FFF8F0" },
-    accent: "#D5C4F5",
-    accent2: "#E9C98B",
+    sky: { top: "#D6E8FF", mid: "#EEF5FF", horizon: "#FFFFFF" },
+    lights: { key: "#FFFFFF", rim: "#D6E8FF", sun: "#FFFFFF" },
+    accent: "#9CC4FF",
+    accent2: "#FFFFFF",
     text: INK,
     scrim: null,
-    grade: g(0.05, 0, 0, 0.02, 0),
-    bloom: 0.12,
-  },
-  {
-    key: "patterns",
-    tone: "light",
-    sky: { top: "#F3EDF9", mid: "#FAF6F8", horizon: "#FCF1EC" },
-    lights: { key: "#FFF4E8", rim: "#D5C4F5", sun: "#FFF2E2" },
-    accent: "#B49BFF",
-    accent2: "#FFC37A",
-    text: INK,
-    scrim: null,
-    grade: g(0.15, 0, 0, 0.02, 0),
+    grade: g(-0.1, -15, 8, 0, 0),
     bloom: 0.15,
   },
   {
-    key: "prepare",
+    key: "track",
     tone: "light",
-    sky: { top: "#FAF8F6", mid: "#FBF8F6", horizon: "#F7F2F3" },
-    lights: { key: "#FFFFFF", rim: "#E7E0EC", sun: "#FFFAF4" },
-    accent: "#D5C4F5",
-    accent2: "#E9C98B",
+    sky: { top: "#FFD9A8", mid: "#FFB7A0", horizon: "#FF9DB8" },
+    lights: { key: "#FFE0B0", rim: "#FF9DB8", sun: "#FFE0B0" },
+    accent: "#FFE0B0",
+    accent2: "#FF9DB8",
     text: INK,
     scrim: null,
-    grade: g(0, 0, 0, 0.02, 0),
-    bloom: 0.1,
+    grade: g(0.6, 10, 0, 0.02, 0),
+    bloom: 0.45,
   },
   {
-    key: "close",
+    key: "cycle",
+    tone: "dark",
+    sky: { top: "#2B1038", mid: "#5A2058", horizon: "#B8467A" },
+    lights: { key: "#FFC9E3", rim: "#B8467A", sun: "#FFC9E3" },
+    accent: "#E8336F",
+    accent2: "#FFC37A",
+    text: BLUSH,
+    scrim: { color: "#1C0A26", alpha: 0.4 },
+    grade: g(0.3, 0, 0, 0, 0.08),
+    bloom: 0.5,
+  },
+  {
+    key: "connect",
+    tone: "dark",
+    sky: { top: "#12123A", mid: "#2B2A78", horizon: "#9A5BB5" },
+    lights: { key: "#CFC8FF", rim: "#9A5BB5", sun: "#FFE9F6" },
+    accent: "#FFE9F6", // stars
+    accent2: "#D9B8FF", // thread glow (not specified in the plan)
+    text: BLUSH,
+    scrim: null,
+    grade: g(-0.4, 0, 0, 0, 0.08),
+    bloom: 0.6,
+  },
+  {
+    key: "remember",
+    tone: "dark",
+    sky: { top: "#0A0A22", mid: "#1D1A4D", horizon: "#5B3A78" },
+    lights: { key: "#FFF1DE", rim: "#5B3A78", sun: "#FFF1DE" },
+    accent: "#FFF1DE", // moon
+    accent2: "#FFD98A", // fireflies
+    text: BLUSH,
+    scrim: null,
+    grade: g(0, 0, 0, 0, 0.14),
+    bloom: 0.4, // not in the plan; moderate, between connect and cycle
+  },
+  {
+    key: "companion",
+    tone: "dark",
+    sky: { top: "#170C2B", mid: "#3A1A4A", horizon: "#A04574" },
+    lights: { key: "#FFD98A", rim: "#A04574", sun: "#FFD98A" },
+    accent: "#FFD98A", // horn gold
+    accent2: "#FFF1DE",
+    text: BLUSH,
+    scrim: null,
+    grade: g(0.5, 0, 0, 0, 0.1),
+    bloom: 0.9,
+  },
+  {
+    key: "care",
     tone: "light",
-    sky: { top: "#F5ECF6", mid: "#FBF6F4", horizon: "#FDEFE2" },
-    lights: { key: "#FFF2DE", rim: "#F7C8D6", sun: "#FFEFD6" },
-    accent: "#F7C8D6",
-    accent2: "#E9C98B",
+    sky: { top: "#F1E6F8", mid: "#FAEFF4", horizon: "#FFF4EA" },
+    lights: { key: "#FFF4EA", rim: "#F1E6F8", sun: "#FFF4EA" },
+    accent: "#E7C6F2",
+    accent2: "#FFF4EA",
     text: INK,
     scrim: null,
-    grade: g(0.35, 0, 0, 0.02, 0),
-    bloom: 0.22,
+    grade: g(0.1, 0, -6, 0.05, 0),
+    bloom: 0.2,
+  },
+  {
+    key: "bubbles",
+    tone: "light",
+    sky: { top: "#F4C9E2", mid: "#FFD0C0", horizon: "#FFE6B5" },
+    lights: { key: "#FFF3D6", rim: "#FFB6D5", sun: "#FFF3D6" },
+    accent: "#FFB6D5",
+    accent2: "#FFF3D6",
+    text: INK,
+    scrim: null,
+    grade: g(0.5, 0, 0, 0.03, 0),
+    bloom: 0.4,
   },
 ] as const satisfies ReadonlyArray<ChapterPalette>;
 
 export type ScriptKey = (typeof COLOR_SCRIPT)[number]["key"];
 
+/** The cycle chapter's sky takes 45 percent of the phase colour into mid and horizon. */
+export const PHASE_TINT = 0.45;
 export const PHASE_COLORS = {
   period: "#E8336F",
   follicular: "#FF8A7A",
@@ -135,6 +195,71 @@ export const PHASE_COLORS = {
   luteal: "#B49BFF",
 } as const satisfies Record<string, Hex>;
 export const PHASE_ORDER = ["period", "follicular", "ovulation", "luteal"] as const;
+
+/**
+ * How far phase colours are lifted toward white when they are TEXT (phase names, the big day number) on the
+ * cycle sky, which is tinted by those same colours: red on red-plum was 1.7:1. Rings, dots and bars keep the
+ * true colours. contrast.test.ts holds the lifted names at 3 or better (large text) at every phase.
+ */
+export const PHASE_INK_LIFT = 0.5;
+
+export type TimeOfDay = "dawn" | "day" | "dusk" | "night";
+export type TimeVariant = Pick<ChapterPalette, "tone" | "sky" | "lights" | "accent" | "accent2" | "text" | "scrim" | "grade" | "bloom">;
+
+/**
+ * Four variants of the opening chapter, picked from the visitor's own clock after load ("her sky
+ * follows your clock"). "dawn" is the plan's enter palette. The poster stays dawn.
+ */
+export const ENTER_VARIANTS: Record<TimeOfDay, TimeVariant> = {
+  dawn: COLOR_SCRIPT[0],
+  day: {
+    tone: "light",
+    sky: { top: "#CFE3FF", mid: "#F2E3FF", horizon: "#FFEBD0" },
+    lights: { key: "#FFFFFF", rim: "#FFC9E3", sun: "#FFF7E0" },
+    accent: "#FFC9E3",
+    accent2: "#FFF7E0",
+    text: INK,
+    scrim: null,
+    grade: g(0.1, 0, 0, 0.03, 0),
+    bloom: 0.25,
+  },
+  dusk: {
+    tone: "light",
+    sky: { top: "#F0C4E8", mid: "#FFB8A8", horizon: "#FFC98F" },
+    lights: { key: "#FFD9A8", rim: "#F08AB8", sun: "#FFD08A" },
+    accent: "#F08AB8",
+    accent2: "#FFD08A",
+    text: INK,
+    scrim: null,
+    grade: g(0.7, 8, 0, 0.02, 0.04),
+    bloom: 0.45,
+  },
+  night: {
+    tone: "dark",
+    sky: { top: "#1A1442", mid: "#43296E", horizon: "#9B5C8F" },
+    lights: { key: "#FFE9F6", rim: "#9B5C8F", sun: "#FFF1DE" },
+    accent: "#FFE9F6",
+    accent2: "#FFD98A",
+    text: BLUSH,
+    // The night horizon is bright enough to wash out the hero copy that sits down to it; the plum scrim
+    // (as in the cycle chapter) restores blush text to 5:1 and the pink accent to 3.3:1 (large text).
+    scrim: { color: "#1C0A26", alpha: 0.4 },
+    grade: g(-0.2, 0, 0, 0, 0.12),
+    bloom: 0.5,
+  },
+};
+
+/** A phase colour as text ink on the cycle sky (see PHASE_INK_LIFT). */
+export const phaseInk = (hex: string): Hex => mixOklab(hex, "#FFFFFF", PHASE_INK_LIFT);
+
+/** Local hour (0..23) to a time-of-day variant. */
+export function timeOfDay(hour: number): TimeOfDay {
+  const h = ((Math.floor(hour) % 24) + 24) % 24;
+  if (h >= 5 && h < 9) return "dawn";
+  if (h >= 9 && h < 17) return "day";
+  if (h >= 17 && h < 21) return "dusk";
+  return "night";
+}
 
 /* ---------------------------------------------------------------------- OKLab and contrast */
 
@@ -246,6 +371,34 @@ export function backdropAt(p: Pick<ChapterPalette, "sky" | "scrim">, h: number):
 export const skyCss = (s: SkyStops) =>
   `linear-gradient(in oklab, ${s.top} 0%, ${s.mid} ${SKY_MID_STOP * 100}%, ${s.horizon} 100%)`;
 
+/**
+ * Where on the four-phase scale an example day is: 0 period, 1 follicular, 2 ovulation, 3 luteal,
+ * fractions in between mix neighbours in OKLab. Out-of-range values clamp.
+ */
+export function phaseColorAt(phaseMix: number): Hex {
+  const x = Math.min(PHASE_ORDER.length - 1, Math.max(0, Number.isFinite(phaseMix) ? phaseMix : 0));
+  const i = Math.min(PHASE_ORDER.length - 2, Math.floor(x));
+  return mixOklab(PHASE_COLORS[PHASE_ORDER[i]], PHASE_COLORS[PHASE_ORDER[i + 1]], x - i);
+}
+
+const CYCLE_INDEX = COLOR_SCRIPT.findIndex((c) => c.key === "cycle");
+
+/** The cycle chapter's palette tinted for a point in the example day (mid and horizon only). */
+export function cycleAt(phaseMix: number): ChapterPalette {
+  const base: ChapterPalette = COLOR_SCRIPT[CYCLE_INDEX];
+  const tint = phaseColorAt(phaseMix);
+  return {
+    ...base,
+    sky: {
+      top: base.sky.top,
+      mid: mixOklab(base.sky.mid, tint, PHASE_TINT),
+      horizon: mixOklab(base.sky.horizon, tint, PHASE_TINT),
+    },
+    lights: { ...base.lights, key: mixOklab(base.lights.key, tint, PHASE_TINT) },
+    accent: tint,
+  };
+}
+
 export type BlendedSky = {
   top: Hex;
   mid: Hex;
@@ -262,6 +415,13 @@ export type BlendedSky = {
   bloom: number;
 };
 
+function paletteFor(index: number, phaseMix: number | undefined, tod: TimeOfDay | undefined): ChapterPalette {
+  const base: ChapterPalette = COLOR_SCRIPT[index];
+  if (index === CYCLE_INDEX && phaseMix !== undefined) return cycleAt(phaseMix);
+  if (index === 0 && tod) return { ...base, ...ENTER_VARIANTS[tod] };
+  return base;
+}
+
 const mixGrade = (a: Grade, b: Grade, t: number): Grade => ({
   warmth: lerp(a.warmth, b.warmth, t),
   saturation: lerp(a.saturation, b.saturation, t),
@@ -272,15 +432,16 @@ const mixGrade = (a: Grade, b: Grade, t: number): Grade => ({
 
 /**
  * The palette on screen when chapter `chapterIndex` is leading and `blend` (0..1) of the hand-over
- * to the next chapter has happened. Indices and blend clamp, so the last chapter holds.
+ * to the next chapter has happened. `phaseMix` (0..3, see phaseColorAt) tints the cycle chapter;
+ * `tod` swaps in an opening-chapter variant. Indices and blend clamp, so the last chapter holds.
  */
-export function skyAt(chapterIndex: number, blend: number): BlendedSky {
+export function skyAt(chapterIndex: number, blend: number, phaseMix?: number, tod?: TimeOfDay): BlendedSky {
   const last = COLOR_SCRIPT.length - 1;
   const i = Math.min(last, Math.max(0, Math.floor(Number.isFinite(chapterIndex) ? chapterIndex : 0)));
   const j = Math.min(last, i + 1);
   const t = clamp01(Number.isFinite(blend) ? blend : 0);
-  const a: ChapterPalette = COLOR_SCRIPT[i];
-  const b: ChapterPalette = COLOR_SCRIPT[j];
+  const a = paletteFor(i, phaseMix, tod);
+  const b = paletteFor(j, phaseMix, tod);
   const lead = t < 0.5 ? a : b;
   const scrimAlpha = lerp(a.scrim?.alpha ?? 0, b.scrim?.alpha ?? 0, t);
   const scrimColor = (t < 0.5 ? a.scrim ?? b.scrim : b.scrim ?? a.scrim)?.color;

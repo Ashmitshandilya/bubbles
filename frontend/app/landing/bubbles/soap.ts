@@ -17,14 +17,18 @@ export function bubbleCount(tier: Tier): number {
   return tier === "static" ? 0 : tier === "full" ? MAX_BUBBLES : 6;
 }
 
-/** 0..1 share of the field that is awake in a chapter. One spectacle per view: the orb leads, so the field is quiet, and empty behind the ring and the summary. */
+/** 0..1 share of the field that is awake in a chapter. Care is the calmest page: none. */
 export const BUBBLE_LEVEL: Record<ChapterKey, number> = {
-  enter: 0.35,
-  listen: 0.2,
-  confirm: 0,
-  patterns: 0,
-  prepare: 0,
-  close: 1,
+  enter: 1,
+  body: 0.2,
+  noise: 0.25,
+  track: 0.4,
+  cycle: 0.15,
+  connect: 0.25,
+  remember: 0.3,
+  companion: 0.2,
+  care: 0,
+  bubbles: 1,
 };
 
 /** The level while chapter `index` hands over to the next one (`blend` 0..1). */

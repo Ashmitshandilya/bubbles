@@ -21,10 +21,10 @@ export function ScoreRing({ value, label, size = 148 }: { value: number; label?:
       <svg width={size} height={size} viewBox="0 0 140 140" role="img" aria-label={`Sleep score ${Math.round(value)} out of 100, ${words}`}>
         <circle cx="70" cy="70" r={r} fill="none" stroke="#F1ECFB" strokeWidth="14" />
         <circle
-          cx="70" cy="70" r={r} fill="none" stroke="#6B46D6" strokeWidth="14" strokeLinecap="round"
+          cx="70" cy="70" r={r} fill="none" stroke="#D6246F" strokeWidth="14" strokeLinecap="round"
           strokeDasharray={`${dash} ${gap}`} transform="rotate(-90 70 70)"
         />
-        <text x="70" y="76" textAnchor="middle" fontSize="38" fontWeight="800" fill="#1E1B2E" aria-hidden="true">
+        <text x="70" y="76" textAnchor="middle" fontSize="38" fontWeight="800" fill="#2B1A3F" aria-hidden="true">
           {Math.round(value)}
         </text>
         <text x="70" y="98" textAnchor="middle" fontSize="12" fontWeight="700" fill="#5E5873" aria-hidden="true">
@@ -87,15 +87,15 @@ export function WeekdayChart({ series, goalHours }: { series: { date: string; ho
           <desc id={`${titleId}-desc`}>{summary}</desc>
           <g transform="translate(10 18)">
             {/* goal line */}
-            <line x1="0" x2={W} y1={H - (goalHours / ceiling) * H} y2={H - (goalHours / ceiling) * H} stroke="#6B46D6" strokeWidth="1.5" strokeDasharray="5 4" />
+            <line x1="0" x2={W} y1={H - (goalHours / ceiling) * H} y2={H - (goalHours / ceiling) * H} stroke="#D6246F" strokeWidth="1.5" strokeDasharray="5 4" />
             <text x={W} y={H - (goalHours / ceiling) * H - 4} textAnchor="end" fontSize="10" fontWeight="700" fill="#5835BF">
               your goal {formatHours(goalHours)}
             </text>
             {boxes.map((box, i) =>
               box ? (
                 <g key={bars[i].index}>
-                  <rect x={box.x} y={box.y} width={box.width} height={box.height} rx="6" fill="#6B46D6" />
-                  <text x={box.x + box.width / 2} y={box.y - 4} textAnchor="middle" fontSize="10" fontWeight="800" fill="#1E1B2E">
+                  <rect x={box.x} y={box.y} width={box.width} height={box.height} rx="6" fill="#D6246F" />
+                  <text x={box.x + box.width / 2} y={box.y - 4} textAnchor="middle" fontSize="10" fontWeight="800" fill="#2B1A3F">
                     {bars[i].hours}
                   </text>
                 </g>

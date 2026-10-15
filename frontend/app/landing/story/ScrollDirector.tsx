@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { skyAt } from "../atmosphere/palette";
-import { scrimCss } from "../atmosphere/sky";
+import { ENTER_VARIANTS, skyAt, timeOfDay, type BlendedSky } from "../atmosphere/palette";
+import { mixSky, phaseMixAtDay, scrimCss } from "../atmosphere/sky";
 import { restorePaused } from "./motion";
-import { CHAPTERS, clamp01, measureRects, resetStory, smooth, story } from "./store";
+import { CHAPTERS, CHAPTER_INDEX, clamp01, measureRects, range, resetStory, rotateFocus, smooth, story } from "./store";
 
 /**
  * Drives the whole landing story from one requestAnimationFrame loop (no scroll
@@ -18,6 +18,10 @@ import { CHAPTERS, clamp01, measureRects, resetStory, smooth, story } from "./st
  */
 
 const HANDOVER = 0.6; // fraction of a viewport used to cross-fade between chapters
+/** The opening sky eases from dawn to the visitor's time of day over this long after the page starts. */
+const TOD_RAMP_S = 1.1;
+/** The example cycle day (0..27.999) runs over this part of the cycle chapter's progress (shared with CycleDay). */
+const CYCLE_DAYS = { from: 0.04, to: 0.62, span: 27.999 } as const;
 
 const fmt = (v: number) => (Math.round(v * 10000) / 10000).toString();
 
@@ -74,7 +78,13 @@ export function ScrollDirector() {
       root.style.setProperty(name, value);
     };
 
+    const companion = CHAPTER_INDEX.companion;
+    const cycle = CHAPTER_INDEX.cycle;
+    // "Her sky follows your clock": the opening chapter takes the visitor's time of day, eased in after load.
+    const tod = timeOfDay(new Date().getHours());
+    let todK = tod === "dawn" ? 1 : 0;
     let skyKey = "";
+    let enterTone: string = CHAPTERS[0].tone;
     let y = window.scrollY;
     let last = performance.now();
     let raf = 0;
@@ -117,13 +127,18 @@ export function ScrollDirector() {
       story.blend = story.chapters[current].exit;
       const next = Math.min(current + 1, n - 1);
 
-      // The sky: the colour script, blended through the hand-over.
+      // The sky: the colour script, blended through the hand-over, the cycle tinted by the example day.
       const sk = story.sky;
+      if (todK < 1) todK = Math.min(1, todK + dt / TOD_RAMP_S);
       const t = smooth(story.blend);
-      const key = `${current}|${t.toFixed(3)}`;
+      const phase = phaseMixAtDay(range(story.chapters[cycle].p, CYCLE_DAYS.from, CYCLE_DAYS.to) * CYCLE_DAYS.span);
+      const key = `${current}|${t.toFixed(3)}|${phase.toFixed(3)}|${todK.toFixed(3)}`;
       if (key !== skyKey) {
         skyKey = key;
-        const blended = skyAt(current, t);
+        let blended: BlendedSky;
+        if (current !== 0) blended = skyAt(current, t, phase);
+        else if (todK < 1) blended = mixSky(skyAt(0, t, phase, "dawn"), skyAt(0, t, phase, tod), smooth(todK));
+        else blended = skyAt(0, t, phase, tod);
         setRoot("--sky-top", blended.top);
         setRoot("--sky-mid", blended.mid);
         setRoot("--sky-hor", blended.horizon);
@@ -141,11 +156,44 @@ export function ScrollDirector() {
         Object.assign(sk.grade, blended.grade);
         sk.tone = blended.tone;
         sk.v += 1;
+        // The opening chapter's own text tone follows its time-of-day variant (night is a dark sky).
+        const own = todK >= 0.5 ? ENTER_VARIANTS[tod].tone : CHAPTERS[0].tone;
+        if (own !== enterTone) {
+          enterTone = own;
+          sections[0].dataset.tone = own;
+        }
+      }
+      const darkGoal = sk.tone === "dark" ? 1 : 0;
+      if (sk.dark !== darkGoal) {
+        sk.dark += (darkGoal - sk.dark) * (1 - Math.exp(-dt * 5));
+        if (Math.abs(darkGoal - sk.dark) < 0.002) sk.dark = darkGoal;
+        sk.v += 1;
       }
       const lead = story.blend < 0.5 ? current : next;
+      const portalDive = current === 0 ? range(story.chapters[0].p, 0.42, 1) : 0;
+      const portalBloom = current === companion ? story.blend : 0;
+      // The nav reads against whatever fills the screen, portals included.
+      const tone = portalDive > 0.55 ? "dark" : portalBloom > 0.55 ? "light" : sk.tone;
+      if (root.dataset.tone !== tone) root.dataset.tone = tone;
       if (root.dataset.active !== CHAPTERS[lead].key) root.dataset.active = CHAPTERS[lead].key;
       // Where the story is, fractionally (4.5 = halfway from chapter 4 to 5): the rail's ticks grow and fade from it.
       setRoot("--ch", fmt(current + story.blend));
+
+      // Portal 1: the hero opens into the body.
+      // (Only drawn while the hero is on stage; afterwards the base colour already matches.)
+      setRoot("--dive", fmt(portalDive * portalDive));
+      // ...and it opens from the bubble Bubbles stands in (her body centre), not a fixed spot on the screen.
+      if (portalDive > 0 && story.bubbles.visible) {
+        setRoot("--dive-x", `${Math.round(story.bubbles.feet.x)}px`);
+        setRoot("--dive-y", `${Math.round((story.bubbles.y + story.bubbles.feet.y) / 2)}px`);
+      }
+      // Portal 2: light blooms out of Bubbles' horn as the companion hands over to care.
+      setRoot("--bloom", fmt(portalBloom * portalBloom));
+      if (current === companion && story.bubbles.visible) {
+        setRoot("--bloom-x", `${Math.round(story.bubbles.horn.x)}px`);
+        setRoot("--bloom-y", `${Math.round(story.bubbles.horn.y)}px`);
+      }
+      rotateFocus();
       for (const listener of story.listeners) listener(dt);
       raf = requestAnimationFrame(frame);
     };

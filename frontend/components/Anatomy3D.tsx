@@ -104,7 +104,7 @@ export default function Anatomy3D({
               <sphereGeometry args={[0.1, 32, 32]} />
               <meshStandardMaterial
                 color={STATUS_COLOR[organStatus[organ] ?? "unknown"] ?? STATUS_COLOR.unknown}
-                emissive={isSelected ? "#6B46D6" : "#000000"}
+                emissive={isSelected ? "#D6246F" : "#000000"}
                 emissiveIntensity={isSelected ? 0.35 : 0}
               />
             </mesh>
