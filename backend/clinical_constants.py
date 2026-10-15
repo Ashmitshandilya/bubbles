@@ -383,3 +383,49 @@ MIND_JOURNAL_MAX_CHARS = 5000
 NOTIFY_DAILY_CAP_DEFAULT, NOTIFY_DAILY_CAP_MAX = 5, 20      # [BUBBLES]
 NOTIFY_QUIET_HOURS_DEFAULT = ("23:00", "07:00")             # no notifications are created inside this window (wind-down fires before it) [BUBBLES]
 NOTIFY_KINDS = ("water", "med", "winddown", "system")       # [BUBBLES]
+
+# =====================================================================================================================
+# ORGAN MAP (organ_map_engine.py; PENDING CLINICIAN REVIEW). Additive only. These numbers decide when an area of the
+# body map says "worth watching" or "talk to a doctor". They never diagnose; every crossing is shown to the user with
+# the exact readings that caused it.
+# =====================================================================================================================
+ORGAN_WINDOW_DAYS = (7, 180)              # allowed look-back for the organ map                                     [BUBBLES]
+ORGAN_WINDOW_DEFAULT_DAYS = 30            # [BUBBLES]
+ORGAN_RED_FLAG_LOOKBACK_DAYS = 7          # symptoms this recent go through the safety engine again                 [BUBBLES]
+ORGAN_EVIDENCE_MAX = 12                   # evidence items returned per organ (newest first, red flags first)       [BUBBLES]
+ORGAN_CONFIDENCE_MEDIUM_ENTRIES = 4       # entries for a "medium" confidence label                                 [BUBBLES]
+ORGAN_CONFIDENCE_HIGH_ENTRIES = 10        # ...and for "high" (also needs two different kinds of data)              [BUBBLES]
+# heart
+BP_HIGH_MMHG = (140, 90)                  # systolic or diastolic at/above = high reading                           [NHS/NICE]
+BP_VERY_HIGH_MMHG = (180, 120)            # at/above = talk to a doctor promptly                                    [AHA]
+BP_LOW_SYSTOLIC_MMHG = 90                 # below = worth noting (especially with dizziness)                       [NHS]
+BP_HIGH_READINGS_TALK = 3                 # this many high readings in the window = talk to a doctor                [BUBBLES]
+HEART_RATE_STEADY_BPM = (50, 100)         # typical adult range at rest (fit people can sit lower)                  [AHA/BUBBLES]
+HEART_RATE_TALK_BPM = (40, 120)           # median of readings outside this = talk to a doctor                      [BUBBLES]
+# lungs
+SPO2_WATCH_BELOW_PCT = 95                 # [NHS]
+SPO2_TALK_BELOW_PCT = 92                  # 92% or lower = get advice promptly                                      [NHS]
+COUGH_TALK_SPAN_DAYS = 21                 # a cough logged across 3 weeks or more = see a doctor                    [NHS]
+# brain
+MOOD_LOW_AVERAGE = 4.0                    # 0-10 mood average at/below = worth watching (needs 3 entries)          [BUBBLES]
+MOOD_LOW_DAY_SCORE = 3                    # a 0-10 mood at/below this counts as a low day                           [BUBBLES]
+MOOD_LOW_DAYS_TALK = 10                   # low days in the window = talk to a doctor (NHS: most days for 2 weeks) [NHS/BUBBLES]
+STRESS_HIGH_AVERAGE = 7.0                 # 0-10 stress average at/above = worth watching                           [BUBBLES]
+HEADACHE_DAYS_WATCH = 4                   # headache days in the window                                             [BUBBLES]
+HEADACHE_DAYS_TALK = 15                   # 15+ headache days (ICHD-3 chronic headache is 15+ a month)              [LIT]
+ORGAN_MIN_ENTRIES_FOR_AVERAGE = 3         # an average needs this many entries                                      [BUBBLES]
+# stomach and intestines
+DIGESTIVE_DAYS_WATCH = 3                  # days with digestive symptoms in the window                              [BUBBLES]
+DIGESTIVE_DAYS_TALK = 14                  # [BUBBLES]
+# liver and pancreas (patterns only; gentle notes)
+ALCOHOL_DAYS_PER_WEEK_WATCH = 3.0         # average drinking days a week (UK CMO: spread drinks, keep drink-free days) [NHS/BUBBLES]
+SUGARY_DAYS_PER_WEEK_WATCH = 5.0          # average days a week with sweets or sugary drinks                        [WHO/BUBBLES]
+ORGAN_ALCOHOL_TERMS = DRUG_CLASSES["alcohol"] + ("gin", "brandy", "cocktail", "cocktails", "tequila", "champagne", "daru", "sharab", "toddy")
+ORGAN_SUGARY_TERMS = ("soda", "cola", "coke", "pepsi", "soft drink", "cold drink", "energy drink", "cake", "pastry", "ice cream",
+                      "chocolate", "dessert", "sweets", "mithai", "candy", "doughnut", "donut", "cookies", "brownie", "halwa")
+# kidneys and bladder
+WATER_LOW_ML_PER_DAY = 1200.0             # average on logged days below this = worth watching                      [BUBBLES]
+# thyroid
+TSH_RANGE_MIU_L = (0.4, 4.0)              # used only when the lab entry has no reference range of its own          [LIT]
+TSH_TALK_MIU_L = (0.1, 10.0)              # outside this = talk to a doctor                                         [LIT/BUBBLES]
+ORGAN_LAB_STALE_DAYS = 365                # an older lab lowers confidence                                          [BUBBLES]

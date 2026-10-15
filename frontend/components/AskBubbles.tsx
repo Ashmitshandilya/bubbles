@@ -197,8 +197,8 @@ export function AskBubbles() {
   return (
     <>
       {/* Large screens only: on phones a floating button sat over content and next to the tab bar's Talk button, so the
-          header's search button opens the palette there instead. The Today dashboard has its own inline Ask box. */}
-      {pathname !== "/dashboard" && (
+          header's search button opens the palette there instead. Today and the body map have their own Ask Bubbles buttons. */}
+      {pathname !== "/dashboard" && pathname !== "/body" && (
         <button
           ref={triggerRef}
           type="button"

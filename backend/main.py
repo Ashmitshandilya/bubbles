@@ -48,6 +48,7 @@ from consent import consent_needed_reply, has_ai_consent
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
+from organ_map_api import build_router as build_organ_map_router
 import association_loader
 from context_engine import build_user_context, format_user_context
 from safety_engine import assess_safety, safety_instruction, urgent_fallback_response
@@ -546,6 +547,7 @@ app.include_router(build_import_router(get_authenticated_user, supabase))
 # Cycle: calendar, daily log, predictions with ranges, modes, insights, report, partner view.
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
+app.include_router(build_organ_map_router(get_authenticated_user, supabase))
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
 
