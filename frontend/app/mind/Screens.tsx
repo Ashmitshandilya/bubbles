@@ -128,7 +128,7 @@ export function Screens({ screen, onSaved }: { screen: MindOverview["screen"]; o
           </button>
         </div>
       )}
-      <Notice tone="calm">If you ever feel you might harm yourself, please contact your local emergency number or a crisis line right away.</Notice>
+      <Notice tone="calm">If you ever feel you might harm yourself, please reach out right away: in India call 112, or Tele-MANAS on 14416 (free, 24x7). Elsewhere, call your local emergency number.</Notice>
     </Panel>
   );
 }
