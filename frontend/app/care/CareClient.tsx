@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import {
@@ -78,13 +78,50 @@ const RECORD_SECTIONS: Array<{ kind: RecordKind; title: string; icon: string; em
   { kind: "visits", title: "Visits", icon: "visits", empty: "No visits added yet.", add: "Log a visit" },
 ];
 
-/** First few simple fields of an event, e.g. "Symptom: headache · Severity: 6". */
+const SKIP_KEYS = /^(name|category|date|type|kind)$/;
+const NAME_KEYS = /^(symptom|condition_name|allergen|medication|test_name|description|activity|meal)$/;
+
+/** First few simple fields of an event, e.g. "Headache · Severity: 6": the name on its own, other fields labelled. */
 function describe(details: Record<string, unknown> | undefined): string {
   return Object.entries(details ?? {})
-    .filter(([key, value]) => ["string", "number", "boolean"].includes(typeof value) && value !== "" && !/(^|_)(id|source|user)/.test(key))
+    .filter(([key, value]) => ["string", "number", "boolean"].includes(typeof value) && value !== "" && !SKIP_KEYS.test(key) && !/(^|_)(id|source|user)/.test(key))
+    .sort(([a], [b]) => Number(NAME_KEYS.test(b)) - Number(NAME_KEYS.test(a)))
     .slice(0, 3)
-    .map(([key, value]) => `${humanize(key)}: ${String(value)}`)
+    .map(([key, value]) => (NAME_KEYS.test(key) ? humanize(String(value)) : `${humanize(key)}: ${String(value)}`))
     .join(" · ");
+}
+
+/** A closed row that opens on tap, and opens itself while printing so a printed summary still has everything in it. */
+function Fold({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  const ref = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    let was = false;
+    const before = () => {
+      was = ref.current?.open ?? false;
+      if (ref.current) ref.current.open = true;
+    };
+    const after = () => {
+      if (ref.current) ref.current.open = was;
+    };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+  return (
+    <details ref={ref} className="group rounded-[24px] border border-line bg-surface shadow-sm">
+      <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="font-display text-h4 text-ink">{title}</span>
+        <span className="flex items-center gap-2 text-body-sm font-bold text-muted">
+          {hint}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-90"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+        </span>
+      </summary>
+      <div className="space-y-3 px-4 pb-5 pt-1 sm:px-5">{children}</div>
+    </details>
+  );
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
@@ -259,7 +296,7 @@ function DoctorPrep() {
                 Your visit-ready summary
               </h1>
               <p className="mt-1 text-body font-semibold text-bubbles-sky-deep">
-                Organized from your own logs. Bubbles doesn&apos;t diagnose; your clinician makes the call.
+                From your own logs. Not a diagnosis.
               </p>
             </div>
           </div>
@@ -338,7 +375,7 @@ function DoctorPrep() {
             <h2 id="questions-title" className="text-h3 text-ink">
               Questions to ask
             </h2>
-            <p className="mt-1 text-body-sm text-muted">Untick the ones you don&apos;t need. Copy and Share send only the ticked questions.</p>
+            <p className="mt-1 text-body-sm text-muted">Untick any you don&apos;t need.</p>
             {visitQuery.status === "loading" && <Skeleton className="mt-4 h-40" />}
             {visitQuery.status === "error" && (
               <div className="mt-4">
@@ -415,12 +452,9 @@ function DoctorPrep() {
               </button>
             </form>
 
-            <section aria-labelledby="bring-title" className={`${CARD} p-5 sm:p-6`}>
-              <h2 id="bring-title" className="text-h3 text-ink">
-                What to bring
-              </h2>
+            <Fold title="What to bring">
               {visit?.bring?.length ? (
-                <ul className="m-0 mt-3 list-none space-y-2 p-0">
+                <ul className="m-0 list-none space-y-2 p-0">
                   {visit.bring.map((item) => (
                     <li key={item} className="flex items-start gap-2 text-body text-ink">
                       <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-bubbles-mint" aria-hidden="true" />
@@ -429,20 +463,14 @@ function DoctorPrep() {
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-body-sm text-muted">{visit ? "Nothing suggested yet. Bring a list of your medicines and any recent results." : "Loads together with the questions."}</p>
+                <p className="m-0 text-body-sm text-muted">{visit ? "Nothing suggested yet. Bring a list of your medicines and any recent results." : "Loads together with the questions."}</p>
               )}
-            </section>
+            </Fold>
           </div>
         </div>
 
         {/* Records on file: each one scannable, each one a gap when empty. */}
-        <section aria-labelledby="records-title" className="space-y-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="records-title" className="text-h3 text-ink">
-              Records on file
-            </h2>
-            <p className="text-body-sm text-muted">Shown as you entered them. Range badges compare against the range you typed in, nothing more.</p>
-          </div>
+        <Fold title="Records on file">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {RECORD_SECTIONS.map((section) => (
               <RecordCard key={section.kind} section={section} entries={lists[section.kind]} query={queries[section.kind][0]} onRetry={queries[section.kind][1]} />
@@ -451,15 +479,9 @@ function DoctorPrep() {
           {medicalQuery.status === "error" && labEntries === null && reportEntries === null && (
             <ErrorCard title="Record counts didn't load" message={medicalQuery.message} onRetry={reloadMedical} inset />
           )}
-        </section>
+        </Fold>
 
-        <section aria-labelledby="timeline-title" className={`${CARD} p-5 sm:p-6`}>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="timeline-title" className="text-h3 text-ink">
-              Your recent timeline
-            </h2>
-            {visit && <p className="text-body-sm font-bold text-muted">{plural(eventCount, "log")} · last 6 months</p>}
-          </div>
+        <Fold title="Your recent timeline" hint={visit ? plural(eventCount, "log") : undefined}>
           {frequent.length > 0 && <p className="mt-1 text-body-sm text-muted">Most often: {frequent.map(([type, n]) => `${humanize(type)} (${n})`).join(", ")}</p>}
           {visitQuery.status === "loading" && <Skeleton className="mt-4 h-48" />}
           {visitQuery.status === "error" && <p className="mt-3 text-body-sm text-muted">Your timeline loads together with the questions above. Try again there.</p>}
@@ -475,7 +497,7 @@ function DoctorPrep() {
                 const tone = TONE[toneFor(event.event_type ?? "")];
                 const detail = describe(event.details);
                 return (
-                  <li key={event.id ?? i} className={`relative pb-4 ${i >= 10 && !showAll ? "hidden print:block" : ""}`}>
+                  <li key={event.id ?? i} className={`relative pb-4 ${i >= 6 && !showAll ? "hidden print:block" : ""}`}>
                     <span className={`absolute -left-[27px] top-1.5 h-3 w-3 rounded-full ring-4 ring-white ${tone.dot}`} aria-hidden="true" />
                     <p className="text-chip font-bold text-muted">{whenText(event.date)}</p>
                     <p className="font-extrabold text-ink">{humanize(event.event_type ?? "Entry")}</p>
@@ -485,12 +507,12 @@ function DoctorPrep() {
               })}
             </ol>
           )}
-          {events.length > 10 && (
+          {events.length > 6 && (
             <button type="button" onClick={() => setShowAll((v) => !v)} className={`${BTN_SECONDARY} mt-2 print:hidden`} aria-expanded={showAll}>
               {showAll ? "Show fewer" : `Show all ${events.length}`}
             </button>
           )}
-        </section>
+        </Fold>
       </div>
     </div>
   );

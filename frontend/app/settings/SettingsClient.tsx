@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useApi, useAuth } from "../../components/Providers";
-import { BTN_SECONDARY, CARD, HubPage, Icon, PILL, SignOutButton, Skeleton, useBubblesQuery } from "../../components/hub/HubKit";
+import { BTN_SECONDARY, HubPage, Icon, PILL, SignOutButton, Skeleton, useBubblesQuery } from "../../components/hub/HubKit";
 import { COMPAT_FIX_FILE, MESSAGES, databaseSummary } from "../lib/connection";
 import type { PartnerSharingStatus } from "../lib/partner-sharing";
 import { VeilSwitch } from "../../components/PrivacyVeil";
@@ -12,14 +12,6 @@ import { AiConsentRow } from "../../components/settings/AiConsentRow";
 import { NotificationSettingsCard } from "../../components/wellness/NotificationSettingsCard";
 import { YourDataCard } from "../../components/wellness/YourDataCard";
 import { partnerSummary } from "./summary";
-
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
-function subscribeMotion(onChange: () => void) {
-  const media = window.matchMedia(REDUCED_MOTION);
-  media.addEventListener("change", onChange);
-  return () => media.removeEventListener("change", onChange);
-}
 
 const CONNECTION = {
   online: { label: "Online", style: "bg-tint-mint text-bubbles-mint-deep" },
@@ -34,14 +26,6 @@ const DATABASE_STYLE = {
   idle: "bg-tint-sun text-bubbles-sun-deep",
 } as const;
 
-const GROUPS = [
-  ["account", "Account"],
-  ["partner", "Partner sharing"],
-  ["notifications", "Reminders"],
-  ["privacy", "Privacy and data"],
-  ["device", "This device"],
-] as const;
-
 export function SettingsClient() {
   return (
     <HubPage title="Settings">
@@ -52,25 +36,26 @@ export function SettingsClient() {
 
 const ROW = "flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 gap-y-1 px-5 py-3";
 
-function Group({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+/** One calm row per area; the detail opens only when asked for. Account stays open. */
+function Group({ id, title, open = false, children }: { id: string; title: string; open?: boolean; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-24">
-      <h2 id={`${id}-title`} className="mb-2 px-1 text-label text-ink-soft">
+    <details id={id} open={open} className="group scroll-mt-24 rounded-[24px] border border-line bg-surface shadow-sm">
+      <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 font-display text-lg font-semibold text-ink [&::-webkit-details-marker]:hidden">
         {title}
-      </h2>
-      {children}
-    </section>
+        <span className="transition-transform group-open:rotate-90"><Icon id="arrow" size={18} /></span>
+      </summary>
+      <div className="space-y-4 px-3 pb-4 sm:px-4">{children}</div>
+    </details>
   );
 }
 
 /** A tappable row that opens another page. */
-function LinkRow({ href, label, hint, value }: { href: string; label: string; hint?: string; value?: string | null }) {
+function LinkRow({ href, label, value }: { href: string; label: string; value?: string | null }) {
   return (
     <li>
       <Link href={href} className={`${ROW} bubbles-press text-ink no-underline hover:bg-blush`}>
         <span className="min-w-0">
           <span className="block font-bold">{label}</span>
-          {hint && <span className="block text-body-sm text-muted">{hint}</span>}
         </span>
         <span className="flex items-center gap-2 text-body-sm font-bold text-bubbles-sky-deep">
           {value}
@@ -88,72 +73,51 @@ function Settings() {
   const [checking, setChecking] = useState(false);
   // Offline: the last health answer is stale, so the database is simply not known.
   const database = databaseSummary(apiStatus === "online" ? databaseStatus : "unknown");
-  const reducedMotion = useSyncExternalStore(subscribeMotion, () => window.matchMedia(REDUCED_MOTION).matches, () => false);
   const partnerValue = partner.status === "ready" ? partnerSummary(partner.data) : null;
 
   return (
     <div className="max-w-3xl space-y-8">
-      <header className="bubbles-rise">
-        <h1 className="text-h1 text-ink">Settings</h1>
-        <nav aria-label="Jump to a section" className="mt-3">
-          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-            {GROUPS.map(([id, label]) => (
-              <li key={id}>
-                <a href={`#${id}`} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-ink no-underline hover:border-line-strong">
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </header>
+      <h1 className="bubbles-rise text-h1 text-ink">Settings</h1>
 
-      <Group id="account" title="Account">
-        <ul className={`${CARD} m-0 list-none divide-y-2 divide-line overflow-hidden p-0`}>
+      <Group id="account" title="Account" open>
+        <ul className="m-0 list-none divide-y-2 divide-line overflow-hidden p-0">
           <li className={ROW}>
             <span className="font-bold text-ink">Signed in as</span>
             <span className="min-w-0 break-words text-body font-bold text-ink-soft">{user?.email || "Email unknown"}</span>
           </li>
-          <LinkRow href="/profile" label="Your details and memory" hint="See what Bubbles knows and confirm or dismiss it" />
+          <LinkRow href="/profile" label="Your details and memory" />
           {/* The Android app signs in with email + password only (no email links). */}
-          <LinkRow href="/password" label="Set or change password" hint="Needed to sign in to the Android app" />
-          <li className={ROW}>
-            <span className="font-bold text-ink">Sign out of this device</span>
-            <SignOutButton />
-          </li>
-        </ul>
-        <div className="mt-4">
-          <TwoStepCard />
-        </div>
-      </Group>
-
-      <Group id="partner" title="Partner sharing">
-        <ul className={`${CARD} m-0 list-none overflow-hidden p-0`}>
+          <LinkRow href="/password" label="Password" />
           {partner.status === "loading" ? (
             <li className="p-5">
               <Skeleton className="h-8" />
             </li>
           ) : (
-            <LinkRow href="/partner" label="Choose what a partner can see" hint="Nothing is shared until you switch it on. You can stop any time." value={partnerValue} />
+            <LinkRow href="/partner" label="Partner sharing" value={partnerValue} />
           )}
+          <li className={ROW}>
+            <span className="font-bold text-ink">Sign out of this device</span>
+            <SignOutButton />
+          </li>
         </ul>
+        <TwoStepCard />
       </Group>
 
-      <NotificationSettingsCard />
+      <Group id="notifications" title="Reminders">
+        <NotificationSettingsCard />
+      </Group>
 
       <Group id="privacy" title="Privacy and data">
-        <div className="space-y-4">
-          <ul className={`${CARD} m-0 list-none divide-y-2 divide-line overflow-hidden p-0`}>
-            <LinkRow href="/privacy" label="Privacy notice" hint="What Bubbles keeps and why" />
-            <LinkRow href="/terms" label="Terms of use" />
-          </ul>
-          <AiConsentRow />
-          <YourDataCard />
-        </div>
+        <ul className="m-0 list-none divide-y-2 divide-line overflow-hidden p-0">
+          <LinkRow href="/privacy" label="Privacy notice" />
+          <LinkRow href="/terms" label="Terms of use" />
+        </ul>
+        <AiConsentRow />
+        <YourDataCard />
       </Group>
 
       <Group id="device" title="This device">
-        <div className={`${CARD} divide-y-2 divide-line overflow-hidden`}>
+        <div className="divide-y-2 divide-line overflow-hidden">
           <dl className="m-0 divide-y-2 divide-line">
             <div className={ROW}>
               <dt className="font-bold text-ink">Bubbles server</dt>
@@ -173,14 +137,10 @@ function Settings() {
               </dd>
             </div>
             <div className={ROW}>
-              <dt className="font-bold text-ink">Reduce motion</dt>
-              <dd className="m-0 text-body-sm text-muted">{reducedMotion ? "On, following your device" : "Off, following your device"}</dd>
-            </div>
-            <div className={ROW}>
               <dt className="min-w-0 max-w-[26rem] font-bold text-ink">
                 <span id="keep-label">Keep me signed in on this device</span>
                 <span id="keep-hint" className="block text-body-sm font-normal text-muted">
-                  Off by default: you sign in again after closing the tab, and your sign-in is not kept on this device. Applies from the next time your sign-in is refreshed, or when you sign in again.
+                  Off: you sign in again after closing the tab.
                 </span>
               </dt>
               <dd className="m-0">
@@ -191,7 +151,7 @@ function Settings() {
               <dt className="min-w-0 max-w-[26rem] font-bold text-ink">
                 <span id="veil-label">Privacy veil</span>
                 <span id="veil-hint" className="block text-body-sm font-normal text-muted">
-                  Blurs health values and chats when you switch tabs or press Hide in the top bar. Tap a blurred area to show it. Off by default, saved on this device only.
+                  Blurs your data when you switch tabs.
                 </span>
               </dt>
               <dd className="m-0">
@@ -225,8 +185,7 @@ function Settings() {
             </div>
           )}
 
-          <div className={ROW}>
-            <span className="text-body-sm text-muted">Whether this app can reach Bubbles, and whether it can reach its database.</span>
+          <div className={`${ROW} justify-end`}>
             <button
               type="button"
               disabled={checking}
@@ -240,7 +199,7 @@ function Settings() {
               }}
               className={BTN_SECONDARY}
             >
-              {checking ? "Checking…" : "Check again"}
+              {checking ? "Checking…" : "Check connection"}
             </button>
           </div>
         </div>

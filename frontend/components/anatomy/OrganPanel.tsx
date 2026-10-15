@@ -7,7 +7,7 @@ import { BubblesMascot } from "../BubblesMascot";
 
 const LEVELS: Confidence[] = ["low", "medium", "high"];
 /** Entries shown before "Show more": the server sends up to a dozen, flagged ones first. */
-const SHOWN = 4;
+const SHOWN = 3;
 
 function EvidenceRows({ items }: { items: Organ["evidence"] }) {
   return (
@@ -62,10 +62,7 @@ export function OrganPanel({ organ }: { organ: Organ | null }) {
     return (
       <article className="rounded-3xl border-2 border-line bg-surface p-5 sm:p-6">
         <h2 className="text-h3 text-ink">Choose a part of the body</h2>
-        <p className="mt-2 text-body text-muted">
-          Tap it on the body or pick it from the list to see what your entries say, how sure Bubbles is, and what it still
-          doesn&apos;t know.
-        </p>
+        <p className="mt-2 text-body text-muted">Tap it on the body or pick it from the list.</p>
         <p className="mt-4 text-caption text-muted">This is not a diagnosis.</p>
       </article>
     );
@@ -124,24 +121,24 @@ export function OrganPanel({ organ }: { organ: Organ | null }) {
         )}
       </section>
 
-      <section className="mt-5" aria-labelledby={`${titleId}-confidence`}>
-        <h3 id={`${titleId}-confidence`} className="text-body-sm font-extrabold text-ink">
-          How sure Bubbles is
-        </h3>
-        <div className="mt-2 flex items-center gap-3">
-          <span className="flex gap-1" aria-hidden="true">
-            {LEVELS.map((level, i) => (
-              <span
-                key={level}
-                className={`h-2 w-7 rounded-full ${organ.confidence && LEVELS.indexOf(organ.confidence) >= i ? "bg-bubbles-grape" : "bg-line"}`}
-              />
-            ))}
+      <details className="group mt-4" aria-labelledby={`${titleId}-confidence`}>
+        <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+          <span id={`${titleId}-confidence`} className="flex items-center gap-3 text-body-sm font-extrabold text-ink">
+            How sure Bubbles is
+            <span className="flex gap-1" aria-hidden="true">
+              {LEVELS.map((level, i) => (
+                <span
+                  key={level}
+                  className={`h-2 w-6 rounded-full ${organ.confidence && LEVELS.indexOf(organ.confidence) >= i ? "bg-bubbles-grape" : "bg-line"}`}
+                />
+              ))}
+            </span>
           </span>
           <span className="text-body-sm font-bold text-ink-soft">
             {organ.confidence ? `${CONFIDENCE_LABEL[organ.confidence]} confidence` : "Not enough to judge"}
           </span>
-        </div>
-        {organ.confidenceReason && <p className="mt-2 text-caption text-muted">{organ.confidenceReason}</p>}
+        </summary>
+        {organ.confidenceReason && <p className="mt-1 text-caption text-muted">{organ.confidenceReason}</p>}
         {organ.missing.length > 0 && (
           <>
             <p className="mt-3 text-body-sm font-bold text-ink-soft">Still missing</p>
@@ -152,18 +149,16 @@ export function OrganPanel({ organ }: { organ: Organ | null }) {
             </ul>
           </>
         )}
-      </section>
+      </details>
 
-      <section className="mt-5 rounded-2xl bg-tint-grape p-4" aria-labelledby={`${titleId}-next`}>
+      <section className="mt-4 rounded-2xl bg-tint-grape p-4" aria-labelledby={`${titleId}-next`}>
         <h3 id={`${titleId}-next`} className="text-body-sm font-extrabold text-bubbles-grape-deep">
           One next step
         </h3>
         <p className="mt-1 text-body-sm text-ink">{organ.nextStep ?? meta.nextStep}</p>
       </section>
 
-      <p className="mt-5 text-caption text-muted">
-        This is not a diagnosis. It sorts what you have logged so you and your doctor can talk about it.
-      </p>
+      <p className="mt-4 text-caption text-muted">This is not a diagnosis.</p>
 
       <div className="mt-4 flex items-center gap-3">
         {!urgent && <BubblesMascot size={44} mood="calm" animated={false} />}

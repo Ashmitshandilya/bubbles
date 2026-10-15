@@ -31,7 +31,7 @@ class ViewerBoundary extends Component<{ children: ReactNode; onError: () => voi
 
 const LINK = "underline underline-offset-2 hover:text-ink";
 const SOURCE_NAME: Record<string, string> = { labs: "lab results", conditions: "conditions", cycle: "cycle data" };
-const STAGE = "relative h-[440px] overflow-hidden rounded-3xl border-2 border-line sm:h-[540px]";
+const STAGE = "relative h-[40dvh] min-h-[280px] overflow-hidden rounded-3xl border-2 border-line sm:h-[540px]";
 // Pearl studio backdrop from the palette: white light falling onto blush.
 const PEARL = { background: "radial-gradient(120% 90% at 50% 30%, var(--bubbles-white) 0%, var(--bubbles-blush) 55%, var(--tint-pink) 100%)" };
 
@@ -88,13 +88,7 @@ function BodyMap() {
 
   return (
     <div className="space-y-8">
-      <header className="bubbles-rise max-w-2xl">
-        <h1 className="text-h1 text-ink">Body map</h1>
-        <p className="mt-2 text-body text-muted">
-          What your entries say about each part of you, how sure Bubbles is, and what it still doesn&apos;t know. Missing
-          data shows as a gap. It is never read as healthy.
-        </p>
-      </header>
+      <h1 className="bubbles-rise text-h1 text-ink">Body map</h1>
 
       {query.status === "loading" && (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]" role="status" aria-label="Loading your body map">
@@ -120,8 +114,7 @@ function BodyMap() {
 
           {unavailable.length > 0 && (
             <p role="status" className="rounded-2xl bg-tint-sun px-4 py-3 text-body-sm font-bold text-bubbles-sun-deep">
-              Bubbles couldn&apos;t read your {unavailable.map((u) => SOURCE_NAME[u] ?? u.replaceAll("_", " ")).join(" and ")} just now, so this map may be missing
-              them. It will try again next time you open it.
+              Couldn&apos;t read your {unavailable.map((u) => SOURCE_NAME[u] ?? u.replaceAll("_", " ")).join(" and ")} just now, so some parts may be missing.
             </p>
           )}
 
@@ -131,10 +124,7 @@ function BodyMap() {
                 <h2 id="body-empty-title" className="text-h4 text-ink">
                   Nothing to map yet
                 </h2>
-                <p className="mt-1 text-body-sm text-muted">
-                  When you log symptoms, vitals, sleep or lab results, the parts of the body they relate to fill in here.
-                  Until then each one stays &ldquo;No data yet&rdquo;, never &ldquo;fine&rdquo;.
-                </p>
+                <p className="mt-1 text-body-sm text-muted">Log a symptom, vital or lab result and the matching part fills in. Until then it stays &ldquo;No data yet&rdquo;.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href="/symptoms" className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border-2 border-ink bg-surface px-5 text-body-sm font-extrabold text-ink">
@@ -147,9 +137,10 @@ function BodyMap() {
             </section>
           )}
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
-            <section aria-label="Body" className="lg:sticky lg:top-[calc(var(--header-height)+1.5rem)]">
-              <div className={STAGE} style={PEARL}>
+          <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-start">
+            {/* On a phone the body stays pinned under the header while the list scrolls past, so a tap on a part is always seen. */}
+            <section aria-label="Body" className="contents lg:block lg:sticky lg:top-[calc(var(--header-height)+1.5rem)]">
+              <div className={`${STAGE} sticky top-[calc(var(--header-height-mobile)+0.5rem)] z-20 lg:static`} style={PEARL}>
                 {mode === null ? (
                   <Skeleton className="h-full w-full" />
                 ) : show3D ? (
@@ -185,32 +176,34 @@ function BodyMap() {
 
               {failed && (
                 <p role="status" className="mt-3 text-body-sm font-bold text-muted">
-                  The 3D body couldn&apos;t load on this device, so here is the flat view. Everything else works the same.
+                  The 3D body couldn&apos;t load, so here is the flat view.
                 </p>
               )}
-              {show3D ? (
-                <p className="mt-3 text-caption text-muted">
-                  Drag to turn, pinch or scroll to zoom, tap a part to open it. 3D anatomy adapted from{" "}
-                  <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noopener noreferrer" className={LINK}>
-                    BodyParts3D
-                  </a>{" "}
-                  (&copy; The Database Center for Life Science,{" "}
-                  <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en" target="_blank" rel="noopener noreferrer" className={LINK}>
-                    CC BY-SA 2.1 JP
-                  </a>
-                  ) and{" "}
-                  <a href="https://github.com/Z-Anatomy/Models-of-human-anatomy" target="_blank" rel="noopener noreferrer" className={LINK}>
-                    Z-Anatomy
-                  </a>{" "}
-                  (Gauthier Kervyn and contributors), changed for Bubbles.
-                  {organs.some((o) => o.id === "uterus_ovaries") && " Uterus and ovaries are illustrative."} Model licence{" "}
-                  <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className={LINK}>
-                    CC BY-SA 4.0
-                  </a>
-                  .
-                </p>
-              ) : (
-                <p className="mt-3 text-caption text-muted">Tap a part to open it.</p>
+              <p className="mt-3 text-caption text-muted">{show3D ? "Drag to turn, pinch to zoom, tap a part." : "Tap a part to open it."}</p>
+              {show3D && (
+                <details className="mt-1 text-caption text-muted">
+                  <summary className="inline-flex min-h-[44px] cursor-pointer items-center font-bold">Model credits</summary>
+                  <p className="m-0">
+                    3D anatomy adapted from{" "}
+                    <a href="https://lifesciencedb.jp/bp3d/" target="_blank" rel="noopener noreferrer" className={LINK}>
+                      BodyParts3D
+                    </a>{" "}
+                    (&copy; The Database Center for Life Science,{" "}
+                    <a href="https://creativecommons.org/licenses/by-sa/2.1/jp/deed.en" target="_blank" rel="noopener noreferrer" className={LINK}>
+                      CC BY-SA 2.1 JP
+                    </a>
+                    ) and{" "}
+                    <a href="https://github.com/Z-Anatomy/Models-of-human-anatomy" target="_blank" rel="noopener noreferrer" className={LINK}>
+                      Z-Anatomy
+                    </a>{" "}
+                    (Gauthier Kervyn and contributors), changed for Bubbles. The eyes
+                    {organs.some((o) => o.id === "uterus_ovaries") && ", uterus and ovaries"} are illustrative. Model licence{" "}
+                    <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer" className={LINK}>
+                      CC BY-SA 4.0
+                    </a>
+                    .
+                  </p>
+                </details>
               )}
             </section>
 

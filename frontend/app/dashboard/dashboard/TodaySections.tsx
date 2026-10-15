@@ -99,7 +99,7 @@ function Spark({ bars, slug }: { bars: number[]; slug: SignalSlug }) {
   const logged = points.filter((p) => p !== null).length;
   if (!logged) return null;
   return (
-    <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width={SPARK_W} height={SPARK_H} role="img" aria-label={`Last 7 days, logged on ${logged}`} className={`min-w-0 shrink ${TONE[slug].ink}`}>
+    <svg viewBox={`0 0 ${SPARK_W} ${SPARK_H}`} width={SPARK_W} height={SPARK_H} role="img" aria-label={`Last 7 days, logged on ${logged}`} className={`hidden min-w-0 shrink min-[560px]:block ${TONE[slug].ink}`}>
       <path d={sparkPath(points)} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
       {points.map((p, i) => p && <circle key={i} cx={p.x} cy={p.y} r="2.2" fill="currentColor" />)}
     </svg>
@@ -150,7 +150,7 @@ export function Greeting({ title, date, cycleDay }: { title: string; date: strin
           type="text"
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask Bubbles anything about your health…"
+          placeholder="Ask Bubbles…"
           maxLength={500}
           className="min-h-[44px] min-w-0 flex-1 border-0 bg-transparent text-base text-ink outline-none focus-visible:outline-none"
         />
@@ -174,13 +174,10 @@ interface WaterProps {
 const BRIEF_CARD = "rounded-[24px] border border-line bg-surface shadow-sm";
 
 export function TodayBrief({ state, items, showMascot, onRetry, onAddWater, waterBusy }: { state: HeroState; items: TodayItem[]; showMascot: boolean; onRetry: () => void } & WaterProps) {
-  const [lead, ...rest] = items;
+  const lead = items[0];
   return (
     <section aria-labelledby="today-matters" aria-busy={state === "loading"} className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id="today-matters" className="m-0 font-display text-[1.375rem] font-semibold sm:text-2xl">Your next step</h2>
-        <span className="font-mono text-xs text-ink-soft">from your own logs, last 4 weeks</span>
-      </div>
+      <h2 id="today-matters" className="m-0 font-display text-[1.375rem] font-semibold sm:text-2xl">Your next step</h2>
 
       {state === "loading" && (
         <>
@@ -190,7 +187,7 @@ export function TodayBrief({ state, items, showMascot, onRetry, onAddWater, wate
       )}
 
       {state === "error" && (
-        <BriefMessage title="Bubbles couldn't load your signals right now." body="Your data is safe. This is usually a connection hiccup.">
+        <BriefMessage title="Couldn't load your signals." body="Your data is safe. Try again.">
           <button type="button" onClick={onRetry} className={BTN_QUIET}><Icon name="refresh" size={18} />Try again</button>
         </BriefMessage>
       )}
@@ -198,8 +195,8 @@ export function TodayBrief({ state, items, showMascot, onRetry, onAddWater, wate
       {state === "empty" && (
         <BriefMessage
           mascot={showMascot}
-          title="Bubbles is ready when you are."
-          body="Log your first signal or tell Bubbles how your day is going. Your picture builds from what you share, and nothing is assumed."
+          title="Ready when you are."
+          body="Log something or tell Bubbles about your day."
         >
           <Link href="/companion" className={BTN_GRAPE}>Talk to Bubbles</Link>
           <Link href="/cycle" className={BTN_QUIET}>Log your period</Link>
@@ -209,24 +206,39 @@ export function TodayBrief({ state, items, showMascot, onRetry, onAddWater, wate
       {state === "clear" && (
         <BriefMessage
           title="Nothing stands out today."
-          body="That's based only on what you've logged, not proof that everything is fine. Keep logging and Bubbles will point out changes as they appear."
+          body="Based only on what you've logged, so not an all-clear."
         />
       )}
 
       {state === "items" && lead && (
-        <>
-          <NextStep item={lead} onAddWater={onAddWater} waterBusy={waterBusy} />
-          {rest.length > 0 && (
-            <div className="flex flex-col gap-3">
-              <h3 className="m-0 text-label font-extrabold text-ink-soft">Also worth a look</h3>
-              <ul className="bubbles-stagger m-0 grid list-none gap-3 p-0 md:grid-cols-2">
-                {rest.map((item) => <li key={item.id} className="min-w-0"><AlsoCard item={item} onAddWater={onAddWater} waterBusy={waterBusy} /></li>)}
-              </ul>
-            </div>
-          )}
-        </>
+        <NextStep item={lead} onAddWater={onAddWater} waterBusy={waterBusy} />
       )}
     </section>
+  );
+}
+
+/** The other things worth a look: kept one tap away so Today opens on a single next step. */
+export function AlsoList({ items, onAddWater, waterBusy }: { items: TodayItem[] } & WaterProps) {
+  return (
+    <ul className="m-0 grid list-none gap-3 p-0 md:grid-cols-2">
+      {items.map((item) => <li key={item.id} className="min-w-0"><AlsoCard item={item} onAddWater={onAddWater} waterBusy={waterBusy} /></li>)}
+    </ul>
+  );
+}
+
+/** A quiet row that opens on tap. Today keeps its secondary cards in these instead of stacking them. */
+export function MoreFold({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+  return (
+    <details className="group rounded-[24px] border border-line bg-surface shadow-sm">
+      <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
+        <span className="font-display text-lg font-semibold text-ink">{title}</span>
+        <span className="flex items-center gap-2 text-sm font-extrabold text-ink-soft">
+          {hint}
+          <span className="transition-transform group-open:rotate-90"><Icon name="arrow" size={16} /></span>
+        </span>
+      </summary>
+      <div className="flex flex-col gap-4 px-4 pb-5 pt-1 sm:px-5">{children}</div>
+    </details>
   );
 }
 
@@ -330,7 +342,7 @@ const QUICK_LOG: Array<{ slug: SignalSlug | "symptom"; label: string; href: stri
 export function QuickLog({ onAddWater, waterBusy, status }: WaterProps & { status: { text: string; tone: "ok" | "error" } | null }) {
   return (
     <section aria-labelledby="today-quick-log" className="flex flex-col gap-2.5">
-      <h2 id="today-quick-log" className="m-0 text-label font-extrabold text-ink-soft">Log in a tap</h2>
+      <h2 id="today-quick-log" className="sr-only">Log in a tap</h2>
       <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
         {QUICK_LOG.map((entry) => {
           const tone = TONE[entry.tone];
@@ -352,7 +364,7 @@ export function QuickLog({ onAddWater, waterBusy, status }: WaterProps & { statu
           );
         })}
       </ul>
-      <p role="status" className="m-0 min-h-[1.5rem] text-sm font-bold">
+      <p role="status" className="m-0 text-sm font-bold empty:hidden">
         {status && (
           <span className={`bubbles-pop-in inline-flex rounded-full px-3 py-1 ${status.tone === "ok" ? "bg-tint-mint text-bubbles-mint-deep" : "bg-tint-urgent text-bubbles-urgent"}`}>{status.text}</span>
         )}
@@ -382,8 +394,8 @@ export function tileFromCycle(c: CycleInfo): Tile {
 export function SignalTiles({ tiles }: { tiles: Tile[] }) {
   return (
     <section aria-labelledby="today-signals" className="flex min-w-0 flex-col gap-3.5">
-      <SectionHeading id="today-signals">What changed this week</SectionHeading>
-      <ul className="bubbles-stagger m-0 grid list-none grid-cols-1 gap-3 p-0 min-[460px]:grid-cols-2 sm:gap-4">
+      <SectionHeading id="today-signals">This week</SectionHeading>
+      <ul className="bubbles-stagger m-0 grid list-none grid-cols-2 gap-3 p-0 sm:gap-4 lg:grid-cols-3">
         {tiles.map((tile) => <li key={tile.slug} className="min-w-0"><SignalTile tile={tile} /></li>)}
       </ul>
     </section>
@@ -393,9 +405,9 @@ export function SignalTiles({ tiles }: { tiles: Tile[] }) {
 function SignalTile({ tile }: { tile: Tile }) {
   const tone = TONE[tile.slug];
   const meta = SIGNAL_META[tile.slug];
-  if (tile.state === "loading") return <div className="bubbles-skeleton bubbles-skeleton-card h-[148px]" aria-label={`Loading ${meta.label.toLowerCase()}`} />;
+  if (tile.state === "loading") return <div className="bubbles-skeleton bubbles-skeleton-card h-[120px]" aria-label={`Loading ${meta.label.toLowerCase()}`} />;
 
-  const base = "bubbles-lift flex h-full min-h-[148px] flex-col gap-2 rounded-[24px] border bg-surface p-5 text-ink no-underline shadow-sm sm:gap-2.5";
+  const base = "bubbles-lift flex h-full min-h-[120px] flex-col gap-2 rounded-[24px] border bg-surface p-4 text-ink no-underline shadow-sm sm:gap-2.5 sm:p-5";
   const label = <span className={`text-sm font-extrabold ${tone.ink}`}>{meta.label}</span>;
   if (tile.state === "error") {
     return (
@@ -426,7 +438,6 @@ function SignalTile({ tile }: { tile: Tile }) {
             {tile.trend && <TrendGlyph trend={tile.trend} slug={tile.slug} />}
             {tile.detail}
           </span>
-          {tile.source && <span className="font-mono text-xs text-ink-soft">{tile.source}</span>}
         </>
       )}
     </Link>
@@ -441,7 +452,7 @@ const TEXT_LINK = "inline-flex min-h-[44px] items-center self-start text-sm font
 export function Patterns({ state, items, note, onRetry }: { state: "loading" | "error" | "ready"; items: PatternItem[]; note?: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col gap-3.5">
-      <SectionHeading id="today-patterns">Patterns Bubbles noticed</SectionHeading>
+      <h2 id="today-patterns" className="sr-only">Patterns Bubbles noticed</h2>
       {state === "loading" && <div className="bubbles-skeleton bubbles-skeleton-card h-[120px]" aria-label="Loading patterns" />}
       {state === "error" && (
         <div className={CARD}>
@@ -452,7 +463,7 @@ export function Patterns({ state, items, note, onRetry }: { state: "loading" | "
       {state === "ready" && items.length === 0 && (
         <div className={CARD}>
           <Pill kind="gap">Not enough data yet</Pill>
-          <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">Bubbles looks for repeats once you&apos;ve logged for a week or two, and won&apos;t guess before then.</p>
+          <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">Patterns show once you&apos;ve logged for a week or two.</p>
         </div>
       )}
       {state === "ready" && items.length > 0 && (
@@ -484,7 +495,7 @@ export function ComingUp({ cycle, visits, loading, failed }: { cycle: CycleInfo 
   ];
   return (
     <section aria-labelledby="today-coming-up" className={`${CARD} gap-2.5`}>
-      <h3 id="today-coming-up" className="m-0 font-display text-lg font-semibold">Coming up</h3>
+      <h3 id="today-coming-up" className="sr-only">Coming up</h3>
       {loading ? (
         <div className="bubbles-skeleton h-12 rounded-2xl" aria-label="Loading what's coming up" />
       ) : rows.length ? (
@@ -503,9 +514,7 @@ export function ComingUp({ cycle, visits, loading, failed }: { cycle: CycleInfo 
         <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">Bubbles couldn&apos;t load what&apos;s coming up right now.</p>
       ) : (
         <>
-          <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">
-            Nothing on the calendar yet. Bubbles can estimate your next period after two logged period starts.
-          </p>
+          <p className="m-0 text-[0.9375rem] text-ink-soft">Nothing coming up.</p>
           <Link href="/visits" className={TEXT_LINK}>Add a doctor visit</Link>
         </>
       )}
@@ -516,11 +525,12 @@ export function ComingUp({ cycle, visits, loading, failed }: { cycle: CycleInfo 
 
 export function BodyMapCard() {
   return (
-    <section aria-labelledby="today-body-map" className="flex flex-col gap-3 rounded-[24px] border border-[#E7E0EC] bg-tint-grape p-5">
-      <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-surface text-bubbles-grape-deep"><Icon name="body" size={24} /></span>
-      <h2 id="today-body-map" className="m-0 font-display text-xl font-semibold">Your body map</h2>
-      <p className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">See which body systems Bubbles has evidence for, and where it still needs data. It organises evidence; it doesn&apos;t measure organ health.</p>
-      <Link href="/body" className={`${BTN_QUIET} self-start`}>See your body map <Icon name="arrow" size={18} /></Link>
-    </section>
+    <Link href="/body" className="bubbles-lift flex min-h-[56px] items-center justify-between gap-3 rounded-[24px] border border-line bg-tint-grape px-5 py-3 text-ink no-underline shadow-sm">
+      <span className="flex items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-bubbles-grape-deep"><Icon name="body" size={20} /></span>
+        <span className="font-display text-lg font-semibold">Your body map</span>
+      </span>
+      <Icon name="arrow" size={18} />
+    </Link>
   );
 }
