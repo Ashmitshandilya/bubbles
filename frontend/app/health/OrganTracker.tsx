@@ -3,6 +3,7 @@
 import { Component, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { CARD, PILL, ErrorCard, Skeleton, humanize, useBubblesQuery } from "../../components/hub/HubKit";
+import { organLabel, type Anatomy } from "../../components/anatomy/presets";
 
 // three.js only downloads when someone asks for the 3D view.
 const Anatomy3D = dynamic(() => import("../../components/Anatomy3D"), {
@@ -26,17 +27,6 @@ interface BodySystemsResponse {
   intelligence?: { systems?: OrganAssessment[]; systems_with_data?: number; total_systems?: number };
 }
 
-const ORGAN_LABEL: Record<string, string> = {
-  brain: "Brain",
-  heart: "Heart",
-  lungs: "Lungs",
-  liver: "Liver",
-  kidneys: "Kidneys",
-  pancreas: "Pancreas",
-  digestive_system: "Digestion",
-  reproductive_system: "Reproductive",
-  musculoskeletal_system: "Muscles & bones",
-};
 
 // Uncertainty language only: nothing here ever says "healthy".
 const STATUS: Record<OrganStatus, { label: string; pill: string; dot: string }> = {
@@ -73,7 +63,8 @@ class ThreeBoundary extends Component<{ children: ReactNode; onError: () => void
   }
 }
 
-export function OrganTracker() {
+// Until the person's own setup says otherwise the map draws a neutral body (the onboarding experience profile will set this).
+export function OrganTracker({ anatomy = "neutral" }: { anatomy?: Anatomy } = {}) {
   const [query, reload] = useBubblesQuery<BodySystemsResponse>("/intelligence/body-systems?days=90");
   const [picked, setPicked] = useState<string | null>(null);
   const [show3D, setShow3D] = useState(false);
@@ -163,6 +154,7 @@ export function OrganTracker() {
                 >
                   <Anatomy3D
                     selected={selected.organ}
+                    anatomy={anatomy}
                     onSelect={setPicked}
                     organStatus={Object.fromEntries(systems.map((s) => [s.organ, s.status]))}
                   />
@@ -193,7 +185,7 @@ export function OrganTracker() {
                     >
                       <span className={`h-3.5 w-3.5 shrink-0 rounded-full ${status.dot}`} aria-hidden="true" />
                       <span className="min-w-0">
-                        <span className="block font-extrabold text-ink">{ORGAN_LABEL[system.organ] ?? humanize(system.organ)}</span>
+                        <span className="block font-extrabold text-ink">{organLabel(system.organ, anatomy)}</span>
                         <span className="block text-[0.8125rem] font-bold text-muted">{status.label}</span>
                       </span>
                     </button>
@@ -203,7 +195,7 @@ export function OrganTracker() {
             </ul>
 
             <div aria-live="polite">
-              <OrganDetail key={selected.organ} system={selected} />
+              <OrganDetail key={selected.organ} system={selected} anatomy={anatomy} />
             </div>
           </div>
         </>
@@ -217,14 +209,14 @@ export function OrganTracker() {
   );
 }
 
-function OrganDetail({ system }: { system: OrganAssessment }) {
+function OrganDetail({ system, anatomy }: { system: OrganAssessment; anatomy: Anatomy }) {
   const status = STATUS[system.status] ?? STATUS.unknown;
   const evidence = Math.round((system.data_completeness ?? 0) * 100);
   const signals = system.signals ?? [];
   return (
     <div className="bubbles-rise rounded-3xl bg-blush p-5">
       <p className="text-label text-muted">Selected</p>
-      <h3 className="mt-1 text-h3 text-ink">{ORGAN_LABEL[system.organ] ?? humanize(system.organ)}</h3>
+      <h3 className="mt-1 text-h3 text-ink">{organLabel(system.organ, anatomy)}</h3>
       <span className={`${PILL} mt-2 ${status.pill}`}>{status.label}</span>
 
       <div className="mt-4">
