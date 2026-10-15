@@ -31,6 +31,8 @@ const homePosition = (side: View, aspect: number) =>
 const SHELL_OPACITY: Record<string, number> = { skin: 0.17, skeleton: 0.28 };
 // The skin and skeleton wrap everything; a pointer only lands on them when no organ sits under it.
 const SHELLS = new Set(["skin", "skeleton"]);
+// Painted in the model itself (white of the eye, iris, pupil, nerve): the organ colour must not replace those colours.
+const PAINTED = new Set(["eye_left", "eye_right"]);
 
 interface Controls {
   target: Vector3;
@@ -95,6 +97,8 @@ function Body({ anatomy = "neutral", organs, selected, hovered, onSelect, onHove
         material = new MeshPhysicalMaterial({ color: white.clone().lerp(token("--tint-pink"), 0.45), roughness: 0.4, transparent: true, opacity: SHELL_OPACITY.skin, depthWrite: false, side: FrontSide });
       } else if (id === "skeleton") {
         material = new MeshPhysicalMaterial({ color: token("--tint-sun").lerp(white, 0.35), roughness: 0.55, transparent: true, opacity: SHELL_OPACITY.skeleton, depthWrite: false });
+      } else if (PAINTED.has(id)) {
+        material = new MeshPhysicalMaterial({ vertexColors: true, roughness: 0.28, clearcoat: phone ? 0 : 1, clearcoatRoughness: 0.12 });
       } else if (phone) {
         // ponytail: clearcoat and sheen are two extra lighting passes per pixel over ~400k triangles; phones get plain satin.
         // Unmeasured on a real mid-range Android: profile one there before bringing them back.
@@ -138,7 +142,9 @@ function Body({ anatomy = "neutral", organs, selected, hovered, onSelect, onHove
         if (!parent) continue;
         pivot = new Group();
         pivot.name = `pivot-${mesh.name}`;
-        const center = new Box3().setFromObject(mesh).getCenter(new Vector3());
+        // A part may say where it turns from (the eyes: the middle of the eyeball, not of the eyeball plus its nerve).
+        const own = mesh.userData.center as number[] | undefined;
+        const center = Array.isArray(own) && own.length === 3 ? mesh.localToWorld(new Vector3(...own)) : new Box3().setFromObject(mesh).getCenter(new Vector3());
         pivot.position.copy(parent.worldToLocal(center));
         parent.add(pivot);
         mesh.position.sub(pivot.position);
@@ -215,13 +221,19 @@ function Body({ anatomy = "neutral", organs, selected, hovered, onSelect, onHove
         material.opacity = recede ? 0.32 : 1;
         material.depthWrite = !recede;
         material.needsUpdate = true;
-        const tint = token(ORGAN_TINT[id] ?? "--tint-pink");
-        const fill = token((ORGAN_TINT[id] ?? "--tint-pink").replace("--tint-", "--bubbles-"));
-        material.color.copy(tint).lerp(fill, status === "no_data" ? 0.15 : 0.55);
-        if (status === "no_data") material.color.lerp(muted, 0.35);
+        if (PAINTED.has(id)) {
+          material.color.set(0xffffff);
+        } else {
+          const tint = token(ORGAN_TINT[id] ?? "--tint-pink");
+          const fill = token((ORGAN_TINT[id] ?? "--tint-pink").replace("--tint-", "--bubbles-"));
+          material.color.copy(tint).lerp(fill, status === "no_data" ? 0.15 : 0.55);
+          if (status === "no_data") material.color.lerp(muted, 0.35);
+        }
       }
       material.emissive.copy(glow);
-      material.emissiveIntensity = status === "no_data" ? 0 : active ? 0.7 : near ? 0.45 : 0.22;
+      // Painted parts glow less so the iris and the white of the eye stay readable.
+      const strength = PAINTED.has(id) ? 0.45 : 1;
+      material.emissiveIntensity = (status === "no_data" ? 0 : active ? 0.7 : near ? 0.45 : 0.22) * strength;
     }
     pumpId.current = focus ? selected : null;
     invalidate();
@@ -329,7 +341,7 @@ function CameraRig({ selected, view, ready, reduced }: { selected: string | null
       const box = new Box3();
       for (const object of objects) box.expandByObject(object);
       target = box.getCenter(new Vector3());
-      distance = Math.min(1.3, Math.max(0.8, box.getSize(new Vector3()).length() * 3.4));
+      distance = Math.min(1.3, Math.max(0.5, box.getSize(new Vector3()).length() * 3.4)); // small parts (eyes, thyroid) get a close shot
     }
     goal.current = { target, position: direction.multiplyScalar(distance).add(target) };
     invalidate();

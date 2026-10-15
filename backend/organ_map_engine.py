@@ -39,6 +39,7 @@ ORGANS: dict[str, str] = {
     "heart": "Heart",
     "lungs": "Lungs",
     "brain": "Brain",
+    "eyes": "Eyes",
     "stomach_intestines": "Stomach and intestines",
     "liver_pancreas": "Liver and pancreas",
     "kidneys_bladder": "Kidneys and bladder",
@@ -66,7 +67,7 @@ CONCEPT_ORGANS: dict[str, tuple[str, ...]] = {
     "chest_pain": ("heart",), "heart_attack": ("heart",), "palpitations": ("heart",), "fainting": ("heart", "brain"),
     "shortness_of_breath": ("lungs",), "cough": ("lungs",), "sore_throat": ("lungs",), "allergic_reaction": ("lungs", "skin"),
     "headache": ("brain",), "dizziness": ("brain",), "seizure": ("brain",), "stroke_signs": ("brain",), "confusion": ("brain",),
-    "numbness": ("brain",), "blurred_vision": ("brain",), "anxiety": ("brain",), "low_mood": ("brain",), "insomnia": ("brain",),
+    "numbness": ("brain",), "blurred_vision": ("brain", "eyes"), "anxiety": ("brain",), "low_mood": ("brain",), "insomnia": ("brain",),
     "suicidal_ideation": ("brain",), "self_harm": ("brain",),
     "nausea": ("stomach_intestines",), "vomiting": ("stomach_intestines",), "persistent_vomiting": ("stomach_intestines",),
     "vomiting_blood": ("stomach_intestines",), "abdominal_pain": ("stomach_intestines",), "bloating": ("stomach_intestines",),
@@ -75,6 +76,7 @@ CONCEPT_ORGANS: dict[str, tuple[str, ...]] = {
     "spotting": ("uterus_ovaries",), "unusual_bleeding": ("uterus_ovaries",),
     "back_pain": ("skeleton_muscles",), "joint_pain": ("skeleton_muscles",), "muscle_pain": ("skeleton_muscles",),
     "rash": ("skin",),
+    "eye_strain": ("eyes",), "dry_eyes": ("eyes",), "red_eye": ("eyes",), "eye_pain": ("eyes",), "eye_itch": ("eyes",),
 }
 # words the safety vocabulary does not cover (tracker symptoms are free text)
 EXTRA_TERMS: dict[str, re.Pattern] = {organ: re.compile(rf"\b(?:{words})\b", re.I) for organ, words in {
@@ -85,6 +87,8 @@ EXTRA_TERMS: dict[str, re.Pattern] = {organ: re.compile(rf"\b(?:{words})\b", re.
     "skin": r"acne|pimples?|eczema|itch\w*|hives|psoriasis|dry skin|skin \w+|sunburn",
     "skeleton_muscles": r"sprain\w*|stiff\w*|knee pain|shoulder pain|neck pain|backache|sore muscles?",
 }.items()}
+# the Eyes tracker's symptom chips (health_logs.EYE_SYMPTOMS) in the words the rest of the map uses; "headache" is a brain symptom, not read as an eye one
+EYE_CHIPS = {"dry": "dry eyes", "itchy": "itchy eyes", "red": "red eyes", "strained": "eye strain", "blurry": "blurred vision", "watery": "watery eyes"}
 URINARY_TALK = re.compile(r"\b(?:blood in (?:my |the )?(?:urine|pee)|ha?ematuria|bloody (?:urine|pee))\b", re.I)
 THYROID_WORDS = re.compile(r"\b(?:thyroid\w*|hypothyroid\w*|hyperthyroid\w*|hashimoto\w*|graves)\b", re.I)
 PCOS_WORDS = re.compile(r"\b(?:pcos|pcod|polycystic ovar\w*)\b", re.I)
@@ -254,6 +258,20 @@ def observations(events: Iterable[dict], labs: Iterable[dict] = (), conditions: 
                 out.append({**base, "kind": "alcohol", "label": text[:80] or "A drink", "value": None, "unit": None})
             elif kind != "hydration" and _is_sugary(data):
                 out.append({**base, "kind": "sugary", "label": text[:80], "value": None, "unit": None})
+        elif kind == "eye_check":
+            hours = _num(data.get("screen_hours"))
+            if hours is not None and 0 <= hours <= 18:
+                out.append({**base, "kind": "screen", "label": "Screen time", "value": hours, "unit": "hours"})
+            comfort = _num(data.get("eye_comfort"))
+            if comfort is not None and 1 <= comfort <= 5:
+                out.append({**base, "kind": "eye_comfort", "label": "Eye comfort", "value": comfort, "unit": "/5"})
+            for chip in str(data.get("eye_symptoms") or "").split(","):
+                word = EYE_CHIPS.get(chip.strip().lower())
+                if word:
+                    out.append({**_symptom_obs(base, word, None, None), "organs": {"eyes"}})
+            exam = _day(data.get("last_exam"))
+            if exam:
+                out.append({**base, "date": exam, "kind": "eye_exam", "label": "Eye exam", "value": None, "unit": None})
         elif kind in ("symptom", "menstrual_symptom"):
             if kind == "menstrual_symptom" and (name in _CYCLE_NAMES or data.get("symptom") == "menstrual flow"):
                 flow = data.get("flow")
@@ -559,6 +577,45 @@ def _brain(org: _Organ, obs: list[dict]) -> None:
     }[org.status]
 
 
+def _eyes(org: _Organ, obs: list[dict]) -> None:
+    """Screen time, eye comfort and eye symptoms from the Eyes tracker and from chat. A recorded eye exam is never read as healthy eyes."""
+    recent = org.today - timedelta(days=K.ORGAN_EYE_WINDOW_DAYS - 1)
+    screen = [o for o in obs if o["kind"] == "screen"]
+    comfort = [o for o in obs if o["kind"] == "eye_comfort"]
+    symptoms = _symptoms_for(obs, "eyes")
+    for kind, items in (("screen time", screen), ("comfort", comfort), ("symptoms", symptoms)):
+        org.add(kind, map(_item, items))
+    org.need(bool(screen), "Screen time per day")
+    org.need(bool(comfort) or bool(symptoms), "How your eyes feel (comfort 1 to 5, or any symptoms)")
+    _red_flags(org, symptoms)
+    by_day: dict[date, dict] = {}
+    for o in screen:
+        if o["date"] >= recent and (o["date"] not in by_day or o["value"] > by_day[o["date"]]["value"]):
+            by_day[o["date"]] = o  # one value a day: the longest logged
+    if len(by_day) >= K.ORGAN_EYE_MIN_SCREEN_DAYS:
+        avg = mean(o["value"] for o in by_day.values())
+        if avg >= K.ORGAN_EYE_SCREEN_HOURS_WATCH:
+            org.flag("worth_watching", f"Your screen time averaged {_g(round(avg, 1))} hours a day over {_plural(len(by_day), 'day')}.", map(_item, by_day.values()))
+        else:
+            org.reasons.append(f"Your screen time averaged {_g(round(avg, 1))} hours a day over {_plural(len(by_day), 'day')}.")
+    sore = [o for o in comfort if o["value"] <= K.ORGAN_EYE_COMFORT_LOW]
+    bothered = [o for o in symptoms + sore if o["date"] >= recent]
+    if _days(bothered) >= K.ORGAN_EYE_SYMPTOM_DAYS_WATCH:
+        org.flag("worth_watching", f"Your eyes bothered you on {_days(bothered)} of the last {K.ORGAN_EYE_WINDOW_DAYS} days.", map(_item, bothered))
+    others = [o for o in _unflagged(org, symptoms) if o["date"] >= recent]
+    if others and org.status == "steady":
+        org.reasons.append(f"You logged {_names(others)}.")
+    exam = max((o["date"] for o in obs if o["kind"] == "eye_exam"), default=None)
+    if exam:
+        org.notes.append(f"You recorded an eye exam on {_fmt(exam)}. A visit date says when you were checked, not how your eyes are now.")
+    org.next_step = {
+        "talk_to_doctor": "Please see a doctor or an eye clinic soon. Bring these entries.",
+        "worth_watching": "Short breaks help tired eyes: look at something about 6 metres away for 20 seconds every 20 minutes. If it keeps coming back, an eye check is worth it.",
+        "steady": "Keep logging screen time and how your eyes feel; Bubbles will tell you if something shifts.",
+        "no_data": "Log screen time or how your eyes feel in Track > Eyes to start this area.",
+    }[org.status]
+
+
 def _gut(org: _Organ, obs: list[dict]) -> None:
     food = [o for o in obs if o["kind"] == "food"]
     symptoms = _symptoms_for(obs, "stomach_intestines")
@@ -761,7 +818,7 @@ def _skin(org: _Organ, obs: list[dict]) -> None:
     }[org.status]
 
 
-RULES = {"heart": _heart, "lungs": _lungs, "brain": _brain, "stomach_intestines": _gut, "liver_pancreas": _liver,
+RULES = {"heart": _heart, "lungs": _lungs, "brain": _brain, "eyes": _eyes, "stomach_intestines": _gut, "liver_pancreas": _liver,
          "kidneys_bladder": _kidneys, "thyroid": _thyroid, "skeleton_muscles": _skeleton, "skin": _skin}
 
 

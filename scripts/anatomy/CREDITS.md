@@ -10,6 +10,7 @@ the sources below and share their adaptation under the same licence.
 | thyroid, stomach, bladder | Z-Anatomy | CC BY-SA 4.0 | Subdivided once and smoothed. The stomach's display window was closed and faired |
 | lungs | Z-Anatomy, five lobes | CC BY-SA 4.0 | Small hilum openings closed |
 | uterus, ovaries | Procedural (`female_pelvis.mjs`) | CC BY-SA 4.0 | **Illustrative**, see below |
+| eye_left, eye_right | Procedural (`eyes.mjs`, added by `add_eyes.mjs` after the build) | CC BY-SA 4.0 | **Illustrative**: globe, cornea, painted iris and pupil, optic nerve to the chiasm; textbook adult sizes placed in the BodyParts3D head |
 
 ## BodyParts3D
 

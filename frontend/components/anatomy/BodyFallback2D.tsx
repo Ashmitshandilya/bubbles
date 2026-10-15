@@ -105,6 +105,9 @@ const SHAPES: ReadonlyArray<readonly [string, Shape]> = [
       detail: "M100 7L100 37M88 14C92 18 88 22 92 26M112 14C108 18 112 22 108 26M86 30C90 32 94 30 96 33M114 30C110 32 106 30 104 33",
     },
   ],
+  // The eyes sit in the face, over the lower edge of the brain; each has a ring for the iris.
+  ["eye_left", { paths: ["M84 30C86 27 93 27 96 30C93 33.5 86 33.5 84 30Z"], detail: "M88.2 30.2a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0" }],
+  ["eye_right", { paths: ["M104 30C107 27 114 27 116 30C114 33.5 107 33.5 104 30Z"], detail: "M107.2 30.2a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0" }],
   [
     "thyroid",
     { paths: ["M93 56C95 54 98 56 100 58C102 56 105 54 107 56C109 59 107 63 104 63C102 63 101 62 100 61C99 62 98 63 96 63C93 63 91 59 93 56Z"], optional: true },

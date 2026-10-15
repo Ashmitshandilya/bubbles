@@ -56,6 +56,10 @@ def seed(app, db, user_id: str) -> dict:
         if rng.random() < 0.12:
             post("/health/symptoms", {"date": iso, "symptom": "Headache", "severity": rng.randint(2, 5)}, "symptoms")
 
+    # long screen days with tired eyes, so the eyes show a status on the body map
+    for i in (1, 2, 4, 6):
+        post("/health/eyes", {"date": (today - timedelta(days=i)).isoformat(), "screen_hours": 8, "comfort": 2, "symptoms": ["dry", "strained"]}, "eyes")
+
     # a regular 28 day cycle, today is mid-cycle (day 14)
     for k in range(7):
         start = today - timedelta(days=13 + 28 * k)

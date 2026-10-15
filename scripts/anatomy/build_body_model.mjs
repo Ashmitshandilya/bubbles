@@ -1,7 +1,7 @@
 // Builds frontend/public/models/body.glb: BodyParts3D (CC BY-SA 2.1 JP) for most organs,
 // Z-Anatomy (CC BY-SA 4.0) for thyroid, lungs, stomach and bladder, procedural (illustrative)
 // uterus and ovaries from female_pelvis.mjs. Sources and credits: organs.json, CREDITS.md.
-// Usage: cd scripts/anatomy && npm install && node build_body_model.mjs
+// Usage: cd scripts/anatomy && npm install && node build_body_model.mjs && node add_eyes.mjs   (the eyes carry vertex colours, so they are added after)
 // Downloads into <repo>/.anatomy-work (git-ignored by its own .gitignore). No Blender needed.
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from 'node:fs';
