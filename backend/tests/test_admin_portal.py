@@ -392,7 +392,7 @@ def test_the_admin_views_answer_for_an_admin(admin_env):
     c, h = admin_env.client, bearer(admin_env.tokens.admin)
     send(admin_env, "I have been feeling really tired this week and I do not know why")
     me = c.get("/admin/me", headers=h).json()
-    assert me["admin"] is True and me["chain"][0]["provider"] == "Gemini" and me["live_refresh_seconds"] == 5
+    assert me["admin"] is True and me["chain"][0]["provider"] == "Gemini" and me["live_refresh_seconds"] == 3
     for path in ("/admin/overview?range=15m", "/admin/ai?range=24h", "/admin/api", "/admin/audit", "/admin/settings", "/admin/events/live"):
         res = c.get(path, headers=h)
         assert res.status_code == 200 and res.json()["status"] == "success", path

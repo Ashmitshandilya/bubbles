@@ -27,6 +27,7 @@ from auth_errors import (
 from auth_assurance import requires_second_step, token_aal, token_exp
 from ttl_cache import TTLCache
 from admin_api import build_admin_router
+from client_events_api import build_client_events_router
 import admin_settings
 import ops_telemetry
 from request_guard import BodyLimitMiddleware, admin_ids, install_access_log_redaction, require_admin
@@ -490,10 +491,12 @@ def get_authenticated_user(authorization: str | None, *, fresh: bool = False):
     token = _bearer_token(authorization)
     if fresh:
         return _verify_token(token)
-    return _sign_in_cache.get_or_compute(
+    user = _sign_in_cache.get_or_compute(
         hashlib.sha256(token.encode("utf-8")).hexdigest(), lambda: _verify_token(token),
         ttl_for=lambda _user: (token_exp(token) or 0) - time.time(),
     )
+    ops_telemetry.bind_user(str(getattr(user, "id", "")))   # live admin view only: held in the memory ring, never stored or logged
+    return user
 
 
 def _verify_token(token: str):
@@ -550,6 +553,7 @@ app.include_router(build_import_router(get_authenticated_user, supabase))
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
 app.include_router(build_organ_map_router(get_authenticated_user, supabase))
+app.include_router(build_client_events_router())   # POST /telemetry/client: crash counts as two enums
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
 
