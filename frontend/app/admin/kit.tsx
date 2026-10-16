@@ -87,6 +87,16 @@ export function Panel({ title, action, children, id }: { title: string; action?:
   );
 }
 
+export function Stat({ label, value, note }: { label: string; value: string; note?: string | null }) {
+  return (
+    <div className="px-5 py-4">
+      <p className="m-0 text-label text-ink-soft">{label}</p>
+      <p className="m-0 mt-1 font-display text-metric tabular-nums">{value}</p>
+      {note && <p className="m-0 mt-1 text-body-sm text-muted">{note}</p>}
+    </div>
+  );
+}
+
 export function Empty({ children }: { children: ReactNode }) {
   return <p className="m-0 rounded-2xl bg-blush px-4 py-5 text-body-sm text-muted">{children}</p>;
 }
