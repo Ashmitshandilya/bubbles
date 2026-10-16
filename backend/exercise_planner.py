@@ -227,7 +227,7 @@ def plan_week(profile: dict, *, days_per_week: int = 3, minutes: int = 40, equip
     if mode == "clinician_first":
         notes.append("Easy walking and stretching only until a doctor clears you.")
     if "pregnancy" in flags:
-        notes.append("Follow WHO guidance for pregnancy and your midwife's advice. Stop if you feel dizzy, short of breath, or have pain or bleeding.")
+        notes.append("In pregnancy, gentle movement is usually fine, but please follow your midwife's or doctor's advice. Stop if you feel dizzy, short of breath, or have pain or bleeding.")
     if "postpartum" in flags:
         notes.append("After a baby, start gently and build slowly. Talk to your doctor about core and pelvic-floor work.")
     if deload:
@@ -243,7 +243,7 @@ def plan_week(profile: dict, *, days_per_week: int = 3, minutes: int = 40, equip
         notes.append("Balance work is included. Hold on to something stable when needed.")
     who_ok = (moderate_equivalent >= K.WHO_MODERATE_MIN_PER_WEEK[0]) and strength_n >= K.WHO_STRENGTH_DAYS_MIN
     if not who_ok:
-        notes.append("This is a building week toward the WHO suggestion of 150 minutes of moderate activity and 2 days of strength work. Add easy walks whenever you can.")
+        notes.append("This is a building week. A common goal is about 150 minutes of moderate activity and 2 days of strength work, so add easy walks whenever you can.")
     return {"ok": True, "week_index": week_index, "deload": deload, "level": level, "sessions": sessions, "mode": mode, "flags": sorted(flags), "notes": notes,
             "summary": {"cardio_minutes": cardio_min, "moderate_equivalent_minutes": moderate_equivalent, "strength_days": strength_n,
                         "meets_who": who_ok, "rest_days": [d for j, d in enumerate(WEEKDAYS) if j not in slots],
