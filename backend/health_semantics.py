@@ -119,7 +119,12 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         "don't want to (?:live|be alive|be here|wake up)|better off dead|no reason to live|end(?:ing)? it all",
         # passive ideation
         "better off without me|wish i (?:was|were) never born|wish i had never been born|(?:there's |there is )?no point (?:in )?(?:living|going on|continuing|any ?more)|"
-        "(?:can't|cannot) go on|(?:want|wanted|wish) to (?:just )?disappear|(?:give|giving|gave) up on (?:life|living)")),
+        "(?:can't|cannot) go on|(?:want|wanted|wish) to (?:just )?disappear|(?:give|giving|gave) up on (?:life|living)",
+        # burden / worthlessness / not being missed (additive; needs clinician review, see the clinical packet)
+        "(?:i(?:'m| am) |i feel (?:like )?(?:i(?:'m| am) )?|feel(?:ing)? like (?:i(?:'m| am) )?|being )an? burden (?:to|on) (?:everyone|everybody|my family|my friends|them|all of you)|"
+        "nobody (?:would|will|'d) miss me|no ?one (?:would|will|'d) miss me|(?:everyone|everybody|they|my family) (?:would|will) be (?:better|happier) without me|"
+        "i(?:'m| am) (?:completely |totally |just |so )?worthless|i feel (?:completely |totally |so |utterly )?worthless|"
+        "mar(?:na|jana) chahta hu+n?|mar(?:na|jana) chahti hu+n?|jeena nahi chahta|jeena nahi chahti|jeene ka mann nahi|main bojh hu+n?|sabke liye bojh|koi (?:mujhe )?miss nahi karega")),
     ("self_harm", "red", "possible self-harm crisis language", (
         "self[\\s-]?harm\\w*|(?:harm|hurt|cut)(?:ting|ing)? (?:myself|himself|herself|themselves|yourself)|overdos\\w+",)),
     ("stroke_signs", "red", "possible stroke warning signs", (

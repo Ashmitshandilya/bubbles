@@ -26,9 +26,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from db_access import is_permission_denied
+from safety_gate import gate_body
 from event_filters import DEAD_STATUSES, parse_moment, provenance
 
 LBS_PER_KG = 2.2046226218
@@ -708,6 +710,10 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             raise HTTPException(status_code=422, detail="Request body must be valid JSON")
         if not isinstance(body, dict):
             raise HTTPException(status_code=422, detail="Request body must be a JSON object")
+        blocked = gate_body(body)
+        if blocked:
+            # nothing is stored; the same shape the wellness routes return, with a 200 so the tracker shows the message
+            return JSONResponse(blocked, status_code=200)
         return await run_in_threadpool(_save, slug, domain, uid, body)
 
     @router.get("/intelligence/recent-queries")
