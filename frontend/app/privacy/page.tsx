@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy" updated="Draft of 10 October 2026">
+    <LegalPage title="Privacy" updated="Draft of 16 October 2026">
       <section>
         <h2>The short version</h2>
         <p>
@@ -24,6 +24,7 @@ export default function PrivacyPage() {
           <li>Your account details: email address and the name you give.</li>
           <li>What you log or tell Bubbles: sleep, mood, cycle, symptoms, food, activity, drinks, weight, vitals, medicines, lab results, visits and your chat messages.</li>
           <li>Technical data needed to run and protect the service: your IP address for security and rate limits, and request logs that are designed not to contain your message text.</li>
+          <li>In the Android app, only if you turn them on: a notification address for your phone (for phone reminders) and crash reports (see below).</li>
         </ul>
       </section>
 
@@ -57,6 +58,17 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>The Android app: phone reminders and crash reports</h2>
+        <p>
+          Both are off until you turn them on, and Google Analytics is never used. Phone reminders (Settings, Reminders, On this phone) are delivered by Google Firebase
+          Cloud Messaging. Bubbles keeps a notification address for your phone and sends only plain, fixed text such as &quot;Medicine check-in&quot;, never what you
+          logged. Turning them off, signing out or deleting your data removes your phone&apos;s address. Crash reports (Settings, This device) are sent by Google Firebase
+          Crashlytics when the app crashes: the phone model, Android version and where in the app it broke. They never include your entries, messages or account. Google
+          processes both on our behalf, under its own terms.
+        </p>
+      </section>
+
+      <section>
         <h2>Browser storage</h2>
         <p>
           Bubbles keeps only what it needs in your browser: your sign-in, a few settings and small shortcuts, such as whether the privacy veil is on and whether the home page motion is paused. Your sign-in
@@ -79,6 +91,7 @@ export default function PrivacyPage() {
           <li>Export or delete your Whole-Health data from Settings, under Your data.</li>
           <li>Delete individual entries in each tracker.</li>
           <li>Stop partner sharing at any time.</li>
+          <li>Turn phone reminders or crash reports off at any time in the Android app.</li>
           <li>
             Full account deletion is still being built. Until it is, write to <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a> from the email address you signed up with and we will delete your account and
             everything linked to it.

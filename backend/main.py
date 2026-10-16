@@ -409,6 +409,11 @@ def _warm_database_probe() -> None:
     if ops_telemetry._persist_enabled():   # saved admin settings (provider pauses, retention): read once, in the background
         import threading
         threading.Thread(target=admin_settings.load, name="bubbles-settings-load", daemon=True).start()
+    try:   # phone reminders while the app is closed; does nothing until FIREBASE_SERVICE_ACCOUNT_JSON is set (push_fcm.py)
+        import push_fcm
+        push_fcm.start_background(supabase)
+    except Exception:  # noqa: BLE001 - startup must never fail because of an optional channel
+        pass
 
 
 # HEAD is allowed too: uptime monitors (UptimeRobot, Render, load balancers) often probe with HEAD and would otherwise see 405 and report "down"

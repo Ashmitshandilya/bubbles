@@ -13,4 +13,7 @@ ext {
     androidxJunitVersion = '1.3.0'
     androidxEspressoCoreVersion = '3.7.0'
     cordovaAndroidVersion = '14.0.1'
+    // Firebase (docs/FIREBASE.md): phone reminders (Cloud Messaging, through @capacitor/push-notifications) and crash reports.
+    firebaseBomVersion = '34.0.0'
+    firebaseMessagingVersion = '25.0.1'
 }

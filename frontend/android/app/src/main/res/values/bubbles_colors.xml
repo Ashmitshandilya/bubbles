@@ -2,4 +2,6 @@
 <resources>
     <!-- The bubbles-blush token in frontend/app/tokens.css: the page background, shown behind the system bars and on the splash. -->
     <color name="bubbles_blush">#FFF6FA</color>
+    <!-- Deep pink (the button colour): the accent Android gives reminder notifications. -->
+    <color name="bubbles_notification">#D6246F</color>
 </resources>
