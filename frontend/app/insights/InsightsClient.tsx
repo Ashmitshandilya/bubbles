@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import {
@@ -15,7 +15,9 @@ import {
   toneFor,
   useBubblesQuery,
 } from "../../components/hub/HubKit";
+import { InsightDetailSheet } from "../../components/InsightDetailSheet";
 import { formatWhen } from "../lib/dates";
+import { fromAssociation, fromPattern, itemFromSearch, type InsightDetail } from "./detail";
 import {
   caveats,
   closestGap,
@@ -67,6 +69,8 @@ const LOG_LINKS = [
 
 /* ── Page ─────────────────────────────────────────────── */
 
+const DETAIL_BTN = "bubbles-press mt-4 inline-flex min-h-[44px] items-center rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-bubbles-grape-deep";
+
 export function InsightsClient() {
   return (
     <HubPage title="Patterns">
@@ -84,6 +88,28 @@ function Patterns() {
   const cards = analysis ? toCards(analysis, days) : [];
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? cards : cards.slice(0, CARD_LIMIT);
+  const [open, setOpen] = useState<InsightDetail | null>(null);
+  const [deepLink, setDeepLink] = useState<string | null>(null);
+  const [links, reloadLinks] = useBubblesQuery<AssociationsResponse>("/wellness/associations?days=90");
+  // ?item=<id> opens that insight once, then leaves the address clean
+  useEffect(() => {
+    const id = itemFromSearch(window.location.search);
+    if (id) {
+      setDeepLink(id);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+  useEffect(() => {
+    if (!deepLink || patterns.status === "loading" || links.status === "loading") return;
+    const card = cards.find((c) => c.key === deepLink);
+    const assoc = links.status === "ready" ? (links.data.insights ?? []).find((a) => a.id === deepLink) : undefined;
+    if (card) setOpen(fromPattern(card));
+    else if (assoc) setOpen(fromAssociation(assoc));
+    else setMissing(true);
+    setDeepLink(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per deep link
+  }, [deepLink, patterns.status, links.status]);
+  const [missing, setMissing] = useState(false);
 
   return (
     <div className="space-y-8">
@@ -112,7 +138,13 @@ function Patterns() {
         ))}
       </div>
 
-      <LinksSection />
+      {missing && (
+        <p role="status" className="m-0 rounded-2xl bg-blush px-4 py-3 text-body-sm font-bold text-ink-soft">
+          That pattern is no longer in the last {days} days. It may come back as you keep logging.
+        </p>
+      )}
+      <LinksSection links={links} reload={reloadLinks} onOpen={setOpen} />
+      <InsightDetailSheet detail={open} onClose={() => setOpen(null)} />
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section aria-labelledby="pattern-list-title" aria-busy={patterns.status === "loading"}>
@@ -134,7 +166,7 @@ function Patterns() {
             <ul className="bubbles-stagger m-0 list-none space-y-4 p-0">
               {visible.map((card) => (
                 <li key={card.key}>
-                  <PatternCardView card={card} />
+                  <PatternCardView card={card} onDetails={() => setOpen(fromPattern(card))} />
                 </li>
               ))}
             </ul>
@@ -216,7 +248,7 @@ function DirectionRow({ direction }: { direction: string | undefined }) {
   );
 }
 
-function AssociationCard({ item }: { item: Association }) {
+function AssociationCard({ item, onDetails }: { item: Association; onDetails: () => void }) {
   const note = caveats(item.text);
   const sources = item.sources ?? [];
   return (
@@ -282,6 +314,7 @@ function AssociationCard({ item }: { item: Association }) {
             </ul>
           </Disclosure>
         )}
+        <button type="button" onClick={onDetails} className={`${DETAIL_BTN} mt-0 self-start`}>Details<span className="sr-only">: {sentence(item.text)}</span></button>
       </div>
     </article>
   );
@@ -338,8 +371,7 @@ function AssociationsEmpty({ data, days }: { data: AssociationsResponse; days: n
   );
 }
 
-function LinksSection() {
-  const [links, reload] = useBubblesQuery<AssociationsResponse>("/wellness/associations?days=90");
+function LinksSection({ links, reload, onOpen }: { links: ReturnType<typeof useBubblesQuery<AssociationsResponse>>[0]; reload: () => void; onOpen: (d: InsightDetail) => void }) {
   const insights = links.status === "ready" ? links.data.insights ?? [] : [];
 
   return (
@@ -358,7 +390,7 @@ function LinksSection() {
         <ul className="bubbles-stagger m-0 grid list-none gap-4 p-0 md:grid-cols-2">
           {insights.map((item) => (
             <li key={item.id}>
-              <AssociationCard item={item} />
+              <AssociationCard item={item} onDetails={() => onOpen(fromAssociation(item))} />
             </li>
           ))}
         </ul>
@@ -368,7 +400,7 @@ function LinksSection() {
   );
 }
 
-function PatternCardView({ card }: { card: PatternCard }) {
+function PatternCardView({ card, onDetails }: { card: PatternCard; onDetails: () => void }) {
   return (
     <article className={`${CARD} p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -403,6 +435,7 @@ function PatternCardView({ card }: { card: PatternCard }) {
           <p className="mt-3 text-body-sm text-muted">{card.note}</p>
         </div>
       </details>
+      <button type="button" onClick={onDetails} className={DETAIL_BTN}>Details<span className="sr-only">: {card.headline}</span></button>
     </article>
   );
 }

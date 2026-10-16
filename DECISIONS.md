@@ -127,6 +127,11 @@ Entry template:
 - Mind is a top-level section (Mind, Mood log). Hub has a loneliness check-in and four closed topic rows; `/body?organ=brain` opens the brain.
 - Not done: anxiety/stress scores into the brain map and patterns, a mind notification kind.
 
+### 2026-10 · Insight details
+- One `InsightDetailSheet` (native dialog) opens from a Details button on every Patterns card, every link between logs and every Today pattern. `app/insights/detail.ts` builds one shape for all three: what Bubbles saw, the days and numbers (a table or a stated gap), how sure (one scale: Early, Fairly steady, Steadier), what it does not mean, one thing to try, Ask Bubbles.
+- `/insights?item=<id>` opens one insight and cleans the address; an id no longer in the window shows a calm notice.
+- Not done: stable backend ids, `GET /insights/{id}` and per-day occurrence lists. The sheet uses numbers the pages already receive; Today items show a gap sentence for the table.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.
