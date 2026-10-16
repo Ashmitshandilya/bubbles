@@ -69,7 +69,7 @@ def test_every_route_requires_authentication(env):
             r = client.request(method, path, json={} if method in ("POST", "PUT") else None)
             assert r.status_code == 401, (method, path, r.status_code)
             n += 1
-    assert n == 31
+    assert n == 32
 
 
 def test_associations_endpoint_reports_gaps_without_zero_filling_and_is_per_user(env):
