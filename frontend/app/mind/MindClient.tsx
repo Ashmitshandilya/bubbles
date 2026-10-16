@@ -13,6 +13,7 @@ import { Calm } from "./Calm";
 import { CheckIn } from "./CheckIn";
 import { Journal } from "./Journal";
 import { Screens } from "./Screens";
+import { Topics } from "./Topics";
 
 const SECTIONS = [
   { id: "checkin", label: "Check-in" },
@@ -74,6 +75,8 @@ function Mind() {
       <QueryView query={overview} onRetry={reloadOverview} what="your check-in" skeleton={<Skeleton className="h-72 rounded-3xl" />}>
         {(o) => <CheckIn overview={o} onSaved={refresh} />}
       </QueryView>
+
+      <Topics />
 
       <Panel
         id="year"

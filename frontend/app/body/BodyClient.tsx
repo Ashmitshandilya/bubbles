@@ -66,6 +66,11 @@ function BodyMap() {
   const organs = useMemo(() => (query.status === "ready" ? readOrganMap(query.data) : []), [query]);
   const unavailable = query.status === "ready" ? readUnavailable(query.data) : [];
   const [picked, setPicked] = useState<string | null>(null);
+  // /body?organ=brain opens on that organ (the Mind page links here)
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("organ");
+    if (wanted) setPicked(wanted);
+  }, []);
   const [hovered, setHovered] = useState<string | null>(null);
   const [hints, setHints] = useState<DeviceHints | null>(null);
   const [mode, setMode] = useState<"3d" | "flat" | null>(null);

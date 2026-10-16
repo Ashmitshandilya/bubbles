@@ -408,6 +408,11 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             return ok(**Mind.year_pixels(sync_pixels(uid, y, off), y))
         return await run(work)
 
+    @router.get("/wellness/mind/topics")
+    async def mind_topics_copy(authorization: str | None = Header(default=None)):
+        await auth(authorization)
+        return ok(topics=Mind.TOPIC_COPY)
+
     @router.get("/wellness/mind/screen")
     async def mind_screen_questions(kind: str = Query(default="phq2", max_length=10), authorization: str | None = Header(default=None)):
         await auth(authorization)

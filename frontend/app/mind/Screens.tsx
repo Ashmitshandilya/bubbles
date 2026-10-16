@@ -13,6 +13,7 @@ import type { MindOverview, ScreenQuestions, ScreenResult } from "../../app/lib/
 const KINDS = [
   { kind: "phq2", title: "Mood check-in", blurb: "2 questions about interest and low mood" },
   { kind: "gad2", title: "Worry check-in", blurb: "2 questions about worry and feeling on edge" },
+  { kind: "loneliness", title: "Loneliness check-in", blurb: "1 question about feeling alone" },
 ] as const;
 
 export function Screens({ screen, onSaved }: { screen: MindOverview["screen"]; onSaved: () => void }) {
@@ -128,7 +129,7 @@ export function Screens({ screen, onSaved }: { screen: MindOverview["screen"]; o
           </button>
         </div>
       )}
-      <Notice tone="calm">If you ever feel you might harm yourself, please contact your local emergency number or a crisis line right away.</Notice>
+      <Notice tone="calm">If you ever feel you might harm yourself, call 112, or Tele-MANAS (free, 24x7) on 14416, right away.</Notice>
     </Panel>
   );
 }

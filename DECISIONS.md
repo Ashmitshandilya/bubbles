@@ -121,6 +121,12 @@ Entry template:
 - AI consent moved to its own "Your choices" step. The setup screen is "Setting up your app" and takes about 3 seconds.
 - Not done yet: skippable app tour, per-purpose consent toggles inside setup, tap-to-advance for single choices.
 
+### 2026-10 · Mind: loneliness, panic, separation, safer notes
+- One shared crisis gate (`safety_gate.py`) now covers every tracker note, not only `/wellness/*`; a hit stores nothing and shows the support message (112, Tele-MANAS 14416). New passive-ideation phrases are crisis language (draft in the clinical packet, awaiting sign-off).
+- New plain concepts `loneliness`, `panic_attack`, `separation_anxiety` (never an emergency alone, all mapped to the brain). `mind_chat.py` gives the model a friend-style block and gives a short fixed kind reply even without AI consent.
+- Mind is a top-level section (Mind, Mood log). Hub has a loneliness check-in and four closed topic rows; `/body?organ=brain` opens the brain.
+- Not done: anxiety/stress scores into the brain map and patterns, a mind notification kind.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.
