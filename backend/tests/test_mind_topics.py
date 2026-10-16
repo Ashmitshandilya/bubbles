@@ -21,7 +21,7 @@ from tests.test_organ_map_engine import ev, organ
 
 U1 = "00000000-0000-0000-0000-000000000001"
 H1 = {"Authorization": "Bearer t1"}
-AUTHORITY = re.compile(r"\b(NHS|WHO|CDC|NICE|ICMR|guidelines? say|studies show|according to)\b", re.I)
+AUTHORITY = re.compile(r"\b(NHS|WHO|CDC|NICE|ICMR|[Gg]uidelines? say|[Ss]tudies show|[Aa]ccording to)\b")
 
 
 # --- quick scores ------------------------------------------------------------------------------------------------------------------
