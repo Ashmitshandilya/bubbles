@@ -19,6 +19,14 @@ export interface Association {
   lag_days?: number;
   n_days: number;
   text: string;
+  rho?: number;
+  p?: number | null;
+  /** True when the same direction showed up in both halves of the logs. */
+  repeated?: boolean | null;
+  /** Caveats as separate sentences (the engine's own words). */
+  limitations?: string[];
+  /** The newest days behind the link (up to 12), newest first. y is on `date` plus `lag_days`. */
+  pairs?: Array<{ date: string; x: number; y: number }>;
   sources?: AssociationSource[];
 }
 
@@ -51,6 +59,8 @@ const TOPIC: Record<string, string> = {
   calories: "meals",
   resting_hr: "heart rate",
   luteal: "cycle phase",
+  screen_hours: "screen time",
+  eye_comfort: "eye comfort",
 };
 
 export const topic = (key: string) => TOPIC[key] ?? key.replaceAll("_", " ");

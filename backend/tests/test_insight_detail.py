@@ -122,9 +122,10 @@ def test_detail_of_a_pattern_is_the_callers_own_numbers(env):
     body = client.get("/insights/rec:symptom:low-back-pain", headers=H1).json()
     d = body["insight"]
     mine = {f"h1{i}" for i in range(1, 6)}
-    assert body["status"] == "success" and d["kind"] == "pattern" and d["count"] == 5 and {o["id"] for o in d["occurrences"]} == mine
+    assert "source_event_ids" not in d and d["confidence_label"] == "medium" and d["window_days"] == 30
+    assert body["status"] == "success" and d["kind"] == "pattern" and d["occurrence_count"] == 5 and {o["id"] for o in d["occurrences"]} == mine
     other = client.get("/insights/rec:symptom:low-back-pain", headers=H2).json()["insight"]
-    assert other["count"] == 7 and {o["id"] for o in other["occurrences"]}.isdisjoint(mine)
+    assert other["occurrence_count"] == 7 and {o["id"] for o in other["occurrences"]}.isdisjoint(mine)
 
 
 def test_unknown_or_malformed_ids_are_a_plain_404(env):

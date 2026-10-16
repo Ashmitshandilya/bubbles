@@ -33,41 +33,23 @@ def _events(db: Any, uid: str, days: int) -> list[dict[str, Any]]:
     return list(result.data or [])
 
 
-def _pattern_detail(item: dict[str, Any], days: int) -> dict[str, Any]:
-    return {
-        "id": item["id"], "kind": "pattern", "window_days": days, "confidence": item["confidence_label"],
-        "event_type": item["event_type"], "subject": item["subject"], "count": item["occurrence_count"],
-        "first_seen": item["first_seen"], "last_seen": item["last_seen"], "span_days": item["span_days"],
-        "average_confidence": item["average_confidence"], "occurrences": item["occurrences"],
-    }
-
-
-def _correlation_detail(item: dict[str, Any], days: int) -> dict[str, Any]:
-    return {
-        "id": item["id"], "kind": "correlation", "window_days": days, "confidence": item["confidence_label"],
-        "a": item["a"], "b": item["b"], "pair_count": item["pair_count"], "gap_days": item["window_days"],
-        "pairs": item["pairs"], "interpretation": item["interpretation"],
-    }
-
-
-def _association_detail(item: dict[str, Any], days: int) -> dict[str, Any]:
-    keep = ("id", "status", "strength", "direction", "domains", "lag_days", "n_days", "rho", "p", "q", "repeated",
-            "limitations", "pairs", "text", "sources")
-    return {**{k: item.get(k) for k in keep}, "kind": "association", "window_days": days}
+def _detail(item: dict[str, Any], kind: str, days: int, drop: tuple[str, ...] = ("source_event_ids",)) -> dict[str, Any]:
+    """The engine's own item (the same shape the list endpoints send), plus its kind and the window it was found in."""
+    return {**{k: v for k, v in item.items() if k not in drop}, "kind": kind, "window_days": days}
 
 
 def find_detail(db: Any, uid: str, insight_id: str, days: int) -> dict[str, Any] | None:
     if "->" in insight_id:
         found = next((i for i in association_loader.get(db, uid, 90).get("insights", []) if i.get("id") == insight_id), None)
-        return _association_detail(found, 90) if found else None
+        return _detail(found, "association", 90) if found else None
     if not insight_id.startswith(("rec:", "co:")):
         return None
     analysis = pattern_engine.analyze(_events(db, uid, days), days=days)
     if insight_id.startswith("rec:"):
         found = next((p for p in analysis["patterns"] if p["id"] == insight_id), None)
-        return _pattern_detail(found, days) if found else None
+        return _detail(found, "pattern", days) if found else None
     found = next((c for c in analysis["correlations"] if c["id"] == insight_id), None)
-    return _correlation_detail(found, days) if found else None
+    return _detail(found, "correlation", days) if found else None
 
 
 def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
