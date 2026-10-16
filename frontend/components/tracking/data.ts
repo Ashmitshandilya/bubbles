@@ -206,7 +206,7 @@ export type LoadStatus = "loading" | "ready" | "error";
  */
 export function useTracker(endpoint: string, days: number, refetchAfterSave = false) {
   const { session } = useAuth();
-  const { fetchBubbles, reconnects } = useApi();
+  const { fetchBubbles, reconnects, dataVersion } = useApi();
   const token = session?.access_token;
   const slug = endpoint.replace(/^\/health\//, "");
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -242,7 +242,7 @@ export function useTracker(endpoint: string, days: number, refetchAfterSave = fa
     return () => {
       alive = false;
     };
-  }, [token, endpoint, slug, days, reloadKey, fetchBubbles]);
+  }, [token, endpoint, slug, days, reloadKey, dataVersion, fetchBubbles]);
 
   const retry = useCallback(() => {
     setStatus("loading");

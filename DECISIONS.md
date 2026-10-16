@@ -154,6 +154,12 @@ Entry template:
 - `/insights?item=<id>` opens one insight and cleans the address; an id no longer in the window shows a calm notice.
 - Not done: stable backend ids, `GET /insights/{id}` and per-day occurrence lists. The sheet uses numbers the pages already receive; Today items show a gap sentence for the table.
 
+### 2026-10 · One record, updated everywhere
+- `ApiProvider` now exposes `dataVersion` and `lastUpdate`. Any successful write that `app/lib/data-sync.ts` `describeWrite` counts as a change to the record (tracker saves, chat, confirming picked-up events, profile) bumps `dataVersion`, remembers a label and time per person, and tells other tabs over `BroadcastChannel`. Consents, probes, feedback and onboarding never count.
+- Today refetches quietly on a bump (old data stays until the newer answer arrives; a failed quiet refresh never replaces good data with an error). `useTracker`, `useBubblesQuery` and the Track hub pulses refetch too, and a newer request always wins over an older one.
+- Today shows a "Last updated" card: the newer of this browser's last change and the server's `last_update` from `/health/summary`, so a change made on another device shows as well.
+- Not done: the Android app does not yet listen for changes made on another device while it is open (it picks them up on the next load).
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.

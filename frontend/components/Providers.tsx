@@ -1,5 +1,6 @@
 "use client";
 
+import { announceChange, describeWrite, listenForChanges, readLastUpdate, type LastUpdate } from "../app/lib/data-sync";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
@@ -269,6 +270,10 @@ type ApiContextType = {
   retrying: boolean;
   /** Counts offline-to-online transitions; data hooks reload failed queries when it changes. */
   reconnects: number;
+  /** Bumps whenever the person's record changes (a save here, or in another tab). Data hooks refetch when it changes. */
+  dataVersion: number;
+  /** The newest change this browser knows of, or null. */
+  lastUpdate: LastUpdate | null;
 };
 
 /** Short cache for repeated reads (rules in app/lib/api-cache.ts). One per tab; emptied on sign-out and user change. */
@@ -283,6 +288,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const [nextRetryAt, setNextRetryAt] = useState<number | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [reconnects, setReconnects] = useState(0);
+  const [dataVersion, setDataVersion] = useState(0);
+  const [lastUpdate, setLastUpdate] = useState<LastUpdate | null>(null);
   const [waking, setWaking] = useState(false);
   const firstProbeDone = useRef(false);
   const wasWaking = useRef(false);
@@ -369,11 +376,32 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   /** rawFetch behind the short read cache: revisiting a screen is instant and identical reads in flight are shared. */
+  const uid = session?.user?.id ?? null;
   const fetchBubbles = useCallback(
-    (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) =>
-      apiCache.fetch(session?.user?.id ?? null, path, options.method || "GET", () => rawFetch(path, options, limits)),
-    [rawFetch, session],
+    async (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) => {
+      const response = await apiCache.fetch(uid, path, options.method || "GET", () => rawFetch(path, options, limits));
+      // A saved change: every open screen of this person (and other tabs) refetches, and the Today card remembers it.
+      const label = response.ok ? describeWrite(path, options.method) : null;
+      if (label) {
+        const update = { label, at: Date.now() };
+        announceChange(uid, update);
+        setLastUpdate(update);
+        setDataVersion((n) => n + 1);
+      }
+      return response;
+    },
+    [rawFetch, uid],
   );
+
+  // Start from what this browser remembered, and follow changes made in other tabs.
+  useEffect(() => {
+    setLastUpdate(readLastUpdate(uid));
+    return listenForChanges(uid, (update) => {
+      apiCache.clear();
+      setLastUpdate(update);
+      setDataVersion((n) => n + 1);
+    });
+  }, [uid]);
 
   /** Any HTTP answer means the server is up (even a 5xx); only a rejected request means offline. */
   const probe = useCallback(async (): Promise<boolean> => {
@@ -471,7 +499,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     <ApiContext.Provider
       value={{
         apiStatus, connectionError, fetchBubbles, checkApiHealth, health, databaseStatus: databaseStatusOf(health),
-        nextRetryAt, retrying, reconnects, waking,
+        nextRetryAt, retrying, reconnects, waking, dataVersion, lastUpdate,
       }}
     >
       <ExperienceProvider>{children}</ExperienceProvider>
