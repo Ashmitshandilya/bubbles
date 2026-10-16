@@ -7,10 +7,11 @@ import { SoapCss } from "./landing/bubbles/SoapCss";
 import { COLOR_SCRIPT } from "./landing/atmosphere/palette";
 import { calmBackground } from "./landing/atmosphere/sky";
 import "./landing/landing.css";
+import { IntroSlides } from "./IntroSlides";
 
 /*
- * The Android app's first screen for signed-out people (NativeEntry shows it at "/"): the website landing's opening
- * scene at its static tier. Same dawn sky, CSS soap bubbles, illustrated Bubbles, type and buttons; no WebGL, so cheap
+ * The Android app's first screen for signed-out people (NativeEntry shows it at "/"). Android 2.0: the landing's sky and
+ * Bubbles, with three swipeable intro cards (IntroSlides) instead of the website's single headline. Same dawn sky, CSS soap bubbles, illustrated Bubbles, type and buttons; no WebGL, so cheap
  * phones stay smooth, and every animation here is already off under reduced motion (landing.css).
  * Rendered on the server and handed to NativeEntry, so none of it ships in a client chunk.
  */
@@ -33,10 +34,7 @@ export function NativeWelcome() {
         />
       </div>
       <div className="nw-copy bubbles-rise">
-        <h1 className="cw-display">
-          Your body keeps a story. <span className="cw-accent">Bubbles remembers&nbsp;it.</span>
-        </h1>
-        <p className="cw-lede">A calm health companion that listens, remembers and connects the dots over time.</p>
+        <IntroSlides />
       </div>
       <div className="nw-actions bubbles-rise">
         <Link href="/login?mode=signup" className="cw-btn cw-btn--primary cw-btn--lg">

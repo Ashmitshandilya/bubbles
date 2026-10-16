@@ -21,7 +21,7 @@ KNOWN: dict[str, str] = {
     "20261016_bubbles_indexes_v2": "Faster document, chat and memory reads",
     "20261016_bubbles_lookup_indexes": "Faster tracker summary, partner link, compat reads and chat history counts",
     "20261016_bubbles_ops_rollups": "Admin Overall page keeps its totals across restarts",
-    "20261016_bubbles_funnel": "Admin keeps onboarding funnel steps and crash counts for 90 days",
+    "20261016_bubbles_ops_funnel": "Admin keeps setup steps and problem codes from the app (steps for 90 days)",
     "20261016_bubbles_consent_ledger": "Consent history table (until then it is kept as signed documents)",
 }
 

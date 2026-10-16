@@ -5,6 +5,8 @@ MIN_SAMPLE attempts, otherwise it says there is not enough data yet.
 """
 from __future__ import annotations
 
+import os
+
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any, Iterable
@@ -37,7 +39,7 @@ def _of(events: Iterable[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
 def ai_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
     replies = _of(events, "ai_reply")
     attempts = _of(events, "ai_attempt")
-    chats = [e["data"] for e in _of(events, "api") if e["data"].get("route") == "/chat"]
+    chats = [e["data"] for e in _of(events, "api") if e["data"].get("route") in {"/chat", "/chat/stream"}]
     answered = [r for r in replies if r["data"].get("outcome") == "answered"]
     totals = [r["data"].get("total_ms") for r in replies if r["data"].get("total_ms") is not None]
     return {
@@ -54,7 +56,17 @@ def ai_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
         "timeouts": sum(1 for a in attempts if a["data"].get("outcome") in {"timeout", "budget_spent"}),
         "success_rate": _rate(len(answered), len(replies)),
         "reply_ms": _lat(totals),
+        "stage_ms": stage_latency(chats),
     }
+
+
+def stage_latency(api_events: list[dict[str, Any]]) -> dict[str, dict[str, float | None]]:
+    """p50 / p95 per chat stage (pre, ctx, rag, ai, post) from the numbers chat turns recorded. A stage nobody timed has no numbers."""
+    out: dict[str, dict[str, float | None]] = {}
+    for stage in ("pre", "ctx", "rag", "ai", "post"):
+        values = [float(d[f"stage_{stage}_ms"]) for d in api_events if isinstance(d.get(f"stage_{stage}_ms"), (int, float))]
+        out[stage] = {"n": len(values), **{k: v for k, v in _lat(values).items() if k in ("p50", "p95")}}
+    return out
 
 
 def provider_table(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -210,9 +222,6 @@ def headline(*, database: str, persistence_mode: str, all_paused: bool, ai_now: 
 
 # ---------------------------------------------------------------- Overall page (counters from ops_rollups.count_events)
 
-# Cost is computed here, at read time, never stored. Every provider in the chat chain is on a free tier ($0 AI policy), so the
-# honest figure is zero; a provider not listed here is "unknown" instead of a made-up number.
-FREE_TIER = frozenset({"Gemini", "Groq", "NVIDIA", "Mistral"})
 FEATURES: tuple[tuple[str, str], ...] = (
     ("/chat", "Chat"), ("/onboarding", "Onboarding"), ("/experience", "Onboarding"), ("/wellness/mind", "Mind"), ("/mind", "Mind"),
     ("/health", "Trackers"), ("/wellness", "Wellness"), ("/cycle", "Cycle"), ("/fitness", "Fitness"), ("/organs", "Body map"),
@@ -227,9 +236,11 @@ def feature_of(route: str | None) -> str:
     return next((label for prefix, label in FEATURES if route == prefix or route.startswith(prefix + "/")), "Other")
 
 
-def cost(provider: str, tokens_in: int, tokens_out: int) -> dict[str, Any]:
-    """{'usd': 0.0, 'basis': 'free tier'} for the free providers, {'usd': None, 'basis': 'unknown'} for anything else."""
-    return {"usd": 0.0, "basis": "free tier"} if provider in FREE_TIER else {"usd": None, "basis": "unknown"}
+def cost(provider: str, model: str, tokens_in: int, tokens_out: int) -> dict[str, Any]:
+    """The Overall page's cost cell, worked out at read time by model_cost (the one cost rule): {'usd', 'basis'}."""
+    paid = os.getenv("ALLOW_PAID_AI", "false").strip().lower() in {"1", "true", "yes"}
+    got = model_cost(provider, model, tokens_in, tokens_out, paid_allowed=paid)
+    return {"usd": got["cost_usd"], "basis": got["label"]}
 
 
 def _hist(counters: dict[str, Counter], dim: str, prefix: str = "") -> dict[str, int]:
@@ -271,7 +282,7 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
         p50, p95 = pair(_hist(t, "hist.attempt", f"{provider}|{model}|"))
         rows.append({**row, "failed": row["attempts"] - row["success"], "success_rate": _rate(row["success"], row["attempts"]),
                      "timeout_rate": _rate(row["timeouts"], row["attempts"]), "p50_ms": p50, "p95_ms": p95,
-                     "cost": cost(provider, row["tokens_in"], row["tokens_out"])})
+                     "cost": cost(provider, model, row["tokens_in"], row["tokens_out"])})
     rows.sort(key=lambda x: (-x["answered_replies"], -x["attempts"]))
 
     answered = sum(n for k, n in t["reply"].items() if k.endswith("|answered"))
@@ -301,7 +312,7 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
     safety_days = r.per_day(counters, "safety")
     return {
         "totals": {"requests": requests, "chats": chats, "server_errors": sum(n for k, n in t["status"].items() if k == "5xx"),
-                   "onboarding_completed": t["funnel"].get("onboarding_completed", 0)},
+                   "onboarding_completed": t["funnel"].get("completed", 0)},
         "latency": {"api": {"p50_ms": api50, "p95_ms": api95}, "chat": {"p50_ms": chat50, "p95_ms": chat95},
                     "reply": {"p50_ms": reply50, "p95_ms": reply95}},
         "ai": {"replies": answered + degraded, "answered": answered, "degraded": degraded,
@@ -320,4 +331,75 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
         "errors": dict(t["error"]),
         "status_classes": dict(t["status"]),
         "client_crashes": dict(crashes),
+    }
+
+
+# ---------------------------------------------------------------- usage and cost (aggregates only: counts, rates, no user ids)
+
+CHAT_ROUTES = frozenset({"/chat", "/chat/stream"})
+FUNNEL_ORDER = ("about", "goals", "health", "life", "more_health", "choices", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
+FREE_TIER = "free tier"
+
+
+def model_cost(provider: str, model: str, input_tokens: int, output_tokens: int, *, paid_allowed: bool = False) -> dict[str, Any]:
+    """What a model's tokens cost, worked out when the admin page is read (never stored in an event).
+
+    While paid AI is off (the standing policy) every provider in the chain runs on its free tier: the cost is $0 and says so. A model
+    whose name is not known ("unknown") is reported as unknown rather than as free. With paid AI on, the published price is used; a
+    model without a price row is unknown. ``if_paid_usd`` is what the same tokens would cost at the published price, when there is one."""
+    import ai_orchestrator
+    if not provider or not model or model == "unknown":
+        return {"label": "unknown", "cost_usd": None, "if_paid_usd": None}
+    estimate = ai_orchestrator.estimate_cost(provider, model, input_tokens, output_tokens)
+    if not paid_allowed:
+        return {"label": FREE_TIER, "cost_usd": 0.0, "if_paid_usd": estimate}
+    return {"label": "paid" if estimate is not None else "unknown", "cost_usd": estimate, "if_paid_usd": estimate}
+
+
+def cost_table(events: list[dict[str, Any]], *, paid_allowed: bool = False) -> list[dict[str, Any]]:
+    """Per provider and model: calls, tokens and cost at read time."""
+    groups: dict[tuple[str, str], dict[str, int]] = defaultdict(lambda: {"calls": 0, "input_tokens": 0, "output_tokens": 0})
+    for e in _of(events, "ai_attempt"):
+        d = e["data"]
+        g = groups[(str(d.get("provider") or "unknown"), str(d.get("model") or "unknown"))]
+        g["calls"] += 1
+        g["input_tokens"] += int(d.get("input_tokens") or 0)
+        g["output_tokens"] += int(d.get("output_tokens") or 0)
+    rows = []
+    for (provider, model), g in sorted(groups.items(), key=lambda kv: -kv[1]["calls"]):
+        rows.append({"provider": provider, "model": model, **g, **model_cost(provider, model, g["input_tokens"], g["output_tokens"], paid_allowed=paid_allowed)})
+    return rows
+
+
+def usage_summary(events: list[dict[str, Any]], *, paid_allowed: bool = False) -> dict[str, Any]:
+    """Counts and rates that show how Bubbles is used and how it is holding up. Every number is an integer count or a 0..1 rate."""
+    api = _of(events, "api")
+    chats = [e for e in api if e["data"].get("route") in CHAT_ROUTES]
+    by_day: dict[str, Counter] = defaultdict(Counter)
+    for e in chats:
+        level = e["data"].get("safety_level")
+        if level in {"GREEN", "AMBER", "RED"}:
+            by_day[str(e.get("at", ""))[:10]][level] += 1
+    kinds = Counter(e["data"].get("route_kind") for e in chats if e["data"].get("route_kind"))
+    ai_known = [e["data"] for e in chats if e["data"].get("ai_called") is not None]
+    replies = _of(events, "ai_reply")
+    answered = [r for r in replies if r["data"].get("outcome") == "answered"]
+    attempts = _of(events, "ai_attempt")
+    steps = Counter(e["data"].get("step") for e in _of(events, "funnel"))
+    return {
+        "safety_by_day": {day: {lvl: counts.get(lvl, 0) for lvl in ("GREEN", "AMBER", "RED")} for day, counts in sorted(by_day.items())},
+        "route_mix": dict(kinds.most_common()),
+        "ai_share": {"ai": sum(1 for d in ai_known if d["ai_called"]), "deterministic": sum(1 for d in ai_known if not d["ai_called"]),
+                     "rate": _rate(sum(1 for d in ai_known if d["ai_called"]), len(ai_known))},
+        "consent_needed": {"count": kinds.get("consent_needed", 0), "rate": _rate(kinds.get("consent_needed", 0), len(chats))},
+        "reliability": {
+            "fallback_rate": _rate(sum(1 for r in answered if r["data"].get("fallback_used")), len(answered)),
+            "degraded_rate": _rate(sum(1 for r in replies if r["data"].get("outcome") == "degraded"), len(replies)),
+            "timeout_rate": _rate(sum(1 for a in attempts if a["data"].get("outcome") in {"timeout", "budget_spent"}), len(attempts)),
+        },
+        "feature_usage": dict(Counter(e["data"].get("route") for e in api if e["data"].get("route") and e["data"].get("status", 200) < 400).most_common(40)),
+        "funnel": [{"step": s, "count": steps.get(s, 0)} for s in FUNNEL_ORDER],
+        "client_problems": dict(Counter(e["data"].get("code") for e in _of(events, "client")).most_common()),
+        "cost": cost_table(events, paid_allowed=paid_allowed),
+        "stage_ms": stage_latency([e["data"] for e in chats]),
     }

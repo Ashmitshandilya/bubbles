@@ -64,7 +64,7 @@ def test_a_relationship_question_puts_the_tagged_sources_first_without_duplicate
     out, db = _run(monkeypatch, {None: GENERAL, "link:mood-sleep": LINKED}, query="does lack of sleep affect my mood", limit=5)
     assert [r["chunk_id"] for r in out] == ["l1", "g2", "g1"]            # at most two tagged rows, then the general ones, g2 once
     assert out[0].get("linked") and not out[2].get("linked")
-    assert [c["topic_filter"] for c in db.calls] == [None, "link:mood-sleep"]
+    assert sorted(str(c["topic_filter"]) for c in db.calls) == ["None", "link:mood-sleep"]   # both searches run side by side: no fixed order
 
 
 def test_plain_questions_and_explicit_topics_and_the_switch_skip_the_link_search(monkeypatch):

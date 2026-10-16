@@ -33,7 +33,12 @@ FREE_MODEL_ALLOWLIST = {
     "Animica": {"kimi-k3"},
 }
 
-REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "20"))
+# One call may take this long (the reply budget below is still the ceiling for the whole chain). A chat reply is a few hundred
+# tokens: a provider that has not answered in this time is stuck, and the next one should start.
+REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "18"))
+# The reply is a JSON envelope, so a cut-off becomes invalid JSON and a wasted call: generous, but not unbounded. Reasoning models
+# count their hidden reasoning against it too.
+MAX_OUTPUT_TOKENS = max(256, min(int(os.getenv("AI_MAX_OUTPUT_TOKENS", "900")), 4096))
 AI_MAX_RETRIES = max(0, min(int(os.getenv("AI_MAX_RETRIES", "1")), 2))
 AI_RETRY_BACKOFF_MS = max(0, min(int(os.getenv("AI_RETRY_BACKOFF_MS", "250")), 2000))
 # One chat reply waits at most this long for AI models in total (Gemini, then every fallback and retry). Without it a slow
@@ -55,6 +60,14 @@ class ProviderResult:
 
 class ProviderError(Exception):
     pass
+
+
+# One pooled HTTP session for every OpenAI-compatible provider: the TLS connection to a provider is reused between chats instead of
+# being set up again (about 100-300 ms) on every call.
+_SESSION = requests.Session()
+_adapter = requests.adapters.HTTPAdapter(pool_connections=8, pool_maxsize=16)
+_SESSION.mount("https://", _adapter)
+_SESSION.mount("http://", _adapter)
 
 
 @contextmanager
@@ -177,14 +190,23 @@ def _post_openai_compatible(
             },
         ],
         "temperature": 0.2,
+        "max_tokens": MAX_OUTPUT_TOKENS,
     }
+    # Only where the provider documents them: a short reasoning pass for gpt-oss (Groq), and JSON-only output (Groq, Mistral).
+    # A provider that rejects them (HTTP 400) is asked again without them, so a stricter endpoint never turns into an outage.
+    extras: dict[str, Any] = {}
+    if provider == "Groq" and "gpt-oss" in model:
+        extras["reasoning_effort"] = "low"
+    if provider in {"Groq", "Mistral"}:
+        extras["response_format"] = {"type": "json_object"}
+    payload.update(extras)
 
     last_error: Exception | None = None
     response = None
     for attempt in range(AI_MAX_RETRIES + 1):
         timeout = call_timeout()  # outside the try: a spent budget ends the retries instead of being swallowed
         try:
-            response = requests.post(
+            response = _SESSION.post(
                 url,
                 headers={
                     "Authorization": f"Bearer {api_key}",
@@ -193,10 +215,24 @@ def _post_openai_compatible(
                 json=payload,
                 timeout=timeout,
             )
+            if response.status_code == 400 and extras:
+                for key in extras:
+                    payload.pop(key, None)
+                extras = {}
+                response = _SESSION.post(
+                    url,
+                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                    json=payload,
+                    timeout=call_timeout(),
+                )
             if response.status_code == 429 or response.status_code >= 500:
                 raise ProviderError(f"HTTP {response.status_code}")
             break
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as error:
+        except requests.exceptions.Timeout as error:
+            last_error = error
+            response = None
+            break   # the call already used its whole time allowance: the next provider is a better use of the budget than a repeat
+        except requests.exceptions.ConnectionError as error:
             last_error = error
         except ProviderError as error:
             last_error = error
@@ -270,6 +306,32 @@ def _post_openai_compatible(
 # OPENAI-COMPATIBLE PROVIDERS
 # ============================================================
 
+# The model each provider uses when its <NAME>_MODEL variable is not set. One list, so a failed attempt is recorded under the real
+# model name (it used to be "unknown") and the admin portal shows the same name the successful calls use.
+DEFAULT_MODELS = {
+    "Gemini": "gemini-3-flash-preview",
+    "Groq": "openai/gpt-oss-20b",
+    "NVIDIA": "nvidia/nemotron-3.5-lightning-30b-a3b",
+    "Mistral": "ministral-14b-latest",
+    "Z.AI": "glm-4.7-flash",
+    "AIML API": "openai/gpt-oss-20b",
+    "SambaNova": "Meta-Llama-3.3-70B-Instruct",
+    "Hyperbolic": "openai/gpt-oss-120b",
+    "Cerebras": "gpt-oss-120b",
+    "KeylessAI": "openai-fast",
+    "Kilo": "kilo-auto/free",
+    "Murakumo": "murakumo-main",
+    "BlockRun": "nvidia/nemotron-3.5-lightning",
+    "Animica": "kimi-k3",
+}
+_MODEL_ENV = {"Z.AI": "ZAI_MODEL", "AIML API": "AIML_MODEL"}
+
+
+def configured_model(provider: str) -> str:
+    """The model name a provider will use right now (its variable, else the default above, else "unknown")."""
+    env_name = _MODEL_ENV.get(provider, f"{provider.upper()}_MODEL")
+    return os.getenv(env_name) or DEFAULT_MODELS.get(provider, "unknown")
+
 def call_groq(system_instruction: str, user_message: str) -> ProviderResult:
     return _post_openai_compatible(
         provider="Groq",
@@ -278,10 +340,7 @@ def call_groq(system_instruction: str, user_message: str) -> ProviderResult:
             "https://api.groq.com/openai/v1/chat/completions",
         ),
         api_key=_require_key("GROQ_API_KEY"),
-        model=os.getenv(
-            "GROQ_MODEL",
-            "openai/gpt-oss-20b",
-        ),
+        model=configured_model("Groq"),
         system_instruction=system_instruction,
         user_message=user_message,
     )
@@ -295,10 +354,7 @@ def call_nvidia(system_instruction: str, user_message: str) -> ProviderResult:
             "https://integrate.api.nvidia.com/v1/chat/completions",
         ),
         api_key=_require_key("NVIDIA_API_KEY"),
-        model=os.getenv(
-            "NVIDIA_MODEL",
-            "nvidia/nemotron-3.5-lightning-30b-a3b",
-        ),
+        model=configured_model("NVIDIA"),
         system_instruction=system_instruction,
         user_message=user_message,
     )
@@ -392,10 +448,7 @@ def call_mistral(
             "https://api.mistral.ai/v1/chat/completions",
         ),
         api_key=_require_key("MISTRAL_API_KEY"),
-        model=os.getenv(
-            "MISTRAL_MODEL",
-            "ministral-14b-latest",
-        ),
+        model=configured_model("Mistral"),
         system_instruction=system_instruction,
         user_message=user_message,
     )
@@ -779,7 +832,7 @@ def call_fallback(
             try:
                 from ai_telemetry import classify_error, outcome_for, record
                 category = classify_error(error)
-                record(provider=provider_name, model=os.getenv(f"{provider_name.upper()}_MODEL", "unknown"), latency_ms=elapsed * 1000,
+                record(provider=provider_name, model=configured_model(provider_name), latency_ms=elapsed * 1000,
                        outcome=outcome_for(category), error_class=type(error).__name__, position=position, error_category=category)
             except Exception:
                 pass

@@ -33,14 +33,16 @@ _HEAVY_VERDICT = re.compile(r"\b(?:this\s+means\s+you\s+have|you\s+are\s+sufferi
 
 
 def strip_attribution(text: str) -> str:
-    """Rewrite a leading 'NHS guidance says (that) X' / 'According to the WHO, X' / 'Studies show X' to 'X'. AI-written text only, never safety copy."""
-    def fix(line: str) -> str:
-        m = _LEAD_ATTRIBUTION.match(line.lstrip())
-        if not m:
-            return line
-        rest = line.lstrip()[m.end():]
-        return rest[:1].upper() + rest[1:] if rest else line
-    return "\n".join(fix(line) for line in (text or "").split("\n"))
+    """Rewrite a sentence that opens with 'NHS guidance says (that) X' / 'According to the WHO, X' / 'Studies show X' to 'X', in every sentence.
+    AI-written text only, never safety copy. A name in the middle of a sentence is left alone (lint reports it)."""
+    def fix(piece: str) -> str:
+        body = piece.lstrip()
+        m = _LEAD_ATTRIBUTION.match(body)
+        if not m or not body[m.end():].strip():
+            return piece
+        rest = body[m.end():]
+        return piece[: len(piece) - len(body)] + rest[:1].upper() + rest[1:]
+    return "".join(fix(piece) for piece in re.findall(r"[^.!?\n]*[.!?]*\s*", text or ""))
 
 
 def scrub_doses(text: str) -> tuple[str, bool]:

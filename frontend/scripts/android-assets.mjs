@@ -1,5 +1,7 @@
 // Regenerates the Android launcher icons, adaptive-icon layers and splash artwork from app/icon.svg (the approved
-// BubblesMark). The mascot is only re-framed and composited, never redrawn. Run from frontend/:
+// BubblesMark). The mascot is only re-framed and composited, never redrawn. Android 2.0: the app's own premium badge,
+// the head on a deep grape-to-pink gradient with a soft glow, glossy bubbles and a gentle shadow (the website keeps
+// app/icon.svg). Run from frontend/:
 //   node scripts/android-assets.mjs
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -46,18 +48,57 @@ async function headCircle() {
 
 const head = await headCircle();
 
+// The app badge background (108 x 108 units = the adaptive canvas): grape into pink, a top-left glow, three soap bubbles.
+const BACKGROUND = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8E5BFF"/><stop offset="0.55" stop-color="#C2338F"/><stop offset="1" stop-color="#E0306E"/></linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.22" r="0.6"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="b" cx="0.35" cy="0.3" r="0.7"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/><stop offset="0.6" stop-color="#FFFFFF" stop-opacity="0.08"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0.25"/></radialGradient>
+  </defs>
+  <rect width="108" height="108" fill="url(#g)"/>
+  <rect width="108" height="108" fill="url(#glow)"/>
+  <circle cx="86" cy="24" r="9" fill="url(#b)"/>
+  <circle cx="20" cy="84" r="6" fill="url(#b)"/>
+  <circle cx="92" cy="80" r="4" fill="url(#b)"/>
+</svg>`;
+
+const backgroundPng = (px) => sharp(Buffer.from(BACKGROUND)).resize(px, px).png().toBuffer();
+
+// A soft plum shadow under the head, offset down a little, so it lifts off the gradient.
+async function withShadow(headPng, px) {
+  const { data, info } = await sharp(headPng).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  for (let i = 0; i < data.length; i += 4) [data[i], data[i + 1], data[i + 2], data[i + 3]] = [60, 10, 60, Math.round(data[i + 3] * 0.45)];
+  const shadow = await sharp(data, { raw: info }).blur(Math.max(0.5, px / 43)).png().toBuffer();
+  return sharp({ create: { width: px, height: px, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: shadow, top: Math.round(px / 54), left: 0 }, { input: headPng }])
+    .png()
+    .toBuffer();
+}
+
+// The full round badge at px (legacy launchers, the Android 12 splash and the pre-12 splash).
+async function badge(px) {
+  const headPng = await render(headOnly, head.cx, head.cy, (head.r * 54) / 32, px).toBuffer();
+  const mask = Buffer.from(`<svg width="${px}" height="${px}"><circle cx="${px / 2}" cy="${px / 2}" r="${px / 2}" fill="#fff"/></svg>`);
+  return sharp(await backgroundPng(px)).composite([{ input: await withShadow(headPng, px) }, { input: mask, blend: "dest-in" }]).png().toBuffer();
+}
+
+const transparent = (px) => ({ create: { width: px, height: px, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } });
+
 for (const [density, scale] of Object.entries(DENSITIES)) {
   const mipmap = `${res}mipmap-${density}/`;
 
   // Legacy icon (API 24-25): the full round badge, 44dp of the 48dp square, transparent corners.
-  const legacy = await render(source, 0, -30, (198 * 48) / 44, 48 * scale).toBuffer();
+  const inner = Math.round(44 * scale);
+  const pad = Math.round((48 * scale - inner) / 2);
+  const legacy = await sharp(transparent(48 * scale)).composite([{ input: await badge(inner), top: pad, left: pad }]).png().toBuffer();
   await sharp(legacy).toFile(`${mipmap}ic_launcher.png`);
   await sharp(legacy).toFile(`${mipmap}ic_launcher_round.png`);
 
   // Adaptive foreground: 108dp canvas, head fitted inside a 64dp circle so it stays within the 66dp safe zone.
   const px = 108 * scale;
   const foreground = await render(headOnly, head.cx, head.cy, (head.r * 54) / 32, px).toBuffer();
-  await sharp(foreground).toFile(`${mipmap}ic_launcher_foreground.png`);
+  await sharp(await withShadow(foreground, px)).toFile(`${mipmap}ic_launcher_foreground.png`);
+  await sharp(await backgroundPng(px)).toFile(`${mipmap}ic_launcher_background.png`);
 
   // Themed-icon (Android 13) monochrome layer: the same silhouette; the system tints it, only alpha matters.
   const { data, info } = await sharp(foreground).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -66,7 +107,10 @@ for (const [density, scale] of Object.entries(DENSITIES)) {
 
   // Android 12+ splash icon: 288dp transparent canvas, badge 64% wide so it sits inside the system's 192dp mask.
   mkdirSync(`${res}drawable-${density}`, { recursive: true });
-  await render(source, 0, -30, 198 / 0.64, 288 * scale).toFile(`${res}drawable-${density}/splash_icon.png`);
+  const splash = Math.round(288 * scale);
+  const disc = Math.round(splash * 0.64);
+  const at = Math.round((splash - disc) / 2);
+  await sharp(transparent(splash)).composite([{ input: await badge(disc), top: at, left: at }]).png().toFile(`${res}drawable-${density}/splash_icon.png`);
 }
 
 // Legacy splash (pre-Android 12 launch theme): every existing splash.png keeps its size, blush fill, badge
@@ -76,9 +120,9 @@ for (const dir of readdirSync(res).filter((d) => d.startsWith("drawable"))) {
   if (!existsSync(file)) continue;
   const { width, height } = await sharp(file).metadata();
   const size = Math.round(Math.min(width, height) * 0.28);
-  const badge = await render(source, 0, -30, 200, size).toBuffer();
+  const disc = await badge(size);
   await sharp({ create: { width, height, channels: 3, background: BLUSH } })
-    .composite([{ input: badge, left: Math.round((width - size) / 2), top: Math.round((height - size) / 2) }])
+    .composite([{ input: disc, left: Math.round((width - size) / 2), top: Math.round((height - size) / 2) }])
     .removeAlpha()
     .png()
     .toFile(file);

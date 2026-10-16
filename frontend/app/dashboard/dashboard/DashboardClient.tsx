@@ -1,5 +1,7 @@
 "use client";
 
+import { isNativeApp } from "../../../lib/native";
+import { AppHome } from "../../../components/AppHome";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -217,6 +219,8 @@ export function DashboardClient() {
 
           {safety.level !== "GREEN" && <SafetyBanner level={safety.level} reasons={safety.reasons} />}
 
+          {isNativeApp && <AppHome />}
+
           <TodayBrief state={heroState} items={items} showMascot={showMascot} onRetry={reload} onAddWater={addWater} waterBusy={water === "saving"} />
 
           <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
@@ -256,7 +260,7 @@ export function DashboardClient() {
             <MoreFold title="What Bubbles picked up from chat">
               <LivingSignalMap state={livingMap.status} map={livingMap.status === "ready" ? livingMap.data : null} onRetry={reload} />
             </MoreFold>
-            {showBodyMap && <BodyMapCard />}
+            {showBodyMap && !isNativeApp && <BodyMapCard />}
           </div>
 
           <footer className="text-chip font-semibold leading-relaxed text-ink-soft">
