@@ -886,11 +886,13 @@ def event_summary(event_type: str, data: dict[str, Any]) -> str:
     return name.capitalize()
 
 
-def persist_events(db: Any, user_id: str, message_id: str | None, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Insert pending events (batch first, row-by-row on failure). Returns UI-ready events; id is None when not saved."""
+def persist_events(db: Any, user_id: str, message_id: str | None, events: list[dict[str, Any]], *, fresh: bool = False) -> list[dict[str, Any]]:
+    """Insert pending events (batch first, row-by-row on failure). Returns UI-ready events; id is None when not saved.
+
+    ``fresh`` says the message was created a moment ago, so no events of it can exist yet and the duplicate check (a read) is skipped."""
     if not events:
         return []   # nothing to save: no need to read what is already stored (a round trip on every plain chat turn)
-    existing = _existing_keys(db, user_id, message_id)
+    existing = set() if fresh else _existing_keys(db, user_id, message_id)
     todo = []
     for ev in events:
         key = (ev["extracted_data"].get("_prov") or {}).get("key")

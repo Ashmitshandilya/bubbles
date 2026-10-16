@@ -15,6 +15,7 @@ from typing import Any, Callable
 from fastapi import APIRouter, Body, Header, HTTPException
 
 import consent
+import chat_cache
 import doc_store
 import onboarding as ob
 from calc_core import local_today
@@ -259,6 +260,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         try:
             doc_store.put(db, uid, EXP_KIND, EXP_KEY, {**exp, "built_at": now})
+            chat_cache.forget_user(uid)   # the next reply reads the new tone settings and profile
             doc_store.put(db, uid, KIND, KEY, {**s["doc"], "answers": answers, "completed_at": now, "bank_version": ob.BANK_VERSION, "step": len(ob.STEPS)})
         except Exception as exc:  # noqa: BLE001
             _log("save_experience", exc)
