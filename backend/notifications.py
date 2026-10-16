@@ -28,6 +28,7 @@ from email.message import EmailMessage
 from typing import Any, Callable
 
 import clinical_constants as K
+import consent
 import doc_store
 import hydration_engine as H
 import med_schedule as M
@@ -224,7 +225,7 @@ def create_notification(db: Any, uid: str, kind: str, *, title: str | None = Non
     payload = {"id": nid, "kind": kind, "title": t, "body": b, "created_at": now.astimezone(timezone.utc).isoformat(),
                "local_date": today, "read": False, "dedupe_key": dedupe_key}
     doc_store.put(db, uid, "notification", nid, payload, when=payload["created_at"])
-    if settings["channels"].get("email"):
+    if settings["channels"].get("email") and consent.is_granted(db, uid, "email_reminders"):   # the switch alone is not a yes
         send_email(email, t, b, smtp_factory=mailer)   # fail-soft; the in-app copy above already exists
     if settings["channels"].get("push"):
         import push_fcm

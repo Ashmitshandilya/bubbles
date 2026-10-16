@@ -235,6 +235,10 @@ def test_email_channel_only_when_user_enabled_and_body_is_generic(db, monkeypatc
     assert N.create_notification(db, U1, "water", dedupe_key="1", now=utc(12), settings=s, email="a@example.com", mailer=FakeSMTP)
     assert FakeSMTP.sent == []
     s["channels"]["email"] = True
+    assert N.create_notification(db, U1, "water", dedupe_key="2a", now=utc(12, 30), settings=s, email="a@example.com", mailer=FakeSMTP)
+    assert FakeSMTP.sent == []                                            # the switch alone is not a yes (consent: email_reminders)
+    from fake_db import grant_consent
+    grant_consent(db, U1, "email_reminders")
     n = N.create_notification(db, U1, "water", dedupe_key="2", now=utc(13), settings=s, email="a@example.com", mailer=FakeSMTP)
     assert n and len(FakeSMTP.sent) == 1 and FakeSMTP.sent[0].get_content().strip() == n["body"]
     FakeSMTP.fail = True

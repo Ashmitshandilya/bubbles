@@ -72,11 +72,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     async def my_ratings(message_ids: str = Query("", max_length=4000), authorization: str | None = Header(None)):
         uid = await uid_of(authorization)
         wanted = list(dict.fromkeys(m for m in (valid_id(part.strip()) for part in message_ids.split(",")) if m))[:MAX_IDS]
-        ratings: dict[str, dict] = {}
-        for message_id in wanted:
-            doc = await run_in_threadpool(doc_store.get, db, uid, KIND, message_id)
-            if doc and doc.get("rating") in RATINGS:
-                ratings[message_id] = {"rating": doc["rating"], "reason": doc.get("reason")}
+        docs = await run_in_threadpool(doc_store.get_many, db, uid, KIND, wanted)   # one read for all of them (was one per id)
+        ratings = {m: {"rating": d["rating"], "reason": d.get("reason")} for m, d in docs.items() if d.get("rating") in RATINGS}
         return {"status": "success", "ratings": ratings}
 
     return router

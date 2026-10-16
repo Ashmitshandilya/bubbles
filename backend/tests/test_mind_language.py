@@ -1,32 +1,85 @@
-import health_semantics as h
-import organ_map_engine as organs
+"""A5 language: loneliness, panic_attack and separation_anxiety are ordinary concepts (never escalate alone); anxiety stays the parent."""
+from __future__ import annotations
+
+import pytest
+
+import organ_map_engine as O
+from health_semantics import CONCEPT_PARENT, DISPLAY, analyze, display_name
+from safety_engine import assess_safety
 
 
-def concepts(text):
-    return {f.concept for f in h.analyze(text)}
+def active(text: str) -> set[str]:
+    return {f.concept for f in analyze(text) if f.experiencer == "self" and f.assertion == "present"}
 
 
-def test_loneliness_in_plain_words_and_hinglish():
-    for t in ("I feel so lonely", "nobody talks to me", "mujhe bahut akela lagta hai", "I have no one to talk to"):
-        assert "loneliness" in concepts(t), t
+HITS = [
+    ("I feel so lonely", "loneliness"),
+    ("I'm feeling lonely since I moved here", "loneliness"),
+    ("I feel so alone these days", "loneliness"),
+    ("nobody talks to me", "loneliness"),
+    ("I have no friends here", "loneliness"),
+    ("I feel left out at work", "loneliness"),
+    ("mujhe bahut akela lagta hai", "loneliness"),
+    ("main akeli hoon", "loneliness"),
+    ("I had a panic attack on the train", "panic_attack"),
+    ("I keep panicking in crowds", "panic_attack"),
+    ("I feel panicky", "panic_attack"),
+    ("I can't calm down", "panic_attack"),
+    ("I miss my mom so much", "separation_anxiety"),
+    ("I get anxious when I'm away from my kids", "separation_anxiety"),
+    ("I can't stand being apart from him", "separation_anxiety"),
+    ("I'm so homesick", "separation_anxiety"),
+    ("mummy ki bahut yaad aa rahi hai", "separation_anxiety"),
+    ("I am anxious about the exam", "anxiety"),
+    ("mujhe bahut ghabrahat ho rahi hai", "anxiety"),
+    ("mujhe bahut chinta hai", "anxiety"),
+]
+
+QUIET = [
+    "I live alone and I like it",
+    "leave me alone",
+    "I want to be alone for a bit",
+    "I did the whole project all alone",
+    "I'm not lonely",
+    "I don't feel lonely anymore",
+    "Lonely Planet is a good guide",
+    "there is no panic, don't panic",
+    "my sister had a panic attack",           # someone else
+    "I miss the bus every morning",
+    "I miss my train",
+    "akela hi ghoomna pasand hai",
+    "chinta mat karo",
+]
 
 
-def test_panic_is_its_own_concept_and_ordinary_anxiety_stays_anxiety():
-    assert "panic_attack" in concepts("I had a panic attack today")
-    assert "panic_attack" in concepts("Mujhe ghabrahat ho rahi hai")
-    assert concepts("I am anxious about exams") == {"anxiety"}
+@pytest.mark.parametrize("text,concept", HITS)
+def test_concepts_are_found(text, concept):
+    assert concept in active(text), (text, active(text))
 
 
-def test_separation_anxiety_needs_the_being_apart_context():
-    assert "separation_anxiety" in concepts("I get anxious when my husband is away")
-    assert "separation_anxiety" in concepts("I panic when my mom leaves")
-    assert not concepts("my husband is away this week")
+@pytest.mark.parametrize("text", QUIET)
+def test_near_misses_do_not_become_facts(text):
+    assert not (active(text) & {"loneliness", "panic_attack", "separation_anxiety", "anxiety"}), (text, active(text))
 
 
-def test_none_of_them_is_an_emergency_alone_and_all_map_to_the_brain():
-    from safety_engine import assess_safety
-    for t in ("I feel so lonely", "I get anxious when my husband is away", "I had a panic attack today"):
-        assert not assess_safety(t).crisis, t
+@pytest.mark.parametrize("text", [t for t, _ in HITS])
+def test_none_of_them_escalates_alone(text):
+    a = assess_safety(text)
+    assert a.state == "NO_REDFLAG" and not a.crisis, text
+
+
+def test_panic_is_no_longer_swallowed_by_anxiety():
+    assert active("I had a panic attack") == {"panic_attack"}
+    assert "anxiety" in active("I feel anxious") and "panic_attack" not in active("I feel anxious")
+
+
+def test_anxiety_is_the_parent_and_everything_maps_to_the_brain():
+    assert CONCEPT_PARENT == {"panic_attack": "anxiety", "separation_anxiety": "anxiety"}
     for c in ("loneliness", "panic_attack", "separation_anxiety"):
-        assert organs.CONCEPT_ORGANS[c] == ("brain",)
-        assert h.display_name(c)
+        assert O.CONCEPT_ORGANS[c] == ("brain",)
+        assert c in DISPLAY and display_name(c)
+
+
+def test_a_logged_symptom_reaches_the_brain_area():
+    obs = O._symptom_obs({"id": "1", "date": None, "source": "tracker"}, "Panic attack", 7, None)
+    assert "brain" in obs["organs"] and "panic_attack" in obs["concepts"]

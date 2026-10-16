@@ -8,6 +8,7 @@ import { useExperience } from "../../components/Providers";
 import { BodyFallback2D } from "../../components/anatomy/BodyFallback2D";
 import { OrganList } from "../../components/anatomy/OrganList";
 import { OrganPanel, SafetyNotice } from "../../components/anatomy/OrganPanel";
+import { organFromSearch } from "./organParam";
 import { STATUS_META, countByStatus, defaultOrganId, prefer3D, readDeviceHints, readOrganMap, readUnavailable, type DeviceHints } from "../lib/organ-map";
 
 // three.js and the model only download when the device is going to show them.
@@ -75,6 +76,10 @@ function BodyMap() {
   const [hints, setHints] = useState<DeviceHints | null>(null);
   const [mode, setMode] = useState<"3d" | "flat" | null>(null);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setPicked(organFromSearch(window.location.search));   // /body?organ=brain
+  }, []);
 
   useEffect(() => {
     const probed = readDeviceHints();

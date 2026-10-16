@@ -4,7 +4,7 @@ import { PrivacyChoicesClient } from "./PrivacyChoicesClient";
 
 export const metadata: Metadata = {
   title: "Privacy choices | Bubbles",
-  description: "One switch for each thing Bubbles could do with your information. Everything starts off.",
+  description: "Each choice is off until you turn it on. Change any of them at any time.",
 };
 
 export default function PrivacyChoicesPage() {

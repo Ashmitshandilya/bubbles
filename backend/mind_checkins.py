@@ -20,38 +20,27 @@ from typing import Any
 import clinical_constants as K
 import doc_store
 from health_logs import DOMAINS, list_domain
-from safety_gate import safety_gate  # noqa: F401  (re-exported: wellness_api calls Mind.safety_gate)
+from safety_engine import CRISIS_LINES
+from safety_gate import safety_gate  # noqa: F401 - re-exported: wellness_api and the tests call Mind.safety_gate
 from wellness_common import InputError, choice, local_date_of, number, parse_date, text
 
 SCREENS = {"phq2": {"questions": K.PHQ2_QUESTIONS, "positive_at": K.PHQ2_POSITIVE_AT, "topic": "low mood"},
            "gad2": {"questions": K.GAD2_QUESTIONS, "positive_at": K.GAD2_POSITIVE_AT, "topic": "worry"},
-           # one direct question, kept as a score only. Not a validated scale and no cut-off from one: "often" is just a prompt to be kind.
-           "loneliness": {"questions": ("How often do you feel lonely?",), "positive_at": 3, "topic": "feeling alone",
-                          "positive_msg": "Thank you for saying so. Feeling alone a lot is common and it is not a flaw in you. "
-                                          "A small step can help: one short message to someone you like, or time somewhere with other people. "
-                                          "If it keeps weighing on you, a counsellor or someone you trust is worth talking to."}}
-
-#: short, static, kind copy for the Mind hub topics. No labels, no diagnosis, no medicine.
-TOPIC_COPY = {
-    "anxiety": {"title": "Anxiety", "body": "Worry and tension are part of being human. A few slow breaths with a longer breath out can settle the body first, then the thoughts.",
-                "tool": "slow_breathing"},
-    "panic": {"title": "Panic", "body": "A panic wave feels awful and it passes, usually within minutes. Slow your breath out, feel your feet on the floor, and name five things you can see.",
-              "tool": "grounding_54321"},
-    "loneliness": {"title": "Feeling lonely", "body": "Feeling alone is a signal, not a verdict. One small contact today counts: a message, a call, a walk where other people are.",
-                   "tool": "journal"},
-    "apart": {"title": "Missing someone, being apart", "body": "Being away from someone you love can ache. It can help to plan a small moment to connect, and a grounding exercise for the waiting.",
-              "tool": "grounding_54321"},
-}
+           # One direct question each, a score only (no labels, no sum). Thresholds are Bubbles' own, listed in docs/drafts/l3-clinical.md.
+           "loneliness": {"questions": ("How often do you feel lonely?",), "scale": (1, 5), "positive_at": 4, "topic": "feeling lonely",
+                          "labels": ("Never", "Rarely", "Sometimes", "Often", "Almost always")},
+           "anxiety": {"questions": ("How anxious do you feel right now?",), "scale": (0, 10), "positive_at": 7, "topic": "anxiety",
+                       "labels": {0: "0, calm", 10: "10, very anxious"}}}
 ANSWER_LABELS = ("Not at all", "Several days", "More than half the days", "Nearly every day")
 SCREEN_INTRO = "Over the last 2 weeks, how often have you been bothered by the following?"
 FACES = [{"face": 1, "mood": 2, "label": "Rough"}, {"face": 2, "mood": 4, "label": "Low"}, {"face": 3, "mood": 6, "label": "Okay"},
          {"face": 4, "mood": 8, "label": "Good"}, {"face": 5, "mood": 10, "label": "Great"}]
 EXERCISES = (
+    {"id": "slow_breathing", "name": "Slow breathing", "kind": "breathing", "minutes": 3, "pattern": {"inhale": 4, "exhale": 6},
+     "steps": ["Breathe in through your nose for 4.", "Breathe out gently through your mouth for 6.", "Let your belly soften. Repeat for a few minutes."]},
     {"id": "box_breathing", "name": "Box breathing", "kind": "breathing", "minutes": 3, "pattern": {"inhale": 4, "hold": 4, "exhale": 4, "hold_empty": 4},
      "steps": ["Sit comfortably and relax your shoulders.", "Breathe in through your nose for 4.", "Hold gently for 4.",
                "Breathe out slowly for 4.", "Rest for 4, then repeat for a few minutes."]},
-    {"id": "slow_breathing", "name": "Slow breathing", "kind": "breathing", "minutes": 3, "pattern": {"inhale": 4, "exhale": 6},
-     "steps": ["Breathe in through your nose for 4.", "Breathe out gently through your mouth for 6.", "Let your belly soften. Repeat for a few minutes."]},
     {"id": "four_seven_eight", "name": "4-7-8 breathing", "kind": "breathing", "minutes": 2, "pattern": {"inhale": 4, "hold": 7, "exhale": 8},
      "steps": ["Breathe in quietly for 4.", "Hold for 7 if that feels comfortable.", "Breathe out slowly for 8.", "Do a few rounds, then breathe normally."]},
     {"id": "grounding_54321", "name": "5-4-3-2-1 grounding", "kind": "grounding", "minutes": 4, "pattern": None,
@@ -64,7 +53,24 @@ EXERCISES = (
      "steps": ["Tighten your fists for a few seconds, then let go.", "Do the same for shoulders, then jaw, then legs.", "Notice the difference as you release."]},
 )
 EXERCISE_NOTE = "Stop and breathe normally if you feel dizzy or uncomfortable. These are relaxation tools, not treatment."
-SUPPORT_NOTE = "If you ever feel you might harm yourself, call 112, or Tele-MANAS (free, 24x7) on 14416, right away."
+SUPPORT_NOTE = "If you ever feel you might harm yourself, please reach out right away. " + CRISIS_LINES
+
+
+#: Static, label-free copy per topic for the Mind hub (friend voice, no diagnosis, no medicine). Every step names a tool that exists.
+SUPPORT_COPY = {
+    "loneliness": {"title": "Loneliness check-in",
+                   "text": "Feeling lonely is more common than people say, and it doesn't mean something is wrong with you. A small reach-out often helps: a short message to one person, or a walk where other people are around.",
+                   "steps": ["Send one short message to someone you like.", "Go somewhere with other people nearby, even for ten minutes.", "Say it here in chat. I'm happy to listen."]},
+    "panic": {"title": "Breathe and ground",
+              "text": "You are safe right now. This feeling is strong, and it passes. Let's slow it down together.",
+              "steps": ["Breathe in through your nose for 4.", "Breathe out slowly for 6, longer than the breath in.", "Press your feet into the floor and name 3 things you can see."]},
+    "apart": {"title": "Missing someone / apart",
+              "text": "Missing someone you love is a sign of how much they matter. Being apart can feel heavy, and small rituals make it easier.",
+              "steps": ["Pick a regular time to talk, so you have something to look forward to.", "Send a voice note or a photo of your day.", "Keep one small thing of theirs close, and do one kind thing for yourself today."]},
+}
+
+#: Same copy under the name the /wellness/mind/topics route serves.
+TOPIC_COPY = SUPPORT_COPY
 
 
 # --- safety gate ---------------------------------------------------------------------------------------------------------
@@ -159,23 +165,43 @@ def year_pixels(days: dict[str, dict], year: int) -> dict[str, Any]:
 
 # --- PHQ-2 / GAD-2 -------------------------------------------------------------------------------------------------------
 
+def _options(spec: dict) -> list[dict[str, Any]]:
+    lo_hi = spec.get("scale")
+    if not lo_hi:
+        return [{"value": i, "label": l} for i, l in enumerate(ANSWER_LABELS)]
+    labels = spec["labels"]
+    return [{"value": v, "label": labels[v - lo_hi[0]] if isinstance(labels, tuple) else labels.get(v, str(v))} for v in range(lo_hi[0], lo_hi[1] + 1)]
+
+
 def screen_questions(kind: str) -> dict[str, Any]:
     kind = choice(kind, tuple(SCREENS), "check-in")
-    return {"kind": kind, "intro": SCREEN_INTRO, "questions": list(SCREENS[kind]["questions"]),
-            "options": [{"value": i, "label": l} for i, l in enumerate(ANSWER_LABELS)],
+    spec = SCREENS[kind]
+    return {"kind": kind, "intro": SCREEN_INTRO if "scale" not in spec else "", "questions": list(spec["questions"]), "options": _options(spec),
             "note": "This is a gentle check-in, not a medical assessment."}
+
+
+_SINGLE_MESSAGES = {
+    ("loneliness", True): "Thank you for being honest about that. Feeling lonely is more common than people say, and it doesn't mean something is wrong with you. "
+                          "A short message to one person you like can help, and you can always talk to me here. " + SUPPORT_NOTE,
+    ("loneliness", False): "Thanks for checking in. Feeling lonely now and then is part of life. Keep leaning on the people who make you feel good.",
+    ("anxiety", True): "That sounds like a lot right now. Try the Breathe and ground tool: breathe in for 4, out for 6, a few times. "
+                       "If it keeps coming back or feels too big, a counsellor or your doctor can really help. " + SUPPORT_NOTE,
+    ("anxiety", False): "Thanks for checking in. It can change through the day, so check in again any time. "
+                        "A slow breath out, longer than the breath in, can take the edge off.",
+}
 
 
 def score_screen(kind: str, answers: Any) -> dict[str, Any]:
     kind = choice(kind, tuple(SCREENS), "check-in")
     spec = SCREENS[kind]
-    if not isinstance(answers, list) or len(answers) != len(spec["questions"]) or any(isinstance(a, bool) or not isinstance(a, int) or not 0 <= a <= 3 for a in answers):
-        raise InputError(f"answer each of the {len(spec['questions'])} questions with 0 to 3")
+    lo, hi = spec.get("scale", (0, 3))
+    if not isinstance(answers, list) or len(answers) != len(spec["questions"]) or any(isinstance(a, bool) or not isinstance(a, int) or not lo <= a <= hi for a in answers):
+        raise InputError(f"answer each of the {len(spec['questions'])} questions with {lo} to {hi}")
     total = sum(answers)
     positive = total >= spec["positive_at"]
-    if positive and spec.get("positive_msg"):
-        msg = spec["positive_msg"] + " If you ever feel you might harm yourself, call 112, or Tele-MANAS on 14416."
-    elif positive:
+    if "scale" in spec:
+        return {"kind": kind, "score": total, "max_score": hi, "suggest_talking_to_someone": positive, "message": _SINGLE_MESSAGES[(kind, positive)]}
+    if positive:
         msg = (f"Thank you for answering. Your answers suggest things around {spec['topic']} have felt heavy lately. "
                "This check-in isn't a medical assessment, but it may be worth talking to someone you trust, a counsellor or your doctor. "
                "You don't have to work it out alone. " + SUPPORT_NOTE)
@@ -186,7 +212,7 @@ def score_screen(kind: str, answers: Any) -> dict[str, Any]:
 
 def screen_due(last: list[dict], today: date) -> dict[str, Any]:
     """Offer a check-in at most every MIND_SCREEN_INTERVAL_DAYS."""
-    dates = [d["payload"].get("date") for d in last if d.get("payload", {}).get("date")]
+    dates = [d["payload"].get("date") for d in last if d.get("payload", {}).get("date") and d["payload"].get("kind", "phq2") in ("phq2", "gad2")]
     latest = max(dates) if dates else None
     due = latest is None or (today - date.fromisoformat(latest)).days >= K.MIND_SCREEN_INTERVAL_DAYS
     return {"due": due, "last": latest, "every_days": K.MIND_SCREEN_INTERVAL_DAYS}

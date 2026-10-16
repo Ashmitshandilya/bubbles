@@ -52,7 +52,8 @@ DISPLAY = {
     "persistent_vomiting": "persistent vomiting", "unusual_bleeding": "unusual bleeding",
     "heavy_bleeding": "heavy bleeding", "spotting": "spotting", "suicidal_ideation": "thoughts of suicide",
     "self_harm": "self-harm", "stroke_signs": "stroke warning signs", "allergic_reaction": "a severe allergic reaction",
-    "heart_attack": "a possible heart attack", "anxiety": "anxiety", "panic_attack": "panic attacks", "loneliness": "loneliness", "separation_anxiety": "missing someone / being apart", "low_mood": "low mood", "insomnia": "trouble sleeping",
+    "heart_attack": "a possible heart attack", "anxiety": "anxiety", "low_mood": "low mood", "insomnia": "trouble sleeping",
+    "loneliness": "loneliness", "panic_attack": "panic", "separation_anxiety": "missing someone",
     "diarrhea": "diarrhea", "constipation": "constipation", "rash": "rash", "swelling": "swelling",
     "numbness": "numbness", "blurred_vision": "blurred vision", "period": "your period",
     "eye_strain": "eye strain", "dry_eyes": "dry eyes", "red_eye": "red eyes", "eye_pain": "eye pain", "eye_itch": "itchy eyes",
@@ -62,6 +63,10 @@ DISPLAY = {
     "breast_lump": "a breast lump", "breast_pain": "breast pain",
     "medication_use": "medication", "severe_pain": "severe pain",
 }
+
+
+#: Mind concepts that sit under the broader "anxiety" one; consumers that only know "anxiety" read the parent.
+CONCEPT_PARENT = {"panic_attack": "anxiety", "separation_anxiety": "anxiety"}
 
 
 def display_name(concept: str) -> str:
@@ -120,11 +125,14 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         # passive ideation
         "better off without me|wish i (?:was|were) never born|wish i had never been born|(?:there's |there is )?no point (?:in )?(?:living|going on|continuing|any ?more)|"
         "(?:can't|cannot) go on|(?:want|wanted|wish) to (?:just )?disappear|(?:give|giving|gave) up on (?:life|living)",
-        # burden / worthlessness / not being missed (additive; needs clinician review, see the clinical packet)
-        "(?:i(?:'m| am) |i feel (?:like )?(?:i(?:'m| am) )?|feel(?:ing)? like (?:i(?:'m| am) )?|being )an? burden (?:to|on) (?:everyone|everybody|my family|my friends|them|all of you)|"
-        "nobody (?:would|will|'d) miss me|no ?one (?:would|will|'d) miss me|(?:everyone|everybody|they|my family) (?:would|will) be (?:better|happier) without me|"
-        "i(?:'m| am) (?:completely |totally |just |so )?worthless|i feel (?:completely |totally |so |utterly )?worthless|"
-        "mar(?:na|jana) chahta hu+n?|mar(?:na|jana) chahti hu+n?|jeena nahi chahta|jeena nahi chahti|jeene ka mann nahi|main bojh hu+n?|sabke liye bojh|koi (?:mujhe )?miss nahi karega")),
+        # passive ideation, second list (additive; needs clinician review, see docs/drafts/l3-clinical.md). Each pattern needs a first-person
+        # feeling or being cue, so "I don't want to be a burden" (a wish) and "a worthless product" stay quiet.
+        "(?:i am|i'm|i feel|i feel like|feel like|feeling like|felt like|i have become|i've become|i am becoming|i'm becoming|"
+        "i think i am|i think i'm|i feel i am|i feel i'm)(?: (?:such|just|only|really|so|an?|nothing but|nothing more than|huge|big|real|total|complete))* burden",
+        "(?:no one|noone|nobody) (?:would|will)(?: even)? miss me",
+        "(?:no one|noone|nobody) (?:would|will)(?: even)? (?:notice|care|know)(?: if| when| that)? i (?:was|were|am|died|die|disappeared?|"
+        "am gone|was gone|were gone|vanished?)",
+        "(?:i am|i'm|i feel|feel|feeling|felt|i feel so|i feel like i am|i feel like i'm)(?: (?:so|really|completely|totally|just|absolutely|utterly|very|truly))* worthless")),
     ("self_harm", "red", "possible self-harm crisis language", (
         "self[\\s-]?harm\\w*|(?:harm|hurt|cut)(?:ting|ing)? (?:myself|himself|herself|themselves|yourself)|overdos\\w+",)),
     ("stroke_signs", "red", "possible stroke warning signs", (
@@ -193,16 +201,34 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
     ("spotting", None, "spotting", ("spotting",)),
     ("unusual_bleeding", None, "unusual bleeding", (
         "(?:unusual|abnormal|unexpected|irregular|excessive|breakthrough) (?:vaginal |menstrual )?bleeding|bleeding between (?:my )?periods|(?:vaginal|rectal) bleeding|blood in (?:my |the )?(?:stool|urine|poop)|bloody (?:stool|urine)|post[\\s-]?coital bleeding",)),
-    ("panic_attack", None, "panic attacks", (
-        "panic attacks?|panic(?:king)?|panicky|ghabrahat|ghabra(?:hat|ta|ti)\\w*|dil bahut tez dhadak\\w*",)),
+    # Mind concepts (additive; docs/drafts/l3-clinical.md). Ordinary: none of them escalates on its own. anxiety stays the parent (CONCEPT_PARENT).
+    ("separation_anxiety", None, "missing someone", (
+        "separation anxiety|homesick\\w*",
+        "(?:anxious|anxiety|panic\\w*|scared|afraid|terrified|uneasy|restless|upset) (?:when|while|if|whenever) (?:i am|i'm|they are|they're|he is|he's|she is|she's|we are|we're) "
+        "(?:apart|away|separated|far|not (?:with|near) me|out of sight)",
+        "(?:can't|cannot|can not|hate|dread|struggle with) (?:bear|stand|handle|being|to be|be) (?:being )?(?:apart|away|separated)(?: from)?",
+        "(?:scared|afraid|terrified|anxious) (?:of|about) (?:being |to be )?(?:left|apart|away|separated)",
+        "(?:miss|missing) (?:my |him|her|them|you|home)(?:(?:mom|mum|mother|dad|father|parents|family|partner|husband|wife|kids|children|child|son|daughter|baby|friends?|sister|brother))? "
+        "(?:so much|so badly|a lot|too much|terribly|badly|like crazy|every day|all the time)",
+        "(?:(?:bahut|bohot|kaafi|bahot|bhut) )?(?:mummy|mama|maa|papa|ghar|dost|doston|usko|use|unki|uski|bachchon|bachche|bacche|beta|beti|biwi|pati|family) "
+        "(?:ki|ko|ka|ke) (?:(?:bahut|bohot|kaafi|bahot|bhut|zyada|jyada) )?yaad (?:aa|a)\\w*",
+        "(?:door|alag) (?:rehna|rahna|reh|rah) (?:" + _hi.NEG + ") (?:hota|hoti|sakta|sakti|paata|paati|pata|pati)")),
+    ("panic_attack", None, "panic", (
+        "panic(?: attacks?| disorder)?|panick\\w+|panicky",
+        "(?:can't|cannot|can not) (?:calm|settle) (?:down|myself)")),
     ("loneliness", None, "loneliness", (
-        "lonel(?:y|iness)|so alone|all alone|feel(?:ing)? alone|(?:have|has) no ?one to talk to|nobody (?:talks|to talk) to (?:me|with)|no friends|isolated|left out|"
-        "akela(?:pan)?|akeli|bahut akela lagta|koi (?:nahi|nhi) hai (?:baat|bolne)",)),
-    ("separation_anxiety", None, "missing someone / being apart", (
-        "separation anxiety|(?:anxious|panic\\w*|upset|sad|scared|worried|uneasy) (?:when|if|whenever) (?:i(?:'m| am) |we(?:'re| are) )?(?:apart|away from|separated from|without)|"
-        "can't (?:bear|stand|handle) (?:being )?(?:apart|away|without)|miss(?:ing)? (?:him|her|them|my (?:partner|mom|mum|dad|mother|father|family|child|kids?|husband|wife)) (?:so much|terribly|badly|a lot)|"
-        "(?:anxious|panic\\w*) when (?:he|she|they|my \\w+) (?:leaves?|goes away|travels|is (?:gone|away)|isn't (?:here|around))",)),
-    ("anxiety", None, "anxiety", ("anxi\\w+|panic(?: attacks?)?|panicky",)),
+        "lonel\\w+(?! planet)|lonesome",
+        "(?:i am|i'm|i feel|feel|feeling|felt|am|been feeling|been feeling so)(?: (?:so|very|really|completely|totally|all|quite|pretty|just|always|too))* alone",
+        "(?:no one|noone|nobody) (?:to talk to|talks? to me|calls? me|texts? me|messages? me|checks? on me|cares? about me|"
+        "wants? to (?:talk|hang out|spend time)(?: with me)?|to (?:turn to|share (?:it|things|this) with))",
+        "(?:i have|i've got|i got|got|have) no (?:friends|one to talk to|one i can talk to|real friends)",
+        "(?:feel|feeling|felt) (?:so |very |really |completely )?(?:isolated|left out|cut off|disconnected|invisible|unwanted)",
+        "(?:akela|akeli|akelapan|tanha|tanhai) (?:lagta|lagti|lag raha|lag rahi|lagne|mehsoos|feel|hoon|hun|hu|hai|ho gaya|ho gayi|raha|rahi)",
+        "(?:koi|kisi) (?:dost|friend|apna) (?:" + _hi.NEG + ")|(?:koi|kisi se) (?:baat|baatein|bat) karne (?:wala|wali|ko) (?:" + _hi.NEG + ")")),
+    ("anxiety", None, "anxiety", (
+        "anxi\\w+",
+        "ghabra\\w*|bechain\\w*",
+        "(?:mujhe|mujhko|mereko|mere ko) (?:(?:bahut|bohot|kaafi|bahot|bhut|zyada|jyada|hamesha|roz) )?(?:chinta|fikr|fikar|tension)(?: (?:hai|hoti|rehti|lagi|lagta|lagti|ho rahi|ho raha|rehta|rahti))?")),
     ("low_mood", None, "low mood", (
         "low mood|depress\\w+|hopeless\\w*|(?:feel|feeling|felt) (?:(?:really|very|so|quite|pretty|rather|extremely|a bit|a little|kind of) )?(?:sad|down|low|blue)|sad|sadness|tearful",)),
     ("insomnia", None, "insomnia", (

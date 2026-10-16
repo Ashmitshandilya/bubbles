@@ -33,7 +33,7 @@ def test_the_loneliness_screen_is_one_question_scored_without_a_label():
     import mind_checkins as M
     q = M.screen_questions("loneliness")
     assert q["questions"] == ["How often do you feel lonely?"]
-    high = M.score_screen("loneliness", [3])
+    high = M.score_screen("loneliness", [4])
     assert high["suggest_talking_to_someone"] and "14416" in high["message"] and "disorder" not in high["message"].lower()
     assert not M.score_screen("loneliness", [1])["suggest_talking_to_someone"]
-    assert set(M.TOPIC_COPY) == {"anxiety", "panic", "loneliness", "apart"}
+    assert set(M.SUPPORT_COPY) == {"panic", "loneliness", "apart"}

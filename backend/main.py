@@ -44,11 +44,13 @@ from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
 from chat_feedback import build_router as build_chat_feedback_router
-import consent_ledger
 from consent_api import build_router as build_consent_router
+from chat_counts import message_counts
+from schema_status import build_router as build_schema_router
 from onboarding_api import build_router as build_onboarding_router, style_block_for
-from consent import consent_needed_reply, has_ai_consent
-from mind_chat import mind_fixed_reply, mind_support_block
+import consent as consent_module
+from consent import chat_prompt, has_ai_consent, persist_chat_events
+from mind_chat import loneliness_no_consent_reply, mind_support_block
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -103,7 +105,7 @@ from state_normalizer import normalize_health_state, normalize_living_signal_map
 from womens_health_intelligence import classify_womens_health
 from medication_intelligence import medication_overview
 from preventive_health import preventive_snapshot
-from sharing_architecture import build_share_plan
+from sharing_architecture import SCOPES as SHARE_SCOPES, build_share_plan
 from provider_integration import to_fhir_resource
 from advanced_agent import plan_agent
 from knowledge_learning import knowledge_health
@@ -300,7 +302,7 @@ def _record_api_event(request, response, started: float) -> None:
 
 
 # Coarse protection for the Whole-Health OS routes: a request-size cap and a per-user request budget (the chat has its own limiter).
-_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback")
+_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback", "/consents")
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing
@@ -559,6 +561,7 @@ app.include_router(build_import_router(get_authenticated_user, supabase))
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
 app.include_router(build_organ_map_router(get_authenticated_user, supabase))
+app.include_router(build_schema_router(supabase))
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
 
@@ -800,14 +803,12 @@ def chat(
         # Deterministic copy: RED is a hard gate, so neither the message nor health context reaches a provider.
         t0 = perf_counter()
         # While waiting for the yes nothing is saved: the same message is asked again after it and saved once then (saving both would count a symptom twice).
-        persisted = [] if consent_required else persist_events(supabase, user_id, user_message_id, rule_events)
+        persisted = [] if consent_required else persist_chat_events(supabase, user_id, user_message_id, rule_events, persist=persist_events)
         timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
         if consent_required:
             # An urgent message still gets the fixed urgent text, not a question about AI models.
-            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else consent_needed_reply(name)
-            # a lonely or anxious message gets a short kind reply first, even without AI consent
-            if safety.state != "URGENT" and (kind_reply := mind_fixed_reply(turn.facts)):
-                response_text = kind_reply + "\n\n" + response_text
+            consent_ask = chat_prompt(supabase, user_id, name)   # declined within 14 days: a calm line, no card
+            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (loneliness_no_consent_reply(turn, name) or consent_ask["reply"])
         else:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
@@ -874,7 +875,7 @@ def chat(
             user_message,
             memory_context=memory_context,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + mind) if (mind := mind_support_block(turn.facts)) else "") + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else ""),
+            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else ""),
             conversation_context=conversation_context,
         )
         timings["ai_ms"] = round((perf_counter() - t0) * 1000, 1)
@@ -887,8 +888,7 @@ def chat(
         # The model only PROPOSES events; the backend keeps those the user really asserted about themselves.
         t0 = perf_counter()
         reconciled = reconcile_ai_events(ai_events, turn, rule_events, user_message_id)
-        # Details noticed in chat are only suggested when the person has turned that choice on (consent_ledger.py).
-        persisted = persist_events(supabase, user_id, user_message_id, rule_events + reconciled) if consent_ledger.is_granted(supabase, user_id, "health_memory_from_chat") else []
+        persisted = persist_chat_events(supabase, user_id, user_message_id, rule_events + reconciled, persist=persist_events)
         timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
         if is_degraded(ai_result):
             response_text = ai_failed_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
@@ -955,6 +955,7 @@ def chat(
         "message_id": bubbles_message_id,
         "user_message_id": user_message_id,
         "consent_required": consent_required,
+        "consent_ask": consent_ask["ask"] if consent_required else False,
         "conversation_id": conversation_id,
         "user_id": user.id,
         "evidence": [
@@ -999,16 +1000,10 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
                         .limit(limit)
                         .execute().data or [])
 
-        # Message count for each conversation, asked at the same time: one after another this was up to 50 round trips
-        # to the database before the chat screen could show anything.
-        def _count(conv: dict) -> int:
-            return (supabase.table("chat_messages")
-                    .select("id", count="exact", head=True)
-                    .eq("conversation_id", conv["id"])
-                    .execute().count or 0)
-        with ThreadPoolExecutor(max_workers=8, thread_name_prefix="history-count") as pool:
-            for conv, msg_count in zip(conversations, pool.map(_count, conversations)):
-                conv["message_count"] = msg_count
+        # One round trip for every count (chat_counts.py); it was one query per conversation, up to 50.
+        counts = message_counts(supabase, user_id, [c["id"] for c in conversations])
+        for conv in conversations:
+            conv["message_count"] = counts.get(str(conv["id"]), 0)
 
         return {"conversations": conversations}
     except Exception as e:
@@ -1150,8 +1145,10 @@ def intelligence_all(authorization: str | None = Header(default=None), days: int
 
 @app.post("/sharing/plan")
 def sharing_plan(request: dict, authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
-    return build_share_plan(request.get("scopes") or [], request.get("consent") or {})
+    user = get_authenticated_user(authorization)
+    # The answer is the stored record, never a dict the browser sends.
+    on = consent_module.is_granted(supabase, str(user.id), "partner_sharing")
+    return build_share_plan(request.get("scopes") or [], {scope: on for scope in SHARE_SCOPES})
 
 @app.get("/production/readiness")
 def production_readiness(authorization: str | None = Header(default=None)):
@@ -1949,8 +1946,10 @@ def privacy_redact(request: RedactionRequest, authorization: str | None = Header
 
 @app.post("/privacy/consent/check")
 def privacy_consent(request: ConsentRequest, authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
-    return {"status":"success","policy":consent_policy(request.consent,request.purpose)}
+    user = get_authenticated_user(authorization)
+    purpose = consent_module.canonical(request.purpose)
+    # The answer is the stored record, never the dict the browser sends (request.consent is ignored).
+    return {"status":"success","policy":consent_policy({purpose: consent_module.is_granted(supabase, str(user.id), purpose)}, purpose)}
 
 @app.get("/privacy/security-baseline")
 def privacy_security_baseline(authorization: str | None = Header(default=None)):

@@ -17,6 +17,7 @@ from starlette.concurrency import run_in_threadpool
 
 import association_loader as AL
 import clinical_constants as K
+import consent
 import doc_store
 import hydration_engine as H
 import med_schedule as M
@@ -388,7 +389,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         screens = doc_store.list_docs(db, uid, "mind_screen", limit=20)
         return ok(window_days=days, entries=[{**e, "activities": Mind.parse_activities(e.get("notes"))} for e in entries[:60]],
                   average_mood=round(sum(vals) / len(vals), 1) if vals else None, days_logged=len(by_day),
-                  today=by_day.get(local.date().isoformat()), faces=Mind.FACES, activities=list(K.MIND_ACTIVITIES),
+                  today=by_day.get(local.date().isoformat()), faces=Mind.FACES, support=Mind.SUPPORT_COPY, activities=list(K.MIND_ACTIVITIES),
                   screen=Mind.screen_due(screens, local.date()), exercises=[{"id": e["id"], "name": e["name"], "kind": e["kind"]} for e in Mind.EXERCISES],
                   note="Mood tracking is for your own insight and doesn't replace support from a professional.")
 
@@ -546,6 +547,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
 
     def settings_put(uid: str, body: dict) -> dict:
         s = N.normalize_settings(body, N.load_settings(db, uid))
+        for channel, purpose in (("email", "email_reminders"),):   # the phone switch is its own in-context yes, logged below
+            s["channels"][channel] = s["channels"][channel] and consent.is_granted(db, uid, purpose)   # the switch follows Privacy choices
         N.save_settings(db, uid, s)
         import consent_ledger
         consent_ledger.record_if_changed(db, uid, "email_reminders", bool((s.get("channels") or {}).get("email")), "settings")

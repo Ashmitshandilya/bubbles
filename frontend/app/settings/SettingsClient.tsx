@@ -109,11 +109,9 @@ function Settings() {
 
       <Group id="privacy" title="Privacy and data">
         <ul className="m-0 list-none divide-y-2 divide-line overflow-hidden p-0">
+          <LinkRow href="/privacy-choices" label="Privacy choices" />
           <LinkRow href="/privacy" label="Privacy notice" />
           <LinkRow href="/terms" label="Terms of use" />
-        </ul>
-        <ul className="m-0 list-none divide-y-2 divide-line overflow-hidden p-0">
-          <LinkRow href="/privacy-choices" label="Privacy choices" />
         </ul>
         <YourDataCard />
       </Group>

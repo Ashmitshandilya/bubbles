@@ -61,11 +61,9 @@ def env():
 
     main.ask_bubbles = stub_ai
     main.hybrid_search = lambda **k: []
-    import consent
-    for person in (USER, OTHER):   # the open-ended replies need a yes (tests/test_consent.py covers the no)
-        consent.set_ai_chat(db, person, True)
-        import consent_ledger
-        consent_ledger.set_purpose(db, person, "health_memory_from_chat", True, "system")
+    from fake_db import grant_consent
+    for person in (USER, OTHER):   # the open-ended replies and saving chat details need a yes (tests/test_consent*.py cover the no)
+        grant_consent(db, person, "ai_chat_processing", "health_memory_from_chat")
     from fastapi.testclient import TestClient
     client = TestClient(main.app, raise_server_exceptions=False)
     yield types.SimpleNamespace(client=client, db=db, ai_calls=calls, main=main)
