@@ -1,6 +1,6 @@
 "use client";
 
-import { announceChange, describeWrite, listenForChanges, readLastUpdate, type LastUpdate } from "../app/lib/data-sync";
+import { LIVE_REFRESH_MS, announceChange, describeWrite, listenForChanges, readLastUpdate, shouldRefreshOnResume, type LastUpdate } from "../app/lib/data-sync";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
@@ -401,6 +401,34 @@ export function ApiProvider({ children }: { children: ReactNode }) {
       setLastUpdate(update);
       setDataVersion((n) => n + 1);
     });
+  }, [uid]);
+
+  // Live: while the app is open and visible it asks again every minute, and at once when it is seen again after a while or the
+  // network returns, so a change made on another device (or in the other app) appears without a reload.
+  useEffect(() => {
+    if (!uid || typeof document === "undefined") return;
+    let hiddenSince: number | null = document.hidden ? Date.now() : null;
+    const refresh = () => {
+      if (document.hidden || !navigator.onLine) return;
+      apiCache.clear();
+      setDataVersion((n) => n + 1);
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenSince = Date.now();
+        return;
+      }
+      if (shouldRefreshOnResume(hiddenSince)) refresh();
+      hiddenSince = null;
+    };
+    const timer = window.setInterval(refresh, LIVE_REFRESH_MS);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", refresh);
+    };
   }, [uid]);
 
   /** Any HTTP answer means the server is up (even a 5xx); only a rejected request means offline. */

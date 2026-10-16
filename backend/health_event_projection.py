@@ -45,6 +45,14 @@ def _date(data: dict[str, Any]) -> str | None:
 def _occurred_at(data: dict[str, Any]) -> str:
     date = _text(data, "date")
     time = _text(data, "time")
+    if date and not time:
+        # A bare "today" has no time of day. Stamping it at midnight would sort it below an entry logged earlier the same day, so the
+        # older figure would stay "latest"; today (or later, for a person ahead of UTC) means now.
+        try:
+            if datetime.fromisoformat(date.replace("Z", "+00:00")).date() >= datetime.now(timezone.utc).date() and len(date) <= 10:
+                return datetime.now(timezone.utc).isoformat()
+        except ValueError:
+            pass
     if date:
         candidate = f"{date}T{time}" if time else f"{date}T00:00:00+00:00"
         try:

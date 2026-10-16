@@ -38,6 +38,20 @@ class _Db:
     def table(self, name): return _Q(self, name)
 
 
+@pytest.fixture(autouse=True)
+def _consent_given(monkeypatch):
+    import consent
+    monkeypatch.setattr(consent, "is_granted", lambda db, uid, purpose: purpose == "health_memory_from_chat")
+
+
+def test_nothing_is_saved_without_the_chat_memory_consent(monkeypatch):
+    import consent
+    monkeypatch.setattr(consent, "is_granted", lambda db, uid, purpose: False)
+    db = _Db()
+    assert auto_save_body_stats(db, "u1", "my height is 6'1", []) == []
+    assert db.writes == []
+
+
 def test_saves_height_to_profile_row(monkeypatch):
     import doc_store
     saved = {}
@@ -54,3 +68,4 @@ def test_nothing_stated_nothing_saved():
     db = _Db()
     assert auto_save_body_stats(db, "u1", "I slept badly", []) == []
     assert db.writes == []
+

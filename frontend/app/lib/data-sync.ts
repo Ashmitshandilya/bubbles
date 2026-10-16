@@ -34,6 +34,7 @@ export function describeWrite(path: string, method: string | undefined): string 
   if ((method || "GET").toUpperCase() === "GET") return null;
   const p = pathOnly(path);
   if (isHealthProbe(p)) return null;
+  if (p === "/onboarding/complete" || p === "/profile/body") return "Profile";   // setup and body figures change names, height, weight, goals
   const tracker = /^\/health\/([a-z-]+)/.exec(p)?.[1];
   if (tracker && tracker !== "summary") return LABELS[tracker] ?? tracker.charAt(0).toUpperCase() + tracker.slice(1);
   if (NOT_RECORD.some((prefix) => p === prefix || p.startsWith(`${prefix}/`))) return null;
@@ -111,4 +112,14 @@ export function listenForChanges(uid: string | null, onChange: (update: LastUpda
     }
   };
   return () => channel.close();
+}
+
+/** How often an open screen quietly asks again, so a change made on another device appears without a reload. */
+export const LIVE_REFRESH_MS = 60_000;
+/** A tab that was hidden at least this long refreshes the moment it is seen again. */
+export const RESUME_REFRESH_AFTER_MS = 10_000;
+
+/** Whether coming back to the screen should refresh: hidden long enough that something may have changed meanwhile. */
+export function shouldRefreshOnResume(hiddenSince: number | null, now = Date.now()): boolean {
+  return hiddenSince !== null && now - hiddenSince >= RESUME_REFRESH_AFTER_MS;
 }
