@@ -47,6 +47,7 @@ from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
 from onboarding_api import build_router as build_onboarding_router, style_block_for
 from consent import consent_needed_reply, has_ai_consent
+from mind_chat import loneliness_no_consent_reply, mind_support_block
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -797,7 +798,7 @@ def chat(
         timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
         if consent_required:
             # An urgent message still gets the fixed urgent text, not a question about AI models.
-            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else consent_needed_reply(name)
+            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (loneliness_no_consent_reply(turn, name) or consent_needed_reply(name))
         else:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
@@ -864,7 +865,7 @@ def chat(
             user_message,
             memory_context=memory_context,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else ""),
+            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else ""),
             conversation_context=conversation_context,
         )
         timings["ai_ms"] = round((perf_counter() - t0) * 1000, 1)

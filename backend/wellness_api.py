@@ -387,7 +387,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         screens = doc_store.list_docs(db, uid, "mind_screen", limit=20)
         return ok(window_days=days, entries=[{**e, "activities": Mind.parse_activities(e.get("notes"))} for e in entries[:60]],
                   average_mood=round(sum(vals) / len(vals), 1) if vals else None, days_logged=len(by_day),
-                  today=by_day.get(local.date().isoformat()), faces=Mind.FACES, activities=list(K.MIND_ACTIVITIES),
+                  today=by_day.get(local.date().isoformat()), faces=Mind.FACES, support=Mind.SUPPORT_COPY, activities=list(K.MIND_ACTIVITIES),
                   screen=Mind.screen_due(screens, local.date()), exercises=[{"id": e["id"], "name": e["name"], "kind": e["kind"]} for e in Mind.EXERCISES],
                   note="Mood tracking is for your own insight and doesn't replace support from a professional.")
 

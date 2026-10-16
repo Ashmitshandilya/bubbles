@@ -383,9 +383,13 @@ def _ev_hydration(r: dict) -> dict:
                    "drink_type": r.get("drink_type"), "date": _day(r["logged_at"]), "notes": r.get("notes")})
 
 
+_MOOD_EXTRA = re.compile(r"(Stress|Anxiety) (\d+(?:\.\d+)?)/10")
+
+
 def _ev_mood(r: dict) -> dict:
     score = r["intensity"]
-    return _clean({"name": "mood", "score": score, "mood_score": score, "severity": score,
+    extra = {f"{k.lower()}_score": float(v) for k, v in _MOOD_EXTRA.findall(str(r.get("notes") or ""))}   # _mood_row folds them into the note
+    return _clean({"name": "mood", "score": score, "mood_score": score, "severity": score, **extra,
                    "date": _day(r["logged_at"]), "notes": r.get("notes")})
 
 
