@@ -4,6 +4,7 @@
 // In-app always works. Email is offered only when the server can send it; browser push is not offered at all.
 
 import { useState } from "react";
+import Link from "next/link";
 import { BTN_PRIMARY, BTN_SECONDARY } from "../hub/HubKit";
 import { Stepper } from "../tracking/kit";
 import { ErrorNotice, LiveRegion, QueryView, Switch, TimeField } from "./ui";
@@ -50,7 +51,7 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
     setBusy(true);
     setError("");
     const body = {
-      channels: { in_app: draft.channels.in_app, email: emailOk && draft.channels.email, push: false },
+      channels: { in_app: draft.channels.in_app, email: emailOk && saved.channels.email, push: false },
       types: draft.types,
       quiet_hours: draft.quiet_hours,
       daily_cap: n,
@@ -75,7 +76,12 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
         <legend className="mb-2 p-0 font-display text-h4 text-default">Show reminders</legend>
         <Switch label="In Bubbles" checked={draft.channels.in_app} onChange={(v) => patch({ channels: { ...draft.channels, in_app: v } })} />
         {emailOk && (
-          <Switch label="Email" hint="Same plain text, to your sign-in email." checked={draft.channels.email} onChange={(v) => patch({ channels: { ...draft.channels, email: v } })} />
+          <p className="m-0 text-body-sm text-muted">
+            Email reminders are {saved.channels.email ? "on" : "off"}.{" "}
+            <Link href="/privacy-choices" className="inline-flex min-h-[44px] items-center font-extrabold text-bubbles-pink-ink underline">
+              Change in Privacy choices
+            </Link>
+          </p>
         )}
       </fieldset>
 

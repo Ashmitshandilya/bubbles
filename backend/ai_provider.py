@@ -33,7 +33,7 @@ FREE_MODEL_ALLOWLIST = {
     "Animica": {"kimi-k3"},
 }
 
-REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "45"))
+REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "20"))
 AI_MAX_RETRIES = max(0, min(int(os.getenv("AI_MAX_RETRIES", "1")), 2))
 AI_RETRY_BACKOFF_MS = max(0, min(int(os.getenv("AI_RETRY_BACKOFF_MS", "250")), 2000))
 # One chat reply waits at most this long for AI models in total (Gemini, then every fallback and retry). Without it a slow
