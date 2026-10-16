@@ -185,7 +185,9 @@ function InsightDetailSheet({ target, onClose }: { target: SheetTarget | null; o
     const overflow = root.style.overflow;
     if (!dialog.open) dialog.showModal();
     root.style.overflow = "hidden";
-    headingRef.current?.focus();
+    // preventScroll: the sheet slides up as it opens, and a plain focus() would scroll to where the heading is mid-animation
+    headingRef.current?.focus({ preventScroll: true });
+    dialog.scrollTop = 0;
     return () => {
       if (dialog.open) dialog.close();
       root.style.overflow = overflow;
