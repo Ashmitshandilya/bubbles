@@ -74,8 +74,10 @@ export function parseBatch(payload: unknown): ServerResult[] {
   for (const row of list) {
     const r = (row !== null && typeof row === "object" ? row : {}) as Record<string, unknown>;
     if (typeof r.id !== "string" || typeof r.status !== "string") continue;
+    // The server answers a withdrawn event with an error row (409 or 410): that is settled, not a failure.
+    const status = r.status === "error" && (r.code === 409 || r.code === 410) ? "retracted" : r.status;
     const projection = r.projection === "done" || r.projection === "queued" || r.projection === "compat" ? r.projection : undefined;
-    out.push({ id: r.id, status: r.status, projection });
+    out.push({ id: r.id, status, projection });
   }
   return out;
 }

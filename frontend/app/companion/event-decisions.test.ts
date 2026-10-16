@@ -171,6 +171,11 @@ describe("submitDecisions", () => {
     ]);
     expect(parseBatch(null)).toEqual([]);
   });
+
+  it("parseBatch reads a 409 or 410 error row as withdrawn and leaves other errors as errors", () => {
+    const rows = parseBatch({ results: [{ id: "a", status: "error", code: 409 }, { id: "b", status: "error", code: 410 }, { id: "c", status: "error", code: 500 }] });
+    expect(rows.map((r) => r.status)).toEqual(["retracted", "retracted", "error"]);
+  });
 });
 
 describe("cardView", () => {
