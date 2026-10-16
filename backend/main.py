@@ -1010,6 +1010,13 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             if note:
                 response_text += "\n\n" + note
 
+    # ---- 2b. a plainly stated weight or height is saved now, so every screen shows it without a Save tap
+    if not state.consent_required and turn.route != "correction" and safety.level != "RED":
+        from body_stats import auto_save_body_stats
+        saved_notes = auto_save_body_stats(supabase, user_id, user_message, persisted)
+        if saved_notes:
+            response_text += "\n\n" + " ".join(saved_notes)
+
     # ---- 3. save the reply (+ retract a wrong warning when the user corrected us)
     correction_payload = None
     safety_dict = safety_payload(safety)
