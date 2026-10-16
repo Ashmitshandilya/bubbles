@@ -44,6 +44,13 @@ Entry template:
 
 ## 3. Decision log
 
+### 2026-10-16 · Weight in kg or lbs (direct push to main, owner request)
+- What: the weight tracker has an lbs / kg switch above the stats. The form, history and stats follow the chosen unit. The unit is remembered on this device only.
+- Why: the owner asked to see and enter weight in kilograms as well as pounds.
+- Use: people who think in kg can log and read weight in kg; nothing changes for people who keep pounds.
+- Where: `frontend/app/lib/unit-switch.ts` (+ `.test.ts`), `frontend/components/GenericTrackingClient.tsx` (`altUnit` field option), `frontend/components/tracking/kit.tsx` (`SIGNALS` exported), `frontend/app/weight/page.tsx`.
+- Notes: the API still stores and receives pounds, so no backend or schema change. Converting kg to lbs and back can shift a value by about 0.1 lb. Pushed straight to `main` at the owner's explicit request, which departs from the "work on a branch, open a PR" rule above; the change had passed the frontend gates on its feature branch first. No browser click-through was done.
+
 ### 2026-10-17 · Android 2.0: its own opening and app feel (this PR)
 - What: app-only redesign, about half the website look kept (pink, fonts, Bubbles). New welcome with three swipeable intro cards and page dots (`app/IntroSlides.tsx`); app bar with a big title and frosted glass; floating frosted dock with an active pill and icon pop; lilac-to-blush backdrop, rounder cards, pink-to-grape primary buttons; screens rise into place and everything presses. First-run permission step: a full screen right after setup, once per phone, that shows a sample reminder and three reasons before Android's own prompt ("Turn on reminders" is the consent; crash reports are a separate box, off by default; "Maybe later" or Back never asks again here). New premium app icon: the same mascot on a grape-to-pink gradient with a glow, soap bubbles and a soft shadow (`scripts/android-assets.mjs`; the website keeps `app/icon.svg`). Version 2.0.0 (5).
 - Why: the owner wants the app to feel like an app, not the website, while keeping the same accounts and setup.
