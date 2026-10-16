@@ -99,7 +99,7 @@ function Medications() {
 /* ── The original medicine list (kept as it was: name, dose, reason, notes) ─────────────── */
 
 function MedicineList({ list }: { list: ReturnType<typeof useTracker> }) {
-  const { entries, status, error, retry, save, freshId } = list;
+  const { entries, status, error, retry, save, remove, freshId } = list;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
@@ -142,6 +142,7 @@ function MedicineList({ list }: { list: ReturnType<typeof useTracker> }) {
         <LogButton signal="sky" onClick={openSheet}>Add medication</LogButton>
       </div>
       <History
+        onDelete={remove}
         title="On your list"
         status={status}
         error={error}

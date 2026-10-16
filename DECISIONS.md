@@ -165,6 +165,11 @@ Entry template:
 - Everything else Bubbles picks up (symptoms, medicines, moods, food) still waits for Save. Questions, negations, other people's heights and implausible values (120-230 cm) are ignored.
 - Not done: no undo button in the chat reply. Weight can be removed on the Weight page; height can be corrected by saying it again or in Fitness setup.
 
+### 2026-10 · Delete a tracker entry
+- `DELETE /health/{tracker}/{id}` removes one of the signed-in person's own entries (normal table first, then this tracker's copy in the compatibility store). Someone else's id, an unknown id and an id that is already gone all answer 404.
+- Every tracker history list (weight and the other `History` lists) shows a Remove button with a yes/no step; the row leaves the list only after the server agrees, and the delete refreshes Today and the other screens like any other save.
+- Not done: deleting a weight the chat saved does not withdraw the matching memory note Bubbles kept from the same message.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.

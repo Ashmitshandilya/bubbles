@@ -39,7 +39,7 @@ export function MoodClient() {
 }
 
 function Mood() {
-  const { entries, status, error, retry, save, freshId } = useTracker("/health/mood", 30);
+  const { entries, status, error, retry, save, remove, freshId } = useTracker("/health/mood", 30);
   const [open, setOpen] = useState(false);
   const [mood, setMood] = useState("");
   const [stress, setStress] = useState("");
@@ -99,6 +99,7 @@ function Mood() {
         />
       )}
       <History
+        onDelete={remove}
         status={status}
         error={error}
         onRetry={retry}

@@ -46,7 +46,7 @@ export function SleepClient() {
 }
 
 function Sleep() {
-  const { entries, status, error, retry, freshId } = useTracker("/health/sleep", 30);
+  const { entries, status, error, retry, remove, freshId } = useTracker("/health/sleep", 30);
   const [overview, reloadOverview] = useWellnessQuery<SleepOverview>("/wellness/sleep/overview?days=30");
   const send = useWellnessSend();
 
@@ -172,6 +172,7 @@ function Sleep() {
       {status === "ready" && entries.length > 0 && <WeekBars title="Hours slept this week" entries={entries} field="duration" unit="h" signal="grape" minScale={9} />}
 
       <History
+        onDelete={remove}
         status={status}
         error={error}
         onRetry={retry}

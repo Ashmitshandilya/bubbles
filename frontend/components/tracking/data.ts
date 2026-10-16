@@ -283,5 +283,24 @@ export function useTracker(endpoint: string, days: number, refetchAfterSave = fa
     [fetchBubbles, endpoint, slug, refetchAfterSave],
   );
 
-  return { entries, summary, status, error, retry, save, freshId };
+  /** Delete one entry. Resolves null on success (it leaves the list at once) or an error message; nothing is hidden before the server agrees. */
+  const remove = useCallback(
+    async (id: string): Promise<string | null> => {
+      try {
+        const response = await fetchBubbles(`${endpoint}/${encodeURIComponent(id)}`, { method: "DELETE" });
+        if (response.status === 404) {
+          setEntries((list) => list.filter((e) => e.id !== id));   // already gone elsewhere
+          return null;
+        }
+        if (!response.ok) return (await responseFailure(response)).message;
+        setEntries((list) => list.filter((e) => e.id !== id));
+        return null;
+      } catch (error) {
+        return classifyFailure(failureFromError(error)).message;
+      }
+    },
+    [fetchBubbles, endpoint],
+  );
+
+  return { entries, summary, status, error, retry, save, remove, freshId };
 }

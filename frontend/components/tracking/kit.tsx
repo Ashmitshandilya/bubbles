@@ -609,9 +609,41 @@ export function EmptyState({ title, text, action }: { title: string; text: strin
   );
 }
 
-export function History({ title = "History", status, error, onRetry, entries, freshId, signal, renderEntry, empty }: {
+/** "Remove" with a plain yes/no, so a stray tap never deletes a record. `onDelete` resolves null or an error message. */
+function RemoveEntry({ id, onDelete }: { id: string; onDelete: (id: string) => Promise<string | null> }) {
+  const [step, setStep] = useState<"idle" | "ask" | "busy">("idle");
+  const [problem, setProblem] = useState("");
+  async function confirm() {
+    setStep("busy");
+    const failure = await onDelete(id);
+    if (failure) { setProblem(failure); setStep("ask"); }   // on success the row leaves the list, so there is nothing more to show
+  }
+  if (step === "idle") {
+    return (
+      <button type="button" onClick={() => setStep("ask")} className="bubbles-press mt-2 min-h-[44px] rounded-full px-3 text-body-sm font-extrabold text-muted underline">
+        Remove
+      </button>
+    );
+  }
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2" role="group" aria-label="Remove this entry?">
+      <span className="text-body-sm font-bold text-default">Remove this entry?</span>
+      <button type="button" disabled={step === "busy"} onClick={confirm} className="bubbles-press min-h-[44px] rounded-full border border-line-strong bg-surface px-4 text-body-sm font-extrabold text-default disabled:opacity-60">
+        {step === "busy" ? "Removing…" : "Yes, remove"}
+      </button>
+      <button type="button" disabled={step === "busy"} onClick={() => { setProblem(""); setStep("idle"); }} className="bubbles-press min-h-[44px] rounded-full px-3 text-body-sm font-extrabold text-muted">
+        Keep it
+      </button>
+      {problem && <p role="alert" className="m-0 w-full text-body-sm text-default">{problem}</p>}
+    </div>
+  );
+}
+
+export function History({ title = "History", status, error, onRetry, entries, freshId, signal, renderEntry, empty, onDelete }: {
   title?: string; status: LoadStatus; error: string; onRetry: () => void; entries: Entry[]; freshId: string | null;
   signal: Signal; renderEntry: (entry: Entry) => ReactNode; empty: ReactNode;
+  /** When given, every entry can be removed (after a yes/no). */
+  onDelete?: (id: string) => Promise<string | null>;
 }) {
   const headingId = useId();
   const s = SIGNALS[signal];
@@ -657,6 +689,7 @@ export function History({ title = "History", status, error, onRetry, entries, fr
           {group.items.map((entry) => (
             <li key={entry.id} className={`rounded-[24px] border bg-surface p-4 ${s.border} ${entry.id === freshId ? "bubbles-rise" : ""}`}>
               {renderEntry(entry)}
+              {onDelete && !entry.id.startsWith("pending-") && <RemoveEntry id={entry.id} onDelete={onDelete} />}
             </li>
           ))}
         </ul>

@@ -61,6 +61,10 @@ class FakeQuery:
         self.payload = payload
         return self
 
+    def delete(self):
+        self.deleting = True
+        return self
+
     def eq(self, key, value):
         self.filters.append((key, value))
         return self
@@ -75,6 +79,11 @@ class FakeQuery:
         return self
 
     def execute(self):
+        if getattr(self, "deleting", False):
+            rows = self.db.rows.get(self.table, [])
+            gone = [r for r in rows if all(r.get(k) == v for k, v in self.filters if "->" not in k)]
+            self.db.rows[self.table] = [r for r in rows if r not in gone]
+            return SimpleNamespace(data=gone)
         if self.payload is not None:
             unknown = set(self.payload) - LIVE_COLUMNS[self.table]
             assert not unknown, f"{self.table}: columns not in live schema: {sorted(unknown)}"
@@ -207,3 +216,17 @@ def test_new_passive_phrases_are_crisis_and_near_misses_are_not():
         assert assess_safety(t).crisis, t
     for t in ("I'm not a burden, the bus was late", "my worthless ex", "the dish is a burden on the table", "nobody would miss the bus"):
         assert not assess_safety(t).crisis, t
+
+
+def test_a_person_can_delete_their_own_entry_and_only_theirs():
+    client, db = make_client()
+    created = client.post("/health/weight", json={"weight": "140.5", "date": "2026-10-05T10:00:00Z"}, headers=H).json()["entry"]
+    other = {"id": "someone-else", "user_id": "user-2", "weight_kg": 70, "logged_at": "2026-10-05T10:00:00Z"}
+    db.rows["weight_logs"].append(other)
+
+    assert client.delete("/health/weight/someone-else", headers=H).status_code == 404   # not theirs: untouched
+    assert other in db.rows["weight_logs"]
+    assert client.delete("/health/nope/x", headers=H).status_code == 404
+    assert client.delete(f"/health/weight/{created['id']}", headers=H).json() == {"status": "success", "deleted": created["id"]}
+    assert client.get("/health/weight?days=30", headers=H).json()["entries"] == []
+    assert client.delete(f"/health/weight/{created['id']}", headers=H).status_code == 404   # already gone
