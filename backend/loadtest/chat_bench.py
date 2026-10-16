@@ -1,6 +1,6 @@
 """Local latency benchmark for POST /chat (dev only, never touches a real service).
 
-    cd backend && python loadtest/chat_bench.py [--n 30] [--rtt-ms 80] [--stream]
+    cd backend && python loadtest/chat_bench.py [--n 30] [--rtt-ms 80] [--ai-ms 0] [--path /chat|/chat/stream]
 
 Runs the REAL FastAPI app in-process on the test suite's FakeDB. Every database call and the embedding HTTP call sleep ``--rtt-ms``
 (default 80 ms, about one Render Singapore to Supabase Seoul round trip) so the number reflects how many round trips a chat turn

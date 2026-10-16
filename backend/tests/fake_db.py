@@ -12,9 +12,11 @@ import copy
 import itertools
 import types
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 _clock = itertools.count(1)
+_TODAY = datetime.now(timezone.utc).strftime("%Y-%m-%d")   # rows default to today, so "recent" logic (e.g. the 48 h rule for resumed chats) sees them as recent
 
 
 class FakeAPIError(Exception):
@@ -129,7 +131,7 @@ class Query:
             for item in items:
                 row = copy.deepcopy(item)
                 row.setdefault("id", str(uuid.uuid4()))
-                row.setdefault("created_at", f"2026-10-07T10:{next(_clock) // 60 % 60:02d}:{next(_clock) % 60:02d}+00:00")
+                row.setdefault("created_at", f"{_TODAY}T10:{next(_clock) // 60 % 60:02d}:{next(_clock) % 60:02d}+00:00")
                 for unique in self.db.unique.get(self.table, ()):
                     if any(r.get(unique) is not None and r.get(unique) == row.get(unique) and r.get("user_id") == row.get("user_id") for r in rows):
                         raise FakeAPIError(f"duplicate key value violates unique constraint ({unique})", "23505")
