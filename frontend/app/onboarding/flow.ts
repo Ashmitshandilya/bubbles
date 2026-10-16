@@ -40,6 +40,7 @@ export interface Step {
   id: string;
   title: string;
   intro: string;
+  extra?: boolean;
 }
 
 export type Answers = Record<string, unknown>;

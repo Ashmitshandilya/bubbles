@@ -115,6 +115,12 @@ Entry template:
 
 ---
 
+### 2026-10 · Lean first-run setup
+- Gender (`body`) is the first question, then date of birth (the 18+ gate), then name. Required is now only body, birth date, name, goals and conditions; language and tone default to English and gentle.
+- Everything else sits in an optional "A little more" stage (`extra` steps in `onboarding.STEPS`) behind one "Skip all extras" screen; optional steps have a Skip button and required questions carry a "Needed" tag.
+- AI consent moved to its own "Your choices" step. The setup screen is "Setting up your app" and takes about 3 seconds.
+- Not done yet: skippable app tour, per-purpose consent toggles inside setup, tap-to-advance for single choices.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.
