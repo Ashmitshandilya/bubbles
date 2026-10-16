@@ -1,7 +1,10 @@
 "use client";
 
-import { Fragment, useEffect, useId, useRef } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
+import { useApi } from "../../components/Providers";
+import { aiCardView, readOverview } from "../lib/consents";
 import { TONE, type Tone } from "../../components/hub/HubKit";
 import {
   confidenceLabel,
@@ -370,6 +373,51 @@ function EventCard({
  * The card itself says what is sent: it can sit under a reply that does not (an urgent message from someone who has not said yes yet).
  */
 function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
+  const { fetchBubbles } = useApi();
+  const [view, setView] = useState<"ask" | "declined" | "granted">("ask");
+  const [declining, setDeclining] = useState(false);
+
+  // A card from an earlier message must not ask again once the person has answered.
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetchBubbles("/consents");
+        const found = response.ok ? readOverview(await response.json())?.purposes.find((p) => p.id === "ai_chat_processing") : undefined;
+        if (alive && found) setView(aiCardView(found));
+      } catch {
+        /* keep asking: a missing answer is never a yes */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [fetchBubbles]);
+
+  async function decline() {
+    setDeclining(true);
+    try {
+      const response = await fetchBubbles("/me/consent", { method: "PUT", body: JSON.stringify({ ai_chat: false, source: "chat_card" }) });
+      if (response.ok) setView("declined");
+    } catch {
+      /* the card stays; nothing was sent either way */
+    } finally {
+      setDeclining(false);
+    }
+  }
+
+  if (view === "granted") return null;
+  if (view === "declined") {
+    return (
+      <p className="m-0 text-caption font-semibold text-muted">
+        Okay, nothing is sent. You can turn it on in{" "}
+        <Link href="/privacy-choices" className="font-extrabold text-bubbles-pink-ink underline">
+          Privacy choices
+        </Link>
+        .
+      </p>
+    );
+  }
   return (
     <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[20px] bg-tint-sky p-4">
       <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
@@ -380,10 +428,18 @@ function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) 
         <button
           type="button"
           onClick={onAllow}
-          disabled={busy}
+          disabled={busy || declining}
           className="bubbles-press inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white disabled:cursor-wait disabled:opacity-70 sm:w-auto"
         >
           {busy ? "Saving..." : "Yes, allow and continue"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void decline()}
+          disabled={busy || declining}
+          className="bubbles-press inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-line-strong bg-surface px-5 text-body-sm font-extrabold text-ink disabled:cursor-wait disabled:opacity-70 sm:w-auto"
+        >
+          No, not now
         </button>
       </div>
       <p className="m-0 text-caption font-semibold text-bubbles-sky-deep">You can change this any time in Settings.</p>

@@ -11,6 +11,7 @@ import { warmApi } from "../../lib/warm-api";
 import { cleanCode, friendlyMfaError, isValidCode, needsSecondStep, verifiedTotp, type FactorLike } from "../../lib/mfa";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import { isNativeApp } from "../../lib/native";
+import { ackStore, rememberAcknowledgement } from "../lib/acknowledgement";
 
 type Mode = "login" | "signup" | "magic" | "reset";
 
@@ -37,6 +38,7 @@ function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [acknowledged, setAcknowledged] = useState(false);
   const [message, setMessage] = useState<{ kind: "error" | "info"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
   /** Offer "send the confirmation email again" (after sign-up, or when sign-in says the email is not confirmed). */
@@ -176,6 +178,10 @@ function LoginForm() {
         });
         setMessage(error ? { kind: "error", text: friendlyAuthError(error.message, (error as { code?: string }).code).text } : { kind: "info", text: "Check your inbox. Your sign-in link is on its way." });
       } else if (mode === "signup") {
+        if (!acknowledged) {
+          setMessage({ kind: "error", text: "Please tick that you have read the Terms and the Privacy notice." });
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -185,8 +191,10 @@ function LoginForm() {
         if (error) {
           setMessage({ kind: "error", text: friendlyAuthError(error.message, (error as { code?: string }).code).text });
         } else if (data.session) {
+          rememberAcknowledgement(ackStore());   // recorded on the server by the first signed-in request
           router.replace("/dashboard");
         } else {
+          rememberAcknowledgement(ackStore());
           setMessage({
             kind: "info",
             text: isNativeApp
@@ -316,6 +324,24 @@ function LoginForm() {
             <button type="button" onClick={() => switchMode("reset")} className="min-h-[44px] self-start text-body-sm font-extrabold text-bubbles-pink-ink underline">
               Forgot or never set a password?
             </button>
+          )}
+
+          {mode === "signup" && (
+            <label className="flex min-h-[44px] items-start gap-3 text-body-sm font-bold text-ink-soft">
+              <input
+                type="checkbox"
+                checked={acknowledged}
+                onChange={(e) => setAcknowledged(e.target.checked)}
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--bubbles-pink-ink)]"
+                required
+              />
+              <span>
+                I have read the{" "}
+                <Link href="/terms" className="font-extrabold text-bubbles-pink-ink underline">Terms</Link> and the{" "}
+                <Link href="/privacy" className="font-extrabold text-bubbles-pink-ink underline">Privacy notice</Link>.
+                <span className="block text-caption font-semibold">This is not a consent. Your privacy choices come later and are all off until you turn them on.</span>
+              </span>
+            </label>
           )}
 
           {!isNativeApp && mode !== "reset" && (

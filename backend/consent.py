@@ -326,9 +326,9 @@ def set_purpose(db: Any, uid: str, purpose: str, granted: bool, *, source: str =
     return purpose_state(db, uid, pid, _compute(db, uid))   # read fresh and not remembered: the next question reads it itself
 
 
-def set_ai_chat(db: Any, uid: str, accepted: bool) -> dict:
-    """The older single switch: a decision on ai_chat_processing."""
-    now = set_purpose(db, uid, "ai_chat_processing", bool(accepted), source="settings", hash_seen=text_hash("ai_chat_processing"))
+def set_ai_chat(db: Any, uid: str, accepted: bool, source: str = "settings") -> dict:
+    """The older single switch: a decision on ai_chat_processing (``source`` says which screen it came from)."""
+    now = set_purpose(db, uid, "ai_chat_processing", bool(accepted), source=source, hash_seen=text_hash("ai_chat_processing"))
     return {"ai_chat": now["granted"], "version": VERSION, "decided_at": now["decided_at"]}
 
 

@@ -78,6 +78,9 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         body = await body_of(request)
         if not isinstance(body.get("ai_chat"), bool):
             raise HTTPException(status_code=422, detail="ai_chat must be true or false")
-        return {"status": "success", **await run(consent.set_ai_chat, db, uid, body["ai_chat"])}
+        source = body.get("source", "settings")
+        if not isinstance(source, str):
+            raise HTTPException(status_code=422, detail="source must be text")
+        return {"status": "success", **await run(consent.set_ai_chat, db, uid, body["ai_chat"], source)}
 
     return router
