@@ -69,6 +69,7 @@ CONCEPT_ORGANS: dict[str, tuple[str, ...]] = {
     "headache": ("brain",), "dizziness": ("brain",), "seizure": ("brain",), "stroke_signs": ("brain",), "confusion": ("brain",),
     "numbness": ("brain",), "blurred_vision": ("brain", "eyes"), "anxiety": ("brain",), "low_mood": ("brain",), "insomnia": ("brain",),
     "suicidal_ideation": ("brain",), "self_harm": ("brain",),
+    "loneliness": ("brain",), "panic_attack": ("brain",), "separation_anxiety": ("brain",),
     "nausea": ("stomach_intestines",), "vomiting": ("stomach_intestines",), "persistent_vomiting": ("stomach_intestines",),
     "vomiting_blood": ("stomach_intestines",), "abdominal_pain": ("stomach_intestines",), "bloating": ("stomach_intestines",),
     "diarrhea": ("stomach_intestines",), "constipation": ("stomach_intestines",),
@@ -233,6 +234,10 @@ def observations(events: Iterable[dict], labs: Iterable[dict] = (), conditions: 
             score = _num(data.get("mood_score"), data.get("score"))
             if score is not None and 0 <= score <= 10:
                 out.append({**base, "kind": "mood", "label": "Mood", "value": score, "unit": "/10"})
+            for extra, label in (("stress_score", "Stress"), ("anxiety_score", "Anxiety")):   # the same check-in can carry these
+                v = _num(data.get(extra))
+                if v is not None and 0 <= v <= 10:
+                    out.append({**base, "kind": extra.split("_")[0], "label": label, "value": v, "unit": "/10"})
         elif kind == "stress":
             score = _num(data.get("score"), data.get("severity"))
             if score is not None and 0 <= score <= 10:
@@ -535,8 +540,9 @@ def _brain(org: _Organ, obs: list[dict]) -> None:
     sleep = [o for o in obs if o["kind"] == "sleep"]
     mood = [o for o in obs if o["kind"] == "mood"]
     stress = [o for o in obs if o["kind"] in ("stress", "stress_word")]
+    anxiety = [o for o in obs if o["kind"] == "anxiety"]
     symptoms = _symptoms_for(obs, "brain")
-    for kind, items in (("sleep", sleep), ("mood", mood), ("stress", stress), ("symptoms", symptoms)):
+    for kind, items in (("sleep", sleep), ("mood", mood), ("stress", stress), ("anxiety", anxiety), ("symptoms", symptoms)):
         org.add(kind, map(_item, items))
     org.need(bool(sleep), "Sleep: how long and how well")
     org.need(bool(mood), "Mood check-ins (0 to 10)")
@@ -561,6 +567,9 @@ def _brain(org: _Organ, obs: list[dict]) -> None:
     scored = [o for o in stress if o["kind"] == "stress"]
     if len(scored) >= least and mean(o["value"] for o in scored) >= K.STRESS_HIGH_AVERAGE:
         org.flag("worth_watching", f"Your stress averaged {_g(round(mean(o['value'] for o in scored), 1))}/10 across {_plural(len(scored), 'entry', 'entries')}.", map(_item, scored))
+    if len(anxiety) >= least and mean(o["value"] for o in anxiety) >= K.STRESS_HIGH_AVERAGE:
+        org.flag("worth_watching", f"Your anxiety scores averaged {_g(round(mean(o['value'] for o in anxiety), 1))}/10 across {_plural(len(anxiety), 'check-in')}. "
+                 "If it keeps feeling like a lot, talking to someone can help.", map(_item, anxiety))
     headaches = [o for o in symptoms if "headache" in o["concepts"] or "migraine" in o["text"].lower()]
     if _days(headaches) >= K.HEADACHE_DAYS_TALK:
         org.flag("talk_to_doctor", f"You logged headaches on {_days(headaches)} days. Headaches that often are worth a doctor's view.", map(_item, headaches))

@@ -21,7 +21,7 @@ def test_explicit_personal_facts():
     assert {f["key"] for f in facts} >= {"location","occupation"}
 
 def test_response_format():
-    out=normalize_response("First sentence. Second sentence. Third sentence.")
+    out=normalize_response("First sentence. Second sentence. Third sentence. Fourth sentence. Fifth sentence.")
     assert "\n" in out
 
 def test_personalization():

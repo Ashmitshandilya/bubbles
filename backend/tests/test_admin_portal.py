@@ -419,6 +419,7 @@ def test_a_made_up_method_or_a_huge_value_never_reaches_an_event(env):
 def test_delete_all_forgets_the_consent_answer_even_when_a_delete_fails(env, monkeypatch):
     assert consent.has_ai_consent(env.db, USER) is True               # remembered
     assert consent._cache.stats()["entries"] == 1
+    doc_store.put(env.db, USER, "plan", "p1", {"x": 1})               # something to delete
     real_table = env.db.table
 
     class Failing:
