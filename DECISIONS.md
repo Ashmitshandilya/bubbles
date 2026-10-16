@@ -170,6 +170,13 @@ Entry template:
 - Every tracker history list (weight and the other `History` lists) shows a Remove button with a yes/no step; the row leaves the list only after the server agrees, and the delete refreshes Today and the other screens like any other save.
 - Not done: deleting a weight the chat saved does not withdraw the matching memory note Bubbles kept from the same message.
 
+### 2026-10 · One value everywhere (trackers, Insights, Companion)
+- Where things live: each tracker saves to its own table; Insights, patterns and the doctor timeline read `extracted_health_events`, where a tracker save leaves a "mirror" event tagged with the entry id. A chat statement is a confirmed event that is also projected into the tracker table.
+- `DELETE /health/{tracker}/{id}` now removes the mirror too (and retracts a chat-saved weight with the same value on the same day); the earlier version left Insights counting deleted entries. New `PUT /health/{tracker}/{id}` changes the tracker row and rebuilds its mirror, so every reader agrees. Both are own-entries-only (404 otherwise).
+- Companion no longer depends on a copy: `latest_values_block.py` reads the newest weight, sleep, mood, water, activity and vitals entries straight from the tracker tables, plus height, and adds them to the chat context as "LATEST SAVED VALUES". A value saved or edited anywhere is what Companion says next; deleting it falls back to the previous real entry; an empty tracker is left out, never shown as zero.
+- Saving without a confirm step stays limited to plain, specific statements (own weight, own height). Everything else Bubbles picks up still waits for Save.
+- Not done: no Edit button in the apps yet (the API exists); chat-saved entries other than weight are not retracted when their tracker row is deleted; a database view or triggers were not added because the live schema has not been compared with the migrations.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.
