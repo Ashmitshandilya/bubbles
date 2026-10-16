@@ -8,6 +8,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from "../../components/hub/HubKit";
 import { ErrorNotice, LiveRegion, Notice, Panel } from "../../components/wellness/ui";
 import { useWellnessSend } from "../../components/wellness/useWellness";
 import { shortDay } from "../../app/lib/wellness-format";
+import { CRISIS_NOTE } from "./copy";
 import type { MindOverview, ScreenQuestions, ScreenResult } from "../../app/lib/wellness-types";
 
 const KINDS = [
@@ -52,7 +53,7 @@ export function Screens({ screen, onSaved }: { screen: MindOverview["screen"]; o
   }
 
   return (
-    <Panel id="check-ins" title="Gentle check-ins" kicker="Every two weeks or so">
+    <Panel bare id="check-ins" title="Gentle check-ins">
       <p className="m-0 text-body-sm text-muted">
         Two short questions that sometimes help you notice how things have been. This is a check-in, not a medical assessment, and it can&apos;t tell you if something is wrong.
       </p>
@@ -128,7 +129,7 @@ export function Screens({ screen, onSaved }: { screen: MindOverview["screen"]; o
           </button>
         </div>
       )}
-      <Notice tone="calm">If you ever feel you might harm yourself, please reach out right away: in India call 112, or Tele-MANAS on 14416 (free, 24x7). Elsewhere, call your local emergency number.</Notice>
+      <Notice tone="calm">{CRISIS_NOTE}</Notice>
     </Panel>
   );
 }
