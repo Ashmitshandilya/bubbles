@@ -565,12 +565,50 @@ html[data-native] .ah-tile[data-tone="mint"] { --ah-a: #4FE0B8; --ah-b: #13946F;
 html[data-native] .ah-tile[data-tone="peach"] { --ah-a: #FFB48A; --ah-b: #E86A3A; }
 html[data-native] .ah-tile[data-tone="sun"] { --ah-a: #FFD66B; --ah-b: #D99A00; }
 
+/* First-run permission step (components/PhoneReminderPrompt.tsx): full screen, the app's own sky. */
+html[data-native] .perm {
+  position: fixed; inset: 0; z-index: 80; overflow-y: auto; overscroll-behavior: contain;
+  background:
+    radial-gradient(110% 55% at 100% 0%, rgb(190 160 255 / 0.75), transparent 60%),
+    radial-gradient(90% 50% at 0% 100%, rgb(255 200 225 / 0.85), transparent 65%),
+    var(--bubbles-blush);
+  animation: sheet-up 380ms var(--ease-standard) both;
+}
+html[data-native] .perm-inner { display: flex; flex-direction: column; min-height: 100%; max-width: 30rem; margin: 0 auto; padding: max(28px, env(safe-area-inset-top)) 22px max(20px, env(safe-area-inset-bottom)); }
+html[data-native] .perm-mascot { align-self: center; margin-bottom: 8px; }
+html[data-native] .perm-title { margin: 0; text-align: center; font-family: var(--font-display); font-size: 1.9rem; line-height: 1.1; letter-spacing: -0.015em; color: var(--fg); }
+html[data-native] .perm-lede { margin: 10px 0 14px; text-align: center; color: var(--fg); opacity: 0.75; }
+html[data-native] .perm-preview {
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 22px;
+  background: rgb(255 255 255 / 0.88); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
+  box-shadow: 0 16px 36px rgb(106 69 245 / 0.18), inset 0 0 0 1px rgb(255 255 255 / 0.9);
+  animation: perm-drop 700ms 250ms var(--ease-standard) both;
+}
+@keyframes perm-drop { from { opacity: 0; transform: translateY(-18px) scale(0.97); } to { opacity: 1; transform: none; } }
+html[data-native] .perm-preview-icon { flex-shrink: 0; width: 38px; height: 38px; border-radius: 12px; background: url("/icon.svg") center / 120% no-repeat, linear-gradient(135deg, #8E5BFF, #E0306E); }
+html[data-native] .perm-preview-text { display: flex; flex-direction: column; min-width: 0; }
+html[data-native] .perm-preview-app { font-size: 0.72rem; font-weight: 700; opacity: 0.6; }
+html[data-native] .perm-preview-title { font-weight: 800; }
+html[data-native] .perm-preview-body { font-size: 0.9rem; opacity: 0.8; }
+html[data-native] .perm-reasons { display: flex; flex-direction: column; gap: 12px; margin: 20px 0 16px; padding: 0; list-style: none; }
+html[data-native] .perm-reasons li { display: flex; gap: 12px; align-items: flex-start; color: var(--fg); }
+html[data-native] .perm-check { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 10px; color: #fff; background: linear-gradient(135deg, #4FE0B8, #13946F); }
+html[data-native] .perm-reason-body { display: block; font-size: 0.9rem; opacity: 0.75; }
+html[data-native] .perm-crash { display: flex; gap: 10px; align-items: flex-start; min-height: 44px; padding: 12px 14px; border-radius: 18px; background: rgb(255 255 255 / 0.55); font-size: 0.88rem; color: var(--fg); }
+html[data-native] .perm-crash input { width: 20px; height: 20px; margin-top: 1px; accent-color: #6A45F5; flex-shrink: 0; }
+html[data-native] .perm-error { margin: 12px 0 0; font-weight: 700; color: var(--bubbles-pink-deep); }
+html[data-native] .perm-actions { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 20px; }
+html[data-native] .perm-primary { min-height: 56px; border: 0; border-radius: 999px; font-weight: 800; font-size: 1.05rem; color: #fff; background: linear-gradient(135deg, #D6246F, #8A3FE0); box-shadow: 0 14px 30px rgb(214 36 111 / 0.35); }
+html[data-native] .perm-later { min-height: 48px; border: 0; border-radius: 999px; font-weight: 800; color: var(--fg); background: rgb(255 255 255 / 0.5); }
+html[data-native] :is(.perm-primary, .perm-later):disabled { opacity: 0.6; }
+html[data-native] .perm-fine { margin: 12px 0 0; text-align: center; font-size: 0.75rem; opacity: 0.6; color: var(--fg); }
+
 @media (prefers-reduced-motion: reduce) {
   html[data-native] main { animation: none; }
   html[data-native] [data-tab][aria-current="page"] svg { animation: none; }
   html[data-native] :is(main a, main button, [role="dialog"] button):not(:disabled):active { transform: none; }
   html[data-native] .nw2-track { scroll-behavior: auto; }
-  html[data-native] dialog[open], html[data-native] .ah-hero-figure, html[data-native] .animate-pulse { animation: none; }
+  html[data-native] dialog[open], html[data-native] .ah-hero-figure, html[data-native] .animate-pulse, html[data-native] .perm, html[data-native] .perm-preview { animation: none; }
   html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press):active { transform: none; }
 }
 
