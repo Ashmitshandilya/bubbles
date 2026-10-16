@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BTN_PRIMARY, BTN_SECONDARY, CARD, ErrorCard } from "../../components/hub/HubKit";
 import { responseFailure } from "../../lib/api";
 import {
-  DOT_TONE, NONE, ago, clock, duration, eventSentence, healthTone, healthWords, humanize, kindLabel, mergeLive, ms, num, pct, providerTone,
+  DOT_TONE, NONE, ago, clock, duration, eventSentence, healthTone, healthWords, humanize, kindLabel, ms, num, pct, providerTone,
   sampleNote, shortId, type Health, type OpsEvent, type RangeId,
 } from "./format";
-import { Empty, LoadState, Panel, Pill, Refreshing, useAdmin, useAdminQuery, type ChainStep, type Persistence } from "./kit";
+import { Empty, LoadState, Panel, Pill, Refreshing, Stat, useAdmin, useAdminQuery, type ChainStep, type Persistence } from "./kit";
 
 /* ── Response shapes (backend/admin_api.py) ──────────────── */
 
@@ -47,7 +47,6 @@ type RouteRow = {
 };
 type ApiView = Meta & { summary: ApiSummary; routes: RouteRow[] };
 type EventsView = Meta & { events: OpsEvent[]; next_before: string | null };
-type LiveView = { events: OpsEvent[]; next_cursor: number; process_started_at: string; restarted: boolean; gap: boolean; refresh_seconds: number };
 type Setting = { key: string; type: "bool" | "int"; label: string; min?: number; max?: number; default: boolean | number; value: boolean | number; updated_at: string | null; updated_by: string | null };
 type SettingsView = { settings: Setting[]; persisted: boolean | null; chain: ChainStep[] };
 
@@ -56,16 +55,6 @@ const TD = "border-t border-line px-3 py-3 align-top";
 
 function Sampled({ meta }: { meta: Meta }) {
   return meta.capped ? <Pill tone="sun">Sampled, first {num(meta.cap)} events</Pill> : null;
-}
-
-function Stat({ label, value, note }: { label: string; value: string; note?: string | null }) {
-  return (
-    <div className="px-5 py-4">
-      <p className="m-0 text-label text-ink-soft">{label}</p>
-      <p className="m-0 mt-1 font-display text-metric tabular-nums">{value}</p>
-      {note && <p className="m-0 mt-1 text-body-sm text-muted">{note}</p>}
-    </div>
-  );
 }
 
 function Few({ n, min }: { n: number; min: number }) {
@@ -319,8 +308,6 @@ export function AiPanel({ range }: { range: RangeId }) {
   );
 }
 
-/* ── Live ────────────────────────────────────────────────── */
-
 function EventRow({ e }: { e: OpsEvent }) {
   const k = kindLabel(e.kind);
   return (
@@ -332,84 +319,6 @@ function EventRow({ e }: { e: OpsEvent }) {
       <span className="text-body-sm">{eventSentence(e)}</span>
       <span className="col-start-2 sm:col-start-auto"><RequestLink id={e.request_id} /></span>
     </li>
-  );
-}
-
-export function LivePanel() {
-  const { adminFetch, me } = useAdmin();
-  const [rows, setRows] = useState<OpsEvent[]>([]);
-  const [paused, setPaused] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [note, setNote] = useState<string | null>(null);
-  const [updated, setUpdated] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const cursor = useRef({ after: 0, started: null as string | null });
-  const every = me.live_refresh_seconds;
-
-  const poll = useCallback(async () => {
-    const { after, started } = cursor.current;
-    const q = `/admin/events/live?after=${after}${started ? `&process_started_at=${encodeURIComponent(started)}` : ""}`;
-    try {
-      const res = await adminFetch(q);
-      if (!res.ok) {
-        setError((await responseFailure(res)).message);
-        return;
-      }
-      const data = (await res.json()) as LiveView;
-      if (data.restarted) setNote(`Server restarted at ${clock(data.process_started_at)}. Earlier events are in Logs.`);
-      else if (data.gap) setNote("Some events went by faster than this page could show. All of them are in Logs.");
-      cursor.current = { after: data.next_cursor, started: data.process_started_at };
-      setRows((current) => mergeLive(data.restarted ? [] : current, data.events));
-      setUpdated(Date.now());
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Bubbles did not answer.");
-    }
-  }, [adminFetch]);
-
-  useEffect(() => {
-    const onVis = () => setHidden(document.hidden);
-    document.addEventListener("visibilitychange", onVis);
-    return () => document.removeEventListener("visibilitychange", onVis);
-  }, []);
-
-  useEffect(() => {
-    if (paused || hidden) return;
-    void poll();
-    const timer = window.setInterval(() => void poll(), every * 1000);
-    return () => window.clearInterval(timer);
-  }, [paused, hidden, poll, every]);
-
-  const [, tick] = useState(0);
-  useEffect(() => {
-    const t = window.setInterval(() => tick((n) => n + 1), 1000);
-    return () => window.clearInterval(t);
-  }, []);
-
-  return (
-    <Panel
-      title="Live"
-      id="live-title"
-      action={
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-body-sm text-muted" aria-live="off">
-            {hidden ? "Paused while this tab is in the background" : paused ? "Paused" :
-              updated ? `Updated ${Math.round((Date.now() - updated) / 1000)} s ago, refreshing every ${every} s` : "Connecting…"}
-          </span>
-          <button type="button" className={BTN_SECONDARY} onClick={() => setPaused((p) => !p)}>{paused ? "Resume" : "Pause"}</button>
-        </div>
-      }
-    >
-      {note && <p className="mb-3 rounded-2xl bg-tint-sky px-4 py-3 text-body-sm text-bubbles-sky-deep">{note}</p>}
-      {error && <p role="alert" className="mb-3 rounded-2xl bg-tint-urgent px-4 py-3 text-body-sm text-bubbles-urgent">{error}</p>}
-      {rows.length === 0 ? (
-        <Empty>Waiting for the next request. New events appear within {every} seconds.</Empty>
-      ) : (
-        <ol className="m-0 list-none divide-y-2 divide-line p-0" aria-label="Newest events first">
-          {rows.map((e) => <EventRow key={`${e.seq ?? e.id}-${e.at}`} e={e} />)}
-        </ol>
-      )}
-    </Panel>
   );
 }
 

@@ -510,10 +510,12 @@ def get_authenticated_user(authorization: str | None, *, fresh: bool = False):
     token = _bearer_token(authorization)
     if fresh:
         return _verify_token(token)
-    return _sign_in_cache.get_or_compute(
+    user = _sign_in_cache.get_or_compute(
         hashlib.sha256(token.encode("utf-8")).hexdigest(), lambda: _verify_token(token),
         ttl_for=lambda _user: (token_exp(token) or 0) - time.time(),
     )
+    ops_telemetry.bind_user(str(getattr(user, "id", "")))   # live admin view only: held in the memory ring, never stored or logged
+    return user
 
 
 def _verify_token(token: str):

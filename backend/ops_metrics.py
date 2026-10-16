@@ -5,6 +5,8 @@ MIN_SAMPLE attempts, otherwise it says there is not enough data yet.
 """
 from __future__ import annotations
 
+import os
+
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any, Iterable
@@ -216,6 +218,120 @@ def headline(*, database: str, persistence_mode: str, all_paused: bool, ai_now: 
     if persistence_mode != "stored":
         warn.append("Logs are kept in memory only." if persistence_mode in {"memory_only", "not_set_up"} else "Saving logs is failing.")
     return {"status": "fail" if fail else "warn" if warn else "ok", "reasons": fail + warn}
+
+
+# ---------------------------------------------------------------- Overall page (counters from ops_rollups.count_events)
+
+FEATURES: tuple[tuple[str, str], ...] = (
+    ("/chat", "Chat"), ("/onboarding", "Onboarding"), ("/experience", "Onboarding"), ("/wellness/mind", "Mind"), ("/mind", "Mind"),
+    ("/health", "Trackers"), ("/wellness", "Wellness"), ("/cycle", "Cycle"), ("/fitness", "Fitness"), ("/organs", "Body map"),
+    ("/body", "Body map"), ("/insights", "Insights"), ("/patterns", "Insights"), ("/notifications", "Notifications"),
+    ("/me/consent", "Privacy"), ("/consents", "Privacy"), ("/privacy", "Privacy"), ("/community", "Community"),
+    ("/partner", "Sharing"), ("/sharing", "Sharing"), ("/companion", "Today"), ("/profile", "Profile"), ("/memory", "Memory"),
+)
+
+
+def feature_of(route: str | None) -> str:
+    route = route or ""
+    return next((label for prefix, label in FEATURES if route == prefix or route.startswith(prefix + "/")), "Other")
+
+
+def cost(provider: str, model: str, tokens_in: int, tokens_out: int) -> dict[str, Any]:
+    """The Overall page's cost cell, worked out at read time by model_cost (the one cost rule): {'usd', 'basis'}."""
+    paid = os.getenv("ALLOW_PAID_AI", "false").strip().lower() in {"1", "true", "yes"}
+    got = model_cost(provider, model, tokens_in, tokens_out, paid_allowed=paid)
+    return {"usd": got["cost_usd"], "basis": got["label"]}
+
+
+def _hist(counters: dict[str, Counter], dim: str, prefix: str = "") -> dict[str, int]:
+    return {k[len(prefix):]: n for k, n in counters.get(dim, {}).items() if k.startswith(prefix)}
+
+
+def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterable[str]) -> dict[str, Any]:
+    """Everything the Overall page shows that comes from event counters. Pure. ``counters`` is Counter[(day, dim, key)]."""
+    import ops_rollups as r
+    t = r.totals(counters)
+    pair = lambda p: (r.percentile(p, 50), r.percentile(p, 95))  # noqa: E731
+    requests, chats = t["req"]["total"], t["chat"]["total"]
+    kinds = t["route_kind"]
+    kinds_known = sum(kinds.values())
+    mix = [{"route_kind": k, "count": n, "share": _rate(n, kinds_known)} for k, n in kinds.most_common()]
+    ai_n = kinds.get("ai", 0)
+    consent_n = kinds.get("consent_needed", 0)
+
+    providers: dict[tuple[str, str], dict[str, Any]] = {}
+    for key, n in t["attempt"].items():
+        provider, model, outcome = key.split("|")
+        row = providers.setdefault((provider, model), {"provider": provider, "model": model, "attempts": 0, "success": 0, "timeouts": 0,
+                                                       "answered_replies": 0, "tokens_in": 0, "tokens_out": 0})
+        row["attempts"] += n
+        row["success"] += n if outcome == "success" else 0
+        row["timeouts"] += n if outcome in {"timeout", "budget_spent"} else 0
+    for key, n in t["reply"].items():
+        provider, model, outcome = key.split("|")
+        if outcome == "answered":
+            providers.setdefault((provider, model), {"provider": provider, "model": model, "attempts": 0, "success": 0, "timeouts": 0,
+                                                     "answered_replies": 0, "tokens_in": 0, "tokens_out": 0})["answered_replies"] += n
+    for dim, field in (("tokens_in", "tokens_in"), ("tokens_out", "tokens_out")):
+        for key, n in t[dim].items():
+            provider, model = key.split("|")
+            if (provider, model) in providers:
+                providers[(provider, model)][field] += n
+    rows = []
+    for (provider, model), row in providers.items():
+        p50, p95 = pair(_hist(t, "hist.attempt", f"{provider}|{model}|"))
+        rows.append({**row, "failed": row["attempts"] - row["success"], "success_rate": _rate(row["success"], row["attempts"]),
+                     "timeout_rate": _rate(row["timeouts"], row["attempts"]), "p50_ms": p50, "p95_ms": p95,
+                     "cost": cost(provider, model, row["tokens_in"], row["tokens_out"])})
+    rows.sort(key=lambda x: (-x["answered_replies"], -x["attempts"]))
+
+    answered = sum(n for k, n in t["reply"].items() if k.endswith("|answered"))
+    degraded = sum(n for k, n in t["reply"].items() if k.endswith("|degraded"))
+    used = t["fallback"].get("used", 0)
+    attempts = sum(row["attempts"] for row in rows)
+    reply50, reply95 = pair(t.get("hist.reply", {}))
+    api50, api95 = pair(t.get("hist.api", {}))
+    chat50, chat95 = pair(t.get("hist.chat", {}))
+    stages = []
+    for name in stage_names:
+        p50, p95 = pair(t.get(f"hist.stage.{name}", {}))
+        stages.append({"stage": name, "n": sum(t.get(f"hist.stage.{name}", {}).values()), "p50_ms": p50, "p95_ms": p95})
+
+    by_route = [{"route": k, "requests": n, "errors_5xx": t["route5xx"].get(k, 0), "feature": feature_of(k.split(" ", 1)[-1])}
+                for k, n in t["route"].most_common()]
+    features: Counter = Counter()
+    for row in by_route:
+        features[row["feature"]] += row["requests"]
+    steps = list(funnel_steps)
+    first = max((t["funnel"].get(s, 0) for s in steps[:1]), default=0)
+    funnel = [{"step": s, "count": t["funnel"].get(s, 0), "of_first": _rate(t["funnel"].get(s, 0), first)} for s in steps]
+    crashes = Counter()
+    for key, n in t["client"].items():
+        crashes[key.split("|")[0]] += n
+
+    safety_days = r.per_day(counters, "safety")
+    return {
+        "totals": {"requests": requests, "chats": chats, "server_errors": sum(n for k, n in t["status"].items() if k == "5xx"),
+                   "onboarding_completed": t["funnel"].get("completed", 0)},
+        "latency": {"api": {"p50_ms": api50, "p95_ms": api95}, "chat": {"p50_ms": chat50, "p95_ms": chat95},
+                    "reply": {"p50_ms": reply50, "p95_ms": reply95}},
+        "ai": {"replies": answered + degraded, "answered": answered, "degraded": degraded,
+               "degraded_rate": _rate(degraded, answered + degraded), "fallback_used": used, "fallback_rate": _rate(used, answered),
+               "attempts": attempts, "timeouts": sum(row["timeouts"] for row in rows),
+               "timeout_rate": _rate(sum(row["timeouts"] for row in rows), attempts),
+               "ai_share": _rate(ai_n, kinds_known), "deterministic_share": _rate(kinds_known - ai_n - consent_n, kinds_known),
+               "consent_needed": consent_n, "consent_needed_rate": _rate(consent_n, kinds_known)},
+        "providers": rows,
+        "stages": stages,
+        "route_mix": mix,
+        "safety": {"totals": dict(t["safety"]), "per_day": [{"day": d, **{k: v.get(k, 0) for k in ("GREEN", "AMBER", "RED")}} for d, v in safety_days.items()]},
+        "features": [{"feature": f, "requests": n} for f, n in features.most_common()],
+        "routes": by_route[:60],
+        "funnel": funnel,
+        "errors": dict(t["error"]),
+        "status_classes": dict(t["status"]),
+        "client_crashes": dict(crashes),
+    }
 
 
 # ---------------------------------------------------------------- usage and cost (aggregates only: counts, rates, no user ids)

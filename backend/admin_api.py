@@ -17,13 +17,16 @@ from pydantic import BaseModel
 import admin_settings
 import ops_metrics
 import ops_telemetry
+import ops_rollups
+import ops_snapshots
 import ttl_cache
 
 RANGES = {"15m": timedelta(minutes=15), "1h": timedelta(hours=1), "6h": timedelta(hours=6), "24h": timedelta(hours=24),
           "7d": timedelta(days=7), "30d": timedelta(days=30)}
 RANGE_PATTERN = "^(15m|1h|6h|24h|7d|30d)$"
+OVERALL_RANGE_PATTERN = "^(1h|24h|7d|30d|all)$"
 NOW_WINDOW = timedelta(minutes=5)
-LIVE_REFRESH_SECONDS = 5
+LIVE_REFRESH_SECONDS = 3
 PAGE_MAX = 200
 _REQUEST_ID = re.compile(r"^[0-9a-f]{8,12}$")
 _KEY_ENV = {"Gemini": "GEMINI_API_KEY", "Groq": "GROQ_API_KEY", "NVIDIA": "NVIDIA_API_KEY", "Mistral": "MISTRAL_API_KEY"}
@@ -56,7 +59,8 @@ def _meta(source: str, capped: bool, range_: str | None = None) -> dict[str, Any
 def _persistence() -> dict[str, Any]:
     s = dict(ops_telemetry.status)
     return {"mode": s["mode"], "written": s["written"], "dropped": s["dropped"], "write_errors": s["write_errors"],
-            "last_write_at": s["last_write_at"], "last_prune_at": s["last_prune_at"], "retention_days": ops_telemetry.retention_days}
+            "last_write_at": s["last_write_at"], "last_prune_at": s["last_prune_at"], "retention_days": ops_telemetry.retention_days,
+            "new_kinds": s["new_kinds"]}
 
 
 def _chain() -> list[dict[str, Any]]:
@@ -153,7 +157,7 @@ def build_admin_router(database_report: Callable[[], dict[str, Any]]) -> APIRout
     @router.get("/events")
     def events(
         range_: str = Query("1h", alias="range", pattern=RANGE_PATTERN),
-        kind: str | None = Query(None, pattern="^(api|ai_attempt|ai_reply|error|audit)$"),
+        kind: str | None = Query(None, pattern="^(api|ai_attempt|ai_reply|error|audit|funnel|client)$"),
         provider: str | None = Query(None, max_length=40),
         outcome: str | None = Query(None, max_length=20),
         status_class: str | None = Query(None, alias="status", pattern="^[2345]xx$"),
@@ -188,15 +192,37 @@ def build_admin_router(database_report: Callable[[], dict[str, Any]]) -> APIRout
                 "next_before": page[-1]["at"] if len(matched) > limit else None}
 
     @router.get("/events/live")
-    def live(after: int = Query(0, ge=0), process_started_at: str | None = Query(None, max_length=40)):
+    @router.get("/live")
+    def live(after: int | None = Query(None, ge=0), since: int | None = Query(None, ge=0),
+             process_started_at: str | None = Query(None, max_length=40)):
+        """The live stream (cursor ``after``, alias ``since``). The only reader that returns ``uid``: it is kept in the in-memory
+        ring and shown to the admin who passed the gate; it is never stored or logged."""
+        cursor = after if after is not None else since or 0
         restarted = process_started_at is not None and process_started_at != ops_telemetry.STARTED_AT.isoformat()
-        rows = ops_telemetry.recent(0 if restarted else after, limit=PAGE_MAX)
+        rows = ops_telemetry.recent(0 if restarted else cursor, limit=PAGE_MAX, with_uid=True)
+        rows = [{**e, "feature": ops_metrics.feature_of(e["data"].get("route"))} if e["kind"] == "api" else e for e in rows]
         oldest = rows[0]["seq"] if rows else None
+        minute_ago = (_now() - timedelta(seconds=60)).isoformat()
+        recent = ops_telemetry.memory_events(_now() - timedelta(seconds=60))
         return {"status": "success", "generated_at": _now().isoformat(), "events": rows,
-                "next_cursor": rows[-1]["seq"] if rows else (0 if restarted else after),
+                "next_cursor": rows[-1]["seq"] if rows else (0 if restarted else cursor),
                 "process_started_at": ops_telemetry.STARTED_AT.isoformat(), "restarted": restarted,
-                "gap": bool(after and not restarted and oldest is not None and oldest > after + 1),
-                "refresh_seconds": LIVE_REFRESH_SECONDS}
+                "gap": bool(cursor and not restarted and oldest is not None and oldest > cursor + 1),
+                "refresh_seconds": LIVE_REFRESH_SECONDS,
+                "health": {"events_last_minute": len(recent), "persistence": ops_telemetry.status["mode"], "since": minute_ago}}
+
+    @router.get("/overall")
+    def overall(range_: str = Query("24h", alias="range", pattern=OVERALL_RANGE_PATTERN)):
+        """All-time insight: counters from rollups (durable) plus raw events after the watermark, and integer snapshots from the
+        tables that already exist. Counts only: no user id, row or text."""
+        now = _now()
+        db = ops_telemetry._db()
+        got = ops_rollups.collect(db, range_, now)
+        view = ops_metrics.overall_view(got["counters"], [f[6:-3] for f in ops_telemetry.STAGE_FIELDS], ops_telemetry.FUNNEL_STEPS)
+        people = ops_snapshots.users(db, now)
+        return {"status": "success", **_meta(got["source"], got["capped"], range_), **view,
+                "users": people, "consent": ops_snapshots.consent_rates(db), "community": ops_snapshots.community(db),
+                "push": ops_snapshots.push(db), "rollups": got["rollups"], "persistence": _persistence()}
 
     @router.get("/settings")
     def settings():
