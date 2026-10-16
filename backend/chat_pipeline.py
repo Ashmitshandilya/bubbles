@@ -44,6 +44,7 @@ SYMPTOMISH_TYPES = {"symptom", "menstrual_symptom", "medical_condition", "allerg
 MENSTRUAL_CONCEPTS = {"cramps", "spotting"}
 NON_SYMPTOM_CONCEPTS = {"period", "medication_use"}
 
+MAX_STORED_EVENTS = 100   # per reply; anything beyond is counted in metadata.health_events_more so the card can say "N more"
 KINDS = ("reply", "clarification", "emergency", "correction_ack", "daily_log_summary")
 
 
@@ -141,6 +142,47 @@ def load_history(db: Any, user_id: str, conversation_id: str, limit: int = HISTO
     return [r for r in reversed(rows) if isinstance(r, dict)]
 
 
+LIVE_STATUSES = ("pending", "confirmed", "rejected", "retracted", "superseded")
+_OVERLAY_CHUNK = 100
+
+
+def settled_statuses(db: Any, user_id: str, event_ids: list[str]) -> dict[str, str]:
+    """The real status of saved events, one owner-scoped query per 100 ids: ``{event_id: pending|confirmed|rejected|...}``.
+
+    The reply's stored snapshot says "pending" forever (the decision is made later, on the event row), so a reader that shows
+    saved cards must ask the rows. Another person's id is simply absent from the answer. Never raises: on a read problem the
+    snapshot status stays (the caller keeps what it had)."""
+    ids = [str(i) for i in dict.fromkeys(event_ids) if i]
+    out: dict[str, str] = {}
+    for start in range(0, len(ids), _OVERLAY_CHUNK):
+        try:
+            rows = (db.table("extracted_health_events").select("id,extraction_status,user_confirmed")
+                    .eq("user_id", user_id).in_("id", ids[start:start + _OVERLAY_CHUNK]).execute().data or [])
+        except Exception as error:  # noqa: BLE001
+            _log_failure("settled_statuses", error, user_id)
+            continue
+        for row in rows:
+            status = str(row.get("extraction_status") or "").strip().lower()
+            if status not in LIVE_STATUSES:
+                status = "pending"
+            if status == "pending" and row.get("user_confirmed") is True:
+                status = "confirmed"
+            out[str(row.get("id"))] = status
+    return out
+
+
+def overlay_event_status(db: Any, user_id: str, events_by_message: list[list[dict[str, Any]]]) -> None:
+    """Writes the settled status into every event dict (in place) with ONE round of queries for all the messages together."""
+    ids = [str(e.get("id")) for events in events_by_message for e in events if isinstance(e, dict) and e.get("id")]
+    if not ids:
+        return
+    settled = settled_statuses(db, user_id, ids)
+    for events in events_by_message:
+        for event in events:
+            if isinstance(event, dict) and str(event.get("id")) in settled:
+                event["status"] = settled[str(event["id"])]
+
+
 def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_id: str) -> dict[str, Any] | None:
     """The Bubbles reply already saved for this user message (an idempotent replay), if any."""
     try:
@@ -154,7 +196,8 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
         return None
     row = rows[0]
     meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
-    events = meta.get("health_events") if isinstance(meta.get("health_events"), list) else []
+    events = [dict(e) for e in meta.get("health_events") or [] if isinstance(e, dict)] if isinstance(meta.get("health_events"), list) else []
+    overlay_event_status(db, user_id, [events])   # a replay must not bring back cards the person already settled
     return {
         "response": row.get("content") or "",
         "sentiment": "neutral",
@@ -845,6 +888,8 @@ def event_summary(event_type: str, data: dict[str, Any]) -> str:
 
 def persist_events(db: Any, user_id: str, message_id: str | None, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Insert pending events (batch first, row-by-row on failure). Returns UI-ready events; id is None when not saved."""
+    if not events:
+        return []   # nothing to save: no need to read what is already stored (a round trip on every plain chat turn)
     existing = _existing_keys(db, user_id, message_id)
     todo = []
     for ev in events:
@@ -911,7 +956,8 @@ def stored_metadata(*, kind: str, user_message_id: str, safety: dict[str, Any], 
         "evidence": evidence_ids, "health_event_ids": [e["id"] for e in events],
         "health_events": [{"id": e["id"], "event_type": e["event_type"], "extracted_data": e["extracted_data"],
                            "summary": e.get("summary"), "confidence": e["confidence"], "status": e["status"], "assertion": e["assertion"], "temporal": e["temporal"]}
-                          for e in events][:30],
+                          for e in events][:MAX_STORED_EVENTS],
+        **({"health_events_more": len(events) - MAX_STORED_EVENTS} if len(events) > MAX_STORED_EVENTS else {}),
         "conflicts": conflicts[:5], "semantic_trace": trace,
         **({"evidence_package": package} if package else {}),   # audit trail: which engines ran and which facts/evidence were used
     }
