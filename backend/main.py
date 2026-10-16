@@ -45,6 +45,8 @@ from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
 from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
+from chat_counts import message_counts
+from schema_status import build_router as build_schema_router
 from onboarding_api import build_router as build_onboarding_router, style_block_for
 import consent as consent_module
 from consent import chat_prompt, has_ai_consent, persist_chat_events
@@ -553,6 +555,7 @@ app.include_router(build_import_router(get_authenticated_user, supabase))
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
 app.include_router(build_organ_map_router(get_authenticated_user, supabase))
+app.include_router(build_schema_router(supabase))
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
 
@@ -991,16 +994,10 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
                         .limit(limit)
                         .execute().data or [])
 
-        # Message count for each conversation, asked at the same time: one after another this was up to 50 round trips
-        # to the database before the chat screen could show anything.
-        def _count(conv: dict) -> int:
-            return (supabase.table("chat_messages")
-                    .select("id", count="exact", head=True)
-                    .eq("conversation_id", conv["id"])
-                    .execute().count or 0)
-        with ThreadPoolExecutor(max_workers=8, thread_name_prefix="history-count") as pool:
-            for conv, msg_count in zip(conversations, pool.map(_count, conversations)):
-                conv["message_count"] = msg_count
+        # One round trip for every count (chat_counts.py); it was one query per conversation, up to 50.
+        counts = message_counts(supabase, user_id, [c["id"] for c in conversations])
+        for conv in conversations:
+            conv["message_count"] = counts.get(str(conv["id"]), 0)
 
         return {"conversations": conversations}
     except Exception as e:

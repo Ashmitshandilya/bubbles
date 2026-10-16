@@ -253,6 +253,14 @@ def test_point_push_notifications_mirror_the_channel_switch(cenv):
     assert notifications.load_settings(cenv.db, USER)["channels"]["push"] is False
 
 
+def test_the_reminder_settings_cannot_turn_a_channel_on_without_its_purpose(cenv):
+    res = cenv.client.put("/notifications/settings", json={"channels": {"email": True, "push": True}}, headers=H)
+    assert res.status_code == 200 and res.json()["settings"]["channels"] == {"in_app": True, "email": False, "push": False}
+    put(cenv, "email_reminders", True)
+    res = cenv.client.put("/notifications/settings", json={"channels": {"email": True, "push": True}}, headers=H)
+    assert res.json()["settings"]["channels"] == {"in_app": True, "email": True, "push": False}
+
+
 def test_point_community_posting_helper_is_false_until_granted(cenv):
     assert consent.is_granted(cenv.db, USER, "community_visibility") is False
     put(cenv, "community_visibility", True)

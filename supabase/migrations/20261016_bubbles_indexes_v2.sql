@@ -53,3 +53,11 @@ commit;
 --   select indexname from pg_indexes where schemaname = 'public' and indexname in ('idx_health_events_user_time', 'idx_chat_messages_conversation_time');
 --   -- and a document read should now use the new index (look for bubbles_doc_user_title_idx in the plan):
 --   explain select * from public.health_events where user_id = '00000000-0000-0000-0000-000000000000' and event_type = 'bubbles_doc' and title = 'consent:ai_chat';
+
+-- Record that this migration was applied (only if 20261016_bubbles_schema_migrations.sql has been run). Safe to run twice.
+do $$
+begin
+  if to_regclass('public.bubbles_schema_migrations') is not null then
+    insert into public.bubbles_schema_migrations (name) values ('20261016_bubbles_indexes_v2') on conflict (name) do nothing;
+  end if;
+end $$;
