@@ -51,7 +51,10 @@ It is not a separate product: same code, same FastAPI backend, same Supabase pro
 - `allowBackup="false"` plus `data_extraction_rules.xml`: the session and cached health data are excluded from cloud
   backup and device-to-device transfer.
 - No cleartext HTTP, no mixed content, WebView debugging off, Capacitor logging off, release build not debuggable.
-- Only the `INTERNET` permission. No deep links / intent filters besides the launcher (no link-hijack surface).
+- Permissions: `INTERNET`, and `POST_NOTIFICATIONS` (asked only when the person turns on phone reminders). No deep links /
+  intent filters besides the launcher (no link-hijack surface).
+- Firebase (phone reminders, crash reports, tester builds) is built in only when `android/app/google-services.json` exists;
+  both features are off until the person turns them on, and Google Analytics is never used. See `docs/FIREBASE.md`.
 - The file provider exposes only the app's cache directory (used for the data-export share).
 - All data access goes through the backend with the user's bearer token, so RLS and owner scoping are identical to
   the website.
@@ -69,6 +72,7 @@ npm run android:release
 ```
 
 `npm run android:release -- --no-publish` builds and verifies without touching `public/android` (for device tests).
+Add `--distribute` to also send the APK to Firebase App Distribution testers (`docs/FIREBASE.md`).
 `scripts/build-android.mjs` then:
 
 1. checks the production API `/health`, the Supabase URL/key, and that the API URL is https;

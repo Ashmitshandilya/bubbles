@@ -1,15 +1,36 @@
 "use client";
 
 // Settings: notification channels, reminder types, quiet hours, daily cap, time zone.
-// In-app always works. Email is offered only when the server can send it; browser push is not offered at all.
+// In-app always works. Email is offered only when the server can send it. "On this phone" (Firebase Cloud Messaging) is offered
+// only in the Android app, built with Firebase, talking to a server that has it (docs/FIREBASE.md); browser push is not offered.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BTN_PRIMARY, BTN_SECONDARY } from "../hub/HubKit";
 import { Stepper } from "../tracking/kit";
 import { ErrorNotice, LiveRegion, QueryView, Switch, TimeField } from "./ui";
 import { useWellnessQuery, useWellnessSend } from "./useWellness";
 import { tzLabel, tzOffsetMinutes } from "../../app/lib/wellness-format";
 import type { NotificationSettings, NotificationSettingsResponse } from "../../app/lib/wellness-types";
+import { isNativeApp } from "../../lib/native";
+import { useApi } from "../Providers";
+import { phoneProblemMessage, phoneRow, pushTestMessage, pushToSave, type PushTestResult } from "../../app/lib/phone-reminders";
+
+/** Whether this build of the app has Firebase: null while asking the phone, false on the website. */
+function useFirebaseInBuild(): boolean | null {
+  const [configured, setConfigured] = useState<boolean | null>(isNativeApp ? null : false);
+  useEffect(() => {
+    if (!isNativeApp) return;
+    let active = true;
+    void import("../../lib/firebase-native")
+      .then((m) => m.firebaseStatus())
+      .then((status) => active && setConfigured(status.configured))
+      .catch(() => active && setConfigured(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+  return configured;
+}
 
 export function NotificationSettingsCard() {
   const [query, reload] = useWellnessQuery<NotificationSettingsResponse>("/notifications/settings", { tz: false });
@@ -35,11 +56,37 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
   const [error, setError] = useState("");
   const [said, setSaid] = useState("");
   const emailOk = data.channels.email.available;
+  const { fetchBubbles } = useApi();
+  const firebaseInBuild = useFirebaseInBuild();
+  const phone = phoneRow(isNativeApp, firebaseInBuild, data.channels.push.available);
+  const [connecting, setConnecting] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const patch = (p: Partial<NotificationSettings>) => {
     setDraft((d) => ({ ...d, ...p }));
     setSaid("");
   };
+
+  async function togglePhone(on: boolean) {
+    setError("");
+    setSaid("");
+    if (!on) return patch({ channels: { ...draft.channels, push: false } });
+    setConnecting(true);
+    // The tap is what lets Android show its notification prompt; the phone is connected now, the switch is saved below.
+    const result = await import("../../lib/firebase-native").then((m) => m.connectPhone(fetchBubbles, true)).catch(() => ({ ok: false as const, problem: "failed" as const }));
+    setConnecting(false);
+    if (!result.ok) return setError(phoneProblemMessage(result.problem));
+    patch({ channels: { ...draft.channels, push: true } });
+  }
+
+  async function sendTest() {
+    setTesting(true);
+    setError("");
+    const result = await send<PushTestResult>("/notifications/push/test", "POST", {}, { tz: false });
+    setTesting(false);
+    if (!result.ok) return setError(result.message);
+    setSaid(pushTestMessage(result.data));
+  }
 
   async function save() {
     const n = Number(cap);
@@ -50,7 +97,7 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
     setBusy(true);
     setError("");
     const body = {
-      channels: { in_app: draft.channels.in_app, email: emailOk && draft.channels.email, push: false },
+      channels: { in_app: draft.channels.in_app, email: emailOk && draft.channels.email, push: pushToSave(phone, draft.channels.push, saved.channels.push) },
       types: draft.types,
       quiet_hours: draft.quiet_hours,
       daily_cap: n,
@@ -59,6 +106,9 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
     const result = await send("/notifications/settings", "PUT", body, { tz: false });
     setBusy(false);
     if (!result.ok) return setError(`${result.message} Your changes are still here.`);
+    if (phone === "ready" && saved.channels.push && !body.channels.push) {
+      await import("../../lib/firebase-native").then((m) => m.disconnectPhone(fetchBubbles)).catch(() => undefined);
+    }
     setSaid("Reminder settings saved.");
     onSaved();
   }
@@ -76,6 +126,22 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
         <Switch label="In Bubbles" checked={draft.channels.in_app} onChange={(v) => patch({ channels: { ...draft.channels, in_app: v } })} />
         {emailOk && (
           <Switch label="Email" hint="Same plain text, to your sign-in email." checked={draft.channels.email} onChange={(v) => patch({ channels: { ...draft.channels, email: v } })} />
+        )}
+        {phone === "ready" && (
+          <Switch
+            label="On this phone"
+            hint={connecting ? "Connecting this phone…" : "Same plain text, delivered by Google Firebase."}
+            checked={draft.channels.push}
+            disabled={connecting}
+            onChange={(v) => void togglePhone(v)}
+          />
+        )}
+        {phone === "ready" && saved.channels.push && draft.channels.push && (
+          <div>
+            <button type="button" onClick={() => void sendTest()} disabled={testing} className={BTN_SECONDARY}>
+              {testing ? "Sending…" : "Send a test to this phone"}
+            </button>
+          </div>
         )}
       </fieldset>
 

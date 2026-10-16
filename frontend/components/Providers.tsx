@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { usePathname, useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
 import { needsSecondStep } from "../lib/mfa";
+import { isNativeApp } from "../lib/native";
 import {
   classifyFailure, createReconnectLoop, databaseStatusOf, failureFromError, mayReplayAfterTimeout, parseHealth, probeRetryDelay,
   shareInFlight, type DatabaseStatus, type HealthPayload,
@@ -155,6 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     apiCache.clear();
     resetExperience();
+    // The app deletes this phone's notification token first, so the next person to sign in here never gets these reminders.
+    if (isNativeApp) await import("../lib/firebase-native").then((m) => m.forgetPhoneOnSignOut()).catch(() => undefined);
     await supabase.auth.signOut();
     router.push("/login");
   }
@@ -521,6 +524,12 @@ function ExperienceProvider({ children }: { children: ReactNode }) {
     const fresh = experienceCache && experienceCache.uid === uid && Date.now() - experienceCache.at < EXPERIENCE_TTL_MS;
     if (!fresh) void load();
   }, [uid, load]);
+
+  // Android app: reconnect this phone for phone reminders if the person turned them on (no prompt; see lib/firebase-native.ts).
+  useEffect(() => {
+    if (!isNativeApp || !uid) return;
+    void import("../lib/firebase-native").then((m) => m.refreshPhone(uid, fetchBubbles)).catch(() => undefined);
+  }, [uid, fetchBubbles]);
 
   const decision = uid ? gateDecision(pathname, setup) : "pass";
   useEffect(() => {

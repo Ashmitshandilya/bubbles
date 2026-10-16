@@ -38,8 +38,8 @@ PURPOSES: dict[str, dict[str, Any]] = {
         "what": "Sends plain reminders (no health details) to your sign-in email. Off: reminders stay inside the app.",
     },
     "push_notifications": {
-        "title": "Reminders on your phone", "version": "2026-10a", "available": False,
-        "what": "Plain reminders (no health details) as phone notifications in the Android app. Coming soon.",
+        "title": "Reminders on your phone", "version": "2026-10b", "available": True,
+        "what": "Plain reminders (no health details) as notifications in the Android app, delivered by Google Firebase. Off: no phone notifications.",
     },
     "community_visibility": {
         "title": "Community", "version": "2026-10a", "available": False,
@@ -129,7 +129,7 @@ def forget(uid: str) -> None:
 
 
 def record_if_changed(db: Any, uid: str, purpose: str, granted: bool, source: str = "settings") -> None:
-    """Log a choice made through an existing switch (reminder email, partner sharing) only when it differs from the recorded answer. Never raises."""
+    """Log a choice made through an existing switch (reminder email or phone, partner sharing) only when it differs from the recorded answer. Never raises."""
     try:
         if _read(db, uid, purpose)[0] != bool(granted):
             set_purpose(db, uid, purpose, granted, source)
