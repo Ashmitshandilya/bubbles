@@ -453,8 +453,67 @@ html[data-native] .nw-actions .cw-fineprint { text-align: center; }
   html[data-native] .nw-actions { margin-top: 18px; }
 }
 
+/* ---------------- Android 2.0 ----------------
+   The app keeps the brand (pink, fonts, Bubbles) and changes the shell: a lilac-to-blush backdrop, an app bar with a big
+   title, a floating frosted dock, rounder cards, a gradient primary button, screens that rise into place and a press
+   feel on everything. Website untouched (all scoped to html[data-native]). */
+html[data-native] body {
+  background:
+    radial-gradient(120% 60% at 100% 0%, rgb(232 220 255 / 0.85), transparent 60%),
+    radial-gradient(90% 50% at 0% 100%, rgb(255 226 236 / 0.9), transparent 65%),
+    var(--bubbles-blush);
+  background-attachment: fixed;
+}
+html[data-native] .min-h-dvh.bg-blush { background-color: transparent; }
+
+/* Screens rise into place. */
+@keyframes app-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+html[data-native] main { animation: app-rise 320ms var(--ease-standard) both; }
+
+/* App bar: no rule, frosted, big title. */
+html[data-native] [data-app-bar] { border-bottom-color: transparent; background: rgb(255 246 250 / 0.72); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+html[data-native] [data-app-title] { font-size: 1.65rem; letter-spacing: -0.01em; }
+
+/* Floating frosted dock; the active tab sits in a soft pill and its icon pops. */
+html[data-native] nav[aria-label="Bubbles navigation"] { background: none; padding-left: 14px; padding-right: 14px; }
+html[data-native] [data-dock] {
+  border-color: rgb(255 255 255 / 0.7);
+  background: rgb(255 255 255 / 0.78);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 12px 32px rgb(214 36 111 / 0.18), 0 2px 6px rgb(43 26 63 / 0.06);
+}
+@keyframes tab-pop { 0% { transform: scale(0.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+html[data-native] [data-tab][aria-current="page"] { background: var(--tint-pink); }
+html[data-native] [data-tab][aria-current="page"] svg { animation: tab-pop 360ms var(--ease-standard) both; }
+
+/* Rounder, softer cards and a press feel. */
+html[data-native] main :is(.rounded-2xl, .rounded-3xl) { border-radius: 26px; }
+html[data-native] main :is(.shadow-sm, .shadow-md, .shadow) { box-shadow: 0 10px 28px rgb(214 36 111 / 0.10), 0 1px 3px rgb(43 26 63 / 0.05); }
+html[data-native] :is(main a, main button, [role="dialog"] button):not(:disabled) { transition: transform 140ms var(--ease-standard); }
+html[data-native] :is(main a, main button, [role="dialog"] button):not(:disabled):active { transform: scale(0.97); }
+
+/* Primary actions: pink into grape. */
+html[data-native] :is(.bg-bubbles-pink-deep, .bg-bubbles-pink-ink) { background-image: linear-gradient(135deg, var(--bubbles-pink-deep, #D6246F), #8A3FE0); }
+
+/* Welcome intro cards (app/IntroSlides.tsx). */
+html[data-native] .nw2-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
+html[data-native] .nw2-track::-webkit-scrollbar { display: none; }
+html[data-native] .nw2-slide { flex: 0 0 100%; scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; padding-right: 8px; }
+html[data-native] .nw2-kicker { margin: 0; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bubbles-pink-deep, #D6246F); }
+html[data-native] .nw2-title { margin: 0; font-family: var(--font-display, inherit); font-size: 2.2rem; line-height: 1.05; color: var(--fg); }
+html[data-native] .nw2-body { margin: 0; font-size: 1.02rem; line-height: 1.45; color: var(--fg); opacity: 0.8; }
+html[data-native] .nw2-dots { display: flex; align-items: center; gap: 8px; margin-top: 16px; min-height: 44px; }
+html[data-native] .nw2-dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; background: rgb(43 26 63 / 0.2); transition: width 240ms var(--ease-standard), background-color 240ms; }
+html[data-native] .nw2-dot[aria-current="true"] { width: 26px; background: var(--bubbles-pink-deep, #D6246F); }
+html[data-native] .nw2-next { margin-left: auto; min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: rgb(255 255 255 / 0.55); font-weight: 800; color: var(--fg); }
+@media (max-height: 700px) { html[data-native] .nw2-title { font-size: 1.8rem; } }
+
 @media (prefers-reduced-motion: reduce) {
   html[data-native] main { animation: none; }
+  html[data-native] [data-tab][aria-current="page"] svg { animation: none; }
+  html[data-native] :is(main a, main button, [role="dialog"] button):not(:disabled):active { transform: none; }
+  html[data-native] .nw2-track { scroll-behavior: auto; }
   html[data-native] nav[aria-label="Bubbles navigation"] :is(a, button):not(.bubbles-press):active { transform: none; }
 }
 

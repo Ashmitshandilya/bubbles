@@ -347,6 +347,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
         <Link
           href={item.href}
           aria-current={active ? "page" : undefined}
+          data-tab
           className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold no-underline ${
             active ? "text-bubbles-pink-ink" : "text-muted"
           }`}
@@ -364,7 +365,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
         className="lg:hidden sticky bottom-0 z-sticky px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-blush via-blush/95 to-transparent"
         aria-label="Bubbles navigation"
       >
-        <ul className="m-0 flex list-none items-end justify-around gap-1 rounded-full border border-line bg-surface px-2 py-1.5 shadow-lg">
+        <ul data-dock className="m-0 flex list-none items-end justify-around gap-1 rounded-full border border-line bg-surface px-2 py-1.5 shadow-lg">
           {tabLink(MOBILE_TABS[0])}
           {tabLink(MOBILE_TABS[1])}
           <li>
@@ -383,6 +384,8 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
               type="button"
               aria-haspopup="dialog"
               aria-expanded={moreOpen}
+              aria-current={!onTab ? "page" : undefined}
+              data-tab
               onClick={() => setMoreOpen(true)}
               className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold ${
                 !onTab ? "text-bubbles-pink-ink" : "text-muted"
@@ -409,14 +412,14 @@ export function Header({
 }) {
   return (
     <>
-      <header className="sticky top-0 z-sticky w-full border-b border-soft bg-blush/90 backdrop-blur-md">
+      <header data-app-bar className="sticky top-0 z-sticky w-full border-b border-soft bg-blush/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-gutter py-3">
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/dashboard" className="lg:hidden -ml-1 flex h-11 w-11 shrink-0 items-center justify-center no-underline text-default" aria-label="Bubbles home">
               <BubblesMascot size={36} animated={false} />
             </Link>
             {currentPage && (
-              <p className="m-0 truncate font-display text-h3 text-default">{currentPage}</p>
+              <p data-app-title className="m-0 truncate font-display text-h3 text-default">{currentPage}</p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">

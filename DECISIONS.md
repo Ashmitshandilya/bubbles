@@ -44,6 +44,13 @@ Entry template:
 
 ## 3. Decision log
 
+### 2026-10-17 · Android 2.0: its own opening and app feel (this PR)
+- What: app-only redesign, about half the website look kept (pink, fonts, Bubbles). New welcome with three swipeable intro cards and page dots (`app/IntroSlides.tsx`); app bar with a big title and frosted glass; floating frosted dock with an active pill and icon pop; lilac-to-blush backdrop, rounder cards, pink-to-grape primary buttons; screens rise into place and everything presses. First-run card "Get reminders on this phone?" (Turn on / Not now, once per phone; Turn on shows Android's prompt and logs the consent). Version 2.0.0 (5).
+- Why: the owner wants the app to feel like an app, not the website, while keeping the same accounts and setup.
+- Use: same account, same server-driven setup questions and same data as the website (one Supabase project, one API).
+- Where: `frontend/app/globals.css` (html[data-native], "Android 2.0"), `app/IntroSlides.tsx`, `app/NativeWelcome.tsx`, `components/Navigation.tsx` (data-dock, data-tab, data-app-bar hooks), `components/PhoneReminderPrompt.tsx`, `lib/firebase-native.ts`, `components/Providers.tsx`.
+- Notes: everything is scoped to the app build; the website is unchanged. All motion is off under reduced motion. Needs an APK build on the owner's PC (`npm run android:release`).
+
 ### 2026-10-16 · Firebase for the Android app: phone reminders, crash reports, tester builds (this PR)
 - What: (1) Phone reminders through Firebase Cloud Messaging: Settings → Reminders → "On this phone" (app only), device tokens as signed `push_device` documents, a background sweep that creates due reminders while the app is closed, "Send a test to this phone". The "Reminders on your phone" consent is now offered (wording version `2026-10b`). (2) Crashlytics crash reports, opt-in per phone (Settings → This device). (3) `npm run android:release -- --distribute` sends the APK to Firebase App Distribution testers. Privacy notice updated.
 - Why: the owner asked to add Firebase; the Android push gap was listed as not done in the chat-fixes entry below.
