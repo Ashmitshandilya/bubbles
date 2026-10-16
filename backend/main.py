@@ -658,8 +658,8 @@ def _persist_chat_message(*, user_id: str, conversation_id: str, role: str, cont
         # costs one round trip, not a read and then a write.
         saved = supabase.table("chat_messages").insert(payload).select("id").execute()
     except Exception as error:
-        # A retry (or a concurrent twin) hits the unique index. Resolve it by reading the winner rather than creating a second
-        # logical message.
+        # A concurrent retry can win the unique idempotency race (a plain repeat hits the same index). Resolve it by reading the winner
+        # rather than creating a second logical message.
         if client_message_id:
             winner = (supabase.table("chat_messages")
                       .select("id,conversation_id,role,content")
@@ -1115,8 +1115,8 @@ def chat_stream(request: ChatRequest, authorization: str | None = Header(default
             finished.set()
 
     def events():
+        threading.Thread(target=ctx.run, args=(work,), name="chat-stream", daemon=True).start()   # started first: a person who closes the tab still gets the reply saved
         yield _sse("meta", state.meta())
-        threading.Thread(target=ctx.run, args=(work,), name="chat-stream", daemon=True).start()
         while not finished.wait(timeout=10):
             yield ": ping\n\n"   # keeps proxies from closing a quiet connection while the model thinks
         if "error" in result:

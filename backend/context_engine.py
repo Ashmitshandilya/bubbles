@@ -9,6 +9,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+import memory_retrieval
 from event_filters import clean_data, counts_as_observation, event_moment, pertinent_negatives
 from ttl_cache import TTLCache
 
@@ -94,7 +95,6 @@ def build_user_context(user_id: str, query: str) -> dict[str, Any]:
     """The person's own context for a reply. The four reads (events, memory items, profile, preferences) are independent, so they
     run side by side: one round trip of waiting instead of five. One event read serves both memory retrieval and the recent-events
     list (they used to read the same table twice)."""
-    import memory_retrieval
     from chat_concurrency import settled, submit_io
 
     user_id = str(user_id)

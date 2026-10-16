@@ -487,10 +487,10 @@ def build_experience(answers: dict[str, Any], today: date) -> dict[str, Any]:
 
     if age is not None and age >= 30 and answers.get("bp_sugar_check") in ("one_to_three_years", "longer_or_never", "not_sure"):
         item("bp_sugar", "Blood pressure and blood sugar check",
-             "Worth asking your doctor how often a blood pressure and sugar check is right for you.", "Bubbles")
+             "It is worth asking your doctor how often a blood pressure and sugar check is right for you.", "Bubbles")
     if body in STRICT_REPRO and age is not None and 30 <= age < 66 and answers.get("cervical_screen") in ("longer_ago", "never", "not_sure"):
         item("cervical_screening", "Cervical screening",
-             "Worth asking your doctor whether a cervical screening is due for you.", "Bubbles")
+             "It is worth asking your doctor whether a cervical screening is due for you.", "Bubbles")
     if "diabetes" in conds and answers.get("last_eye_exam") != "within_year":
         item("eye_exam_diabetes", "Eye exam for diabetes",
              "With diabetes, a regular eye exam is worth having. Ask your doctor how often you need it.", "Bubbles")
