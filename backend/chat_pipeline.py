@@ -871,6 +871,8 @@ def event_summary(event_type: str, data: dict[str, Any]) -> str:
 
 def persist_events(db: Any, user_id: str, message_id: str | None, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Insert pending events (batch first, row-by-row on failure). Returns UI-ready events; id is None when not saved."""
+    if not events:
+        return []   # nothing to save: skip the database read a plain "hi" never needed
     existing = _existing_keys(db, user_id, message_id)
     todo = []
     for ev in events:

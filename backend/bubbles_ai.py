@@ -178,26 +178,35 @@ def _call_gemini_inner(
 
     # The SDK waits forever by default: a stuck call would hold the reply until the browser gave up. Cap it so the
     # fallback pool still has time inside the reply budget.
-    timeout = call_timeout(float(os.getenv("GEMINI_TIMEOUT_S", "25")))
+    timeout = call_timeout(float(os.getenv("GEMINI_TIMEOUT_S", "12")))
     client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=int(timeout * 1000)))
 
     response_schema = BubblesAIResponse.model_json_schema()
 
     import time
     started = time.perf_counter()
-    response = client.models.generate_content(
-        model=os.getenv(
-            "GEMINI_MODEL",
-            "gemini-3-flash-preview",
-        ),
-        contents=message,
-        config=types.GenerateContentConfig(
-            system_instruction=system_instruction,
-            temperature=0.2,
-            response_mime_type="application/json",
-            response_schema=response_schema,
-        ),
-    )
+    def _generate(with_thinking: bool):
+        extra = {"thinking_config": types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL)} if with_thinking else {}
+        return client.models.generate_content(
+            model=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview"),
+            contents=message,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.2,
+                response_mime_type="application/json",
+                response_schema=response_schema,
+                max_output_tokens=900,   # generous on purpose: the reply is JSON, and a cut-off one would be invalid
+                **extra,
+            ),
+        )
+
+    # A chat reply needs no long "thinking": minimal thinking is several seconds faster. A model that does not accept the setting is asked again without it.
+    try:
+        response = _generate(True)
+    except Exception as error:  # noqa: BLE001
+        if "thinking" not in str(error).lower():
+            raise
+        response = _generate(False)
 
     if not response.text:
         raise ProviderError(
