@@ -37,6 +37,7 @@ SOURCES = ("settings", "chat_card", "onboarding", "system", "signup")
 ACK_PURPOSE = "ack_terms_privacy"
 REASK_AFTER_DAYS = 14
 MAX_HISTORY = 500
+LEDGER_FIELDS = ("id", "purpose", "granted", "policy_version", "text_version", "text_hash", "source", "created_at")
 
 URGENT_LINE = "If something feels urgent, call your local emergency number."
 
@@ -149,14 +150,14 @@ def _table_events(db: Any, uid: str) -> list[dict] | None:
     if not _table_usable():
         return None
     try:
-        rows = (db.table(TABLE).select("id,purpose,granted,policy_version,text_version,text_hash,source,created_at")
+        rows = (db.table(TABLE).select(",".join(LEDGER_FIELDS))
                 .eq("user_id", uid).order("created_at", desc=True).limit(MAX_HISTORY).execute().data or [])
     except Exception as exc:  # noqa: BLE001
         if not _is_missing(exc):
             raise
         _mark_table(False)
         return None
-    return [r for r in rows if isinstance(r, dict)]
+    return [{k: r.get(k) for k in LEDGER_FIELDS} for r in rows if isinstance(r, dict)]
 
 
 def _doc_events(db: Any, uid: str) -> list[dict]:

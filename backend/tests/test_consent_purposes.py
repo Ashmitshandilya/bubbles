@@ -38,7 +38,7 @@ def cenv(request, env):  # noqa: F811
 def put(env, purpose, granted, *, source="settings", seen="auto", h=H):
     body = {"granted": granted, "source": source}
     if seen == "auto" and granted:
-        seen = consent.text_hash(purpose)
+        seen = consent.text_hash(purpose) if purpose in consent.PURPOSES else None
     if seen not in ("auto", None):
         body["text_hash"] = seen
     return env.client.put(f"/consents/{purpose}", json=body, headers=h)
@@ -181,7 +181,7 @@ def test_point_chat_events_need_health_memory_from_chat(cenv):
 
 
 def test_explicit_tracker_logs_still_save_without_the_chat_purpose(cenv):
-    res = cenv.client.post("/health/sleep", json={"sleep_date": "2026-10-14", "duration_minutes": 420, "sleep_quality": 4}, headers=H)
+    res = cenv.client.post("/health/sleep", json={"date": "2026-10-14", "duration": 7, "quality": 4}, headers=H)
     assert res.status_code == 201, res.text
 
 
