@@ -38,7 +38,6 @@ from memory_promotion import promote_health_event
 from rag import hybrid_search, build_evidence_context
 from evidence_package import build_package, package_audit, plan_task
 from health_event_pipeline import prepare_db_row
-from health_event_projection import project_confirmed_event
 from health_logs import build_router as build_health_logs_router
 from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
@@ -63,6 +62,7 @@ from chat_pipeline import (
 from conversation_correction import apply_correction, contradiction_note
 from health_semantics import display_name
 from event_filters import DEAD_STATUSES, event_moment
+from health_event_confirm import build_router as build_confirm_router
 from db_access import database_permission_response, is_permission_denied, probe_database, register_db_error_handlers
 from weekly_insights import build_weekly_insights, to_response_shape as weekly_insights_response_shape
 from pattern_engine import analyze as analyze_patterns
@@ -546,6 +546,7 @@ app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_consent_router(get_authenticated_user, supabase))
+app.include_router(build_confirm_router(get_authenticated_user, supabase))   # POST /health-events/confirmation (batch) + the old single PATCH
 app.include_router(build_onboarding_router(get_authenticated_user, supabase))
 app.include_router(build_import_router(get_authenticated_user, supabase))
 # Cycle: calendar, daily log, predictions with ranges, modes, insights, report, partner view.
@@ -1306,123 +1307,6 @@ def rag_search(
 # --------------------------------------------------
 # HEALTH EVENT CONFIRMATION
 # --------------------------------------------------
-
-class HealthEventConfirmationRequest(BaseModel):
-    confirmed: bool
-
-
-def _confirm_event(user_id: str, event_id: str, confirmed: bool) -> dict:
-    """Save one confirm/dismiss decision (shared by the single and the batch route)."""
-    try:
-        event_id = str(UUID(event_id))   # ids are UUIDs: anything else cannot exist, so it is "not found" and never reaches the database
-    except ValueError:
-        raise HTTPException(status_code=404, detail="That item was not found.")
-    if confirmed:
-        # A rejected/retracted/superseded event (e.g. withdrawn by a correction) must not come back to life.
-        current = (supabase.table("extracted_health_events").select("id, extraction_status")
-                   .eq("id", event_id).eq("user_id", user_id).limit(1).execute().data or [])
-        if current and (current[0].get("extraction_status") or "pending") in DEAD_STATUSES:
-            raise HTTPException(status_code=409, detail="This item was withdrawn and can no longer be saved.")
-    try:
-        result = (
-            supabase.table("extracted_health_events")
-            .update({
-                "user_confirmed": confirmed,
-                "extraction_status": "confirmed" if confirmed else "rejected",
-            })
-            .eq("id", event_id)
-            .eq("user_id", user_id)
-            .select("id, message_id, event_type, extracted_data, confidence, user_confirmed, extraction_status")
-            .execute()
-        )
-    except Exception as error:
-        from logging_util import logger
-        logger.error(
-            component="HEALTH_EVENT",
-            operation="confirm_health_event",
-            error=error,
-            user_id=user_id,
-            context={"event_id": event_id, "confirmed": confirmed},
-            fallback_action="raising_http_exception",
-        )
-        raise HTTPException(status_code=500, detail="Unable to update health event") from error
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Health event not found")
-
-    event = result.data[0]
-    projection = None
-    if confirmed:
-        try:
-            projection = project_confirmed_event(
-                db=supabase,
-                user_id=user_id,
-                event_id=str(event["id"]),
-                event_type=str(event["event_type"]),
-                extracted_data=event.get("extracted_data") or {},
-                confidence=float(event.get("confidence") or 0),
-                message_id=event.get("message_id"),
-            )
-        except Exception as error:
-            if is_permission_denied(error):
-                # The canonical tables are not writable yet (database permissions not applied). The confirmation is
-                # stored on the event itself, and every analytics reader uses that table, so nothing is lost; say
-                # plainly that the canonical copy is pending instead of failing the user's click.
-                return {"status": "success", "event": event,
-                        "projection": {"status": "compat", "domain_table": None, "reason": "database_permission_denied"}}
-            # Keep the staging confirmation intact, but surface that canonical
-            # projection needs retry rather than silently claiming it succeeded.
-            from logging_util import logger
-            logger.error(
-                component="HEALTH_EVENT",
-                operation="project_confirmed_event",
-                error=error,
-                user_id=user_id,
-                context={"event_id": str(event["id"]), "event_type": str(event["event_type"])},
-                fallback_action="raising_http_exception",
-            )
-            # The decision itself is saved and durable: report it as saved and say the canonical copy will be retried, instead of
-            # turning a stored decision into an error the person has to press again.
-            return {"status": "success", "event": event,
-                    "projection": {"status": "queued", "domain_table": None, "reason": "projection_failed_will_retry"}}
-
-    return {"status": "success", "event": event, "projection": projection}
-
-
-@app.patch("/health-events/{event_id}/confirmation")
-def confirm_health_event(
-    event_id: str,
-    request: HealthEventConfirmationRequest,
-    authorization: str | None = Header(default=None),
-):
-    user = get_authenticated_user(authorization)
-    return _confirm_event(str(user.id), event_id, request.confirmed)
-
-
-class HealthEventDecision(BaseModel):
-    id: str
-    confirmed: bool
-
-
-class HealthEventBatchRequest(BaseModel):
-    decisions: list[HealthEventDecision] = Field(min_length=1, max_length=30)
-
-
-@app.post("/health-events/confirmation")
-def confirm_health_events_batch(request: HealthEventBatchRequest, authorization: str | None = Header(default=None)):
-    """Save many decisions in one request (one sign-in check). Each id answers on its own, so one failure never undoes the others."""
-    user_id = str(get_authenticated_user(authorization).id)
-
-    def one(decision: HealthEventDecision) -> dict:
-        try:
-            out = _confirm_event(user_id, decision.id, decision.confirmed)
-            return {"id": decision.id, "status": "confirmed" if decision.confirmed else "rejected",
-                    "projection": (out.get("projection") or {}).get("status") or ("done" if decision.confirmed else None)}
-        except HTTPException as error:
-            return {"id": decision.id, "status": "error", "code": error.status_code, "detail": error.detail}
-
-    with ThreadPoolExecutor(max_workers=6, thread_name_prefix="confirm") as pool:
-        results = list(pool.map(one, request.decisions))
-    return {"status": "success", "results": results}
 
 # --------------------------------------------------
 # MEMORY PROMOTION

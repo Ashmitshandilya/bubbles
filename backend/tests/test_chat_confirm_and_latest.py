@@ -60,36 +60,6 @@ def test_a_reloaded_chat_shows_the_saved_state_not_pending(client):
     assert _statuses(c.get(f"/chat/conversations/{CONV}/messages", headers=H).json()) == {E1: "confirmed", E2: "rejected"}
 
 
-def test_batch_confirmation_saves_many_in_one_request_and_only_your_own(client, monkeypatch):
-    c, db = client
-    monkeypatch.setattr(main, "project_confirmed_event", lambda **_k: {"status": "done"})
-    r = c.post("/health-events/confirmation", headers=H, json={"decisions": [
-        {"id": E1, "confirmed": True}, {"id": E2, "confirmed": False}, {"id": E3, "confirmed": True}]})
-    assert r.status_code == 200
-    results = {x["id"]: x for x in r.json()["results"]}
-    assert results[E1]["status"] == "confirmed" and results[E2]["status"] == "rejected"
-    assert results[E3]["status"] == "error" and results[E3]["code"] == 404      # somebody else's event is not found, never changed
-    rows = {row["id"]: row for row in db.table("extracted_health_events").select("*").execute().data}
-    assert rows[E1]["extraction_status"] == "confirmed" and rows[E2]["extraction_status"] == "rejected" and rows[E3]["extraction_status"] == "pending"
-
-
-def test_a_projection_failure_does_not_turn_a_saved_decision_into_an_error(client, monkeypatch):
-    c, _db = client
-
-    def boom(**_k):
-        raise RuntimeError("canonical table hiccup")
-    monkeypatch.setattr(main, "project_confirmed_event", boom)
-    r = c.patch(f"/health-events/{E1}/confirmation", headers=H, json={"confirmed": True})
-    assert r.status_code == 200 and r.json()["projection"]["status"] == "queued"
-
-
-def test_batch_rejects_an_empty_or_oversized_list(client):
-    c, _ = client
-    assert c.post("/health-events/confirmation", headers=H, json={"decisions": []}).status_code == 422
-    big = [{"id": E1, "confirmed": True}] * 31
-    assert c.post("/health-events/confirmation", headers=H, json={"decisions": big}).status_code == 422
-
-
 def test_latest_opens_the_newest_conversation_with_saved_states(client):
     c, db = client
     db.table("extracted_health_events").update({"extraction_status": "confirmed"}).eq("id", E1).execute()
