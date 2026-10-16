@@ -8,7 +8,6 @@ import { COMPAT_FIX_FILE, MESSAGES, databaseSummary } from "../lib/connection";
 import type { PartnerSharingStatus } from "../lib/partner-sharing";
 import { VeilSwitch } from "../../components/PrivacyVeil";
 import { KeepSignedInRow, TwoStepCard } from "../../components/settings/SignInSecurity";
-import { AiConsentRow } from "../../components/settings/AiConsentRow";
 import { NotificationSettingsCard } from "../../components/wellness/NotificationSettingsCard";
 import { YourDataCard } from "../../components/wellness/YourDataCard";
 import { partnerSummary } from "./summary";
@@ -109,10 +108,10 @@ function Settings() {
 
       <Group id="privacy" title="Privacy and data">
         <ul className="m-0 list-none divide-y-2 divide-line overflow-hidden p-0">
+          <LinkRow href="/privacy-choices" label="Privacy choices" />
           <LinkRow href="/privacy" label="Privacy notice" />
           <LinkRow href="/terms" label="Terms of use" />
         </ul>
-        <AiConsentRow />
         <YourDataCard />
       </Group>
 

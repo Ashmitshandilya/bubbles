@@ -10,6 +10,7 @@ import {
 } from "../app/lib/connection";
 import { createApiCache } from "../app/lib/api-cache";
 import { gateDecision, readExperience, readSetupState, type Experience, type SetupState } from "../app/lib/experience";
+import { ackStore, flushAcknowledgement } from "../app/lib/acknowledgement";
 import { BubblesMascot } from "./BubblesMascot";
 
 type User = {
@@ -521,6 +522,12 @@ function ExperienceProvider({ children }: { children: ReactNode }) {
     const fresh = experienceCache && experienceCache.uid === uid && Date.now() - experienceCache.at < EXPERIENCE_TTL_MS;
     if (!fresh) void load();
   }, [uid, load]);
+
+  // A sign-up acknowledgement made before this account could call the server is recorded now (once; kept for the next try if it fails).
+  useEffect(() => {
+    if (!uid) return;
+    void flushAcknowledgement(ackStore(), async (version) => (await fetchBubbles("/consents/acknowledgements", { method: "POST", body: JSON.stringify({ version }) })).ok);
+  }, [uid, fetchBubbles]);
 
   const decision = uid ? gateDecision(pathname, setup) : "pass";
   useEffect(() => {

@@ -263,7 +263,7 @@ export function CompanionClient() {
               ].slice(0, 4)
             : [],
           healthEvents: adaptHealthEvents(body?.health_events, body?.health_event_ids),
-          consentRequired: body?.consent_required === true,
+          consentRequired: body?.consent_required === true && body?.consent_ask !== false, // a recent "No" gets a calm line, not the card again
         };
         // The user's bubble takes the server id; the correction (if any) withdraws the earlier warning in place;
         // the reply is upserted so a replayed response can never render twice.
@@ -470,7 +470,7 @@ export function CompanionClient() {
     async (replyId: string) => {
       setConsentBusy(true);
       try {
-        const response = await fetchBubbles("/me/consent", { method: "PUT", body: JSON.stringify({ ai_chat: true }) });
+        const response = await fetchBubbles("/me/consent", { method: "PUT", body: JSON.stringify({ ai_chat: true, source: "chat_card" }) });
         if (!response.ok) throw new Error(`consent ${response.status}`);
         clearDecline();
         setDeclined(false);

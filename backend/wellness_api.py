@@ -17,6 +17,7 @@ from starlette.concurrency import run_in_threadpool
 
 import association_loader as AL
 import clinical_constants as K
+import consent
 import doc_store
 import hydration_engine as H
 import med_schedule as M
@@ -540,6 +541,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
 
     def settings_put(uid: str, body: dict) -> dict:
         s = N.normalize_settings(body, N.load_settings(db, uid))
+        for channel, purpose in (("email", "email_reminders"), ("push", "push_notifications")):
+            s["channels"][channel] = s["channels"][channel] and consent.is_granted(db, uid, purpose)   # the switch follows Privacy choices
         N.save_settings(db, uid, s)
         return ok(settings=s, channels=N.channel_status())
 
