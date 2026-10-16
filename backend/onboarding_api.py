@@ -106,7 +106,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     @router.get("/onboarding/questions")
     def questions(authorization: str | None = Header(default=None)):
         uid_of(authorization)
-        return {"status": "success", "version": ob.BANK_VERSION, "steps": ob.STEPS, "questions": ob.QUESTIONS, "titles_hi": ob.TITLES_HI,
+        return {"status": "success", "version": ob.BANK_VERSION, "steps": ob.STEPS, "screens": ob.SCREENS, "questions": ob.QUESTIONS, "titles_hi": ob.TITLES_HI,
                 "required": list(ob.REQUIRED), "min_age": ob.MIN_AGE}
 
     @router.get("/onboarding/state")

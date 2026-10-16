@@ -31,6 +31,13 @@ BODIES = ("female", "male", "trans", "other", "prefer_not")
 REPRO = ("female", "trans", "other", "prefer_not")   # may have periods: the question is asked and "I don't get periods" is an answer. Never a male body.
 STRICT_REPRO = ("female",)                           # pregnancy, menopause and cervical-screening questions
 
+#: Questions sharing a `screen` id are asked together on one screen (title below). A question without one gets its own screen.
+SCREENS: dict[str, str] = {
+    "about": "About you",
+    "body_basics": "Your body", "food": "Food", "health_basics": "Health basics", "talk": "How Bubbles talks",
+    "support": "Looking after you", "cycle": "Your cycle",
+}
+
 #: free-text answers: each goes through the safety engine before it is stored (onboarding_api.py)
 FREE_TEXT = ("conditions_other", "drains_other")
 
@@ -67,23 +74,23 @@ QUESTIONS: list[dict[str, Any]] = [
     # ---- core: the first screen is the body question with the language row beside it; the date of birth is saved in the same request
     _q("body", "core", "single", "Which best describes you?",
        "This picks your body map and whether Cycle shows. You can change it any time.",
-       options=[_o("female", "Female"), _o("male", "Male"), _o("trans", "Transgender"), _o("other", "Other"), _o("prefer_not", "Prefer not to say")]),
-    _q("language", "core", "single", "Which language feels easiest?", screen_with="body",
-       options=[_o("english", "English"), _o("hinglish", "Hinglish"), _o("hindi", "Hindi")]),
-    _q("birth_date", "core", "date", "When were you born?", "Bubbles is for people 18 and over for now."),
-    _q("preferred_name", "core", "text", "What should Bubbles call you?", maxlength=40),
+       options=[_o("female", "Female"), _o("male", "Male"), _o("trans", "Transgender"), _o("other", "Other"), _o("prefer_not", "Prefer not to say")], screen="first"),
+    _q("language", "core", "single", "Which language feels easiest?",
+       options=[_o("english", "English"), _o("hinglish", "Hinglish"), _o("hindi", "Hindi")], screen="first"),
+    _q("birth_date", "core", "date", "When were you born?", "Bubbles is for people 18 and over for now.", screen="about"),
+    _q("preferred_name", "core", "text", "What should Bubbles call you?", maxlength=40, screen="about"),
     _q("main_goal", "core", "single", "What would you like help with most?", options=[
         _o("sleep", "Sleep"), _o("stress_mood", "Stress and mood"), _o("fitness_weight", "Fitness and weight"), _o("food", "Food"),
         _o("manage_condition", "Managing a condition"), _o("understand_symptoms", "Understanding symptoms"), _o("doctor_visits", "Doctor visits"),
         _o("cycle", "My cycle", {"body_in": list(REPRO)}), _o("just_exploring", "Just exploring")]),
     _q("conditions_any", "core", "single", "Has a doctor ever told you that you have a long-term condition?",
        options=[_o("yes", "Yes"), _o("no", "No"), _o("prefer_not", "Prefer not to say")]),
-    _q("conditions", "core", "multi", "Which ones?", "Pick any that apply.", show_if={"answers": {"conditions_any": ["yes"]}}, options=[
+    _q("conditions", "core", "multi", "Which ones?", "Pick any that apply.", show_if={"answers": {"conditions_any": ["yes"]}}, screen="conditions", options=[
         _o("diabetes", "Diabetes"), _o("prediabetes", "Prediabetes"), _o("high_bp", "High blood pressure"), _o("thyroid", "Thyroid condition"),
         _o("pcos", "PCOS or PCOD", {"body_in": list(STRICT_REPRO)}), _o("asthma_copd", "Asthma or COPD"), _o("heart", "Heart condition"),
         _o("migraine", "Migraine"), _o("anaemia", "Anaemia"), _o("depression_anxiety", "Depression or anxiety"), _o("kidney", "Kidney condition"),
         _o("liver", "Liver condition"), _o("arthritis", "Arthritis"), _o("other", "Something else")]),
-    _q("conditions_other", "core", "text", "What else?", show_if={"answers": {"conditions": ["other"]}}, maxlength=80),
+    _q("conditions_other", "core", "text", "What else?", show_if={"answers": {"conditions": ["other"]}}, maxlength=80, screen="conditions"),
     _q("sleep_pattern", "core", "single", "How long do you usually sleep at night?", options=[
         _o("under_6", "Under 6 hours"), _o("six_seven", "6 to 7 hours"), _o("seven_eight", "7 to 8 hours"), _o("over_8", "Over 8 hours")]),
     _q("stress_level", "core", "single", "How stressed have you been feeling lately?", options=[
@@ -94,38 +101,38 @@ QUESTIONS: list[dict[str, Any]] = [
         _o("pregnant", "I am pregnant"), _o("recently_gave_birth", "I recently gave birth"), _o("breastfeeding", "I am breastfeeding"),
         _o("contraception", "Contraception stops them"), _o("menopause", "Menopause"), _o("other", "Something else"), _o("prefer_not", "Prefer not to say")]),
     # ---- extras: all optional, one stage, "skip all" is one tap
-    _q("last_period", "extras", "date", "When did your last period start?", "Within the last four months.", show_if={"answers": {"periods": ["regular", "irregular"]}}),
-    _q("pregnancy_plans", "extras", "single", "Are you trying to get pregnant?",
-       show_if={"body_in": list(STRICT_REPRO), "age_gte": 18, "age_lt": 51, "not_answers": {"periods_reason": ["pregnant", "recently_gave_birth", "breastfeeding"]}},
-       options=[_o("no", "No"), _o("trying", "Yes"), _o("prefer_not", "Prefer not to say")]),
-    _q("due_date", "extras", "date", "Your due date", show_if={"answers": {"periods_reason": ["pregnant"]}}),
-    _q("baby_birth_date", "extras", "date", "Your baby's date of birth", show_if={"answers": {"periods_reason": ["recently_gave_birth", "breastfeeding"]}}),
-    _q("diet_style", "extras", "single", "How do you usually eat?", "So food ideas fit you.", options=[
-        _o("vegetarian", "Vegetarian"), _o("eggetarian", "Eggetarian"), _o("non-vegetarian", "Non-vegetarian"), _o("vegan", "Vegan"), _o("jain", "Jain"), _o("none", "No particular style")]),
-    _q("recent_blood_test", "extras", "single", "Have you had a blood test in the last year?",
-       options=[_o("yes", "Yes"), _o("no", "No"), _o("not_sure", "Not sure")]),
-    _q("height_weight", "extras", "number_pair", "Height and weight", "Used for fitness and food guidance."),
-    _q("activity", "extras", "single", "How active is a usual week?", options=[
+    _q("height_weight", "extras", "number_pair", "Height and weight", "Used for fitness and food guidance.", screen="body_basics"),
+    _q("activity", "extras", "single", "How active is a usual week?", screen="body_basics", options=[
         _o("sedentary", "Mostly sitting"), _o("light", "Light: a little walking"), _o("moderate", "Moderate: exercise a few times a week"), _o("very_active", "Very active")]),
-    _q("takes_medicines", "extras", "single", "Do you take any medicines or supplements regularly?", "You can add them in Care after setup.",
-       options=[_o("yes", "Yes"), _o("no", "No"), _o("prefer_not", "Prefer not to say")]),
-    _q("allergies", "extras", "single", "Any allergies?", options=[_o("no", "No"), _o("yes", "Yes"), _o("not_sure", "Not sure")]),
-    _q("allergy_types", "extras", "multi", "Which kind?", show_if={"answers": {"allergies": ["yes"]}}, options=[
+    _q("diet_style", "extras", "single", "How do you usually eat?", "So food ideas fit you.", screen="food", options=[
+        _o("vegetarian", "Vegetarian"), _o("eggetarian", "Eggetarian"), _o("non-vegetarian", "Non-vegetarian"), _o("vegan", "Vegan"), _o("jain", "Jain"), _o("none", "No particular style")]),
+    _q("recent_blood_test", "extras", "single", "Have you had a blood test in the last year?", screen="food",
+       options=[_o("yes", "Yes"), _o("no", "No"), _o("not_sure", "Not sure")]),
+    _q("allergies", "extras", "single", "Any allergies?", screen="health_basics", options=[_o("no", "No"), _o("yes", "Yes"), _o("not_sure", "Not sure")]),
+    _q("allergy_types", "extras", "multi", "Which kind?", show_if={"answers": {"allergies": ["yes"]}}, screen="health_basics", options=[
         _o("food", "Food"), _o("medicine", "Medicine"), _o("dust_pollen", "Dust or pollen"), _o("other", "Something else")]),
-    _q("avoid_topics", "extras", "multi", "Anything you'd rather Bubbles didn't bring up unless you ask?", exclusive=("none",), options=[
+    _q("takes_medicines", "extras", "single", "Do you take any medicines or supplements regularly?", "You can add them in Care after setup.", screen="health_basics",
+       options=[_o("yes", "Yes"), _o("no", "No"), _o("prefer_not", "Prefer not to say")]),
+    _q("last_period", "extras", "date", "When did your last period start?", "Within the last four months.", show_if={"answers": {"periods": ["regular", "irregular"]}}, screen="cycle"),
+    _q("pregnancy_plans", "extras", "single", "Are you trying to get pregnant?",
+       show_if={"body_in": list(STRICT_REPRO), "age_gte": 18, "age_lt": 51, "not_answers": {"periods_reason": ["pregnant", "recently_gave_birth", "breastfeeding"]}}, screen="cycle",
+       options=[_o("no", "No"), _o("trying", "Yes"), _o("prefer_not", "Prefer not to say")]),
+    _q("due_date", "extras", "date", "Your due date", show_if={"answers": {"periods_reason": ["pregnant"]}}, screen="cycle"),
+    _q("baby_birth_date", "extras", "date", "Your baby's date of birth", show_if={"answers": {"periods_reason": ["recently_gave_birth", "breastfeeding"]}}, screen="cycle"),
+    _q("avoid_topics", "extras", "multi", "Anything you'd rather Bubbles didn't bring up unless you ask?", exclusive=("none",), screen="talk", options=[
         _o("weight", "My weight"), _o("calories_food_numbers", "Calories and food numbers"), _o("periods", "Periods", {"body_in": list(REPRO)}), _o("family", "My family"), _o("none", "Nothing in particular")]),
-    _q("tone", "extras", "single", "How should Bubbles talk with you?", "Gentle and warm unless you say otherwise.", options=[
+    _q("tone", "extras", "single", "How should Bubbles talk with you?", "Gentle and warm unless you say otherwise.", screen="talk", options=[
         _o("gentle_warm", "Gentle and warm"), _o("calm_direct", "Calm and direct"), _o("cheerful_playful", "Cheerful and playful")]),
-    _q("reply_length", "extras", "single", "How long should replies be?", options=[_o("short", "Short"), _o("detailed", "Detailed")]),
-    _q("support_people", "extras", "multi", "When something's on your mind, who do you usually turn to?", exclusive=("mostly_on_my_own", "rather_not_say"), options=[
+    _q("reply_length", "extras", "single", "How long should replies be?", screen="talk", options=[_o("short", "Short"), _o("detailed", "Detailed")]),
+    _q("support_people", "extras", "multi", "When something's on your mind, who do you usually turn to?", exclusive=("mostly_on_my_own", "rather_not_say"), screen="support", options=[
         _o("family", "Family"), _o("partner", "My partner"), _o("friends", "Friends"), _o("colleagues_classmates", "Colleagues or classmates"), _o("online_communities", "Online communities"),
         _o("a_pet", "My pet"), _o("faith_or_community", "My faith or community"), _o("mostly_on_my_own", "I mostly work things through on my own"), _o("rather_not_say", "I'd rather not say")]),
-    _q("drains", "extras", "multi", "What tends to drain or irritate you?", options=[
+    _q("drains", "extras", "multi", "What tends to drain or irritate you?", screen="support", options=[
         _o("work_study_pressure", "Work or study pressure"), _o("money", "Money worries"), _o("family_or_relationship_tension", "Tension with family or a partner"), _o("not_enough_sleep", "Not enough sleep"),
         _o("health_worries", "Health worries"), _o("noise_or_crowds", "Noise or crowds"), _o("traffic_commute", "Traffic or commuting"), _o("screens_social_media", "Screens and social media"),
         _o("heat", "Heat"), _o("being_rushed", "Being rushed"), _o("something_else", "Something else")]),
-    _q("drains_other", "extras", "text", "What else?", show_if={"answers": {"drains": ["something_else"]}}, maxlength=80),
-    _q("checkins_wanted", "extras", "single", "Would you like Bubbles to check in on you now and then?", options=[_o("yes_daily", "Yes, daily"), _o("sometimes", "Sometimes"), _o("no", "No, thanks")]),
+    _q("drains_other", "extras", "text", "What else?", show_if={"answers": {"drains": ["something_else"]}}, maxlength=80, screen="support"),
+    _q("checkins_wanted", "extras", "single", "Would you like Bubbles to check in on you now and then?", screen="support", options=[_o("yes_daily", "Yes, daily"), _o("sometimes", "Sometimes"), _o("no", "No, thanks")]),
     # ---- later: not part of the first run. Me > Your setup (the edit view) shows them.
     _q("bp_sugar_check", "later", "single", "When did you last get your blood pressure and blood sugar checked?", show_if={"age_gte": 30},
        options=[_o("within_year", "In the last year"), _o("one_to_three_years", "One to three years ago"), _o("longer_or_never", "Longer ago, or never"), _o("not_sure", "Not sure")]),

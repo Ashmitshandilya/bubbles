@@ -53,6 +53,22 @@ def test_the_bank_is_well_formed():
     assert {q["step"] for q in ob.QUESTIONS} <= {s["id"] for s in ob.STEPS}
 
 
+def test_questions_that_share_a_screen_share_a_step_and_titled_screens_exist():
+    groups: dict[str, list[dict]] = {}
+    for q in ob.QUESTIONS:
+        if q.get("screen"):
+            groups.setdefault(q["screen"], []).append(q)
+    assert groups, "grouping keeps the optional stage short"
+    for screen, members in groups.items():
+        assert len({m["step"] for m in members}) == 1, screen
+        assert len(members) >= 2, screen
+        assert screen in ob.SCREENS or screen in {"first", "conditions"}, screen
+        assert [m["id"] for m in members] == [q["id"] for q in ob.QUESTIONS if q.get("screen") == screen]
+    assert [m["id"] for m in groups["first"]] == ["body", "language"] and [m["id"] for m in groups["about"]] == ["birth_date", "preferred_name"]
+    for key in ("diet_style", "recent_blood_test"):
+        assert ob.BY_ID[key]["step"] == "extras", "the nutrition lane reads these two keys"
+
+
 def test_a_scripted_run_that_answers_only_required_questions_is_at_most_eight_taps():
     # the language is filled in from the browser (not a tap); every other required question is one tap or one field
     for body in ob.BODIES:
@@ -309,7 +325,7 @@ def test_every_route_needs_a_sign_in(api):
 def test_the_bank_is_served_with_its_rules(api):
     client, _ = api
     body = client.get("/onboarding/questions", headers=H).json()
-    assert body["status"] == "success" and body["required"] == list(ob.REQUIRED) and len(body["questions"]) == len(ob.QUESTIONS) and body["min_age"] == 18
+    assert body["status"] == "success" and body["required"] == list(ob.REQUIRED) and len(body["questions"]) == len(ob.QUESTIONS) and body["min_age"] == 18 and body["screens"] == ob.SCREENS
 
 
 def test_a_new_person_starts_empty_and_resumes_where_they_left_off(api):
@@ -507,7 +523,7 @@ def _parity_fixture() -> dict:
                 answers = {k: v for k, v in {"birth_date": born(age), "body": body, **extra}.items() if v is not None}
                 options = {q["id"]: [o["id"] for o in ob.visible_options(q, answers, today)] for q in ob.QUESTIONS if any(o.get("show_if") for o in q.get("options", []))}
                 cases.append({"answers": answers, "visible": ob.visible_ids(answers, today), "options": options})
-    return {"today": today.isoformat(), "steps": ob.STEPS, "questions": ob.QUESTIONS, "titles_hi": ob.TITLES_HI, "cases": cases}
+    return {"today": today.isoformat(), "steps": ob.STEPS, "screens": ob.SCREENS, "questions": ob.QUESTIONS, "titles_hi": ob.TITLES_HI, "cases": cases}
 
 
 def test_the_browser_fixture_matches_the_server_bank():
