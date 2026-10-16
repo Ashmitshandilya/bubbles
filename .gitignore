@@ -80,3 +80,7 @@ backend/.env.*
 # Organ tracker model build: downloaded sources and the build tool deps (scripts/anatomy)
 .anatomy-work/
 scripts/anatomy/node_modules/
+
+# Firebase client config and server keys: never commit
+frontend/android/app/google-services.json
+*firebase-adminsdk*.json
