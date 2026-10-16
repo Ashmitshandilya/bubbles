@@ -72,7 +72,7 @@ export function PlanView({ doc, plan, reload, onRemake }: { doc: WorkoutPlanDoc;
       >
         <p className="m-0 text-body-sm text-muted">
           About {plan.summary.moderate_equivalent_minutes} minutes of moderate movement and {plan.summary.strength_days} strength {plan.summary.strength_days === 1 ? "day" : "days"} this week
-          {plan.summary.meets_who ? ", which matches general WHO guidance." : ". General WHO guidance is 150 minutes, so this is a gentle build, not a shortfall."}
+          {plan.summary.meets_who ? ", which is a good steady amount." : ". A common goal is 150 minutes, so this is a gentle build, not a shortfall."}
         </p>
         {plan.notes.map((n) => <p key={n} className="m-0 mt-2 text-body-sm text-ink-soft">{n}</p>)}
         {plan.mode === "clinician_first" && <p className="m-0 mt-2 text-body-sm font-bold text-ink">This week is limited to easy walking and mobility until a clinician has said more is fine.</p>}

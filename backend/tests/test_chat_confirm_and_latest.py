@@ -1,0 +1,113 @@
+"""A saved decision survives a reload, the batch route saves many at once, a projection failure never undoes a saved decision,
+and Talk can ask for the latest conversation."""
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+os.environ.setdefault("SUPABASE_URL", "http://localhost:54321")
+os.environ.setdefault("SUPABASE_SECRET_KEY", "test-key")
+BACKEND = Path(__file__).resolve().parents[1]
+for p in (str(BACKEND), str(BACKEND / "tests")):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from fake_db import FakeDB  # noqa: E402
+
+import main  # noqa: E402
+
+USER = "00000000-0000-0000-0000-0000000000a1"
+OTHER = "00000000-0000-0000-0000-0000000000b2"
+CONV = "11111111-1111-4111-8111-111111111111"
+E1, E2, E3 = ("33333333-3333-4333-8333-33333333333%d" % i for i in (1, 2, 3))
+H = {"Authorization": "Bearer tok"}
+
+
+def _event(event_id, uid=USER, status="pending"):
+    return {"id": event_id, "user_id": uid, "event_type": "symptom", "extracted_data": {"name": "headache", "severity": 3},
+            "confidence": 0.8, "user_confirmed": False, "extraction_status": status, "message_id": None}
+
+
+@pytest.fixture()
+def client(monkeypatch):
+    db = FakeDB({"tok": USER, "tok2": OTHER})
+    db.table("chat_conversations").insert({"id": CONV, "user_id": USER, "title": "Headache", "created_at": "2026-10-10T10:00:00Z", "updated_at": "2026-10-10T10:05:00Z"}).execute()
+    db.table("chat_messages").insert({"id": "m1", "conversation_id": CONV, "user_id": USER, "role": "user", "content": "head hurts", "created_at": "2026-10-10T10:00:01Z", "metadata": {}}).execute()
+    db.table("chat_messages").insert({
+        "id": "m2", "conversation_id": CONV, "user_id": USER, "role": "bubbles", "content": "Noted.", "created_at": "2026-10-10T10:00:02Z",
+        "metadata": {"health_events": [{"id": E1, "event_type": "symptom", "extracted_data": {}, "status": "pending"},
+                                       {"id": E2, "event_type": "symptom", "extracted_data": {}, "status": "pending"}]}}).execute()
+    for e in (_event(E1), _event(E2), _event(E3, uid=OTHER)):
+        db.table("extracted_health_events").insert(e).execute()
+    monkeypatch.setattr(main, "supabase", db)
+    main._sign_in_cache.clear() if hasattr(main._sign_in_cache, "clear") else None
+    return TestClient(main.app), db
+
+
+def _statuses(payload):
+    return {e["id"]: e["status"] for m in payload["messages"] for e in m.get("health_events", [])}
+
+
+def test_a_reloaded_chat_shows_the_saved_state_not_pending(client):
+    c, db = client
+    assert _statuses(c.get(f"/chat/conversations/{CONV}/messages", headers=H).json()) == {E1: "pending", E2: "pending"}
+    db.table("extracted_health_events").update({"extraction_status": "confirmed", "user_confirmed": True}).eq("id", E1).execute()
+    db.table("extracted_health_events").update({"extraction_status": "rejected"}).eq("id", E2).execute()
+    assert _statuses(c.get(f"/chat/conversations/{CONV}/messages", headers=H).json()) == {E1: "confirmed", E2: "rejected"}
+
+
+def test_batch_confirmation_saves_many_in_one_request_and_only_your_own(client, monkeypatch):
+    c, db = client
+    monkeypatch.setattr(main, "project_confirmed_event", lambda **_k: {"status": "done"})
+    r = c.post("/health-events/confirmation", headers=H, json={"decisions": [
+        {"id": E1, "confirmed": True}, {"id": E2, "confirmed": False}, {"id": E3, "confirmed": True}]})
+    assert r.status_code == 200
+    results = {x["id"]: x for x in r.json()["results"]}
+    assert results[E1]["status"] == "confirmed" and results[E2]["status"] == "rejected"
+    assert results[E3]["status"] == "error" and results[E3]["code"] == 404      # somebody else's event is not found, never changed
+    rows = {row["id"]: row for row in db.table("extracted_health_events").select("*").execute().data}
+    assert rows[E1]["extraction_status"] == "confirmed" and rows[E2]["extraction_status"] == "rejected" and rows[E3]["extraction_status"] == "pending"
+
+
+def test_a_projection_failure_does_not_turn_a_saved_decision_into_an_error(client, monkeypatch):
+    c, _db = client
+
+    def boom(**_k):
+        raise RuntimeError("canonical table hiccup")
+    monkeypatch.setattr(main, "project_confirmed_event", boom)
+    r = c.patch(f"/health-events/{E1}/confirmation", headers=H, json={"confirmed": True})
+    assert r.status_code == 200 and r.json()["projection"]["status"] == "queued"
+
+
+def test_batch_rejects_an_empty_or_oversized_list(client):
+    c, _ = client
+    assert c.post("/health-events/confirmation", headers=H, json={"decisions": []}).status_code == 422
+    big = [{"id": E1, "confirmed": True}] * 31
+    assert c.post("/health-events/confirmation", headers=H, json={"decisions": big}).status_code == 422
+
+
+def test_latest_opens_the_newest_conversation_with_saved_states(client):
+    c, db = client
+    db.table("extracted_health_events").update({"extraction_status": "confirmed"}).eq("id", E1).execute()
+    r = c.get("/chat/latest", headers=H).json()
+    assert r["conversation"]["id"] == CONV and [m["id"] for m in r["messages"]] == ["m1", "m2"] and r["has_more"] is False
+    assert _statuses(r)[E1] == "confirmed"
+
+
+def test_latest_is_empty_for_someone_with_no_chats(client):
+    c, _ = client
+    r = c.get("/chat/latest", headers={"Authorization": "Bearer tok2"}).json()
+    assert r["conversation"] is None and r["messages"] == []
+
+
+def test_messages_page_back_with_before_and_report_has_more(client):
+    c, _ = client
+    r = c.get(f"/chat/conversations/{CONV}/messages?limit=1", headers=H).json()
+    assert [m["id"] for m in r["messages"]] == ["m2"] and r["has_more"] is True
+    older = c.get(f"/chat/conversations/{CONV}/messages?limit=5&before=2026-10-10T10:00:02Z", headers=H).json()
+    assert [m["id"] for m in older["messages"]] == ["m1"] and older["has_more"] is False
+    assert c.get(f"/chat/conversations/{CONV}/messages?before=nope", headers=H).status_code == 400
