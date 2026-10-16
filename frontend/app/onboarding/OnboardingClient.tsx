@@ -7,7 +7,7 @@ import { resetExperience, useApi, useAuth } from "../../components/Providers";
 import { DateField, Stepper, TextArea, TextField } from "../../components/tracking/kit";
 import { Creating } from "./Creating";
 import {
-  activeSteps, isAnswered, missingRequired, pick, picked, stepPatch, titleFor, visibleOptions, visibleQuestions,
+  activeSteps, missingRequired, pick, picked, stepPatch, titleFor, visibleOptions, visibleQuestions,
   type Answers, type Question, type Step,
 } from "./flow";
 
@@ -49,7 +49,7 @@ function ChipGroup({ q, title, hint, value, options, error, onPick }: {
     <fieldset id={`q-${q.id}`} aria-invalid={error ? true : undefined} className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
       <legend className="mb-2 p-0 text-body font-extrabold">
         {title}
-        {!q.required && <span className="font-semibold text-muted"> (optional)</span>}
+        {q.required ? <span className="ml-2 rounded-full bg-blush px-2 py-0.5 align-middle text-[0.75rem] font-extrabold text-ink-soft">Needed</span> : <span className="font-semibold text-muted"> (optional)</span>}
       </legend>
       {hint && <p className="m-0 mb-1 text-body-sm font-semibold text-muted">{hint}</p>}
       <div className="flex flex-wrap gap-2">
@@ -204,18 +204,46 @@ export function OnboardingClient() {
     }
   }
 
+  /** First step after the optional "A little more" stage, or null when there is none. */
+  const afterExtras = steps.find((s, i) => i > index && !s.extra) ?? null;
+
+  function go(id: string | undefined) {
+    if (id) setStepId(id);
+    else setPhase("creating");
+  }
+
   async function next() {
     if (!(await saveStep())) return;
     const following = steps[index + 1];
     // the saved answers may have changed which steps exist (the body decides), so look the next one up again
-    if (following) setStepId(following.id);
-    else setPhase("creating");
+    if (following?.extra && !step?.extra) setStepId("extras");
+    else go(following?.id);
+  }
+
+  /** Leave this step without saving it; what was typed here is forgotten so it is never sent later. */
+  function skipStep() {
+    setNotice("");
+    setErrors({});
+    setAnswers((prev) => {
+      const out = { ...prev };
+      for (const q of stepQuestions) if (!q.required) delete out[q.id];
+      return out;
+    });
+    const following = steps[index + 1];
+    if (following?.extra && !step?.extra) setStepId("extras");
+    else go(following?.id);
   }
 
   function back() {
-    const previous = steps[index - 1];
     setNotice("");
-    setStepId(previous ? previous.id : "welcome");
+    if (stepId === "extras") {
+      const previous = [...steps].reverse().find((s) => !s.extra);
+      setStepId(previous ? previous.id : "welcome");
+      return;
+    }
+    const previous = steps[index - 1];
+    if (previous?.extra && step && !step.extra) setStepId("extras");
+    else setStepId(previous ? previous.id : "welcome");
   }
 
   const run = useCallback(async () => {
@@ -343,7 +371,8 @@ export function OnboardingClient() {
     return null;
   }
 
-  const isWelcome = stepId === "welcome" || !step;
+  const isWelcome = stepId === "welcome" || (!step && stepId !== "extras");
+  const firstExtra = steps.find((s) => s.extra);
   const last = index === steps.length - 1;
   const percent = steps.length ? Math.round((Math.max(index, 0) / steps.length) * 100) : 0;
 
@@ -374,6 +403,17 @@ export function OnboardingClient() {
             </p>
             <button type="button" onClick={() => { const first = steps[0]; if (first) setStepId(first.id); }} className={`${BUTTON} mt-6`}>Let&apos;s start</button>
           </div>
+        ) : stepId === "extras" ? (
+          <div className="bubbles-rise rounded-[28px] border border-line bg-surface p-6 text-center sm:p-9">
+            <BubblesMascot size={96} mood="happy" className="mx-auto" />
+            <h1 ref={heading} tabIndex={-1} className="mt-5 font-display text-h2 text-ink outline-none">That&apos;s all Bubbles needs</h1>
+            <p className="mx-auto mt-3 max-w-[420px] text-body text-muted">Want to add a little more? It helps Bubbles feel more like yours. Every question is optional.</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button type="button" onClick={() => go(afterExtras?.id)} className={GHOST}>Skip all extras</button>
+              <button type="button" onClick={() => firstExtra && setStepId(firstExtra.id)} className={BUTTON}>A little more</button>
+            </div>
+            <button type="button" onClick={back} className="bubbles-press mt-4 border-0 bg-transparent text-body-sm font-extrabold text-muted">Back</button>
+          </div>
         ) : (
           <form
             onSubmit={(e) => { e.preventDefault(); void next(); }}
@@ -389,8 +429,8 @@ export function OnboardingClient() {
                 <div className="h-full rounded-full bg-bubbles-pink transition-[width] duration-300" style={{ width: `${((index + 1) / steps.length) * 100}%` }} />
               </div>
             </div>
-            <h1 ref={heading} tabIndex={-1} className="m-0 font-display text-h2 text-ink outline-none">{step.title}</h1>
-            <p className="m-0 mt-1 text-body text-muted">{step.intro}</p>
+            <h1 ref={heading} tabIndex={-1} className="m-0 font-display text-h2 text-ink outline-none">{step!.title}</h1>
+            <p className="m-0 mt-1 text-body text-muted">{step!.intro}</p>
 
             <div className="mt-6 flex flex-col gap-7">{stepQuestions.map((q) => (
               <div key={q.id}>
@@ -405,10 +445,10 @@ export function OnboardingClient() {
 
             <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
               <button type="button" onClick={back} className={GHOST}>Back</button>
-              <button type="submit" disabled={saving} className={BUTTON}>{saving ? "Saving…" : last ? (editing ? "Save my setup" : "Create my companion") : "Next"}</button>
+              <button type="submit" disabled={saving} className={BUTTON}>{saving ? "Saving…" : last ? (editing ? "Save my setup" : "Finish setup") : "Next"}</button>
             </div>
-            {stepQuestions.every((q) => !q.required) && !stepQuestions.some((q) => isAnswered(q, answers[q.id])) && (
-              <p className="m-0 mt-3 text-center text-body-sm text-muted">Nothing here is required. Press Next to skip this step.</p>
+            {stepQuestions.every((q) => !q.required) && (
+              <p className="m-0 mt-3 text-center"><button type="button" onClick={skipStep} className="bubbles-press border-0 bg-transparent p-2 text-body-sm font-extrabold text-muted underline">Skip this</button></p>
             )}
           </form>
         )}

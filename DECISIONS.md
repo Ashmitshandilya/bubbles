@@ -122,6 +122,23 @@ Entry template:
 
 ---
 
+### 2026-10 · Lean first-run setup
+- Gender (`body`) is the first question, then date of birth (the 18+ gate), then name. Required is now only body, birth date, name, goals and conditions; language and tone default to English and gentle.
+- Everything else sits in an optional "A little more" stage (`extra` steps in `onboarding.STEPS`) behind one "Skip all extras" screen; optional steps have a Skip button and required questions carry a "Needed" tag.
+- AI consent moved to its own "Your choices" step. The setup screen is "Setting up your app" and takes about 3 seconds.
+- Not done yet: skippable app tour, per-purpose consent toggles inside setup, tap-to-advance for single choices.
+
+### 2026-10 · Mind: loneliness, panic, separation, safer notes
+- One shared crisis gate (`safety_gate.py`) now covers every tracker note, not only `/wellness/*`; a hit stores nothing and shows the support message (112, Tele-MANAS 14416). New passive-ideation phrases are crisis language (draft in the clinical packet, awaiting sign-off).
+- New plain concepts `loneliness`, `panic_attack`, `separation_anxiety` (never an emergency alone, all mapped to the brain). `mind_chat.py` gives the model a friend-style block and gives a short fixed kind reply even without AI consent.
+- Mind is a top-level section (Mind, Mood log). Hub has a loneliness check-in and four closed topic rows; `/body?organ=brain` opens the brain.
+- Not done: anxiety/stress scores into the brain map and patterns, a mind notification kind.
+
+### 2026-10 · Insight details
+- One `InsightDetailSheet` (native dialog) opens from a Details button on every Patterns card, every link between logs and every Today pattern. `app/insights/detail.ts` builds one shape for all three: what Bubbles saw, the days and numbers (a table or a stated gap), how sure (one scale: Early, Fairly steady, Steadier), what it does not mean, one thing to try, Ask Bubbles.
+- `/insights?item=<id>` opens one insight and cleans the address; an id no longer in the window shows a calm notice.
+- Not done: stable backend ids, `GET /insights/{id}` and per-day occurrence lists. The sheet uses numbers the pages already receive; Today items show a gap sentence for the table.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.

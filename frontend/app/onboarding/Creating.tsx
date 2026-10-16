@@ -3,16 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { BubblesMascot } from "../../components/BubblesMascot";
 
-const MIN_WORKING_MS = 2000;
-const LINE_GAP_MS = 380;
-const AUTO_OPEN_MS = 4500;
+const MIN_WORKING_MS = 1200;
+const LINE_GAP_MS = 250;
+const AUTO_OPEN_MS = 2000;
 
 export interface CreatingResult {
   lines: string[];
 }
 
 /**
- * "Creating your personal companion". It runs the real setup call and only shows lines the server confirmed after it answered:
+ * "Setting up your app". It runs the real setup call and only shows lines the server confirmed after it answered:
  * nothing is announced before it is true. A short minimum keeps the screen from flashing; a failure keeps the answers and offers a retry.
  */
 export function Creating({ run, name, onOpen, onBack }: { run: () => Promise<CreatingResult>; name: string; onOpen: () => void; onBack: () => void }) {
@@ -35,7 +35,7 @@ export function Creating({ run, name, onOpen, onBack }: { run: () => Promise<Cre
         const wait = Math.max(0, MIN_WORKING_MS - (Date.now() - began));
         await new Promise((resolve) => window.setTimeout(resolve, wait));
         if (!live) return;
-        setLines(result.lines);
+        setLines(result.lines.slice(0, 4));
         setPhase("revealing");
       },
       (error: unknown) => {
@@ -66,7 +66,7 @@ export function Creating({ run, name, onOpen, onBack }: { run: () => Promise<Cre
     return () => window.clearTimeout(timer);
   }, [phase, onOpen]);
 
-  const title = phase === "done" ? (name ? `All set, ${name}` : "All set") : phase === "failed" ? "Your answers are saved" : "Creating your personal companion";
+  const title = phase === "done" ? (name ? `All set, ${name}` : "All set") : phase === "failed" ? "Your answers are saved" : "Setting up your app";
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-blush px-5 py-10">

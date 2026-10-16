@@ -265,7 +265,9 @@ export function useTracker(endpoint: string, days: number, refetchAfterSave = fa
           body: JSON.stringify({ date: new Date().toISOString(), ...body }),
         });
         if (!response.ok) return saveFailureMessage(await responseFailure(response));
-        const payload: { entry?: Entry } | null = await response.json().catch(() => null);
+        const payload: { entry?: Entry; status?: string; message?: string } | null = await response.json().catch(() => null);
+        // a crisis message in the note: nothing was saved, and the person sees the support message instead
+        if (payload?.status === "safety" && payload.message) return payload.message;
         // A saved entry without an id cannot be listed; the reload below picks it up instead.
         const entry = payload?.entry?.id ? adaptTrackerEntry(slug, readEntries<Entry>([payload.entry])[0]) : undefined;
         if (entry?.id) {

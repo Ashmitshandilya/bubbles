@@ -20,11 +20,28 @@ from typing import Any
 import clinical_constants as K
 import doc_store
 from health_logs import DOMAINS, list_domain
-from safety_engine import assess_safety, emergency_response, urgent_fallback_response
+from safety_gate import safety_gate  # noqa: F401  (re-exported: wellness_api calls Mind.safety_gate)
 from wellness_common import InputError, choice, local_date_of, number, parse_date, text
 
 SCREENS = {"phq2": {"questions": K.PHQ2_QUESTIONS, "positive_at": K.PHQ2_POSITIVE_AT, "topic": "low mood"},
-           "gad2": {"questions": K.GAD2_QUESTIONS, "positive_at": K.GAD2_POSITIVE_AT, "topic": "worry"}}
+           "gad2": {"questions": K.GAD2_QUESTIONS, "positive_at": K.GAD2_POSITIVE_AT, "topic": "worry"},
+           # one direct question, kept as a score only. Not a validated scale and no cut-off from one: "often" is just a prompt to be kind.
+           "loneliness": {"questions": ("How often do you feel lonely?",), "positive_at": 3, "topic": "feeling alone",
+                          "positive_msg": "Thank you for saying so. Feeling alone a lot is common and it is not a flaw in you. "
+                                          "A small step can help: one short message to someone you like, or time somewhere with other people. "
+                                          "If it keeps weighing on you, a counsellor or someone you trust is worth talking to."}}
+
+#: short, static, kind copy for the Mind hub topics. No labels, no diagnosis, no medicine.
+TOPIC_COPY = {
+    "anxiety": {"title": "Anxiety", "body": "Worry and tension are part of being human. A few slow breaths with a longer breath out can settle the body first, then the thoughts.",
+                "tool": "slow_breathing"},
+    "panic": {"title": "Panic", "body": "A panic wave feels awful and it passes, usually within minutes. Slow your breath out, feel your feet on the floor, and name five things you can see.",
+              "tool": "grounding_54321"},
+    "loneliness": {"title": "Feeling lonely", "body": "Feeling alone is a signal, not a verdict. One small contact today counts: a message, a call, a walk where other people are.",
+                   "tool": "journal"},
+    "apart": {"title": "Missing someone, being apart", "body": "Being away from someone you love can ache. It can help to plan a small moment to connect, and a grounding exercise for the waiting.",
+              "tool": "grounding_54321"},
+}
 ANSWER_LABELS = ("Not at all", "Several days", "More than half the days", "Nearly every day")
 SCREEN_INTRO = "Over the last 2 weeks, how often have you been bothered by the following?"
 FACES = [{"face": 1, "mood": 2, "label": "Rough"}, {"face": 2, "mood": 4, "label": "Low"}, {"face": 3, "mood": 6, "label": "Okay"},
@@ -47,24 +64,10 @@ EXERCISES = (
      "steps": ["Tighten your fists for a few seconds, then let go.", "Do the same for shoulders, then jaw, then legs.", "Notice the difference as you release."]},
 )
 EXERCISE_NOTE = "Stop and breathe normally if you feel dizzy or uncomfortable. These are relaxation tools, not treatment."
-SUPPORT_NOTE = "If you ever feel you might harm yourself, please contact your local emergency number or a crisis line right away."
+SUPPORT_NOTE = "If you ever feel you might harm yourself, call 112, or Tele-MANAS (free, 24x7) on 14416, right away."
 
 
 # --- safety gate ---------------------------------------------------------------------------------------------------------
-
-def safety_gate(*texts: str | None) -> dict[str, Any] | None:
-    """Run every non-empty free-text field through the deterministic safety engine. Returns the safety response to send back
-    (and the caller must stop) when any text is URGENT / EMERGENCY or carries crisis wording; None when it is safe to continue."""
-    for t in texts:
-        if not t:
-            continue
-        a = assess_safety(t)
-        if a.state in ("URGENT", "EMERGENCY") or a.crisis:
-            msg = emergency_response(a) if a.state == "EMERGENCY" or a.crisis else urgent_fallback_response(a)
-            return {"status": "safety", "state": a.state, "level": a.level, "crisis": a.crisis, "message": msg,
-                    "saved": False, "note": "Nothing was saved from this message."}
-    return None
-
 
 # --- check-ins -----------------------------------------------------------------------------------------------------------
 
@@ -170,7 +173,9 @@ def score_screen(kind: str, answers: Any) -> dict[str, Any]:
         raise InputError(f"answer each of the {len(spec['questions'])} questions with 0 to 3")
     total = sum(answers)
     positive = total >= spec["positive_at"]
-    if positive:
+    if positive and spec.get("positive_msg"):
+        msg = spec["positive_msg"] + " If you ever feel you might harm yourself, call 112, or Tele-MANAS on 14416."
+    elif positive:
         msg = (f"Thank you for answering. Your answers suggest things around {spec['topic']} have felt heavy lately. "
                "This check-in isn't a medical assessment, but it may be worth talking to someone you trust, a counsellor or your doctor. "
                "You don't have to work it out alone. " + SUPPORT_NOTE)
