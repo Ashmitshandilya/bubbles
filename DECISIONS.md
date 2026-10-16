@@ -49,6 +49,7 @@ Entry template:
 - Why: the owner wants the app to feel like an app, not the website, while keeping the same accounts and setup.
 - Use: same account, same server-driven setup questions and same data as the website (one Supabase project, one API).
 - Where: `frontend/app/globals.css` (html[data-native], "Android 2.0"), `app/IntroSlides.tsx`, `app/NativeWelcome.tsx`, `components/Navigation.tsx` (data-dock, data-tab, data-app-bar hooks), `components/PhoneReminderPrompt.tsx`, `lib/firebase-native.ts`, `components/Providers.tsx`.
+- Premium pass (same PR): Today opens with a body-map hero tile and a feature grid that follows the person's setup (`components/AppHome.tsx`, `app/lib/app-home.ts`, tested); the dock is personal (Today, Body or Cycle or Mind, Talk, Track, More); glass cards, a segmented sub-tab control, sheets that slide up, shimmering placeholders.
 - Notes: everything is scoped to the app build; the website is unchanged. All motion is off under reduced motion. Needs an APK build on the owner's PC (`npm run android:release`).
 
 ### 2026-10-16 · Firebase for the Android app: phone reminders, crash reports, tester builds (this PR)
