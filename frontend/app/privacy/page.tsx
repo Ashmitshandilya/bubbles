@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "../legal/LegalPage";
+import { PRIVACY_NOTICE_VERSION } from "../lib/privacy-notice-version";
 
 export const metadata: Metadata = {
   title: "Privacy | Bubbles",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy" updated="Draft of 10 October 2026">
+    <LegalPage title="Privacy" updated={`Draft, version ${PRIVACY_NOTICE_VERSION}`}>
       <section>
         <h2>The short version</h2>
         <p>
@@ -37,15 +38,48 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2>AI and your messages</h2>
+        <h2>Your privacy choices</h2>
         <p>
-          A message that sounds like an emergency is handled by fixed, tested rules and is never sent to an AI model. Logging, patterns and fitness questions are also
-          answered by Bubbles itself. Only open-ended questions go to an AI provider, and only after you say yes: Bubbles asks you the first time, the server checks your
-          answer before anything is sent, and you can take it back at any time in Settings, under Privacy and data. When you say yes, Bubbles sends your message, your
-          recent messages in that chat and a short summary of your profile and notes (such as your date of birth, gender and recent entries) to a provider from an approved list, on its free tier, and nothing more than is needed. Each provider handles data under
-          its own terms.
+          Everything beyond keeping your own logs is a separate choice, off until you turn it on, and you can turn it off again in one tap in Settings, under Privacy choices.
+          Each time you change one, Bubbles adds a line to a list you can read there (What you agreed to).
         </p>
-        <p>Bubbles never diagnoses. It can be wrong, so please check anything important with a clinician.</p>
+        <ul>
+          <li>
+            <strong>Answer open questions with an outside AI.</strong> Your message, your recent messages in that chat and a short summary of your profile and notes (such as your date of birth,
+            gender and recent entries) go to an AI provider from an approved list, on its free tier, and nothing more than is needed. Each provider handles data under its own terms. Turn it
+            off and nothing more is sent. Messages that sound like an emergency, logging, patterns and fitness questions are handled by Bubbles itself and never need this.
+          </li>
+          <li>
+            <strong>Save details Bubbles notices in chat.</strong> Bubbles suggests saving them and you confirm or dismiss each one. When it is off, chat still works and anything you log yourself is still saved.
+          </li>
+          <li>
+            <strong>Share summaries with one person.</strong> Nothing is shared until you pick what and who. Turning it off ends all sharing at once.
+          </li>
+          <li>
+            <strong>Reminders on your phone, and reminders by email.</strong> Reminders never contain health details. Email goes to the address you signed in with. Phone reminders go through
+            Google&apos;s notification service, which only carries that plain text.
+          </li>
+          <li>
+            <strong>Show my posts in the community.</strong> Only when you turn it on, and under the name or alias you choose.
+          </li>
+          <li>
+            <strong>Anonymous usage counts.</strong> Listed so you can see it, but not available. Bubbles does not collect analytics.
+          </li>
+        </ul>
+        <p>Keeping your own logs and chat is part of the service itself, because Bubbles cannot remember for you otherwise. Only you can see them.</p>
+        <p>
+          A message that sounds like an emergency is handled by fixed, tested rules and is never sent to an AI model. Bubbles never diagnoses. It can be wrong, so please check anything important
+          with a clinician.
+        </p>
+      </section>
+
+      <section>
+        <h2>The record of your choices</h2>
+        <p>
+          Bubbles keeps a list of each choice you turn on or off: which choice, yes or no, when, from where (Settings, chat, setup or sign-up) and which version of the wording you saw. It holds no
+          message text and no health details. If you use &quot;delete my data&quot;, your logs and chats are removed, every choice is switched off, and this list stays, but without your account link: only
+          the choice, the date and a one-way code remain. When you sign up, Bubbles also notes that you ticked that you read the Terms and this notice.
+        </p>
       </section>
 
       <section>
@@ -77,8 +111,9 @@ export default function PrivacyPage() {
         <h2>Your choices</h2>
         <ul>
           <li>Export or delete your Whole-Health data from Settings, under Your data.</li>
+          <li>Read the list of what you agreed to in Settings, under Privacy choices.</li>
           <li>Delete individual entries in each tracker.</li>
-          <li>Stop partner sharing at any time.</li>
+          <li>Change or take back any privacy choice at any time.</li>
           <li>
             Full account deletion is still being built. Until it is, write to <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a> from the email address you signed up with and we will delete your account and
             everything linked to it.

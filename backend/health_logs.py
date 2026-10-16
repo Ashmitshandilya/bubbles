@@ -28,8 +28,11 @@ from typing import Any, Callable
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from starlette.concurrency import run_in_threadpool
 
+from concurrent.futures import ThreadPoolExecutor
+
 from db_access import is_permission_denied
 from event_filters import DEAD_STATUSES, parse_moment, provenance
+from ttl_cache import TTLCache
 
 LBS_PER_KG = 2.2046226218
 MAX_TEXT = 2000
@@ -38,6 +41,9 @@ MAX_LAB_VALUE = 1e9
 SOURCE = "user_logged"
 COMPAT_TABLE = "extracted_health_events"
 COMPAT_SCAN_LIMIT = 1000  # rows scanned when the server-side json filter is unavailable
+# Whether this person has any compat-mode entry at all (a bool, keyed by user). Almost nobody does, and without this every tracker list
+# read up to 1000 whole rows to find out. Cleared by _compat_insert; a miss reads as before.
+_has_compat = TTLCache("tracker_has_compat", ttl_s=300, max_entries=20000)
 
 
 def _text(body: dict, key: str, limit: int = MAX_TEXT) -> str | None:
@@ -471,6 +477,7 @@ def _compat_insert(db: Any, uid: str, slug: str, row: dict) -> dict:
                "user_confirmed": True, "message_id": None,
                "extracted_data": {**to_event(row), "_prov": {"source": "tracker", "domain": slug, "store": "compat"}, "_row": row}}
     saved = db.table(COMPAT_TABLE).insert(payload).select("*").execute()
+    _has_compat.invalidate(uid)
     if not saved.data:
         raise HTTPException(status_code=500, detail="Unable to save entry")
     return saved.data[0]
@@ -501,8 +508,11 @@ def _mirror_to_analytics(db: Any, uid: str, slug: str, row: dict, saved_row: dic
             pass
 
 
-def _compat_events(db: Any, uid: str, slug: str | None) -> list[dict]:
-    """Compat-store events for the user (one domain, or all), newest first. Raises on database errors."""
+def _compat_events(db: Any, uid: str, slug: str | None, *, primary_ok: bool = False) -> list[dict]:
+    """Compat-store events for the user (one domain, or all), newest first. Raises on database errors.
+    ``primary_ok``: the normal tracker table was readable, so a remembered "this person has no compat entries" can be trusted."""
+    if primary_ok and _has_compat.peek(uid) is False:
+        return []
     def fetch(filters: dict[str, str], limit: int) -> list[dict]:
         query = db.table(COMPAT_TABLE).select("*").eq("user_id", uid)
         for key, value in filters.items():
@@ -519,8 +529,11 @@ def _compat_events(db: Any, uid: str, slug: str | None) -> list[dict]:
             raise
         rows = fetch({}, COMPAT_SCAN_LIMIT)  # json filter unsupported: scan and filter below
     # the server-side filter is an optimisation; this is the authoritative check
-    return [r for r in rows if isinstance(r, dict) and (r.get("extraction_status") or "pending") not in DEAD_STATUSES
-            and provenance(r).get("store") == "compat" and (slug is None or provenance(r).get("domain") == slug)]
+    found = [r for r in rows if isinstance(r, dict) and (r.get("extraction_status") or "pending") not in DEAD_STATUSES
+             and provenance(r).get("store") == "compat" and (slug is None or provenance(r).get("domain") == slug)]
+    if found or slug is None:   # a one-domain read that finds nothing says nothing about the other domains
+        _has_compat.put(uid, bool(found))
+    return found
 
 
 def _compat_entry(domain: dict, event: dict, stored: Any = None) -> dict | None:
@@ -600,7 +613,7 @@ def list_domain(db: Any, slug: str, domain: dict, uid: str, days: int) -> dict:
             raise
         refused = exc
     try:
-        events = _compat_events(db, uid, slug)
+        events = _compat_events(db, uid, slug, primary_ok=refused is None)
     except Exception as exc:
         if not is_permission_denied(exc):
             raise
@@ -644,8 +657,10 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     router = APIRouter()
 
     def _summary(uid: str) -> dict:
-        stamps: dict[str, list] = {}
-        for slug, domain in DOMAINS.items():
+        refused: list[str] = []
+
+        def stamps_of(item: tuple[str, dict]) -> tuple[str, list]:
+            slug, domain = item
             query = db.table(domain["table"]).select("created_at").eq("user_id", uid)
             for key, value in domain.get("filters", {}).items():
                 query = query.eq(key, value)
@@ -654,10 +669,15 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             except Exception as exc:
                 if not is_permission_denied(exc):
                     raise
+                refused.append(slug)
                 rows = []  # a refused table is not an error here: compat rows below still count
-            stamps[slug] = [r.get("created_at") for r in rows]
+            return slug, [r.get("created_at") for r in rows]
+
+        # The tracker tables are asked at the same time (it was seventeen round trips one after another).
+        with ThreadPoolExecutor(max_workers=8, thread_name_prefix="health-summary") as pool:
+            stamps: dict[str, list] = dict(pool.map(stamps_of, list(DOMAINS.items())))
         try:
-            for event in _compat_events(db, uid, None):
+            for event in _compat_events(db, uid, None, primary_ok=not refused):
                 domain_slug = provenance(event).get("domain")
                 if domain_slug in stamps:
                     stamps[domain_slug].append(event.get("created_at"))

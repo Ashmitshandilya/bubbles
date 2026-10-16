@@ -145,19 +145,35 @@ def delete(db: Any, uid: str, kind: str, key: str) -> bool:
 
 
 SAFETY_HOLD_KINDS = ("safety_pause", "eating_screen")   # kept by "delete all": they only ever make Bubbles MORE careful
+TRAIL_KINDS = ("consent_event",)                         # always kept: the minimised record of what a person agreed to (consent.py)
+DELETE_CHUNK = 100
+
+
+def get_many(db: Any, uid: str, kind: str, keys: list[str]) -> dict[str, dict]:
+    """Several documents of one kind in ONE read: {key: payload}. Missing, unsigned and foreign rows are left out."""
+    wanted = {str(k): _check(kind, k) for k in dict.fromkeys(keys)}
+    if not wanted:
+        return {}
+    rows = (db.table(TABLE).select("*").eq("user_id", uid).eq("event_type", EVENT_TYPE).in_("title", list(wanted.values()))
+            .order("created_at", desc=True).limit(len(wanted) * 3).execute().data or [])
+    by_title: dict[str, dict] = {}
+    for row in rows:
+        if row.get("title") not in by_title and row_is_valid(row):   # newest valid row wins, like get()
+            by_title[row["title"]] = _unpack(row)["payload"]
+    return {key: by_title[title] for key, title in wanted.items() if title in by_title}
 
 
 def delete_everything(db: Any, uid: str, keep: tuple[str, ...] = SAFETY_HOLD_KINDS) -> int:
-    """Remove every Whole-Health OS document for the user except the safety holds in ``keep``. Returns how many were removed."""
-    from consent import forget   # the remembered AI-consent answer must not outlive the deleted document, even if a delete fails
+    """Remove every Whole-Health OS document for the user except the safety holds in ``keep`` and the consent trail. Returns how many
+    were removed. Rows go in chunked deletes (one request per DELETE_CHUNK rows, not one per row)."""
+    import consent   # the remembered answer must not outlive the deleted document, even if a delete fails
+    keep = tuple(keep) + TRAIL_KINDS
     try:
+        consent.on_data_deleted(db, uid)   # withdraws what was granted and unlinks the ledger rows from the person
         rows = (db.table(TABLE).select("id,title").eq("user_id", uid).eq("event_type", EVENT_TYPE).limit(20000).execute().data or [])
-        removed = 0
-        for r in rows:
-            if str(r.get("title") or "").split(":", 1)[0] in keep:
-                continue
-            db.table(TABLE).delete().eq("id", r["id"]).eq("user_id", uid).execute()
-            removed += 1
-        return removed
+        ids = [r["id"] for r in rows if str(r.get("title") or "").split(":", 1)[0] not in keep]
+        for i in range(0, len(ids), DELETE_CHUNK):
+            db.table(TABLE).delete().eq("user_id", uid).eq("event_type", EVENT_TYPE).in_("id", ids[i:i + DELETE_CHUNK]).execute()
+        return len(ids)
     finally:
-        forget(uid)
+        consent.forget(uid)
