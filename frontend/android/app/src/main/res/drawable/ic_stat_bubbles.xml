@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small notification icon: three bubbles. Monochrome (white on transparent) as the status bar requires; Android tints it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M9,20.5a6.5,6.5 0,1 0,0 -13a6.5,6.5 0,0 0,0 13z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M17.5,10a3.5,3.5 0,1 0,0 -7a3.5,3.5 0,0 0,0 7z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M19,21a2,2 0,1 0,0 -4a2,2 0,0 0,0 4z" />
+</vector>

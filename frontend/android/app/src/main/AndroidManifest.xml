@@ -29,6 +29,17 @@
 
         </activity>
 
+        <!-- Push (FCM): where a message with no channel of its own lands, and its look. The channels are created in MainActivity. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="@string/channel_reminders_id" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_bubbles" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/bubbles_pink_deep" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -43,4 +54,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: the runtime permission to show notifications. Asked only after the person turns phone reminders on in Bubbles. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

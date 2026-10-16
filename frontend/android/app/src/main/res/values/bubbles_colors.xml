@@ -2,4 +2,6 @@
 <resources>
     <!-- The bubbles-blush token in frontend/app/tokens.css: the page background, shown behind the system bars and on the splash. -->
     <color name="bubbles_blush">#FFF6FA</color>
+    <!-- The deep pink token in frontend/app/tokens.css: the tint of the small notification icon. -->
+    <color name="bubbles_pink_deep">#D6246F</color>
 </resources>
