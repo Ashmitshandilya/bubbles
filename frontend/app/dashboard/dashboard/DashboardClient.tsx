@@ -15,6 +15,7 @@ import {
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
 import { WeekRecapCard } from "./WeekRecapCard";
+import { FirstRunTour } from "../../onboarding/Tour";
 import { buildWeekRecap } from "./recap";
 import {
   WINDOW_DAYS, buildPatterns, buildTodayItems, greeting, readTracker, summarizeCycle, summarizeSignal, upcomingVisits,
@@ -267,6 +268,7 @@ export function DashboardClient() {
 
         <MobileNav />
       </div>
+      <FirstRunTour />
     </div>
   );
 }
