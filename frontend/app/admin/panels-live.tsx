@@ -242,7 +242,7 @@ export function LivePanel() {
         <Empty>{filtered && all.length ? "No rows match these filters." : `Waiting for the next request. New events appear within ${every} seconds.`}</Empty>
       ) : (
         <>
-          <div className="hidden overflow-x-auto lg:block">
+          <div className="relative hidden overflow-x-auto lg:block">
             <table className="w-full border-collapse">
               <caption className="sr-only">Newest requests first</caption>
               <thead>

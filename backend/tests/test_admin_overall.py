@@ -318,7 +318,6 @@ def test_snapshots_are_integers_only_and_hide_the_table_when_missing(opsdb):
     assert (rates["ai_chat_processing"]["granted"], rates["ai_chat_processing"]["declined"], rates["ai_chat_processing"]["rate"]) == (1, 1, 0.5)
     assert "product_usage_metrics" not in rates   # not offered yet, so no rate to show
     assert ops_snapshots.community(opsdb) == {"visible": 1, "held": 1, "removed": 0}
-    assert ops_snapshots.push(opsdb) is None or ops_snapshots.push(opsdb) == {"active_devices": 0}
     assert "u1" not in json.dumps([u, ops_snapshots.consent_rates(opsdb)])
     opsdb.failures["consent_events"] = Exception("PGRST205")
     assert ops_snapshots.consent_rates(opsdb) is None
@@ -352,3 +351,31 @@ def test_migrations_are_idempotent_locked_down_and_have_undo_files():
     assert "enable row level security" in rollups and "grant select, insert, update on table public.ops_rollups_daily to service_role" in rollups
     funnel = (root / "migrations" / "20261016_bubbles_funnel.sql").read_text(encoding="utf-8").lower()
     assert "drop constraint if exists bubbles_ops_events_kind_check" in funnel and "'funnel'" in funnel and "'client'" in funnel
+
+
+def test_push_counts_registered_phone_documents():
+    seen = []
+
+    class Q:
+        def select(self, *a, **k):
+            return self
+
+        def eq(self, column, value):
+            seen.append((column, value))
+            return self
+
+        def limit(self, n):
+            return self
+
+        def execute(self):
+            return type("R", (), {"count": 2})()
+
+    db = type("DB", (), {"table": lambda self, name: seen.append(("table", name)) or Q()})()
+    assert ops_snapshots.push(db) == {"active_devices": 2}
+    assert ("table", "health_events") in seen and ("data->>kind", "push_device") in seen
+
+    class Broken:
+        def table(self, name):
+            raise RuntimeError("PGRST205")
+
+    assert ops_snapshots.push(Broken()) is None
