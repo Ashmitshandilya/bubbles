@@ -177,6 +177,14 @@ Entry template:
 - Saving without a confirm step stays limited to plain, specific statements (own weight, own height). Everything else Bubbles picks up still waits for Save.
 - Not done: no Edit button in the apps yet (the API exists); chat-saved entries other than weight are not retracted when their tracker row is deleted; a database view or triggers were not added because the live schema has not been compared with the migrations.
 
+### 2026-10 · Names, live refresh and a startup crash
+- One name: `GET /profile` now resolves the display name as setup/settings name, then the profile row, then the sign-up name, and brings the profile row up to date when it had fallen behind (it was only copied when empty, so a changed name never reached pages that read the profile). It also fills `height_cm` from the body profile when the profile row has none.
+- Live refresh: the app asks again every 60 seconds while visible, when it is seen again after 10 seconds or more, and when the network returns (`LIVE_REFRESH_MS` in `app/lib/data-sync.ts`). Finishing setup or saving body figures counts as a record change.
+- Chat auto-save (plain own weight and height) now needs the "Save details Bubbles notices in chat" consent, like every other chat extraction; without it nothing is saved.
+- A bare "today" from chat is stamped with the current time, not midnight, so a weight told in chat after an earlier tracker entry the same day is the latest one.
+- Fixed a startup crash already on main: a stray `import threading` inside `_warm_database_probe` made the first line raise `UnboundLocalError`, so the server could not boot. A test now runs the startup hooks.
+- The Android app bundles the web files in the APK: backend changes reach it at once, screen changes (live refresh, Remove button, Last updated card) need a new APK from `npm run android:release` and a signed release.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.

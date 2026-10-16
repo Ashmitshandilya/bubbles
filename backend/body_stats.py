@@ -112,6 +112,9 @@ def auto_confirm_weight(db: Any, user_id: str, events: list[dict[str, Any]]) -> 
 def auto_save_body_stats(db: Any, user_id: str, message: str, events: list[dict[str, Any]]) -> list[str]:
     """Save what was plainly stated. Returns short sentences to add to the reply (empty when nothing was saved). Never raises."""
     notes: list[str] = []
+    from consent import is_granted
+    if not is_granted(db, user_id, "health_memory_from_chat"):
+        return notes   # without that yes nothing is extracted or stored from the chat, plain statements included
     try:
         for kg in auto_confirm_weight(db, user_id, events):
             notes.append(f"Saved your weight: {kg:g} kg.")

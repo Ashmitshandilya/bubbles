@@ -419,7 +419,6 @@ def _warm_database_probe() -> None:
         pass
     threading.Thread(target=lambda: analyze_turn("hello", []), name="bubbles-warm-analyze", daemon=True).start()   # the first message after a deploy no longer pays the one-off start-up cost
     if ops_telemetry._persist_enabled():   # saved admin settings (provider pauses, retention): read once, in the background
-        import threading
         threading.Thread(target=admin_settings.load, name="bubbles-settings-load", daemon=True).start()
     try:   # phone reminders while the app is closed; does nothing until FIREBASE_SERVICE_ACCOUNT_JSON is set (push_fcm.py)
         import push_fcm
@@ -1295,16 +1294,46 @@ def chat_latest_api(authorization: str | None = Header(default=None), limit: int
     payload.pop("conversation_id", None)
     return payload
 
+def resolve_display_name(setup_name: object, profile_name: object, auth_name: object) -> str | None:
+    """The one name every screen shows: what the person last told Bubbles in setup/settings, else the profile row, else the sign-up name."""
+    for candidate in (setup_name, profile_name, auth_name):
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()[:40]
+    return None
+
+
 @app.get("/profile")
 def profile_api(authorization: str | None = Header(default=None)):
+    import context_engine
+    import doc_store
     user = get_authenticated_user(authorization)
     sync_profile_from_auth(user)
+    uid = str(user.id)
     try:
-        rows = supabase.table("profiles").select("*").eq("id", str(user.id)).limit(1).execute().data or []
+        rows = supabase.table("profiles").select("*").eq("id", uid).limit(1).execute().data or []
     except Exception:
         rows=[]
     meta = getattr(user, "user_metadata", {}) or {}
-    return {"profile": rows[0] if rows else {"id":str(user.id), "display_name": meta.get("display_name") or meta.get("full_name") or meta.get("name")}}
+    profile = dict(rows[0]) if rows else {"id": uid}
+    try:
+        setup_name = ((doc_store.get(supabase, uid, "experience", "main") or {}).get("name"))
+        body = doc_store.get(supabase, uid, "profile", "me") or {}
+    except Exception:
+        setup_name, body = None, {}
+    name = resolve_display_name(setup_name, profile.get("display_name"), meta.get("display_name") or meta.get("full_name") or meta.get("name"))
+    if name and name != profile.get("display_name"):
+        # The profile row fell behind what the person told Bubbles: bring it up to date once, so every other reader agrees.
+        profile["display_name"] = name
+        try:
+            supabase.table("profiles").upsert({"id": uid, "display_name": name}, on_conflict="id").execute()
+            chat_cache.forget_user(uid)
+            context_engine.forget_profile(uid)
+        except Exception:
+            pass
+    # Height and gender may live only in the body profile (chat, setup); show the saved value rather than a blank.
+    if profile.get("height_cm") is None and isinstance(body.get("height_cm"), (int, float)):
+        profile["height_cm"] = body["height_cm"]
+    return {"profile": profile}
 
 @app.post("/personalization/overview")
 def personalization_api(authorization: str | None = Header(default=None)):

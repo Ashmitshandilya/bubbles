@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agoText, describeWrite, pickLastUpdate } from "./data-sync";
+import { agoText, describeWrite, pickLastUpdate, shouldRefreshOnResume } from "./data-sync";
 
 describe("describeWrite", () => {
   it("ignores reads and plumbing", () => {
@@ -36,5 +36,21 @@ describe("agoText", () => {
     expect(agoText(now - 5 * 60_000, now)).toBe("5 minutes ago");
     expect(agoText(now - 3 * 3_600_000, now)).toBe("3 hours ago");
     expect(agoText(now - 30 * 3_600_000, now)).toBe("yesterday");
+  });
+});
+
+describe("profile changes", () => {
+  it("setup and body figures count as record changes", () => {
+    expect(describeWrite("/onboarding/complete", "POST")).toBe("Profile");
+    expect(describeWrite("/profile/body", "PUT")).toBe("Profile");
+    expect(describeWrite("/onboarding/answers", "PUT")).toBeNull();
+  });
+});
+
+describe("shouldRefreshOnResume", () => {
+  it("refreshes after a real absence, not a blink", () => {
+    expect(shouldRefreshOnResume(null, 50_000)).toBe(false);
+    expect(shouldRefreshOnResume(45_000, 50_000)).toBe(false);
+    expect(shouldRefreshOnResume(10_000, 50_000)).toBe(true);
   });
 });
