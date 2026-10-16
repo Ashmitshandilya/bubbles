@@ -186,7 +186,7 @@ ENTRIES: dict[str, dict[str, Any]] = {
         risks=[],
         foods=[], more_likely=["PCOS", "changes after pregnancy", "perimenopause", "high stress or big weight change"],
         touches=["periods", "skin", "hair", "mood", "weight", "fertility"], organs=["uterus_ovaries", "skin"],
-        interacts=[], links=["link:cycle-thyroid", "link:cycle-fatigue"],
+        interacts=[], links=["link:cycle-hormones", "link:cycle-fatigue"],
         ask="Hormone blood tests could tell. It is worth asking a doctor which ones fit."),
     "cortisol": dict(
         name="Cortisol", nudge=False, marker_rx=r"cortisol",

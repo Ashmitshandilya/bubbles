@@ -44,6 +44,8 @@ LINK_DOCS: dict[str, list[str]] = {
     "b12-diet": ["Vitamin B tests", "Homocysteine test"],
     "cycle-thyroid": ["Underactive thyroid (hypothyroidism): causes, treatment and self-care", "TSH (thyroid stimulating hormone) test",
                       "Hypothyroidism (underactive thyroid)", "Hyperthyroidism (overactive thyroid)", "Common reasons periods become irregular or stop"],
+    "cycle-hormones": ["Testosterone test", "Estrogen test", "Progesterone test", "Prolactin test", "FSH (follicle stimulating hormone) test",
+                       "PCOS (polycystic ovary syndrome)", "Common reasons periods become irregular or stop"],
 }
 LINK_QUERY = {
     "mood-sleep": "sleep and mood link", "activity-mood": "exercise and mood", "activity-sleep": "exercise and sleep",
@@ -53,7 +55,7 @@ LINK_QUERY = {
     "fatigue-sleep": "tiredness and sleep", "cycle-fatigue": "heavy periods tiredness iron",
     "fatigue-labs": "tiredness anaemia thyroid", "labs-weight": "underactive thyroid weight gain", "cycle-labs": "periods anaemia thyroid",
     "fatigue-nutrient": "tiredness vitamin or mineral deficiency blood test", "hair-iron": "hair fall iron ferritin",
-    "mood-vitamind": "vitamin D and mood", "b12-diet": "vitamin B12 vegetarian vegan diet", "cycle-thyroid": "thyroid and periods",
+    "mood-vitamind": "vitamin D and mood", "b12-diet": "vitamin B12 vegetarian vegan diet", "cycle-thyroid": "thyroid and periods", "cycle-hormones": "hormones and periods pcos",
 }
 SERIES_DOMAIN = {"sleep_hours": "sleep", "sleep_quality": "sleep", "mood": "mood", "activity_minutes": "activity", "hydration_ml": "hydration",
                  "symptom_severity": "symptom", "calories": "food", "resting_hr": "heart", "luteal": "cycle"}

@@ -1,0 +1,519 @@
+{
+ "version": "nutrients-v1",
+ "checked": "2026-10-16",
+ "entries": [
+  {
+   "id": "ferritin",
+   "title": "Ferritin blood test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/ferritin-blood-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:iron",
+    "link:fatigue-nutrient",
+    "link:hair-iron",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "iron_tests",
+   "title": "Iron tests: what they measure and why they are done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/iron-tests/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:iron",
+    "link:fatigue-nutrient",
+    "link:hair-iron",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "haemoglobin",
+   "title": "Haemoglobin test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/hemoglobin-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:iron",
+    "link:hair-iron",
+    "link:fatigue-nutrient",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "cbc",
+   "title": "Complete blood count (CBC): what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/complete-blood-count-cbc/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:iron",
+    "link:fatigue-nutrient",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "vitamin_b",
+   "title": "Vitamin B tests (B12 and folate): what they measure and why they are done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/vitamin-b-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:b12",
+    "nutrient:folate",
+    "link:fatigue-nutrient",
+    "link:b12-diet",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "homocysteine",
+   "title": "Homocysteine test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/homocysteine-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:b12",
+    "link:b12-diet",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "vitamin_d",
+   "title": "Vitamin D test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/vitamin-d-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:vitamin-d",
+    "link:fatigue-nutrient",
+    "link:mood-vitamind",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "magnesium",
+   "title": "Magnesium blood test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/magnesium-blood-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:magnesium",
+    "link:fatigue-nutrient",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "tsh",
+   "title": "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/tsh-thyroid-stimulating-hormone-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:thyroid",
+    "link:cycle-thyroid",
+    "link:fatigue-labs",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "t4",
+   "title": "Thyroxine (T4) test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/thyroxine-t4-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:thyroid",
+    "link:cycle-thyroid",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "t3",
+   "title": "Triiodothyronine (T3) tests: what they measure and why they are done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/triiodothyronine-t3-tests/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:thyroid",
+    "link:cycle-thyroid",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "hba1c",
+   "title": "HbA1c test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/hemoglobin-a1c-hba1c-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:blood-sugar",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "insulin",
+   "title": "Insulin blood test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/insulin-in-blood-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:blood-sugar",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "cortisol",
+   "title": "Cortisol test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/cortisol-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:cortisol",
+    "link:stress-weight",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "testosterone",
+   "title": "Testosterone test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/testosterone-levels-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:sex-hormones",
+    "link:cycle-hormones",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "estrogen",
+   "title": "Estrogen test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/estrogen-levels-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:sex-hormones",
+    "link:cycle-hormones",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "progesterone",
+   "title": "Progesterone test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/progesterone-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:sex-hormones",
+    "link:cycle-hormones",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "prolactin",
+   "title": "Prolactin test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/prolactin-levels/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:sex-hormones",
+    "link:cycle-hormones",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "fsh",
+   "title": "FSH (follicle stimulating hormone) test: what it measures and why it is done",
+   "source_name": "MedlinePlus (US National Library of Medicine)",
+   "source_url": "https://medlineplus.gov/lab-tests/follicle-stimulating-hormone-fsh-levels-test/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "lab_test_overview",
+   "topic_tags": [
+    "nutrient:sex-hormones",
+    "link:cycle-hormones",
+    "batch:nutrients-v1",
+    "policy:no_diagnosis_explain_ranges"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "niddk_hypo",
+   "title": "Hypothyroidism (underactive thyroid): symptoms and causes",
+   "source_name": "National Institute of Diabetes and Digestive and Kidney Diseases",
+   "source_url": "https://www.niddk.nih.gov/health-information/endocrine-diseases/hypothyroidism",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "condition_overview",
+   "topic_tags": [
+    "nutrient:thyroid",
+    "link:cycle-thyroid",
+    "link:fatigue-labs",
+    "batch:nutrients-v1"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "niddk_hyper",
+   "title": "Hyperthyroidism (overactive thyroid): symptoms and causes",
+   "source_name": "National Institute of Diabetes and Digestive and Kidney Diseases",
+   "source_url": "https://www.niddk.nih.gov/health-information/endocrine-diseases/hyperthyroidism",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "condition_overview",
+   "topic_tags": [
+    "nutrient:thyroid",
+    "link:cycle-thyroid",
+    "batch:nutrients-v1"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "niddk_prediabetes",
+   "title": "Prediabetes and insulin resistance: what they are",
+   "source_name": "National Institute of Diabetes and Digestive and Kidney Diseases",
+   "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "condition_overview",
+   "topic_tags": [
+    "nutrient:blood-sugar",
+    "batch:nutrients-v1"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "niddk_tests",
+   "title": "Diabetes tests (A1C, fasting glucose): how diabetes is checked",
+   "source_name": "National Institute of Diabetes and Digestive and Kidney Diseases",
+   "source_url": "https://www.niddk.nih.gov/health-information/diabetes/overview/tests-diagnosis",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "condition_overview",
+   "topic_tags": [
+    "nutrient:blood-sugar",
+    "batch:nutrients-v1"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "nichd_pcos",
+   "title": "PCOS (polycystic ovary syndrome): signs and what it can affect",
+   "source_name": "NIH Eunice Kennedy Shriver National Institute of Child Health and Human Development",
+   "source_url": "https://www.nichd.nih.gov/health/topics/pcos",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "condition_overview",
+   "topic_tags": [
+    "nutrient:sex-hormones",
+    "link:cycle-hormones",
+    "batch:nutrients-v1"
+   ],
+   "fetch": "auto"
+  },
+  {
+   "id": "ods_iron",
+   "title": "Iron: a plain fact sheet",
+   "source_name": "NIH Office of Dietary Supplements",
+   "source_url": "https://ods.od.nih.gov/factsheets/Iron-Consumer/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "fact_sheet",
+   "topic_tags": [
+    "nutrient:iron",
+    "link:fatigue-nutrient",
+    "link:hair-iron",
+    "batch:nutrients-v1",
+    "policy:medication_safety_no_dosing"
+   ],
+   "fetch": "manual",
+   "note": "ods.od.nih.gov answered HTTP 403 to automated requests from the build sandbox. Save the page text to <dir>/<id>.txt from a browser and pass --from-dir <dir>."
+  },
+  {
+   "id": "ods_b12",
+   "title": "Vitamin B12: a plain fact sheet",
+   "source_name": "NIH Office of Dietary Supplements",
+   "source_url": "https://ods.od.nih.gov/factsheets/VitaminB12-Consumer/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "fact_sheet",
+   "topic_tags": [
+    "nutrient:b12",
+    "link:fatigue-nutrient",
+    "link:b12-diet",
+    "batch:nutrients-v1",
+    "policy:medication_safety_no_dosing"
+   ],
+   "fetch": "manual",
+   "note": "ods.od.nih.gov answered HTTP 403 to automated requests from the build sandbox. Save the page text to <dir>/<id>.txt from a browser and pass --from-dir <dir>."
+  },
+  {
+   "id": "ods_vitd",
+   "title": "Vitamin D: a plain fact sheet",
+   "source_name": "NIH Office of Dietary Supplements",
+   "source_url": "https://ods.od.nih.gov/factsheets/VitaminD-Consumer/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "fact_sheet",
+   "topic_tags": [
+    "nutrient:vitamin-d",
+    "link:fatigue-nutrient",
+    "link:mood-vitamind",
+    "batch:nutrients-v1",
+    "policy:medication_safety_no_dosing"
+   ],
+   "fetch": "manual",
+   "note": "ods.od.nih.gov answered HTTP 403 to automated requests from the build sandbox. Save the page text to <dir>/<id>.txt from a browser and pass --from-dir <dir>."
+  },
+  {
+   "id": "ods_folate",
+   "title": "Folate: a plain fact sheet",
+   "source_name": "NIH Office of Dietary Supplements",
+   "source_url": "https://ods.od.nih.gov/factsheets/Folate-Consumer/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "fact_sheet",
+   "topic_tags": [
+    "nutrient:folate",
+    "link:fatigue-nutrient",
+    "batch:nutrients-v1",
+    "policy:medication_safety_no_dosing"
+   ],
+   "fetch": "manual",
+   "note": "ods.od.nih.gov answered HTTP 403 to automated requests from the build sandbox. Save the page text to <dir>/<id>.txt from a browser and pass --from-dir <dir>."
+  },
+  {
+   "id": "ods_magnesium",
+   "title": "Magnesium: a plain fact sheet",
+   "source_name": "NIH Office of Dietary Supplements",
+   "source_url": "https://ods.od.nih.gov/factsheets/Magnesium-Consumer/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "fact_sheet",
+   "topic_tags": [
+    "nutrient:magnesium",
+    "link:fatigue-nutrient",
+    "batch:nutrients-v1",
+    "policy:medication_safety_no_dosing"
+   ],
+   "fetch": "manual",
+   "note": "ods.od.nih.gov answered HTTP 403 to automated requests from the build sandbox. Save the page text to <dir>/<id>.txt from a browser and pass --from-dir <dir>."
+  },
+  {
+   "id": "ods_zinc",
+   "title": "Zinc: a plain fact sheet",
+   "source_name": "NIH Office of Dietary Supplements",
+   "source_url": "https://ods.od.nih.gov/factsheets/Zinc-Consumer/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "fact_sheet",
+   "topic_tags": [
+    "nutrient:zinc",
+    "link:hair-iron",
+    "batch:nutrients-v1",
+    "policy:medication_safety_no_dosing"
+   ],
+   "fetch": "manual",
+   "note": "ods.od.nih.gov answered HTTP 403 to automated requests from the build sandbox. Save the page text to <dir>/<id>.txt from a browser and pass --from-dir <dir>."
+  },
+  {
+   "id": "ods_iodine",
+   "title": "Iodine: a plain fact sheet",
+   "source_name": "NIH Office of Dietary Supplements",
+   "source_url": "https://ods.od.nih.gov/factsheets/Iodine-Consumer/",
+   "evidence_level": "reference",
+   "country": "US",
+   "document_type": "fact_sheet",
+   "topic_tags": [
+    "nutrient:iodine",
+    "link:cycle-thyroid",
+    "batch:nutrients-v1",
+    "policy:medication_safety_no_dosing"
+   ],
+   "fetch": "manual",
+   "note": "ods.od.nih.gov answered HTTP 403 to automated requests from the build sandbox. Save the page text to <dir>/<id>.txt from a browser and pass --from-dir <dir>."
+  }
+ ],
+ "deferred": [
+  {
+   "id": "icmr_nin_rda",
+   "title": "ICMR-NIN Recommended Dietary Allowances 2020 / 2024 short summary",
+   "source_url": "https://www.nin.res.in/RDA_short_Report_2024.html",
+   "reason": "Sold as a priced publication with a copyright notice (checked 2026-10-16). Not freely reusable: do not ingest without written permission from ICMR-NIN. It is mostly dose tables, which Bubbles does not state anyway."
+  }
+ ]
+}
