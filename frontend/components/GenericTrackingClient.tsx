@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "./Providers";
 import {
-  Choices, DateField, DetailChips, Disclaimer, EmptyState, EntryNote, EntryRow, History, LastLogged, LogButton, LogSheet, SavedToast,
+  Choices, DateField, DetailChips, Disclaimer, EmptyState, EntryNote, EntryRow, History, LastLogged, LogButton, LogSheet, SavedToast, SIGNALS,
   StatGrid, StatSkeleton, Stepper, TextArea, TextField, TrackerHero, TrackerShell, type IconName, type Signal,
 } from "./tracking/kit";
 import { choiceLabels } from "./tracking/choices";
+import { readUnitPreference, saveUnitPreference, toShownUnit, toStoredUnit, type SwitchUnit } from "../app/lib/unit-switch";
 import {
   byNewest, computeStat, dateLabel, formatNumber, parseRange, present, timeLabel, toNumber, useTracker,
   type Entry, type StatSpec,
@@ -26,6 +27,8 @@ export interface TrackerField {
   max?: number;
   step?: number;
   unit?: string;
+  /** number: offer a kg switch for this field. `unit` stays the stored unit (lbs); the API always receives lbs. */
+  altUnit?: "kg";
   /** number: where the stepper starts when empty and nothing has been logged yet. */
   start?: number;
   /** number: one-tap amounts, e.g. [250, 500] ml. */
@@ -122,11 +125,42 @@ function GenericTracker({
   title, kicker, description, endpoint, signal, icon, fields, stats, logLabel, sheetTitle, submitLabel,
   emptyTitle, entryLabel, titleField, requireOneOf, historyTitle, callout,
 }: GenericTrackingClientProps) {
-  const { entries, status, error, retry, save, freshId } = useTracker(endpoint, 30);
+  const { entries: storedEntries, status, error, retry, save, freshId } = useTracker(endpoint, 30);
   const { databaseStatus } = useApi();
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>(() => blank(fields));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [unit, setUnit] = useState<SwitchUnit>("lbs");
+
+  useEffect(() => {
+    setUnit(readUnitPreference(endpoint));
+  }, [endpoint]);
+
+  const chooseUnit = (next: SwitchUnit) => {
+    setUnit(next);
+    saveUnitPreference(endpoint, next);
+  };
+  const hasSwitch = fields.some((f) => f.altUnit);
+  const switched = (f: TrackerField) => Boolean(f.altUnit) && unit === "kg";
+
+  // Everything on screen goes through these: the form, history and stats read the chosen unit, the API keeps lbs.
+  const viewFields: TrackerField[] = fields.map((f) => {
+    if (!switched(f)) return f;
+    const shown = (n?: number) => (n === undefined ? undefined : toShownUnit(n, "kg"));
+    return { ...f, unit: "kg", min: shown(f.min), max: shown(f.max), start: shown(f.start), step: 0.1 };
+  });
+  const entries = storedEntries.map((e) => {
+    const next = { ...e };
+    for (const f of fields) {
+      const n = toNumber(e[f.id]);
+      if (switched(f) && n !== null) next[f.id] = toShownUnit(n, "kg");
+    }
+    return next;
+  });
+  const shownStats = stats.map((spec) => {
+    const f = fields.find((x) => x.id === spec.field);
+    return f && switched(f) ? { ...spec, unit: "kg" } : spec;
+  });
 
   const openSheet = () => {
     setErrors({});
@@ -140,7 +174,7 @@ function GenericTracker({
   async function submit(): Promise<string | null | false> {
     const nextErrors: Record<string, string> = {};
     const body: Record<string, string | number> = {};
-    for (const f of fields) {
+    for (const f of viewFields) {
       const raw = (values[f.id] ?? "").trim();
       if (!raw) {
         if (f.required) nextErrors[f.id] = `Please add ${f.label.toLowerCase()}.`;
@@ -150,7 +184,7 @@ function GenericTracker({
         const n = Number(raw);
         if (!Number.isFinite(n)) nextErrors[f.id] = `${f.label} must be a number.`;
         else if ((f.min !== undefined && n < f.min) || (f.max !== undefined && n > f.max)) nextErrors[f.id] = `${f.label} must be ${rangeText(f)}.`;
-        else body[f.id] = n;
+        else body[f.id] = switched(f) ? toStoredUnit(n, "kg") : n;
         continue;
       }
       if (f.pattern && !new RegExp(`^(?:${f.pattern})$`).test(raw)) {
@@ -166,7 +200,7 @@ function GenericTracker({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length) return false;
     if (requireOneOf && !requireOneOf.some((id) => id in body)) {
-      const names = fields.filter((f) => requireOneOf.includes(f.id)).map((f) => f.label.toLowerCase());
+      const names = viewFields.filter((f) => requireOneOf.includes(f.id)).map((f) => f.label.toLowerCase());
       return `Add at least one: ${names.join(", ")}.`;
     }
     if (Object.keys(body).length === 0) return "Add at least one detail before saving.";
@@ -230,11 +264,11 @@ function GenericTracker({
   }
 
   function renderEntry(entry: Entry) {
-    const shown = fields.filter((f) => !f.hideInHistory && present(entry[f.id]));
+    const shown = viewFields.filter((f) => !f.hideInHistory && present(entry[f.id]));
     const head = (titleField ? shown.find((f) => f.id === titleField) : undefined) ?? shown.find((f) => f.type !== "textarea");
     const chips = shown.filter((f) => f !== head && f.type !== "textarea");
     const notes = shown.filter((f) => f !== head && f.type === "textarea");
-    const known = new Set(["id", "date", ...fields.map((f) => f.id)]);
+    const known = new Set(["id", "date", ...viewFields.map((f) => f.id)]);
     const extras = Object.entries(entry).filter(([k, v]) => !known.has(k) && present(v));
     const flagged = shown.some((f) => outsideRange(f, entry));
     return (
@@ -269,7 +303,26 @@ function GenericTracker({
       )}
       {status === "ready" && <LastLogged entries={entries} />}
       {status === "loading" && entries.length === 0 && <StatSkeleton count={stats.length} />}
-      {status === "ready" && entries.length > 0 && <StatGrid signal={signal} stats={stats.map((spec) => computeStat(spec, entries))} />}
+      {hasSwitch && entries.length > 0 && (
+        <div className="mb-4 flex justify-end">
+          <div role="group" aria-label="Units" className="inline-flex gap-1 rounded-full border border-line bg-surface p-1">
+            {(["lbs", "kg"] as const).map((u) => (
+              <button
+                key={u}
+                type="button"
+                aria-pressed={unit === u}
+                onClick={() => chooseUnit(u)}
+                className={`min-h-[40px] rounded-full px-4 text-body-sm font-extrabold ${
+                  unit === u ? SIGNALS[signal].chipOn : "text-muted hover:text-default"
+                }`}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {status === "ready" && entries.length > 0 && <StatGrid signal={signal} stats={shownStats.map((spec) => computeStat(spec, entries))} />}
       <History
         title={historyTitle}
         status={status}
@@ -284,7 +337,7 @@ function GenericTracker({
       <Disclaimer />
       <LogSheet open={open} onClose={() => setOpen(false)} signal={signal} icon={icon} title={sheetTitle} subtitle={today} submitLabel={submitLabel} onSubmit={submit}>
         {requireOneOf && <p className="m-0 text-body-sm font-semibold text-muted">Add at least one reading. The rest can stay empty.</p>}
-        {fields.map(renderField)}
+        {viewFields.map(renderField)}
       </LogSheet>
       <SavedToast
         trigger={freshId}

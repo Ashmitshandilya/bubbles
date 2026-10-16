@@ -18,7 +18,7 @@ import { isChosen, toggleChoice } from "./choices";
 
 export type Signal = "pink" | "grape" | "sun" | "mint" | "sky" | "peach";
 
-const SIGNALS: Record<Signal, { tint: string; ink: string; button: string; solid: string; border: string; dashed: string; chipOn: string; bar: string; barSoft: string }> = {
+export const SIGNALS: Record<Signal, { tint: string; ink: string; button: string; solid: string; border: string; dashed: string; chipOn: string; bar: string; barSoft: string }> = {
   pink: {
     tint: "bg-tint-pink", ink: "text-bubbles-pink-deep",
     button: "bg-bubbles-grape text-white bubbles-glow", solid: "bg-bubbles-grape text-white",

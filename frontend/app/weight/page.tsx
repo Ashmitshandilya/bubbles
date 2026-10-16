@@ -24,7 +24,7 @@ export default function WeightPage() {
           emptyTitle="No weigh-ins yet"
           entryLabel="Weigh-in"
           fields={[
-            { id: "weight", label: "Weight", type: "number", unit: "lbs", min: 50, max: 700, step: 0.5, start: 150, required: true },
+            { id: "weight", label: "Weight", type: "number", unit: "lbs", altUnit: "kg", min: 50, max: 700, step: 0.5, start: 150, required: true },
             { id: "time_of_day", label: "Time of day", type: "select", options: [
               { value: "morning", label: "Morning" },
               { value: "afternoon", label: "Afternoon" },
