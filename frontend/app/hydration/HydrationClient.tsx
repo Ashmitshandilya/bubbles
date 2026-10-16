@@ -127,6 +127,7 @@ function Hydration() {
       </QueryView>
 
       <History
+        onDelete={history.remove}
         title="Your drinks"
         status={history.status}
         error={history.error}

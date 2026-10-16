@@ -125,7 +125,7 @@ function GenericTracker({
   title, kicker, description, endpoint, signal, icon, fields, stats, logLabel, sheetTitle, submitLabel,
   emptyTitle, entryLabel, titleField, requireOneOf, historyTitle, callout,
 }: GenericTrackingClientProps) {
-  const { entries: storedEntries, status, error, retry, save, freshId } = useTracker(endpoint, 30);
+  const { entries: storedEntries, status, error, retry, save, remove, freshId } = useTracker(endpoint, 30);
   const { databaseStatus } = useApi();
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<Record<string, string>>(() => blank(fields));
@@ -324,6 +324,7 @@ function GenericTracker({
       )}
       {status === "ready" && entries.length > 0 && <StatGrid signal={signal} stats={shownStats.map((spec) => computeStat(spec, entries))} />}
       <History
+        onDelete={remove}
         title={historyTitle}
         status={status}
         error={error}

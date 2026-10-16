@@ -25,7 +25,7 @@ export function ActivityClient() {
 }
 
 function Activity() {
-  const { entries, status, error, retry, save, freshId } = useTracker("/health/activity", 30);
+  const { entries, status, error, retry, save, remove, freshId } = useTracker("/health/activity", 30);
   const [open, setOpen] = useState(false);
   const [type, setType] = useState("Walk");
   const [minutes, setMinutes] = useState("30");
@@ -82,6 +82,7 @@ function Activity() {
         </>
       )}
       <History
+        onDelete={remove}
         status={status}
         error={error}
         onRetry={retry}

@@ -659,6 +659,25 @@ def save_domain(db: Any, slug: str, domain: dict, uid: str, body: dict) -> dict:
     return {"status": "success", "entry": _to_entry(domain, saved.data[0]), "store": "primary"}
 
 
+def delete_entry(db: Any, slug: str, domain: dict, uid: str, entry_id: str) -> bool:
+    """Remove one of the person's own entries (normal table first, then the compatibility store). False when it is not theirs or not there."""
+    stores: list[tuple[str, dict[str, str]]] = [(domain["table"], dict(domain.get("filters", {})))]
+    stores.append((COMPAT_TABLE, {"extracted_data->_prov->>domain": slug}))   # only this tracker's own copies, never another kind of event
+    for table, filters in stores:
+        query = db.table(table).delete().eq("id", entry_id).eq("user_id", uid)
+        for key, value in filters.items():
+            query = query.eq(key, value)
+        try:
+            removed = query.execute().data or []
+        except Exception as exc:  # noqa: BLE001
+            if is_permission_denied(exc):
+                continue
+            raise
+        if removed:
+            return True
+    return False
+
+
 #: Free-text fields a person types into any tracker. A symptom name is the thing being logged ("chest pain"), so only crisis wording
 #: stops it; the note-like fields stop on any urgent wording too, like every wellness route.
 NOTE_FIELDS = ("notes", "description", "reason", "findings")
@@ -749,6 +768,18 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         if blocked:
             return JSONResponse(blocked)
         return await run_in_threadpool(_save, slug, domain, uid, body)
+
+    @router.delete("/health/{slug}/{entry_id}")
+    def delete_entry_route(slug: str, entry_id: str, authorization: str | None = Header(default=None)):
+        domain = DOMAINS.get(slug)
+        if not domain or slug == "summary":
+            raise HTTPException(status_code=404, detail="Unknown tracker")
+        if not 0 < len(entry_id) <= 64:
+            raise HTTPException(status_code=404, detail="That entry was not found.")
+        uid = str(get_user(authorization).id)
+        if not delete_entry(db, slug, domain, uid, entry_id):
+            raise HTTPException(status_code=404, detail="That entry was not found.")   # also what someone else's id looks like
+        return {"status": "success", "deleted": entry_id}
 
     @router.get("/intelligence/recent-queries")
     def recent_queries(limit: int = Query(default=4, ge=1, le=20), authorization: str | None = Header(default=None)):
