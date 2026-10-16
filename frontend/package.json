@@ -36,7 +36,7 @@
     "eslint-config-next": "15.5.27",
     "playwright": "1.63.0",
     "typescript": "5.9.3",
-    "vitest": "^4"
+    "vitest": "^5"
   },
   "overrides": {
     "next": {
