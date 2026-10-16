@@ -42,7 +42,7 @@ def report(db: Any) -> dict:
 def build_router(db: Any) -> APIRouter:
     router = APIRouter()
 
-    @router.get("/admin/schema")
+    @router.get("/admin/schema", include_in_schema=False)
     def admin_schema():
         return {"status": "success", **report(db)}
 

@@ -12,6 +12,7 @@ from test_chat_http_flow import H, OTHER, USER, env, send  # noqa: F401  (the sa
 def revoke(env):
     """Back to a person who has never answered (a withdrawal is a decision and is tested in test_consent_purposes.py)."""
     env.db.tables["consent_events"] = []
+    env.db.tables["health_events"] = [r for r in env.db.tables.get("health_events", []) if str(r.get("title", "")).split(":")[0] not in ("consent_event", "consent")]
     consent.forget(USER)
 
 

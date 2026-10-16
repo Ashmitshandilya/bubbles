@@ -8,6 +8,7 @@ import chat_counts
 import schema_status
 from fake_db import FakeAPIError, FakeDB, permission_denied
 from health_logs import COMPAT_TABLE, _has_compat, build_router
+from test_admin_portal import admin_env, bearer  # noqa: F401  (an app with a two-step admin)
 from test_chat_http_flow import H, USER, env  # noqa: F401  (the same stateful chat app)
 
 import pytest
@@ -116,3 +117,12 @@ def test_the_admin_schema_route_is_not_open_to_a_plain_signed_in_user(env):
     res = env.client.get("/admin/schema", headers=H)
     assert res.status_code == 404
     assert env.client.get("/admin/schema").status_code == 404
+
+
+def test_the_admin_schema_route_answers_for_an_admin(admin_env):
+    schema_status._cache.clear()
+    res = admin_env.client.get("/admin/schema", headers=bearer(admin_env.tokens.admin))
+    assert res.status_code == 200 and res.json()["status"] == "success" and "missing" in res.json()
+    assert admin_env.client.get("/admin/schema", headers=H).status_code == 404
+    assert "/admin/schema" not in admin_env.client.get("/openapi.json").text
+    schema_status._cache.clear()
