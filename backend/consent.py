@@ -364,14 +364,14 @@ def on_data_deleted(db: Any, uid: str) -> None:
 
 # ---- enforcement helpers ---------------------------------------------------------------------------------------------------
 
-def persist_chat_events(db: Any, uid: str, message_id: str | None, events_: list[dict], persist: Callable[..., list[dict]] | None = None) -> list[dict]:
+def persist_chat_events(db: Any, uid: str, message_id: str | None, events_: list[dict], persist: Callable[..., list[dict]] | None = None, **kw: Any) -> list[dict]:
     """Save details noticed in chat as suggestions, only when the person agreed (health_memory_from_chat). Otherwise nothing is
     extracted or stored from the chat. ``persist`` defaults to chat_pipeline.persist_events."""
     if not events_ or not is_granted(db, uid, "health_memory_from_chat"):
         return []
     if persist is None:
         from chat_pipeline import persist_events as persist   # noqa: PLW0127 - imported late: chat_pipeline imports this module's callers
-    return persist(db, uid, message_id, events_)
+    return persist(db, uid, message_id, events_, **kw)
 
 
 def reask_due(db: Any, uid: str, now: datetime | None = None) -> bool:

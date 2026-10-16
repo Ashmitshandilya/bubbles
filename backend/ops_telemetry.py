@@ -25,18 +25,23 @@ QUEUE_LIMIT = 2000
 FLUSH_EVERY_S = 10.0
 PRUNE_EVERY_S = 3600.0
 AUDIT_RETENTION_DAYS = 365
+FUNNEL_RETENTION_DAYS = 90   # step counts are slow-moving: kept longer than the technical events
 READ_CAP = 20_000          # ponytail: aggregation reads at most this many rows per range; an SQL summary function is the upgrade path
 PAGE = 1000                # PostgREST returns at most 1,000 rows per request by default
 MAX_TEXT = 120             # any string in an event is cut to this: a row always fits the table's 4 KB check
 
 # Every field an event of each kind may carry. Anything else passed to record() is dropped.
 FIELDS: dict[str, frozenset[str]] = {
-    "api": frozenset({"method", "route", "status", "latency_ms", "route_kind", "safety_level", "ai_called"}),
+    "api": frozenset({"method", "route", "status", "latency_ms", "route_kind", "safety_level", "ai_called",
+                      # chat only: where the time went, in milliseconds (numbers only; see STAGES)
+                      "stage_pre_ms", "stage_ctx_ms", "stage_rag_ms", "stage_ai_ms", "stage_post_ms"}),
     "ai_attempt": frozenset({"provider", "model", "position", "outcome", "error_category", "latency_ms",
                              "input_tokens", "output_tokens", "total_tokens", "cached_tokens"}),
     "ai_reply": frozenset({"provider", "model", "outcome", "attempts", "fallback_used", "total_ms"}),
     "error": frozenset({"category", "component", "route", "error_class", "severity"}),
     "audit": frozenset({"action", "target", "old", "new", "outcome", "actor"}),   # actor: the administrator, never a user
+    "funnel": frozenset({"step"}),   # first-run setup: which step a person reached (a fixed name, never an answer)
+    "client": frozenset({"code"}),   # the website or app reporting that something broke (a fixed code, never a message)
 }
 
 _request_id: ContextVar[str | None] = ContextVar("bubbles_request_id", default=None)
@@ -51,7 +56,7 @@ STARTED_AT = datetime.now(timezone.utc)
 
 status: dict[str, Any] = {
     "mode": "memory_only",          # memory_only | stored | not_set_up | write_failing
-    "written": 0, "dropped": 0, "write_errors": 0, "last_write_at": None, "last_error_class": None, "last_prune_at": None,
+    "new_kinds": "unknown", "written": 0, "dropped": 0, "write_errors": 0, "last_write_at": None, "last_error_class": None, "last_prune_at": None,
 }
 retention_days = int(os.getenv("BUBBLES_TELEMETRY_RETENTION_DAYS", "14"))
 
@@ -92,14 +97,44 @@ NOTE_VALUES: dict[str, frozenset] = {
 }
 
 
+# Events whose one field may only be one of these fixed names; anything else drops the whole event (no free text can arrive this way).
+FUNNEL_STEPS = ("about", "goals", "health", "life", "more_health", "choices", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
+CLIENT_CODES = ("render_error", "unhandled_rejection", "chunk_load_failed", "api_unreachable", "sign_in_refresh_failed", "stream_fallback")
+FIELD_ENUMS: dict[str, dict[str, frozenset]] = {"funnel": {"step": frozenset(FUNNEL_STEPS)}, "client": {"code": frozenset(CLIENT_CODES)}}
+# Kinds added after the first migration: stored only if the database accepts them (supabase/migrations/20261016_bubbles_ops_funnel.sql).
+NEW_KINDS = frozenset({"funnel", "client"})
+
+
+# Where a chat turn spends its time, in order: pre (sign-in to understood), ctx (own data), rag (evidence lookup), ai (the model), post
+# (saving). ctx and rag run side by side, so their sum can exceed the request's own time. Numbers only, a fixed set of names.
+STAGES = ("pre", "ctx", "rag", "ai", "post")
+NOTE_NUMBERS = frozenset(f"stage_{name}_ms" for name in STAGES)
+_MAX_STAGE_MS = 600_000.0
+
+
 def note(**fields: Any) -> None:
-    """Adds technical facts about the current request (chat: route_kind, safety_level, ai_called) to its api event."""
+    """Adds technical facts about the current request (chat: route_kind, safety_level, ai_called, stage_*_ms) to its api event."""
     current = _request_note.get()
-    if current is not None:
-        current.update({k: v for k, v in fields.items() if k in NOTE_VALUES and isinstance(v, (str, bool)) and v in NOTE_VALUES[k]})
+    if current is None:
+        return
+    for key, value in fields.items():
+        if key in NOTE_VALUES and isinstance(value, (str, bool)) and value in NOTE_VALUES[key]:
+            current[key] = value
+        elif key in NOTE_NUMBERS and isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value <= _MAX_STAGE_MS:
+            current[key] = round(float(value), 1)
 
 
 # ---------------------------------------------------------------- recording
+
+def funnel(step: str) -> None:
+    """One person reached a first-run setup step. Only the fixed names in FUNNEL_STEPS are accepted."""
+    record("funnel", step=step)
+
+
+def client(code: str) -> None:
+    """The website or app reported a problem. Only the fixed names in CLIENT_CODES are accepted."""
+    record("client", code=code)
+
 
 def record(kind: str, **data: Any) -> None:
     """Never raises."""
@@ -109,12 +144,15 @@ def record(kind: str, **data: Any) -> None:
         if allowed is None:
             return
         clean = {k: (v[:MAX_TEXT] if isinstance(v, str) else v) for k, v in data.items() if k in allowed and v is not None}
+        for field, values in FIELD_ENUMS.get(kind, {}).items():
+            if clean.get(field) not in values:
+                return
         with _lock:
             _seq += 1
             event = {"seq": _seq, "at": datetime.now(timezone.utc).isoformat(), "kind": kind,
                      "request_id": _request_id.get(), "data": clean}
             _ring.append(event)
-            if _persist_enabled():
+            if _persist_enabled() and not (kind in NEW_KINDS and status["new_kinds"] == "not_allowed"):
                 if len(_queue) == QUEUE_LIMIT:
                     status["dropped"] += 1
                 _queue.append(event)
@@ -167,6 +205,26 @@ def flush_once() -> int:
     if not batch:
         return 0
     rows = [{"at": e["at"], "kind": e["kind"], "request_id": e["request_id"], "data": e["data"]} for e in batch]
+    # The newer kinds go in their own insert: if the database does not accept them yet, the technical events still get through.
+    newer = [r for r in rows if r["kind"] in NEW_KINDS]
+    rows = [r for r in rows if r["kind"] not in NEW_KINDS]
+    written = 0
+    if newer:
+        try:
+            _db().table(TABLE).insert(newer).execute()
+            status["new_kinds"] = "ok"
+            written += len(newer)
+        except Exception as error:  # noqa: BLE001
+            status["dropped"] += len(newer)
+            if "23514" in str(error) or "check constraint" in str(error).lower():
+                status["new_kinds"] = "not_allowed"   # the migration is not applied: keep these in memory only
+            else:
+                status["write_errors"] += 1
+                status["last_error_class"] = type(error).__name__
+    if not rows:
+        if written:
+            status["written"] += written
+        return written
     try:
         _db().table(TABLE).insert(rows).execute()
     except Exception as error:  # noqa: BLE001
@@ -174,11 +232,12 @@ def flush_once() -> int:
         status["dropped"] += len(rows)
         status["last_error_class"] = type(error).__name__
         status["mode"] = "not_set_up" if _missing_table(error) else "write_failing"
-        return 0
-    status["written"] += len(rows)
+        return written
+    written += len(rows)
+    status["written"] += written
     status["last_write_at"] = datetime.now(timezone.utc).isoformat()
     status["mode"] = "stored"
-    return len(rows)
+    return written
 
 
 def prune_once(now: datetime | None = None) -> None:
@@ -186,7 +245,8 @@ def prune_once(now: datetime | None = None) -> None:
     now = now or datetime.now(timezone.utc)
     try:
         table = _db().table(TABLE)
-        table.delete().neq("kind", "audit").lt("at", (now - timedelta(days=retention_days)).isoformat()).execute()
+        table.delete().in_("kind", ["api", "ai_attempt", "ai_reply", "error", "client"]).lt("at", (now - timedelta(days=retention_days)).isoformat()).execute()
+        _db().table(TABLE).delete().eq("kind", "funnel").lt("at", (now - timedelta(days=FUNNEL_RETENTION_DAYS)).isoformat()).execute()
         _db().table(TABLE).delete().eq("kind", "audit").lt("at", (now - timedelta(days=AUDIT_RETENTION_DAYS)).isoformat()).execute()
         status["last_prune_at"] = now.isoformat()
     except Exception as error:  # noqa: BLE001

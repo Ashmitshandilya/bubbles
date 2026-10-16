@@ -32,7 +32,7 @@ def test_an_inner_budget_never_extends_the_outer_one():
 
 def test_the_fallback_pool_gives_up_fast_once_the_budget_is_spent(monkeypatch):
     calls = []
-    monkeypatch.setattr(ai_provider.requests, "post", lambda *a, **k: calls.append(k) or pytest.fail("no call after the budget"))
+    monkeypatch.setattr(ai_provider._SESSION, "post", lambda *a, **k: calls.append(k) or pytest.fail("no call after the budget"))
     for name in ("GROQ", "NVIDIA", "MISTRAL"):
         monkeypatch.setenv(f"{name}_API_KEY", "test-key")
     started = time.monotonic()
@@ -56,7 +56,7 @@ def test_provider_calls_get_the_budgeted_timeout(monkeypatch):
         seen.append(kwargs["timeout"])
         return Response()
 
-    monkeypatch.setattr(ai_provider.requests, "post", fake_post)
+    monkeypatch.setattr(ai_provider._SESSION, "post", fake_post)
     with reply_budget(7.0):
         ai_provider._post_openai_compatible("Groq", "https://example.test", "key", "openai/gpt-oss-20b", "system", "hello")
     assert seen and seen[0] <= 7.0

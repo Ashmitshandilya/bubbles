@@ -442,3 +442,20 @@ def test_nobody_configured_means_no_sign_in_call_at_all(admin_env, monkeypatch):
     before = len(admin_env.verify_calls)
     assert admin_env.client.get("/admin/me", headers=bearer(admin_env.tokens.admin)).status_code == 404
     assert len(admin_env.verify_calls) == before
+
+
+def test_every_event_field_and_kind_is_documented_in_the_admin_readme():
+    from pathlib import Path
+    readme = (Path(__file__).resolve().parents[2] / "docs" / "admin" / "README.md").read_text(encoding="utf-8")
+    for kind, fields in ops_telemetry.FIELDS.items():
+        if kind in {"safety_level", "ai_called"}:   # value lists for the chat note, not event kinds
+            continue
+        assert f"`{kind}`" in readme, kind
+        for field in fields:
+            assert field in readme, (kind, field)
+
+
+def test_stage_numbers_are_on_the_api_allow_list_as_numbers_only():
+    stages = {f"stage_{name}_ms" for name in ops_telemetry.STAGES}
+    assert stages <= ops_telemetry.FIELDS["api"] and stages == set(ops_telemetry.NOTE_NUMBERS)
+    assert not stages & set(ops_telemetry.NOTE_VALUES)   # no value list: a stage field can only ever hold a number

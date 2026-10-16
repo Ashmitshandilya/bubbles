@@ -138,6 +138,18 @@ def build_admin_router(database_report: Callable[[], dict[str, Any]]) -> APIRout
         return {"status": "success", **_meta(source, capped, range_), "summary": ops_metrics.api_summary(events, since, until),
                 "routes": ops_metrics.api_table(events, since, until)}
 
+    @router.get("/usage")
+    def usage(range_: str = Query("7d", alias="range", pattern=RANGE_PATTERN)):
+        """Counts only: how Bubbles is used (safety tiers per day, kinds of reply, AI share, consent asks, reliability rates, feature use,
+        setup funnel, app problems), what the models cost at read time, and how many different people were active (integers, no ids)."""
+        since, _until = _window(range_)
+        events, capped, source = ops_telemetry.stored_events(since, ["api", "ai_attempt", "ai_reply", "funnel", "client"])
+        from supabase_client import supabase
+        import ops_usage
+        paid = os.getenv("ALLOW_PAID_AI", "false").strip().lower() in {"1", "true", "yes"}
+        return {"status": "success", **_meta(source, capped, range_), "usage": ops_metrics.usage_summary(events, paid_allowed=paid),
+                "people": ops_usage.activity_counts(supabase)}
+
     @router.get("/events")
     def events(
         range_: str = Query("1h", alias="range", pattern=RANGE_PATTERN),
