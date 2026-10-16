@@ -11,7 +11,6 @@ import {
   parseChatMarkdown,
   reasonSentence,
   retractionNote,
-  settledState,
   splitBold,
   type EvidenceItem,
   type ExtractedHealthEvent,
@@ -19,11 +18,11 @@ import {
   type SafetyLevel,
   type SafetyState,
 } from "../lib/bubbles-events";
+import { cardView, eventState, type Decisions } from "./event-decisions";
 import { pickSources } from "./evidence";
 import { FEEDBACK_REASONS, isRatableId, type Feedback, type FeedbackReason, type Rating } from "./feedback";
 
 export type { SafetyLevel };
-export type EventStatus = "busy" | "saved" | "dismissed" | "retracted";
 
 export interface ChatMessage {
   id: string;
@@ -139,19 +138,41 @@ export function MessageBody({ content }: { content: string }) {
   );
 }
 
-export function ThinkingBubble() {
+/**
+ * Bubbles is replying. The mascot only appears while nothing about safety is known or the gate said calm: a caution
+ * or urgent message gets three plain dots and no mascot. One live region, no visible words.
+ */
+export function ThinkingBubble({ calm = true }: { calm?: boolean }) {
   return (
     <li
       role="status"
       aria-live="polite"
-      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border border-bubbles-grape/15 bg-surface px-[18px] py-3"
+      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border border-bubbles-grape/15 bg-surface px-4 py-2.5"
     >
-      <span className="text-body-sm font-semibold text-ink-soft">Checking your history and trusted sources</span>
-      <span className="inline-flex shrink-0 gap-1" aria-hidden="true">
-        <span className="bubbles-thinking-dot" />
-        <span className="bubbles-thinking-dot" />
-        <span className="bubbles-thinking-dot" />
-      </span>
+      <span className="sr-only">Bubbles is replying</span>
+      {calm ? (
+        <span className="bubbles-loader-bob inline-flex" aria-hidden="true">
+          <BubblesMascot size={40} mood="thinking" animated />
+        </span>
+      ) : (
+        <span className="inline-flex shrink-0 gap-1 py-3" aria-hidden="true">
+          <span className="bubbles-thinking-dot" />
+          <span className="bubbles-thinking-dot" />
+          <span className="bubbles-thinking-dot" />
+        </span>
+      )}
+    </li>
+  );
+}
+
+/** The words of a calm reply as they arrive. Replaced by the real reply the moment it is complete. */
+export function PartialReply({ text }: { text: string }) {
+  return (
+    <li className="flex w-full items-start gap-2.5 self-start sm:max-w-[min(92%,44rem)]">
+      <span className="mt-1 w-9 shrink-0" aria-hidden="true" />
+      <div data-private className="flex min-w-0 flex-1 flex-col gap-3 rounded-[20px_20px_20px_8px] border border-line bg-surface px-5 py-4 text-body leading-relaxed text-ink shadow-sm">
+        <MessageBody content={text} />
+      </div>
     </li>
   );
 }
@@ -186,40 +207,43 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
   const headingId = useId();
   const sources = pickSources(evidence);
   if (!sources.length && !confidence) return null;
+  const chip =
+    "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-left text-chip font-extrabold leading-snug text-bubbles-grape-deep no-underline";
   return (
-    <div className="flex flex-wrap gap-2 pt-1">
+    <div className="flex flex-col gap-2 pt-1">
       {sources.length > 0 && (
-        <div role="group" aria-labelledby={headingId} className="flex w-full flex-wrap gap-2">
-          {/* Retrieved reading on the topic, not a statement about this person. */}
-          <p id={headingId} className="m-0 w-full text-[0.75rem] font-extrabold text-ink-soft">
-            General reading
-          </p>
-          {sources.map((ev, idx) => {
-            const label = (
-              <>
-                <Icon d={ICONS.book} size={14} />
-                <span className="line-clamp-2 min-w-0">
-                  {ev.title} · {ev.publisher ?? ev.sourceName}
+        <details className="group">
+          <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center text-body-sm font-extrabold text-bubbles-grape-deep [&::-webkit-details-marker]:hidden">
+            Read more
+          </summary>
+          {/* Retrieved reading on the topic, not a statement about this person. Titles only: the app never names who wrote it. */}
+          <div role="group" aria-labelledby={headingId} className="flex w-full flex-wrap gap-2 pb-1">
+            <p id={headingId} className="m-0 w-full text-[0.75rem] font-extrabold text-ink-soft">
+              General reading
+            </p>
+            {sources.map((ev, idx) => {
+              const label = (
+                <>
+                  <Icon d={ICONS.book} size={14} />
+                  <span className="line-clamp-2 min-w-0">{ev.title}</span>
+                </>
+              );
+              return ev.sourceUrl ? (
+                <a key={ev.chunkId ?? `${ev.title}-${idx}`} href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" className={`${chip} hover:bg-bubbles-grape/15`}>
+                  {label}
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
+              ) : (
+                <span key={ev.chunkId ?? `${ev.title}-${idx}`} className={chip}>
+                  {label}
                 </span>
-              </>
-            );
-            const chip =
-              "inline-flex min-h-[44px] max-w-full items-center gap-1.5 rounded-full bg-tint-grape px-3 py-1.5 text-left text-chip font-extrabold leading-snug text-bubbles-grape-deep no-underline";
-            return ev.sourceUrl ? (
-              <a key={ev.chunkId ?? `${ev.title}-${idx}`} href={ev.sourceUrl} target="_blank" rel="noopener noreferrer" className={`${chip} hover:bg-bubbles-grape/15`}>
-                {label}
-                <span className="sr-only">(opens in a new tab)</span>
-              </a>
-            ) : (
-              <span key={ev.chunkId ?? `${ev.title}-${idx}`} className={chip}>
-                {label}
-              </span>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </details>
       )}
       {confidence && (
-        <span className="inline-flex min-h-[32px] items-center rounded-full bg-tint-mint px-3 py-1.5 text-chip font-extrabold text-bubbles-mint-deep">
+        <span className="inline-flex min-h-[32px] w-fit items-center rounded-full bg-tint-mint px-3 py-1.5 text-chip font-extrabold text-bubbles-mint-deep">
           Confidence {confidence}
         </span>
       )}
@@ -234,28 +258,21 @@ function eventLabel(event: ExtractedHealthEvent) {
 
 const btn = "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full px-4 text-body-sm font-extrabold disabled:cursor-not-allowed disabled:opacity-60";
 
-/** "Should I save these?" — explicit user confirmation before AI-proposed events count. */
+/** "Should I save these?": explicit user confirmation before AI-proposed events count. The card flips as soon as a button is pressed. */
 function EventCard({
   events,
-  status,
+  decisions,
   error,
   onDecide,
 }: {
   events: ExtractedHealthEvent[];
-  status: Record<string, EventStatus>;
+  decisions: Decisions;
   error?: string;
   onDecide: (ids: string[], confirmed: boolean) => void;
 }) {
   const resultRef = useRef<HTMLDivElement>(null);
-  // This session's decision wins; otherwise show whatever the server already settled (a reloaded message).
-  const stateOf = (e: ExtractedHealthEvent): EventStatus | null => (e.id ? status[e.id] : undefined) ?? settledState(e);
-  const confirmable = events.filter((e): e is ExtractedHealthEvent & { id: string } => e.isConfirmable && e.id !== null);
-  const pending = confirmable.filter((e) => !status[e.id]);
-  const busy = confirmable.some((e) => status[e.id] === "busy");
-  const resolved = confirmable.length > 0 && pending.length === 0 && !busy;
-  const saved = confirmable.filter((e) => status[e.id] === "saved");
-  const skipped = confirmable.filter((e) => status[e.id] === "dismissed");
-  const withdrawn = confirmable.filter((e) => status[e.id] === "retracted");
+  const view = cardView(events, decisions);
+  const { pendingIds, saved, skipped, withdrawn, checking, resolved, recordSaved, decidable } = view;
 
   // The buttons that had focus disappear on resolve; hand focus to the result so keyboard users aren't dropped.
   useEffect(() => {
@@ -270,7 +287,7 @@ function EventCard({
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </span>
           <div className="min-w-0">
-            <strong className="block font-display text-h4 text-ink">Saved to your health record</strong>
+            <strong className="block font-display text-h4 text-ink">{recordSaved ? "Saved to your health record" : "Saved"}</strong>
             <span className="block text-body-sm text-ink-soft">
               {saved.map(eventLabel).join(", ")}
               {skipped.length ? ` · skipped ${skipped.length}` : ""}
@@ -281,25 +298,25 @@ function EventCard({
     }
     return (
       <div ref={resultRef} tabIndex={-1} role="status" className="rounded-3xl border border-line bg-surface px-4 py-3 text-body-sm text-ink-soft outline-offset-4">
-        {withdrawn.length === confirmable.length
+        {withdrawn.length === decidable.length
           ? "Bubbles withdrew this after your correction. Nothing was saved."
           : "Okay, nothing from this message was saved."}
       </div>
     );
   }
 
-  const many = confirmable.length > 1;
+  const many = decidable.length > 1;
   return (
     <section
       aria-label="Health details Bubbles noticed"
       className="flex flex-col gap-3 rounded-3xl border border-dashed border-bubbles-lilac bg-surface px-4 py-4 shadow-sm sm:px-5"
     >
       <h3 className="m-0 font-display text-h4 font-semibold">
-        {confirmable.length ? `Should I save ${many ? "these" : "this"} to your health record?` : "Bubbles noticed"}
+        {decidable.length ? `Should I save ${many ? "these" : "this"}?` : "Bubbles noticed"}
       </h3>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {events.map((event, idx) => {
-          const state = stateOf(event);
+          const state = eventState(event, decisions);
           const conf = confidenceLabel(event.confidence);
           const note = eventNote(event);
           const day = eventDayLabel(event.date);
@@ -331,13 +348,13 @@ function EventCard({
               )}
               {state === "dismissed" && <span className="text-body-sm font-extrabold text-ink-soft">Skipped</span>}
               {state === "retracted" && <span className="text-body-sm font-extrabold text-ink-soft">Withdrawn</span>}
-              {state === "busy" && <span className="text-body-sm font-extrabold text-ink-soft">Working…</span>}
+              {state === "checking" && <span className="text-body-sm font-extrabold text-ink-soft">Checking…</span>}
               {many && event.isConfirmable && event.id && !state && (
                 <div className="flex gap-2">
-                  <button type="button" disabled={busy} onClick={() => onDecide([event.id!], true)} className={`${btn} bg-tint-grape text-bubbles-grape-deep`} aria-label={`Save ${eventLabel(event)}`}>
+                  <button type="button" onClick={() => onDecide([event.id!], true)} className={`${btn} bg-tint-grape text-bubbles-grape-deep`} aria-label={`Save ${eventLabel(event)}`}>
                     Save
                   </button>
-                  <button type="button" disabled={busy} onClick={() => onDecide([event.id!], false)} className={`${btn} text-ink-soft`} aria-label={`Don't save ${eventLabel(event)}`}>
+                  <button type="button" onClick={() => onDecide([event.id!], false)} className={`${btn} text-ink-soft`} aria-label={`Don't save ${eventLabel(event)}`}>
                     Skip
                   </button>
                 </div>
@@ -346,23 +363,18 @@ function EventCard({
           );
         })}
       </ul>
-      {pending.length > 0 && (
+      {pendingIds.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => onDecide(pending.map((e) => e.id), true)}
-            className={`${btn} bg-bubbles-grape text-white bubbles-glow`}
-          >
+          <button type="button" onClick={() => onDecide(pendingIds, true)} className={`${btn} bg-bubbles-grape text-white bubbles-glow`}>
             <Icon d={ICONS.check} size={16} strokeWidth={3} />
-            {pending.length === 1 ? "Yes, save it" : "Yes, save all"}
+            {pendingIds.length === 1 ? "Yes, save it" : "Yes, save all"}
           </button>
-          <button type="button" disabled={busy} onClick={() => onDecide(pending.map((e) => e.id), false)} className={`${btn} text-ink-soft hover:text-ink`}>
+          <button type="button" onClick={() => onDecide(pendingIds, false)} className={`${btn} text-ink-soft hover:text-ink`}>
             Don&apos;t save
           </button>
         </div>
       )}
-      {busy && <p role="status" className="m-0 text-body-sm font-bold text-ink-soft">Saving your choice…</p>}
+      {checking && <p role="status" className="m-0 text-body-sm font-bold text-ink-soft">Saving, checking…</p>}
       {error && (
         <p role="alert" className="m-0 text-body-sm font-bold text-bubbles-urgent">
           {error}
@@ -373,10 +385,34 @@ function EventCard({
 }
 
 /**
- * The one question Bubbles asks before it sends a message to an outside AI model. The yes is stored on the server and can be undone in Settings.
+ * The one question Bubbles asks before it sends a message to an outside AI model. The yes (or the no) is stored on the server and can be changed in Settings.
  * The card itself says what is sent: it can sit under a reply that does not (an urgent message from someone who has not said yes yet).
+ * After a "No, not now" the card is replaced by one quiet line, so the question is not put again on every message.
  */
-function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
+function ConsentCard({
+  busy,
+  declined,
+  onAllow,
+  onDecline,
+  onReconsider,
+}: {
+  busy: boolean;
+  declined: boolean;
+  onAllow: () => void;
+  onDecline: () => void;
+  onReconsider: () => void;
+}) {
+  if (declined) {
+    return (
+      <div role="group" aria-label="AI replies are off" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[20px] bg-tint-sky px-4 py-2">
+        <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">AI replies are off for now.</p>
+        <button type="button" onClick={onReconsider} className="min-h-[44px] rounded-full px-2 text-body-sm font-extrabold text-bubbles-sky-deep underline">
+          Turn on
+        </button>
+      </div>
+    );
+  }
+  const same = "bubbles-press inline-flex min-h-[44px] w-full items-center justify-center rounded-full px-5 text-body-sm font-extrabold disabled:cursor-wait disabled:opacity-70 sm:w-auto";
   return (
     <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[20px] bg-tint-sky p-4">
       <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
@@ -384,13 +420,11 @@ function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) 
         recent entries) go to an outside AI model.
       </p>
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onAllow}
-          disabled={busy}
-          className="bubbles-press inline-flex min-h-[44px] w-full items-center justify-center rounded-full bg-bubbles-pink-ink px-5 text-body-sm font-extrabold text-white disabled:cursor-wait disabled:opacity-70 sm:w-auto"
-        >
+        <button type="button" onClick={onAllow} disabled={busy} className={`${same} bg-bubbles-pink-ink text-white`}>
           {busy ? "Saving..." : "Yes, allow and continue"}
+        </button>
+        <button type="button" onClick={onDecline} disabled={busy} className={`${same} border-2 border-bubbles-pink-ink bg-surface text-bubbles-pink-ink`}>
+          No, not now
         </button>
       </div>
       <p className="m-0 text-caption font-semibold text-bubbles-sky-deep">You can change this any time in Settings.</p>
@@ -463,7 +497,7 @@ function ReplyFeedback({
 /** One Bubbles reply: safety banner, the answer, sources, and the save-to-record card. */
 export function BubblesReply({
   message,
-  eventStatus,
+  decisions,
   eventError,
   onDecide,
   showAvatar = false,
@@ -475,10 +509,13 @@ export function BubblesReply({
   feedbackFailed = false,
   onRate,
   onConsent,
+  onDeclineConsent,
+  onReconsider,
+  consentDeclined = false,
   consentBusy = false,
 }: {
   message: ChatMessage;
-  eventStatus: Record<string, EventStatus>;
+  decisions: Decisions;
   eventError?: string;
   onDecide: (ids: string[], confirmed: boolean) => void;
   /** First reply of a run: show the small Bubbles avatar. Urgent and withdrawn replies never show it. */
@@ -494,6 +531,10 @@ export function BubblesReply({
   onRate?: (rating: Rating, reason?: FeedbackReason) => void;
   /** Shown under the reply that asks for the yes. */
   onConsent?: () => void;
+  onDeclineConsent?: () => void;
+  onReconsider?: () => void;
+  /** The person said "No, not now": show the quiet line instead of the question. */
+  consentDeclined?: boolean;
   consentBusy?: boolean;
 }) {
   if (message.retracted) {
@@ -572,9 +613,11 @@ export function BubblesReply({
         <EvidenceRow evidence={message.evidence ?? []} confidence={message.confidence} />
       </div>
       {message.healthEvents && message.healthEvents.length > 0 && (
-        <EventCard events={message.healthEvents} status={eventStatus} error={eventError} onDecide={onDecide} />
+        <EventCard events={message.healthEvents} decisions={decisions} error={eventError} onDecide={onDecide} />
       )}
-      {message.consentRequired && onConsent && <ConsentCard busy={consentBusy} onAllow={onConsent} />}
+      {message.consentRequired && onConsent && onDeclineConsent && onReconsider && (
+        <ConsentCard busy={consentBusy} declined={consentDeclined} onAllow={onConsent} onDecline={onDeclineConsent} onReconsider={onReconsider} />
+      )}
       {onRate && message.role === "assistant" && !message.consentRequired && isRatableId(message.id) && (
         <ReplyFeedback feedback={feedback} busy={feedbackBusy} failed={feedbackFailed} onRate={onRate} />
       )}
@@ -605,6 +648,7 @@ export function ConversationList({
   onSelect,
   onNew,
   onRetry,
+  heading = true,
 }: {
   items: ConversationSummary[];
   state: "loading" | "error" | "ready";
@@ -612,6 +656,8 @@ export function ConversationList({
   onSelect: (id: string) => void;
   onNew: () => void;
   onRetry: () => void;
+  /** The drawer already has its own "History" title. */
+  heading?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-2.5">
@@ -621,11 +667,11 @@ export function ConversationList({
         className="bubbles-press flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-4 text-body font-extrabold text-white bubbles-glow"
       >
         <Icon d={ICONS.plus} strokeWidth={2.6} />
-        New conversation
+        New chat
       </button>
-      <h2 className="m-0 px-1.5 pb-0.5 pt-3 text-label font-extrabold uppercase tracking-wide text-ink-soft">Recent</h2>
+      {heading && <h2 className="m-0 px-1.5 pb-0.5 pt-3 text-label font-extrabold uppercase tracking-wide text-ink-soft">History</h2>}
       {state === "loading" && (
-        <div role="status" aria-label="Loading conversations" className="flex flex-col gap-2">
+        <div role="status" aria-label="Loading history" className="flex flex-col gap-2">
           {[0, 1, 2].map((i) => (
             <span key={i} className="bubbles-skeleton block h-14 rounded-2xl" />
           ))}
@@ -633,14 +679,14 @@ export function ConversationList({
       )}
       {state === "error" && (
         <div role="alert" className="flex flex-col items-start gap-2 rounded-2xl bg-tint-pink px-3.5 py-3 text-body-sm text-ink">
-          Bubbles couldn&apos;t load your conversations.
+          Bubbles couldn&apos;t load your history.
           <button type="button" onClick={onRetry} className="min-h-[44px] rounded-full border border-line-strong bg-surface px-4 text-body-sm font-extrabold">
             Try again
           </button>
         </div>
       )}
       {state === "ready" && items.length === 0 && (
-        <p className="m-0 px-1.5 text-body-sm text-ink-soft">No conversations yet. Your chats with Bubbles will appear here.</p>
+        <p className="m-0 px-1.5 text-body-sm text-ink-soft">No chats yet. Your chats with Bubbles will appear here.</p>
       )}
       {state !== "loading" && items.length > 0 && (
         <ul className="m-0 flex list-none flex-col gap-1 p-0">
