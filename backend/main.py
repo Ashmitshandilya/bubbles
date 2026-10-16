@@ -69,6 +69,7 @@ from conversation_correction import apply_correction, contradiction_note
 from health_semantics import display_name
 from event_filters import DEAD_STATUSES, event_moment
 from health_event_confirm import build_router as build_confirm_router
+from client_telemetry import build_router as build_client_telemetry_router
 from db_access import database_permission_response, is_permission_denied, probe_database, register_db_error_handlers
 from weekly_insights import build_weekly_insights, to_response_shape as weekly_insights_response_shape
 from pattern_engine import analyze as analyze_patterns
@@ -553,6 +554,7 @@ app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_consent_router(get_authenticated_user, supabase))
+app.include_router(build_client_telemetry_router())   # POST /telemetry/client: a fixed problem code, nothing else
 app.include_router(build_confirm_router(get_authenticated_user, supabase))   # POST /health-events/confirmation (batch) + the old single PATCH
 app.include_router(build_onboarding_router(get_authenticated_user, supabase))
 app.include_router(build_import_router(get_authenticated_user, supabase))

@@ -37,7 +37,7 @@ def _of(events: Iterable[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
 def ai_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
     replies = _of(events, "ai_reply")
     attempts = _of(events, "ai_attempt")
-    chats = [e["data"] for e in _of(events, "api") if e["data"].get("route") == "/chat"]
+    chats = [e["data"] for e in _of(events, "api") if e["data"].get("route") in {"/chat", "/chat/stream"}]
     answered = [r for r in replies if r["data"].get("outcome") == "answered"]
     totals = [r["data"].get("total_ms") for r in replies if r["data"].get("total_ms") is not None]
     return {
@@ -216,3 +216,74 @@ def headline(*, database: str, persistence_mode: str, all_paused: bool, ai_now: 
     if persistence_mode != "stored":
         warn.append("Logs are kept in memory only." if persistence_mode in {"memory_only", "not_set_up"} else "Saving logs is failing.")
     return {"status": "fail" if fail else "warn" if warn else "ok", "reasons": fail + warn}
+
+
+# ---------------------------------------------------------------- usage and cost (aggregates only: counts, rates, no user ids)
+
+CHAT_ROUTES = frozenset({"/chat", "/chat/stream"})
+FUNNEL_ORDER = ("about", "goals", "health", "life", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
+FREE_TIER = "free tier"
+
+
+def model_cost(provider: str, model: str, input_tokens: int, output_tokens: int, *, paid_allowed: bool = False) -> dict[str, Any]:
+    """What a model's tokens cost, worked out when the admin page is read (never stored in an event).
+
+    While paid AI is off (the standing policy) every provider in the chain runs on its free tier: the cost is $0 and says so. A model
+    whose name is not known ("unknown") is reported as unknown rather than as free. With paid AI on, the published price is used; a
+    model without a price row is unknown. ``if_paid_usd`` is what the same tokens would cost at the published price, when there is one."""
+    import ai_orchestrator
+    if not provider or not model or model == "unknown":
+        return {"label": "unknown", "cost_usd": None, "if_paid_usd": None}
+    estimate = ai_orchestrator.estimate_cost(provider, model, input_tokens, output_tokens)
+    if not paid_allowed:
+        return {"label": FREE_TIER, "cost_usd": 0.0, "if_paid_usd": estimate}
+    return {"label": "paid" if estimate is not None else "unknown", "cost_usd": estimate, "if_paid_usd": estimate}
+
+
+def cost_table(events: list[dict[str, Any]], *, paid_allowed: bool = False) -> list[dict[str, Any]]:
+    """Per provider and model: calls, tokens and cost at read time."""
+    groups: dict[tuple[str, str], dict[str, int]] = defaultdict(lambda: {"calls": 0, "input_tokens": 0, "output_tokens": 0})
+    for e in _of(events, "ai_attempt"):
+        d = e["data"]
+        g = groups[(str(d.get("provider") or "unknown"), str(d.get("model") or "unknown"))]
+        g["calls"] += 1
+        g["input_tokens"] += int(d.get("input_tokens") or 0)
+        g["output_tokens"] += int(d.get("output_tokens") or 0)
+    rows = []
+    for (provider, model), g in sorted(groups.items(), key=lambda kv: -kv[1]["calls"]):
+        rows.append({"provider": provider, "model": model, **g, **model_cost(provider, model, g["input_tokens"], g["output_tokens"], paid_allowed=paid_allowed)})
+    return rows
+
+
+def usage_summary(events: list[dict[str, Any]], *, paid_allowed: bool = False) -> dict[str, Any]:
+    """Counts and rates that show how Bubbles is used and how it is holding up. Every number is an integer count or a 0..1 rate."""
+    api = _of(events, "api")
+    chats = [e for e in api if e["data"].get("route") in CHAT_ROUTES]
+    by_day: dict[str, Counter] = defaultdict(Counter)
+    for e in chats:
+        level = e["data"].get("safety_level")
+        if level in {"GREEN", "AMBER", "RED"}:
+            by_day[str(e.get("at", ""))[:10]][level] += 1
+    kinds = Counter(e["data"].get("route_kind") for e in chats if e["data"].get("route_kind"))
+    ai_known = [e["data"] for e in chats if e["data"].get("ai_called") is not None]
+    replies = _of(events, "ai_reply")
+    answered = [r for r in replies if r["data"].get("outcome") == "answered"]
+    attempts = _of(events, "ai_attempt")
+    steps = Counter(e["data"].get("step") for e in _of(events, "funnel"))
+    return {
+        "safety_by_day": {day: {lvl: counts.get(lvl, 0) for lvl in ("GREEN", "AMBER", "RED")} for day, counts in sorted(by_day.items())},
+        "route_mix": dict(kinds.most_common()),
+        "ai_share": {"ai": sum(1 for d in ai_known if d["ai_called"]), "deterministic": sum(1 for d in ai_known if not d["ai_called"]),
+                     "rate": _rate(sum(1 for d in ai_known if d["ai_called"]), len(ai_known))},
+        "consent_needed": {"count": kinds.get("consent_needed", 0), "rate": _rate(kinds.get("consent_needed", 0), len(chats))},
+        "reliability": {
+            "fallback_rate": _rate(sum(1 for r in answered if r["data"].get("fallback_used")), len(answered)),
+            "degraded_rate": _rate(sum(1 for r in replies if r["data"].get("outcome") == "degraded"), len(replies)),
+            "timeout_rate": _rate(sum(1 for a in attempts if a["data"].get("outcome") in {"timeout", "budget_spent"}), len(attempts)),
+        },
+        "feature_usage": dict(Counter(e["data"].get("route") for e in api if e["data"].get("route") and e["data"].get("status", 200) < 400).most_common(40)),
+        "funnel": [{"step": s, "count": steps.get(s, 0)} for s in FUNNEL_ORDER],
+        "client_problems": dict(Counter(e["data"].get("code") for e in _of(events, "client")).most_common()),
+        "cost": cost_table(events, paid_allowed=paid_allowed),
+        "stage_ms": stage_latency([e["data"] for e in chats]),
+    }
