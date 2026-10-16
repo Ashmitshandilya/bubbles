@@ -81,3 +81,16 @@ def test_messages_page_back_with_before_and_report_has_more(client):
     older = c.get(f"/chat/conversations/{CONV}/messages?limit=5&before=2026-10-10T10:00:02Z", headers=H).json()
     assert [m["id"] for m in older["messages"]] == ["m1"] and older["has_more"] is False
     assert c.get(f"/chat/conversations/{CONV}/messages?before=nope", headers=H).status_code == 400
+
+
+def test_history_pages_back_with_before_and_reports_has_more(client):
+    c, db = client
+    for i in (1, 2):
+        db.table("chat_conversations").insert({"id": f"11111111-1111-4111-8111-11111111111{i + 1}", "user_id": USER, "title": f"Older {i}",
+                                               "created_at": f"2026-10-0{i}T10:00:00Z", "updated_at": f"2026-10-0{i}T10:05:00Z"}).execute()
+    first = c.get("/chat/history?limit=2", headers=H).json()
+    assert [x["title"] for x in first["conversations"]] == ["Headache", "Older 2"] and first["has_more"] is True
+    older = c.get(f"/chat/history?limit=2&before={first['conversations'][-1]['updated_at']}", headers=H).json()
+    assert [x["title"] for x in older["conversations"]] == ["Older 1"] and older["has_more"] is False
+    assert c.get("/chat/history?before=nope", headers=H).status_code == 400
+

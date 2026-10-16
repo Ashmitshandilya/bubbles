@@ -1140,17 +1140,26 @@ def memory_diagnostics_api(authorization: str | None = Header(default=None)):
     return {"status":"success","memory":memory_diagnostics(str(user.id))}
 
 @app.get("/chat/history")
-def chat_history_api(authorization: str | None = Header(default=None), limit: int = Query(10, ge=1, le=50)):
+def chat_history_api(authorization: str | None = Header(default=None), limit: int = Query(10, ge=1, le=50),
+                     before: str | None = Query(None, max_length=40)):
+    """Recent conversations, newest first. ``before`` (an ISO time, the oldest ``updated_at`` already shown) pages to older ones."""
     user = get_authenticated_user(authorization)
     user_id = str(user.id)
+    if before:
+        try:
+            datetime.fromisoformat(before.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="before must be an ISO date and time")
     try:
         # Get conversations with message count
-        conversations = (supabase.table("chat_conversations")
-                        .select("id,title,created_at,updated_at")
-                        .eq("user_id", user_id)
-                        .order("updated_at", desc=True)
-                        .limit(limit)
-                        .execute().data or [])
+        query = (supabase.table("chat_conversations")
+                 .select("id,title,created_at,updated_at")
+                 .eq("user_id", user_id))
+        if before:
+            query = query.lt("updated_at", before)
+        conversations = query.order("updated_at", desc=True).limit(limit + 1).execute().data or []
+        has_more = len(conversations) > limit
+        conversations = conversations[:limit]
 
         # Message count for each conversation, asked at the same time: one after another this was up to 50 round trips
         # to the database before the chat screen could show anything.
@@ -1163,7 +1172,7 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
             for conv, msg_count in zip(conversations, pool.map(_count, conversations)):
                 conv["message_count"] = msg_count
 
-        return {"conversations": conversations}
+        return {"conversations": conversations, "has_more": has_more}
     except Exception as e:
         from logging_util import logger
         logger.error(
@@ -1175,7 +1184,7 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
             fallback_action="returning_empty_list",
         )
         # `degraded` lets the UI say "history is unavailable" instead of pretending the user has no conversations
-        return {"conversations": [], "degraded": True}
+        return {"conversations": [], "has_more": False, "degraded": True}
 
 @app.get("/chat/conversations/{conversation_id}/messages")
 def chat_conversation_messages_api(

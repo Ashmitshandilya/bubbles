@@ -279,3 +279,31 @@ def test_every_sentence_loses_its_attribution_not_only_the_first_and_who_the_pro
     assert strip_attribution("Water helps.\nAccording to the NHS, rest also helps.") == "Water helps.\nRest also helps."
     assert "authority_citation" not in lint("Who is it that you spoke to? Anyone who feels dizzy should sit down.")
     assert strip_attribution("The doctor who prescribed it can tell you.") == "The doctor who prescribed it can tell you."
+
+
+def test_a_resumed_thread_treats_old_symptoms_as_history_not_now():
+    from datetime import datetime, timedelta, timezone
+    from chat_pipeline import conversation_block, history_user_facts, state_block
+    now = datetime(2026, 10, 16, 12, 0, tzinfo=timezone.utc)
+    old = (now - timedelta(days=5)).isoformat()
+    fresh = (now - timedelta(hours=3)).isoformat()
+    history = [
+        {"role": "user", "content": "I have a headache and no chest pain", "created_at": old},
+        {"role": "user", "content": "I feel nauseous today", "created_at": fresh},
+    ]
+    block = state_block([], history_user_facts(history, now))
+    assert "Past or resolved (not current): headache" in block.replace("Headache", "headache") or "headache" in block.lower().split("past or resolved")[-1]
+    assert "chest pain" not in block.lower()                                   # an old denial is no standing denial
+    assert "nausea" in block.lower().split("reported now or recently")[-1].split(chr(10))[0]
+    text = conversation_block(history, now=now)
+    assert "5 days ago" in text and "3 days" not in text and text.count("earlier") == 1
+
+
+def test_a_chat_from_an_hour_ago_is_all_still_now():
+    from datetime import datetime, timedelta, timezone
+    from chat_pipeline import history_user_facts, state_block
+    now = datetime(2026, 10, 16, 12, 0, tzinfo=timezone.utc)
+    history = [{"role": "user", "content": "I have a headache and no chest pain", "created_at": (now - timedelta(hours=1)).isoformat()}]
+    block = state_block([], history_user_facts(history, now))
+    assert "chest pain" in block.lower() and "Reported now or recently" in block
+

@@ -21,7 +21,7 @@ import re
 import threading
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 
@@ -39,6 +39,9 @@ from safety_engine import (
 
 HISTORY_TURNS = 10
 HISTORY_FACT_MESSAGES = 6
+# A resumed chat can be days old. What the person said more than this many hours ago is history, not how they are now: it is shown to
+# the model as "earlier", past symptoms are never listed as current, and an old "no X" is no longer a standing denial.
+HISTORY_NOW_HOURS = 48
 ACTIVE_TEMPORALS = {"current", "recent", "recurring", "unknown"}
 SYMPTOMISH_TYPES = {"symptom", "menstrual_symptom", "medical_condition", "allergy", "medication", "supplement", "family_medical_history"}
 MENSTRUAL_CONCEPTS = {"cramps", "spotting"}
@@ -214,7 +217,19 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
     }
 
 
-def conversation_block(history: list[dict[str, Any]], max_chars: int = 2400) -> str:
+def message_age_hours(row: dict[str, Any], now: datetime | None = None) -> float | None:
+    """Hours since a stored message was written (None when it has no readable time)."""
+    raw = str(row.get("created_at") or "")
+    try:
+        when = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return ((now or datetime.now(timezone.utc)) - when).total_seconds() / 3600
+
+
+def conversation_block(history: list[dict[str, Any]], max_chars: int = 2400, *, now: datetime | None = None) -> str:
     lines: list[str] = []
     for row in history[-8:]:
         content = " ".join(str(row.get("content") or "").split())
@@ -222,6 +237,9 @@ def conversation_block(history: list[dict[str, Any]], max_chars: int = 2400) -> 
         if row.get("role") == "bubbles" and (meta.get("safety") or {}).get("retracted"):
             content = "[withdrawn: Bubbles misread the user here and retracted this warning]"
         label = "User" if row.get("role") == "user" else "Bubbles"
+        age = message_age_hours(row, now)
+        if age is not None and age > HISTORY_NOW_HOURS:
+            label += f" (earlier, {int(age // 24)} days ago, not necessarily true now)"
         lines.append(f"{label}: {content[:360]}")
     while lines and sum(len(l) + 1 for l in lines) > max_chars:
         lines.pop(0)
@@ -290,14 +308,20 @@ class Turn:
     last_reply: dict[str, Any] | None = None   # the newest Bubbles message in this conversation (content + metadata)
 
 
-def history_user_facts(history: list[dict[str, Any]]) -> list[Fact]:
+def history_user_facts(history: list[dict[str, Any]], now: datetime | None = None) -> list[Fact]:
     out: list[Fact] = []
     users = [r for r in history if r.get("role") == "user" and r.get("content")][-HISTORY_FACT_MESSAGES:]
     for row in users:
         try:
-            out.extend(analyze(str(row["content"])[:1500]))
+            facts = analyze(str(row["content"])[:1500])
         except Exception as error:  # noqa: BLE001
             _log_failure("history_facts", error)
+            continue
+        age = message_age_hours(row, now)
+        if age is not None and age > HISTORY_NOW_HOURS:
+            # old news: what they had becomes "past", and an old denial or guess says nothing about today
+            facts = [replace(f, temporal="past") for f in facts if f.assertion == "present"]
+        out.extend(facts)
     return out
 
 
@@ -311,7 +335,7 @@ def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | No
     safety = assess_safety(text, facts)  # never raises; falls back to a keyword fail-safe when facts is None
     facts = facts or []
     t1 = time.perf_counter()
-    history_facts = history_user_facts(history)
+    history_facts = history_user_facts(history, now)
     try:
         correction = detect_correction(text, facts, history)
     except Exception as error:  # noqa: BLE001
