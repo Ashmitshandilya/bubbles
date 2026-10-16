@@ -53,6 +53,9 @@ FORM_BODIES = {
 class FakeQuery:
     def __init__(self, db, table):
         self.db, self.table, self.filters, self.payload, self.ordering = db, table, [], None, None
+        self.deleting = False
+        self.changes = None
+        self.max_rows = None
 
     def select(self, *_cols):
         return self
@@ -65,33 +68,62 @@ class FakeQuery:
         self.deleting = True
         return self
 
+    def update(self, changes):
+        self.changes = changes
+        return self
+
     def eq(self, key, value):
         self.filters.append((key, value))
+        return self
+
+    def in_(self, key, values):
+        self.filters.append((key, ("__in__", list(values))))
         return self
 
     def gte(self, key, value):
         return self
 
     def order(self, key, desc=False):
+        self.ordering = (key, desc)
         return self
 
-    def limit(self, _n):
+    def limit(self, n):
+        self.max_rows = n
         return self
+
+    def _matches(self, row):
+        for key, value in self.filters:
+            if "->" in key:
+                continue
+            if isinstance(value, tuple) and value and value[0] == "__in__":
+                if row.get(key) not in value[1]:
+                    return False
+            elif row.get(key) != value:
+                return False
+        return True
 
     def execute(self):
-        if getattr(self, "deleting", False):
-            rows = self.db.rows.get(self.table, [])
-            gone = [r for r in rows if all(r.get(k) == v for k, v in self.filters if "->" not in k)]
+        rows = self.db.rows.get(self.table, [])
+        if self.deleting:
+            gone = [r for r in rows if self._matches(r)]
             self.db.rows[self.table] = [r for r in rows if r not in gone]
             return SimpleNamespace(data=gone)
+        if self.changes is not None:
+            hit = [r for r in rows if self._matches(r)]
+            for r in hit:
+                r.update(self.changes)
+            return SimpleNamespace(data=hit)
         if self.payload is not None:
             unknown = set(self.payload) - LIVE_COLUMNS[self.table]
             assert not unknown, f"{self.table}: columns not in live schema: {sorted(unknown)}"
             row = {"id": f"id-{next(self.db.ids)}", "created_at": "2026-10-06T00:00:00+00:00", **self.payload}
             self.db.rows.setdefault(self.table, []).append(row)
             return SimpleNamespace(data=[row])
-        rows = [r for r in self.db.rows.get(self.table, []) if all(r.get(k) == v for k, v in self.filters)]
-        return SimpleNamespace(data=rows)
+        found = [r for r in rows if self._matches(r)]
+        if self.ordering:
+            key, desc = self.ordering
+            found = sorted(found, key=lambda r: str(r.get(key) or ""), reverse=desc)
+        return SimpleNamespace(data=found[: self.max_rows] if self.max_rows else found)
 
 
 class FakeDB:
@@ -230,3 +262,52 @@ def test_a_person_can_delete_their_own_entry_and_only_theirs():
     assert client.delete(f"/health/weight/{created['id']}", headers=H).json() == {"status": "success", "deleted": created["id"]}
     assert client.get("/health/weight?days=30", headers=H).json()["entries"] == []
     assert client.delete(f"/health/weight/{created['id']}", headers=H).status_code == 404   # already gone
+
+
+def _events(db, uid="user-1"):
+    return [r for r in db.rows.get("extracted_health_events", []) if r["user_id"] == uid]
+
+
+def test_delete_removes_the_insights_copy_too():
+    client, db = make_client()
+    entry = client.post("/health/weight", json={"weight": "154.3", "date": "2026-10-05T10:00:00Z"}, headers=H).json()["entry"]
+    assert len(_events(db)) == 1                      # the mirror Insights reads
+    assert client.delete(f"/health/weight/{entry['id']}", headers=H).status_code == 200
+    assert db.rows["weight_logs"] == [] and _events(db) == []
+
+
+def test_edit_changes_the_tracker_row_and_the_insights_copy_together():
+    client, db = make_client()
+    entry = client.post("/health/weight", json={"weight": "154.3", "date": "2026-10-05T10:00:00Z"}, headers=H).json()["entry"]
+    edited = client.put(f"/health/weight/{entry['id']}", json={"weight": "150", "date": "2026-10-05T10:00:00Z"}, headers=H)
+    assert edited.status_code == 200 and edited.json()["entry"]["weight"] == 150.0
+    assert [r["weight_kg"] for r in db.rows["weight_logs"]] == [round(150 / 2.2046226218, 2)]
+    events = _events(db)
+    assert len(events) == 1 and events[0]["extracted_data"]["weight_kg"] == round(150 / 2.2046226218, 2)
+    assert client.get("/health/weight?days=30", headers=H).json()["entries"][0]["weight"] == 150.0
+    assert client.put("/health/weight/nope", json={"weight": "150"}, headers=H).status_code == 404
+
+
+def test_delete_retracts_a_chat_saved_weight_for_the_same_day():
+    client, db = make_client()
+    entry = client.post("/health/weight", json={"weight": "154.3", "date": "2026-10-05T10:00:00Z"}, headers=H).json()["entry"]
+    kg = db.rows["weight_logs"][0]["weight_kg"]
+    db.rows["extracted_health_events"].append({"id": "chat-1", "user_id": "user-1", "event_type": "weight", "extraction_status": "confirmed",
+                                               "user_confirmed": True, "created_at": "2026-10-05T11:00:00+00:00",
+                                               "extracted_data": {"weight_kg": kg, "_prov": {"source": "chat"}}})
+    client.delete(f"/health/weight/{entry['id']}", headers=H)
+    chat = [r for r in _events(db) if r["id"] == "chat-1"][0]
+    assert chat["extraction_status"] == "retracted"
+
+
+def test_companion_is_told_the_trackers_newest_values_and_nothing_stale():
+    from latest_values_block import latest_values_block
+    client, db = make_client()
+    assert latest_values_block(db, "user-1") == ""                                   # nothing saved: no invented figure
+    client.post("/health/weight", json={"weight": "165", "date": "2026-10-04T10:00:00Z"}, headers=H)
+    newest = client.post("/health/weight", json={"weight": "154.3", "date": "2026-10-05T10:00:00Z"}, headers=H).json()["entry"]
+    assert "weight: 70.0 kg (154.3 lbs)" in latest_values_block(db, "user-1")
+    client.put(f"/health/weight/{newest['id']}", json={"weight": "150", "date": "2026-10-05T10:00:00Z"}, headers=H)
+    assert "weight: 68.0 kg (150.0 lbs)" in latest_values_block(db, "user-1")
+    client.delete(f"/health/weight/{newest['id']}", headers=H)
+    assert "weight: 74.8 kg (165.0 lbs)" in latest_values_block(db, "user-1")        # falls back to the older real entry

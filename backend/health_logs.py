@@ -659,23 +659,110 @@ def save_domain(db: Any, slug: str, domain: dict, uid: str, body: dict) -> dict:
     return {"status": "success", "entry": _to_entry(domain, saved.data[0]), "store": "primary"}
 
 
-def delete_entry(db: Any, slug: str, domain: dict, uid: str, entry_id: str) -> bool:
-    """Remove one of the person's own entries (normal table first, then the compatibility store). False when it is not theirs or not there."""
-    stores: list[tuple[str, dict[str, str]]] = [(domain["table"], dict(domain.get("filters", {})))]
-    stores.append((COMPAT_TABLE, {"extracted_data->_prov->>domain": slug}))   # only this tracker's own copies, never another kind of event
-    for table, filters in stores:
-        query = db.table(table).delete().eq("id", entry_id).eq("user_id", uid)
-        for key, value in filters.items():
-            query = query.eq(key, value)
+def _select_one(db: Any, table: str, uid: str, entry_id: str, filters: dict[str, str]) -> dict | None:
+    query = db.table(table).select("*").eq("id", entry_id).eq("user_id", uid)
+    for key, value in filters.items():
+        query = query.eq(key, value)
+    try:
+        rows = query.limit(1).execute().data or []
+    except Exception as exc:  # noqa: BLE001
+        if is_permission_denied(exc):
+            return None
+        raise
+    return rows[0] if rows else None
+
+
+def _unlink_analytics(db: Any, uid: str, slug: str, entry_id: str, old_row: dict | None) -> None:
+    """Take an entry's copies out of what Insights, Companion and the doctor timeline read.
+
+    Two kinds of copy exist: the mirror a tracker save wrote (tagged with the entry id), and, for weight, the confirmed event a chat
+    statement staged before it was projected into the tracker (same day, same value). Mirrors are removed; the chat event is marked
+    retracted, the status every reader already ignores. Best effort: the tracker change itself has already happened."""
+    try:
+        event_type = COMPAT_EVENTS[slug][0]
+        rows = (db.table(COMPAT_TABLE).select("id,extracted_data,extraction_status,created_at").eq("user_id", uid).eq("event_type", event_type)
+                .order("created_at", desc=True).limit(500).execute().data or [])
+        mirrors = [str(r["id"]) for r in rows
+                   if provenance(r).get("store") == "mirror" and str(provenance(r).get("entry_id")) == str(entry_id)]
+        if mirrors:
+            db.table(COMPAT_TABLE).delete().eq("user_id", uid).in_("id", mirrors).execute()
+        if slug == "weight" and old_row and old_row.get("weight_kg") is not None:
+            day = str(old_row.get("logged_at") or "")[:10]
+            twins = []
+            for r in rows:
+                data = r.get("extracted_data") if isinstance(r.get("extracted_data"), dict) else {}
+                if provenance(r).get("source") == "tracker" or (r.get("extraction_status") or "") in DEAD_STATUSES:
+                    continue
+                kg = data.get("weight_kg", data.get("value"))
+                when = str(data.get("date") or r.get("created_at") or "")[:10]
+                if isinstance(kg, (int, float)) and abs(float(kg) - float(old_row["weight_kg"])) < 0.06 and when == day:
+                    twins.append(str(r["id"]))
+            if twins:
+                db.table(COMPAT_TABLE).update({"extraction_status": "retracted", "user_confirmed": False}).eq("user_id", uid).in_("id", twins).execute()
+    except Exception as exc:  # noqa: BLE001
         try:
-            removed = query.execute().data or []
-        except Exception as exc:  # noqa: BLE001
-            if is_permission_denied(exc):
-                continue
-            raise
-        if removed:
-            return True
+            from logging_util import logger
+            logger.warning(component="HEALTH_LOGS", operation="unlink_analytics", error=exc, fallback_action="tracker_changed_analytics_copy_kept")
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _compat_domain_ok(row: dict, slug: str) -> bool:
+    return provenance(row).get("domain") == slug and provenance(row).get("store") == "compat"
+
+
+def delete_entry(db: Any, slug: str, domain: dict, uid: str, entry_id: str) -> bool:
+    """Remove one of the person's own entries and its copies in Insights. False when it is not theirs or not there."""
+    old = _select_one(db, domain["table"], uid, entry_id, dict(domain.get("filters", {})))
+    if old is not None:
+        db.table(domain["table"]).delete().eq("id", entry_id).eq("user_id", uid).execute()
+        _unlink_analytics(db, uid, slug, entry_id, old)
+        return True
+    event = _select_one(db, COMPAT_TABLE, uid, entry_id, {})
+    if event is not None and _compat_domain_ok(event, slug):
+        db.table(COMPAT_TABLE).delete().eq("id", entry_id).eq("user_id", uid).execute()
+        _has_compat.invalidate(uid)
+        return True
     return False
+
+
+def update_entry(db: Any, slug: str, domain: dict, uid: str, entry_id: str, body: dict) -> dict | None:
+    """Change one of the person's own entries. The tracker row and its copy in Insights change together, so every reader agrees.
+    None when the entry is not theirs or not there."""
+    row = {k: v for k, v in domain["to_row"](body).items() if v is not None}
+    old = _select_one(db, domain["table"], uid, entry_id, dict(domain.get("filters", {})))
+    if old is not None:
+        query = db.table(domain["table"]).update(row).eq("id", entry_id).eq("user_id", uid)
+        saved = query.select("*").execute().data or []
+        if not saved:
+            return None
+        _unlink_analytics(db, uid, slug, entry_id, old)
+        _mirror_to_analytics(db, uid, slug, row, saved[0])
+        return _to_entry(domain, saved[0])
+    event = _select_one(db, COMPAT_TABLE, uid, entry_id, {})
+    if event is not None and _compat_domain_ok(event, slug):
+        to_event = COMPAT_EVENTS[slug][1]
+        data = {**to_event(row), "_prov": provenance(event), "_row": row}
+        db.table(COMPAT_TABLE).update({"extracted_data": data}).eq("id", entry_id).eq("user_id", uid).execute()
+        _has_compat.invalidate(uid)
+        return _compat_entry(domain, {**event, "extracted_data": data}, row)
+    return None
+
+
+def latest_values(db: Any, uid: str, slugs: tuple[str, ...] = ("weight", "sleep", "mood", "hydration", "activity", "vitals")) -> list[tuple[str, dict]]:
+    """The newest saved entry of each tracker, read straight from the tracker tables (the source of truth). Missing means no entry, never a zero."""
+    def newest(slug: str) -> tuple[str, dict] | None:
+        domain = DOMAINS[slug]
+        try:
+            query = db.table(domain["table"]).select("*").eq("user_id", uid)
+            for key, value in domain.get("filters", {}).items():
+                query = query.eq(key, value)
+            rows = query.order(domain["date"], desc=True).limit(1).execute().data or []
+        except Exception:  # noqa: BLE001 - one unreadable tracker must not hide the others
+            return None
+        return (slug, _to_entry(domain, rows[0])) if rows else None
+    with ThreadPoolExecutor(max_workers=len(slugs), thread_name_prefix="latest-values") as pool:
+        return [r for r in pool.map(newest, slugs) if r]
 
 
 #: Free-text fields a person types into any tracker. A symptom name is the thing being logged ("chest pain"), so only crisis wording
@@ -768,6 +855,28 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         if blocked:
             return JSONResponse(blocked)
         return await run_in_threadpool(_save, slug, domain, uid, body)
+
+    @router.put("/health/{slug}/{entry_id}")
+    async def update_entry_route(slug: str, entry_id: str, request: Request, authorization: str | None = Header(default=None)):
+        domain = DOMAINS.get(slug)
+        if not domain:
+            raise HTTPException(status_code=404, detail="Unknown tracker")
+        uid = str((await run_in_threadpool(get_user, authorization)).id)
+        try:
+            body = await request.json()
+        except (ValueError, RecursionError):
+            raise HTTPException(status_code=422, detail="Request body must be valid JSON")
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=422, detail="Request body must be a JSON object")
+        blocked = await run_in_threadpool(_screen_free_text, body)
+        if blocked:
+            return JSONResponse(blocked)
+        if not 0 < len(entry_id) <= 64:
+            raise HTTPException(status_code=404, detail="That entry was not found.")
+        entry = await run_in_threadpool(update_entry, db, slug, domain, uid, entry_id, body)
+        if entry is None:
+            raise HTTPException(status_code=404, detail="That entry was not found.")
+        return {"status": "success", "entry": entry}
 
     @router.delete("/health/{slug}/{entry_id}")
     def delete_entry_route(slug: str, entry_id: str, authorization: str | None = Header(default=None)):

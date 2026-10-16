@@ -852,6 +852,8 @@ def _context_stage(user_id: str, user_message: str) -> tuple[str, float]:
     t0 = perf_counter()
     user_context = build_user_context(user_id=user_id, query=user_message)
     memory_context = format_user_context(user_context)
+    from latest_values_block import latest_values_block
+    memory_context += latest_values_block(supabase, user_id)   # the trackers' own newest entries, so a value saved anywhere is what Companion says
 
     # Concrete metrics from stored events (best effort)
     try:
