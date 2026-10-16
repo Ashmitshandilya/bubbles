@@ -1,10 +1,11 @@
 import os
-from typing import Optional
+import threading
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
 import admin_settings
-from ai_provider import ProviderError, ProviderResult, call_fallback, call_timeout, reply_budget
+from ai_provider import MAX_OUTPUT_TOKENS, REQUEST_TIMEOUT, ProviderError, ProviderResult, call_fallback, call_timeout, reply_budget
 
 
 # ============================================================
@@ -134,6 +135,32 @@ Rules:
 
 GEMINI_DEFAULT_MODEL = "gemini-3-flash-preview"
 
+# One client for the whole process: building one per call re-created the HTTP connection pool (and the TLS handshake) every time.
+_client_lock = threading.Lock()
+_client_cache: dict[str, Any] = {}
+
+
+def _gemini_client(api_key: str, genai: Any, types: Any) -> Any:
+    with _client_lock:
+        client = _client_cache.get(api_key)
+        if client is None:
+            _client_cache.clear()   # a changed key replaces the old client
+            client = _client_cache[api_key] = genai.Client(
+                api_key=api_key, http_options=types.HttpOptions(timeout=int(max(1.0, REQUEST_TIMEOUT) * 1000)))
+        return client
+
+
+def _thinking_config(types: Any) -> Any:
+    """How much hidden "thinking" the model may do before it answers. A chat reply does not need much, and each extra second of
+    thinking is a second the person waits: LOW by default (GEMINI_THINKING_LEVEL = minimal | low | medium | high | off)."""
+    level = os.getenv("GEMINI_THINKING_LEVEL", "low").strip().lower()
+    if level in {"", "off", "none", "default"}:
+        return None
+    try:
+        return types.ThinkingConfig(thinking_level=level.upper())
+    except Exception:  # noqa: BLE001 - an SDK without the field: the model's own default
+        return None
+
 
 def _call_gemini(
     message: str,
@@ -177,36 +204,37 @@ def _call_gemini_inner(
         ) from error
 
     # The SDK waits forever by default: a stuck call would hold the reply until the browser gave up. Cap it so the
-    # fallback pool still has time inside the reply budget.
-    timeout = call_timeout(float(os.getenv("GEMINI_TIMEOUT_S", "12")))
-    client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=int(timeout * 1000)))
+    # fallback pool still has time inside the reply budget. A chat reply from this model normally takes 1-3 s: a call that has
+    # not answered in GEMINI_TIMEOUT_S is stuck, and the next provider should start (the budget stays the ceiling).
+    timeout = call_timeout(float(os.getenv("GEMINI_TIMEOUT_S", "9")))
+    client = _gemini_client(api_key, genai, types)
 
     response_schema = BubblesAIResponse.model_json_schema()
 
     import time
     started = time.perf_counter()
-    def _generate(with_thinking: bool):
-        extra = {"thinking_config": types.ThinkingConfig(thinking_level=types.ThinkingLevel.MINIMAL)} if with_thinking else {}
-        return client.models.generate_content(
-            model=os.getenv("GEMINI_MODEL", "gemini-3-flash-preview"),
-            contents=message,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                temperature=0.2,
-                response_mime_type="application/json",
-                response_schema=response_schema,
-                max_output_tokens=900,   # generous on purpose: the reply is JSON, and a cut-off one would be invalid
-                **extra,
-            ),
-        )
-
-    # A chat reply needs no long "thinking": minimal thinking is several seconds faster. A model that does not accept the setting is asked again without it.
+    model_name = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+    settings = dict(
+        system_instruction=system_instruction,
+        temperature=0.2,
+        response_mime_type="application/json",
+        response_schema=response_schema,
+        max_output_tokens=MAX_OUTPUT_TOKENS,
+        http_options=types.HttpOptions(timeout=int(timeout * 1000)),
+    )
+    thinking = _thinking_config(types)
     try:
-        response = _generate(True)
+        response = client.models.generate_content(
+            model=model_name, contents=message,
+            config=types.GenerateContentConfig(**settings, **({"thinking_config": thinking} if thinking is not None else {})),
+        )
     except Exception as error:  # noqa: BLE001
-        if "thinking" not in str(error).lower():
+        if thinking is None or "thinking" not in str(error).lower():
             raise
-        response = _generate(False)
+        # This model does not take the thinking setting (a different GEMINI_MODEL): ask again without it, once.
+        response = client.models.generate_content(
+            model=model_name, contents=message, config=types.GenerateContentConfig(**settings),
+        )
 
     if not response.text:
         raise ProviderError(

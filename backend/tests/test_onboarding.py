@@ -407,7 +407,7 @@ def test_the_companion_style_block_carries_only_style():
     e = ob.build_experience(base(tone="calm_direct", reply_length="detailed", language="hinglish", avoid_topics=["weight", "periods"],
                                  conditions=["diabetes"], drains=["money"], support_people=["mostly_on_my_own"]), TODAY)
     block = ob.style_block(e)
-    assert "calm and direct" in block and "250 words" in block and "Hinglish" in block and "their weight" in block and "periods" in block
+    assert "calm and direct" in block and "160 words" in block and "Hinglish" in block and "their weight" in block and "periods" in block
     for private in ("diabetes", "money", "alone", "Riya", "1994"):
         assert private.lower() not in block.lower()
     assert ob.style_block(None) == "" and ob.style_block({}) == ""

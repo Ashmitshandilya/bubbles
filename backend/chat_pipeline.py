@@ -21,7 +21,7 @@ import re
 import threading
 import time
 from collections import defaultdict, deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 
@@ -39,11 +39,15 @@ from safety_engine import (
 
 HISTORY_TURNS = 10
 HISTORY_FACT_MESSAGES = 6
+# A resumed chat can be days old. What the person said more than this many hours ago is history, not how they are now: it is shown to
+# the model as "earlier", past symptoms are never listed as current, and an old "no X" is no longer a standing denial.
+HISTORY_NOW_HOURS = 48
 ACTIVE_TEMPORALS = {"current", "recent", "recurring", "unknown"}
 SYMPTOMISH_TYPES = {"symptom", "menstrual_symptom", "medical_condition", "allergy", "medication", "supplement", "family_medical_history"}
 MENSTRUAL_CONCEPTS = {"cramps", "spotting"}
 NON_SYMPTOM_CONCEPTS = {"period", "medication_use"}
 
+MAX_STORED_EVENTS = 100   # per reply; anything beyond is counted in metadata.health_events_more so the card can say "N more"
 KINDS = ("reply", "clarification", "emergency", "correction_ack", "daily_log_summary")
 
 
@@ -141,29 +145,45 @@ def load_history(db: Any, user_id: str, conversation_id: str, limit: int = HISTO
     return [r for r in reversed(rows) if isinstance(r, dict)]
 
 
-def overlay_event_status(db: Any, user_id: str, event_lists: list[list[dict[str, Any]]]) -> None:
-    """Put the real status of each saved detail onto the cards stored in message metadata (in place).
+LIVE_STATUSES = ("pending", "confirmed", "rejected", "retracted", "superseded")
+_OVERLAY_CHUNK = 100
 
-    A reply's metadata is written once with every event "pending"; the person's decision lives on the event row. Without this a reloaded
-    chat asked the same question again. One query for all ids (owner-scoped); if it fails the stored snapshot is left as it was."""
-    ids = list({str(e.get("id")) for events in event_lists for e in events if isinstance(e, dict) and e.get("id")})
+
+def settled_statuses(db: Any, user_id: str, event_ids: list[str]) -> dict[str, str]:
+    """The real status of saved events, one owner-scoped query per 100 ids: ``{event_id: pending|confirmed|rejected|...}``.
+
+    The reply's stored snapshot says "pending" forever (the decision is made later, on the event row), so a reader that shows
+    saved cards must ask the rows. Another person's id is simply absent from the answer. Never raises: on a read problem the
+    snapshot status stays (the caller keeps what it had)."""
+    ids = [str(i) for i in dict.fromkeys(event_ids) if i]
+    out: dict[str, str] = {}
+    for start in range(0, len(ids), _OVERLAY_CHUNK):
+        try:
+            rows = (db.table("extracted_health_events").select("id,extraction_status,user_confirmed")
+                    .eq("user_id", user_id).in_("id", ids[start:start + _OVERLAY_CHUNK]).execute().data or [])
+        except Exception as error:  # noqa: BLE001
+            _log_failure("settled_statuses", error, user_id)
+            continue
+        for row in rows:
+            status = str(row.get("extraction_status") or "").strip().lower()
+            if status not in LIVE_STATUSES:
+                status = "pending"
+            if status == "pending" and row.get("user_confirmed") is True:
+                status = "confirmed"
+            out[str(row.get("id"))] = status
+    return out
+
+
+def overlay_event_status(db: Any, user_id: str, events_by_message: list[list[dict[str, Any]]]) -> None:
+    """Writes the settled status into every event dict (in place) with ONE round of queries for all the messages together."""
+    ids = [str(e.get("id")) for events in events_by_message for e in events if isinstance(e, dict) and e.get("id")]
     if not ids:
         return
-    status: dict[str, str] = {}
-    try:
-        for i in range(0, len(ids), 100):
-            rows = (db.table("extracted_health_events").select("id,extraction_status,user_confirmed")
-                    .eq("user_id", user_id).in_("id", ids[i:i + 100]).execute().data or [])
-            for row in rows:
-                state = row.get("extraction_status") or ("confirmed" if row.get("user_confirmed") else "pending")
-                status[str(row.get("id"))] = state
-    except Exception as error:  # noqa: BLE001
-        _log_failure("overlay_event_status", error, user_id)
-        return
-    for events in event_lists:
-        for e in events:
-            if isinstance(e, dict) and str(e.get("id")) in status:
-                e["status"] = status[str(e["id"])]
+    settled = settled_statuses(db, user_id, ids)
+    for events in events_by_message:
+        for event in events:
+            if isinstance(event, dict) and str(event.get("id")) in settled:
+                event["status"] = settled[str(event["id"])]
 
 
 def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_id: str) -> dict[str, Any] | None:
@@ -179,8 +199,8 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
         return None
     row = rows[0]
     meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
-    events = meta.get("health_events") if isinstance(meta.get("health_events"), list) else []
-    overlay_event_status(db, user_id, [events])
+    events = [dict(e) for e in meta.get("health_events") or [] if isinstance(e, dict)] if isinstance(meta.get("health_events"), list) else []
+    overlay_event_status(db, user_id, [events])   # a replay must not bring back cards the person already settled
     return {
         "response": row.get("content") or "",
         "sentiment": "neutral",
@@ -197,7 +217,19 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
     }
 
 
-def conversation_block(history: list[dict[str, Any]], max_chars: int = 2400) -> str:
+def message_age_hours(row: dict[str, Any], now: datetime | None = None) -> float | None:
+    """Hours since a stored message was written (None when it has no readable time)."""
+    raw = str(row.get("created_at") or "")
+    try:
+        when = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return ((now or datetime.now(timezone.utc)) - when).total_seconds() / 3600
+
+
+def conversation_block(history: list[dict[str, Any]], max_chars: int = 2400, *, now: datetime | None = None) -> str:
     lines: list[str] = []
     for row in history[-8:]:
         content = " ".join(str(row.get("content") or "").split())
@@ -205,6 +237,9 @@ def conversation_block(history: list[dict[str, Any]], max_chars: int = 2400) -> 
         if row.get("role") == "bubbles" and (meta.get("safety") or {}).get("retracted"):
             content = "[withdrawn: Bubbles misread the user here and retracted this warning]"
         label = "User" if row.get("role") == "user" else "Bubbles"
+        age = message_age_hours(row, now)
+        if age is not None and age > HISTORY_NOW_HOURS:
+            label += f" (earlier, {int(age // 24)} days ago, not necessarily true now)"
         lines.append(f"{label}: {content[:360]}")
     while lines and sum(len(l) + 1 for l in lines) > max_chars:
         lines.pop(0)
@@ -273,14 +308,20 @@ class Turn:
     last_reply: dict[str, Any] | None = None   # the newest Bubbles message in this conversation (content + metadata)
 
 
-def history_user_facts(history: list[dict[str, Any]]) -> list[Fact]:
+def history_user_facts(history: list[dict[str, Any]], now: datetime | None = None) -> list[Fact]:
     out: list[Fact] = []
     users = [r for r in history if r.get("role") == "user" and r.get("content")][-HISTORY_FACT_MESSAGES:]
     for row in users:
         try:
-            out.extend(analyze(str(row["content"])[:1500]))
+            facts = analyze(str(row["content"])[:1500])
         except Exception as error:  # noqa: BLE001
             _log_failure("history_facts", error)
+            continue
+        age = message_age_hours(row, now)
+        if age is not None and age > HISTORY_NOW_HOURS:
+            # old news: what they had becomes "past", and an old denial or guess says nothing about today
+            facts = [replace(f, temporal="past") for f in facts if f.assertion == "present"]
+        out.extend(facts)
     return out
 
 
@@ -294,7 +335,7 @@ def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | No
     safety = assess_safety(text, facts)  # never raises; falls back to a keyword fail-safe when facts is None
     facts = facts or []
     t1 = time.perf_counter()
-    history_facts = history_user_facts(history)
+    history_facts = history_user_facts(history, now)
     try:
         correction = detect_correction(text, facts, history)
     except Exception as error:  # noqa: BLE001
@@ -869,11 +910,13 @@ def event_summary(event_type: str, data: dict[str, Any]) -> str:
     return name.capitalize()
 
 
-def persist_events(db: Any, user_id: str, message_id: str | None, events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Insert pending events (batch first, row-by-row on failure). Returns UI-ready events; id is None when not saved."""
+def persist_events(db: Any, user_id: str, message_id: str | None, events: list[dict[str, Any]], *, fresh: bool = False) -> list[dict[str, Any]]:
+    """Insert pending events (batch first, row-by-row on failure). Returns UI-ready events; id is None when not saved.
+
+    ``fresh`` says the message was created a moment ago, so no events of it can exist yet and the duplicate check (a read) is skipped."""
     if not events:
-        return []   # nothing to save: skip the database read a plain "hi" never needed
-    existing = _existing_keys(db, user_id, message_id)
+        return []   # nothing to save: no need to read what is already stored (a round trip on every plain chat turn)
+    existing = set() if fresh else _existing_keys(db, user_id, message_id)
     todo = []
     for ev in events:
         key = (ev["extracted_data"].get("_prov") or {}).get("key")
@@ -939,7 +982,8 @@ def stored_metadata(*, kind: str, user_message_id: str, safety: dict[str, Any], 
         "evidence": evidence_ids, "health_event_ids": [e["id"] for e in events],
         "health_events": [{"id": e["id"], "event_type": e["event_type"], "extracted_data": e["extracted_data"],
                            "summary": e.get("summary"), "confidence": e["confidence"], "status": e["status"], "assertion": e["assertion"], "temporal": e["temporal"]}
-                          for e in events][:30],
+                          for e in events][:MAX_STORED_EVENTS],
+        **({"health_events_more": len(events) - MAX_STORED_EVENTS} if len(events) > MAX_STORED_EVENTS else {}),
         "conflicts": conflicts[:5], "semantic_trace": trace,
         **({"evidence_package": package} if package else {}),   # audit trail: which engines ran and which facts/evidence were used
     }

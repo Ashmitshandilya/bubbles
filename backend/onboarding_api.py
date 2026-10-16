@@ -15,6 +15,8 @@ from typing import Any, Callable
 from fastapi import APIRouter, Body, Header, HTTPException
 
 import consent
+import chat_cache
+import ops_telemetry
 import consent_ledger
 import doc_store
 import onboarding as ob
@@ -126,6 +128,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             except ob.AnswerError as err:
                 raise HTTPException(status_code=422, detail={"field": err.qid, "message": err.message})
             if (ob.age_on(born, today) or 0) < ob.MIN_AGE:
+                ops_telemetry.funnel("under_18")
                 doc_store.put(db, uid, KIND, KEY, {"age_gate": "under_18", "at": datetime.now(timezone.utc).isoformat(), "bank_version": ob.BANK_VERSION})
                 return {"status": "success", "under_18": True}
         if s["under_18"]:
@@ -147,8 +150,12 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             raise HTTPException(status_code=422, detail={"field": err.qid, "message": err.message})
         doc = {**s["doc"], "answers": answers, "bank_version": ob.BANK_VERSION, "updated_at": datetime.now(timezone.utc).isoformat()}
         doc.pop("age_gate", None)
+        if "started_at" not in doc:
+            ops_telemetry.funnel(ob.STEPS[0]["id"])   # the first save: the setup was started
         doc.setdefault("started_at", doc["updated_at"])
         if isinstance(step, int) and 0 <= step <= len(ob.STEPS):
+            if step > int(s["doc"].get("step") or 0) and step < len(ob.STEPS):
+                ops_telemetry.funnel(ob.STEPS[step]["id"])   # a step reached for the first time: a count, never an answer
             doc["step"] = step
         doc_store.put(db, uid, KIND, KEY, doc)
         out = state_payload(uid, today)
@@ -261,7 +268,9 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         now = datetime.now(timezone.utc).isoformat()
         try:
             doc_store.put(db, uid, EXP_KIND, EXP_KEY, {**exp, "built_at": now})
+            chat_cache.forget_user(uid)   # the next reply reads the new tone settings and profile
             doc_store.put(db, uid, KIND, KEY, {**s["doc"], "answers": answers, "completed_at": now, "bank_version": ob.BANK_VERSION, "step": len(ob.STEPS)})
+            ops_telemetry.funnel("completed")
         except Exception as exc:  # noqa: BLE001
             _log("save_experience", exc)
             raise HTTPException(status_code=503, detail="Your answers are saved, but Bubbles couldn't finish setting up just now. Please try again.")
