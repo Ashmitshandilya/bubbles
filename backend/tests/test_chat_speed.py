@@ -232,3 +232,50 @@ def test_stream_errors_before_it_opens_are_ordinary_http_errors(env):
     assert env.client.post("/chat/stream", json={"message": "hi"}).status_code in (401, 403)
     res = _stream(env, "hi", conversation_id="00000000-0000-4000-8000-000000000999")
     assert res.status_code == 404
+
+
+def test_the_tone_settings_are_remembered_until_the_setup_is_saved(env, monkeypatch):
+    import chat_cache
+    import onboarding_api
+    calls = []
+    monkeypatch.setattr(onboarding_api, "style_block_for", lambda db, uid: calls.append(uid) or "- Length: short")
+    chat_cache.forget_user(USER)
+    assert chat_cache.style_block(env.db, USER) == chat_cache.style_block(env.db, USER) == "- Length: short" and len(calls) == 1
+    chat_cache.forget_user(USER)
+    chat_cache.style_block(env.db, USER)
+    assert len(calls) == 2
+
+
+def test_an_empty_tone_answer_is_never_remembered(env, monkeypatch):
+    import chat_cache
+    import onboarding_api
+    answers = iter(["", "- Length: short"])
+    monkeypatch.setattr(onboarding_api, "style_block_for", lambda db, uid: next(answers))
+    chat_cache.forget_user(USER)
+    assert chat_cache.style_block(env.db, USER) == "" and chat_cache.style_block(env.db, USER) == "- Length: short"
+
+
+def test_forgetting_a_person_clears_the_cached_tone_and_profile(env):
+    import chat_cache
+    import context_engine
+    chat_cache._style.put(USER, "old tone")
+    context_engine._profile_cache.put(USER, ({"display_name": "Old"}, {}))
+    chat_cache.forget_user(USER)
+    assert chat_cache._style.peek(USER) is None and context_engine._profile_cache.peek(USER) is None
+
+
+def test_an_urgent_reply_that_forgot_the_call_to_action_gets_it(env):
+    from bubbles_ai import BubblesAIResponse
+    env.main.ask_bubbles = lambda m, **k: BubblesAIResponse(response="That sounds uncomfortable. Rest and sip water.", sentiment="neutral", health_events=[])
+    body = send(env, "I have a fever of 104 for three days").json()
+    assert body["safety"]["state"] == "URGENT" and body["response"].endswith("Please speak to a clinician or an urgent-care service today.")
+    env.main.ask_bubbles = lambda m, **k: BubblesAIResponse(response="Please see a doctor today.", sentiment="neutral", health_events=[])
+    assert send(env, "I have a fever of 104 for three days again").json()["response"] == "Please see a doctor today."
+
+
+def test_every_sentence_loses_its_attribution_not_only_the_first_and_who_the_pronoun_is_safe():
+    from response_quality import lint, strip_attribution
+    assert strip_attribution("NHS guidance says drink water. Studies show it helps.") == "Drink water. It helps."
+    assert strip_attribution("Water helps.\nAccording to the NHS, rest also helps.") == "Water helps.\nRest also helps."
+    assert "authority_citation" not in lint("Who is it that you spoke to? Anyone who feels dizzy should sit down.")
+    assert strip_attribution("The doctor who prescribed it can tell you.") == "The doctor who prescribed it can tell you."

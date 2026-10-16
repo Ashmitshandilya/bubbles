@@ -487,17 +487,17 @@ def build_experience(answers: dict[str, Any], today: date) -> dict[str, Any]:
 
     if age is not None and age >= 30 and answers.get("bp_sugar_check") in ("one_to_three_years", "longer_or_never", "not_sure"):
         item("bp_sugar", "Blood pressure and blood sugar check",
-             "India's national screening programme recommends these from age 30. It is worth asking your doctor how often is right for you.", "NP-NCD")
+             "Worth asking your doctor how often a blood pressure and sugar check is right for you.", "Bubbles")
     if body in STRICT_REPRO and age is not None and 30 <= age < 66 and answers.get("cervical_screen") in ("longer_ago", "never", "not_sure"):
         item("cervical_screening", "Cervical screening",
-             "Screening for the cervix is offered to women from age 30. It is worth asking your doctor whether you are due.", "NP-NCD")
+             "Worth asking your doctor whether a cervical screening is due for you.", "Bubbles")
     if "diabetes" in conds and answers.get("last_eye_exam") != "within_year":
         item("eye_exam_diabetes", "Eye exam for diabetes",
-             "Guidelines advise a dilated eye exam at diagnosis and then regularly, often yearly. It is worth asking your doctor how often you need it.", "ADA")
+             "With diabetes, a regular eye exam is worth having. Ask your doctor how often you need it.", "Bubbles")
     elif answers.get("last_eye_exam") in ("longer", "never_not_sure") and screen is not None and screen >= 6:
         item("eye_check", "An eye check", "You spend long days on screens and haven't had an eye check in a while. An eye check is worth considering.", "Bubbles")
     if "chew" in tob or "smoke" in tob:
-        item("oral_check", "A dental and oral check", "Tobacco in the mouth is a well-known oral-health risk. A regular check is worth asking your dentist or doctor about.", "NP-NCD")
+        item("oral_check", "A dental and oral check", "Tobacco in the mouth is a well-known oral-health risk. A regular check is worth asking your dentist or doctor about.", "Bubbles")
     if body == "male" and age is not None and age >= 45 and answers.get("urinary_changes") == "yes":
         item("urinary_mention", "Mention night-time urination to a doctor", "Getting up often at night or a weaker flow is worth mentioning at your next visit.", "Bubbles")
 
@@ -580,7 +580,7 @@ def style_block(experience: dict[str, Any] | None) -> str:
     if tone:
         lines.append(f"- Tone: {tone}.")
     if c.get("reply_length") == "detailed":
-        lines.append("- Length: they like fuller answers; up to about 250 words when the question deserves it.")
+        lines.append("- Length: they like fuller answers; up to about 160 words when the question deserves it.")
     elif c.get("reply_length") == "short":
         lines.append("- Length: keep replies short, one to three sentences, unless it is a real health question.")
     language = {"hinglish": "simple Hinglish in Roman script", "hindi": "simple Hindi"}.get(c.get("language"))

@@ -591,6 +591,7 @@ def sync_profile_from_auth(user):
             {"id": str(user.id), "display_name": name},
             on_conflict="id",
         ).execute()
+        chat_cache.forget_user(str(user.id))   # the next reply sees the new name
         _profile_synced.put(str(user.id), True)
     except Exception as error:
         if is_permission_denied(error):
