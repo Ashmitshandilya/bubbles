@@ -141,6 +141,31 @@ def load_history(db: Any, user_id: str, conversation_id: str, limit: int = HISTO
     return [r for r in reversed(rows) if isinstance(r, dict)]
 
 
+def overlay_event_status(db: Any, user_id: str, event_lists: list[list[dict[str, Any]]]) -> None:
+    """Put the real status of each saved detail onto the cards stored in message metadata (in place).
+
+    A reply's metadata is written once with every event "pending"; the person's decision lives on the event row. Without this a reloaded
+    chat asked the same question again. One query for all ids (owner-scoped); if it fails the stored snapshot is left as it was."""
+    ids = list({str(e.get("id")) for events in event_lists for e in events if isinstance(e, dict) and e.get("id")})
+    if not ids:
+        return
+    status: dict[str, str] = {}
+    try:
+        for i in range(0, len(ids), 100):
+            rows = (db.table("extracted_health_events").select("id,extraction_status,user_confirmed")
+                    .eq("user_id", user_id).in_("id", ids[i:i + 100]).execute().data or [])
+            for row in rows:
+                state = row.get("extraction_status") or ("confirmed" if row.get("user_confirmed") else "pending")
+                status[str(row.get("id"))] = state
+    except Exception as error:  # noqa: BLE001
+        _log_failure("overlay_event_status", error, user_id)
+        return
+    for events in event_lists:
+        for e in events:
+            if isinstance(e, dict) and str(e.get("id")) in status:
+                e["status"] = status[str(e["id"])]
+
+
 def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_id: str) -> dict[str, Any] | None:
     """The Bubbles reply already saved for this user message (an idempotent replay), if any."""
     try:
@@ -155,6 +180,7 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
     row = rows[0]
     meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
     events = meta.get("health_events") if isinstance(meta.get("health_events"), list) else []
+    overlay_event_status(db, user_id, [events])
     return {
         "response": row.get("content") or "",
         "sentiment": "neutral",
