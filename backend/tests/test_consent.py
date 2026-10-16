@@ -10,7 +10,9 @@ from test_chat_http_flow import H, OTHER, USER, env, send  # noqa: F401  (the sa
 
 
 def revoke(env):
-    consent.set_ai_chat(env.db, USER, False)
+    """Back to a person who has never answered (a withdrawal is a decision and is tested in test_consent_purposes.py)."""
+    env.db.tables["consent_events"] = []
+    consent.forget(USER)
 
 
 def test_without_a_yes_nothing_is_sent_to_the_model(env):
@@ -60,7 +62,9 @@ def test_the_consent_endpoints_read_change_and_isolate(env):
 
 def test_an_older_version_of_the_yes_does_not_count(env):
     from doc_store import put
+    revoke(env)
     put(env.db, USER, consent.KIND, consent.KEY, {"accepted": True, "version": "2020-01", "at": "x"})
+    consent.forget(USER)
     assert consent.has_ai_consent(env.db, USER) is False
 
 

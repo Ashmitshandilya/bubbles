@@ -177,3 +177,10 @@ class FakeDB:
     # test helpers
     def rows(self, table: str, **match) -> list[dict]:
         return [r for r in self.tables.get(table, []) if all(r.get(k) == v for k, v in match.items())]
+
+
+def grant_consent(db: FakeDB, uid: str, *purposes: str) -> None:
+    """Test helper: record a yes (source "system") for each purpose, through the real ledger code."""
+    import consent
+    for purpose in purposes:
+        consent.set_purpose(db, uid, purpose, True, source="system", hash_seen=consent.text_hash(purpose))

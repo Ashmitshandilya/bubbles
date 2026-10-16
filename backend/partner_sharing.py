@@ -29,6 +29,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
+import consent
 import doc_store
 import health_logs
 
@@ -57,6 +58,12 @@ MAX_ATTEMPTS, ATTEMPT_WINDOW = 10, 3600.0
 
 def _bad(msg: str, code: int = 422) -> HTTPException:
     return HTTPException(status_code=code, detail=msg)
+
+
+def _need_consent(db: Any, uid: str) -> None:
+    """Nothing is shared, made or accepted unless the owner said yes in Privacy choices (withdrawing ends all sharing at once)."""
+    if not consent.is_granted(db, uid, "partner_sharing"):
+        raise _bad("Turn on partner sharing in Privacy choices first.", 403)
 
 
 def _hash(token: str) -> str:
@@ -122,6 +129,7 @@ def status(db: Any, uid: str) -> dict:
         "invite": {"active": invite_on, "expires_at": invite.get("expires_at") if invite_on else None},
         "connection": {"name": conn.get("name"), "since": conn.get("since")} if conn else None,
         "sharing": bool(cats and (link_on or conn)),
+        "consent": consent.is_granted(db, uid, "partner_sharing"),
         "never_shared": ["Chat", "Symptoms", "Medications", "Lab results and reports", "Journal and notes", "Contraception, pregnancy and sexual health"],
     }
 
@@ -137,6 +145,7 @@ def _clean_name(raw: Any, label: str) -> str:
 
 
 def save_settings(db: Any, uid: str, body: dict) -> dict:
+    _need_consent(db, uid)
     cats = body.get("categories")
     if not isinstance(cats, list) or not cats or len(cats) > len(CATEGORIES) or any(c not in CATEGORIES for c in cats):
         raise _bad("Choose at least one thing to share, from the list shown.")
@@ -165,6 +174,7 @@ def _need_settings(cfg: dict) -> None:
 # ---- owner: quick link ---------------------------------------------------------------------------------------------------
 
 def create_link(db: Any, uid: str, body: dict) -> dict:
+    _need_consent(db, uid)
     cfg = _load(db, uid)
     _need_settings(cfg)
     days = body.get("expires_in_days", 30)
@@ -198,6 +208,7 @@ def _new_code() -> str:
 
 
 def create_invite(db: Any, uid: str) -> dict:
+    _need_consent(db, uid)
     cfg = _drop_ghost_connection(db, uid, _load(db, uid))
     _need_settings(cfg)
     if cfg.get("connection"):
@@ -287,7 +298,7 @@ def connect(db: Any, partner_uid: str, body: dict) -> dict:
     owner = str(payload["uid"])
     cfg = _load(db, owner)
     inv = cfg.get("invite")
-    if not inv or inv.get("hash") != h or not _future(inv.get("expires_at")) or not cfg.get("categories"):
+    if not inv or inv.get("hash") != h or not _future(inv.get("expires_at")) or not cfg.get("categories") or not consent.is_granted(db, owner, "partner_sharing"):
         raise fail()
     if owner == str(partner_uid):
         raise _bad("This is your own code. Give it to the person you want to share with.")
@@ -314,6 +325,8 @@ def shared_with_me(db: Any, partner_uid: str) -> dict:
         conn = cfg.get("connection") or {}
         if not owner or str(conn.get("uid")) != str(partner_uid) or not cfg.get("categories"):   # re-checked on every read
             doc_store.delete(db, partner_uid, WITH_KIND, d["key"])
+            continue
+        if not consent.is_granted(db, owner, "partner_sharing"):   # paused, not removed: a failed read must not end the connection
             continue
         out.append({"id": d["key"], "from_name": cfg.get("owner_name") or "Your partner", "since": conn.get("since"),
                     "sections": _sections(db, owner, cfg), "notice": NOTICE})
@@ -381,7 +394,7 @@ def public(db: Any, token: str) -> dict:
     uid = str(payload["uid"])
     cfg = _load(db, uid)
     link = cfg.get("link") or {}
-    if link.get("key") != _hash(token) or not _future(link.get("expires_at")) or not cfg.get("categories"):
+    if link.get("key") != _hash(token) or not _future(link.get("expires_at")) or not cfg.get("categories") or not consent.is_granted(db, uid, "partner_sharing"):
         raise gone
     sections = _sections(db, uid, cfg)
     try:  # best effort: a count and a time in the LINK's own document (never who or where from); the owner's settings are never re-saved here
