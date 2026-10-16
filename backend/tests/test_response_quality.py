@@ -59,3 +59,39 @@ def test_fixed_log_replies_keep_their_meaning_in_every_wording():
     assert len(cp._ONE_DAY) >= 4 and all(("day" in s.lower()) and ("pattern" in s.lower() or "compar" in s.lower()) for s in cp._ONE_DAY)
     assert all(("note" in s.lower()) and ("confirm" in s.lower() or "review" in s.lower() or "look over" in s.lower()) for s in cp._SAVED_NOTES)
     assert not any("diagnos" in s.lower() for s in cp._ONE_DAY + cp._SAVED_NOTES)
+
+
+# --- friend voice: no authority names, soft conclusions, urgent call to action ---------------------------------------------
+
+from response_quality import lint as _lint, strip_attribution
+
+
+def test_style_prompt_has_no_authority_examples_and_bans_them():
+    s = response_style_instruction()
+    assert "NHS guidance says" not in s
+    assert "never write the name of an organisation" in s
+    assert "112" in s and "SOFT, NOT SCARY" in s
+
+
+def test_lint_flags_authority_names_but_not_the_pronoun():
+    assert "authority_citation" in _lint("NHS guidance says rest helps.")
+    assert "authority_citation" in _lint("According to the WHO, sleep matters.")
+    assert "authority_citation" in _lint("Studies show it helps.")
+    assert "authority_citation" not in _lint("Rest and fluids usually help someone who is tired.")
+
+
+def test_lint_flags_heavy_verdicts():
+    assert "heavy_verdict" in _lint("This means you have diabetes.")
+    assert "heavy_verdict" not in _lint("It could be low iron, worth a blood test if it keeps up.")
+
+
+def test_strip_attribution_rewrites_only_a_leading_attribution():
+    assert strip_attribution("NHS guidance says that sleep helps.") == "Sleep helps."
+    assert strip_attribution("According to the WHO, water helps.") == "Water helps."
+    assert strip_attribution("Studies show rest helps.") == "Rest helps."
+    assert strip_attribution("Rest usually helps.") == "Rest usually helps."
+
+
+def test_safety_copy_is_untouched_by_the_guard():
+    from safety_engine import CRISIS_LINES
+    assert strip_attribution(CRISIS_LINES) == CRISIS_LINES

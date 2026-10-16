@@ -137,19 +137,12 @@ export function MessageBody({ content }: { content: string }) {
   );
 }
 
+/** The wait for a reply: the mascot, not a sentence. Screen readers still hear that Bubbles is replying. */
 export function ThinkingBubble() {
   return (
-    <li
-      role="status"
-      aria-live="polite"
-      className="bubbles-rise flex items-center gap-3 self-start rounded-[22px_22px_22px_8px] border border-bubbles-grape/15 bg-surface px-[18px] py-3"
-    >
-      <span className="text-body-sm font-semibold text-ink-soft">Checking your history and trusted sources</span>
-      <span className="inline-flex shrink-0 gap-1" aria-hidden="true">
-        <span className="bubbles-thinking-dot" />
-        <span className="bubbles-thinking-dot" />
-        <span className="bubbles-thinking-dot" />
-      </span>
+    <li role="status" aria-live="polite" className="bubbles-rise flex items-center self-start rounded-[22px_22px_22px_8px] border border-bubbles-grape/15 bg-surface px-3 py-2">
+      <BubblesMascot size={40} mood="thinking" />
+      <span className="sr-only">Bubbles is replying</span>
     </li>
   );
 }
@@ -187,17 +180,18 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
   return (
     <div className="flex flex-wrap gap-2 pt-1">
       {sources.length > 0 && (
-        <div role="group" aria-labelledby={headingId} className="flex w-full flex-wrap gap-2">
-          {/* Retrieved reading on the topic, not a statement about this person. */}
-          <p id={headingId} className="m-0 w-full text-[0.75rem] font-extrabold text-ink-soft">
-            General reading
-          </p>
+        <details className="group w-full">
+          <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center text-[0.75rem] font-extrabold text-ink-soft [&::-webkit-details-marker]:hidden">
+            <span id={headingId}>Read more</span>
+          </summary>
+          {/* Retrieved reading on the topic, not a statement about this person. Titles only: no organisation names. */}
+          <div role="group" aria-labelledby={headingId} className="flex w-full flex-wrap gap-2">
           {sources.map((ev, idx) => {
             const label = (
               <>
                 <Icon d={ICONS.book} size={14} />
                 <span className="line-clamp-2 min-w-0">
-                  {ev.title} · {ev.publisher ?? ev.sourceName}
+                  {ev.title}
                 </span>
               </>
             );
@@ -214,7 +208,8 @@ function EvidenceRow({ evidence, confidence }: { evidence: EvidenceItem[]; confi
               </span>
             );
           })}
-        </div>
+          </div>
+        </details>
       )}
       {confidence && (
         <span className="inline-flex min-h-[32px] items-center rounded-full bg-tint-mint px-3 py-1.5 text-chip font-extrabold text-bubbles-mint-deep">
@@ -247,13 +242,13 @@ function EventCard({
   const resultRef = useRef<HTMLDivElement>(null);
   // This session's decision wins; otherwise show whatever the server already settled (a reloaded message).
   const stateOf = (e: ExtractedHealthEvent): EventStatus | null => (e.id ? status[e.id] : undefined) ?? settledState(e);
-  const confirmable = events.filter((e): e is ExtractedHealthEvent & { id: string } => e.isConfirmable && e.id !== null);
-  const pending = confirmable.filter((e) => !status[e.id]);
+  const confirmable = events.filter((e): e is ExtractedHealthEvent & { id: string } => (e.isConfirmable || settledState(e) !== null) && e.id !== null);
+  const pending = confirmable.filter((e) => !stateOf(e));
   const busy = confirmable.some((e) => status[e.id] === "busy");
   const resolved = confirmable.length > 0 && pending.length === 0 && !busy;
-  const saved = confirmable.filter((e) => status[e.id] === "saved");
-  const skipped = confirmable.filter((e) => status[e.id] === "dismissed");
-  const withdrawn = confirmable.filter((e) => status[e.id] === "retracted");
+  const saved = confirmable.filter((e) => stateOf(e) === "saved");
+  const skipped = confirmable.filter((e) => stateOf(e) === "dismissed");
+  const withdrawn = confirmable.filter((e) => stateOf(e) === "retracted");
 
   // The buttons that had focus disappear on resolve; hand focus to the result so keyboard users aren't dropped.
   useEffect(() => {
@@ -619,9 +614,9 @@ export function ConversationList({
         className="bubbles-press flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-4 text-body font-extrabold text-white bubbles-glow"
       >
         <Icon d={ICONS.plus} strokeWidth={2.6} />
-        New conversation
+        New chat
       </button>
-      <h2 className="m-0 px-1.5 pb-0.5 pt-3 text-label font-extrabold uppercase tracking-wide text-ink-soft">Recent</h2>
+      <h2 className="m-0 px-1.5 pb-0.5 pt-3 text-label font-extrabold uppercase tracking-wide text-ink-soft">History</h2>
       {state === "loading" && (
         <div role="status" aria-label="Loading conversations" className="flex flex-col gap-2">
           {[0, 1, 2].map((i) => (
