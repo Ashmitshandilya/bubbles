@@ -221,7 +221,7 @@ def headline(*, database: str, persistence_mode: str, all_paused: bool, ai_now: 
 # ---------------------------------------------------------------- usage and cost (aggregates only: counts, rates, no user ids)
 
 CHAT_ROUTES = frozenset({"/chat", "/chat/stream"})
-FUNNEL_ORDER = ("about", "goals", "health", "life", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
+FUNNEL_ORDER = ("about", "goals", "health", "life", "more_health", "choices", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
 FREE_TIER = "free tier"
 
 
