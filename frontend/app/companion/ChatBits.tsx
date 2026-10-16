@@ -369,7 +369,7 @@ function EventCard({
  * The one question Bubbles asks before it sends a message to an outside AI model. The yes is stored on the server and can be undone in Settings.
  * The card itself says what is sent: it can sit under a reply that does not (an urgent message from someone who has not said yes yet).
  */
-function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) {
+function ConsentCard({ busy, onAllow, onDecline }: { busy: boolean; onAllow: () => void; onDecline?: () => void }) {
   return (
     <div role="group" aria-label="Allow an outside AI model" className="flex flex-col gap-3 rounded-[20px] bg-tint-sky p-4">
       <p className="m-0 text-body-sm font-bold text-bubbles-sky-deep">
@@ -385,6 +385,16 @@ function ConsentCard({ busy, onAllow }: { busy: boolean; onAllow: () => void }) 
         >
           {busy ? "Saving..." : "Yes, allow and continue"}
         </button>
+        {onDecline && (
+          <button
+            type="button"
+            onClick={onDecline}
+            disabled={busy}
+            className="bubbles-press inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-line-strong bg-surface px-5 text-body-sm font-extrabold text-ink disabled:opacity-70 sm:w-auto"
+          >
+            No, not now
+          </button>
+        )}
       </div>
       <p className="m-0 text-caption font-semibold text-bubbles-sky-deep">You can change this any time in Settings.</p>
     </div>
@@ -468,6 +478,7 @@ export function BubblesReply({
   feedbackFailed = false,
   onRate,
   onConsent,
+  onDecline,
   consentBusy = false,
 }: {
   message: ChatMessage;
@@ -487,6 +498,7 @@ export function BubblesReply({
   onRate?: (rating: Rating, reason?: FeedbackReason) => void;
   /** Shown under the reply that asks for the yes. */
   onConsent?: () => void;
+  onDecline?: () => void;
   consentBusy?: boolean;
 }) {
   if (message.retracted) {
@@ -567,7 +579,7 @@ export function BubblesReply({
       {message.healthEvents && message.healthEvents.length > 0 && (
         <EventCard events={message.healthEvents} status={eventStatus} error={eventError} onDecide={onDecide} />
       )}
-      {message.consentRequired && onConsent && <ConsentCard busy={consentBusy} onAllow={onConsent} />}
+      {message.consentRequired && onConsent && <ConsentCard busy={consentBusy} onAllow={onConsent} onDecline={onDecline} />}
       {onRate && message.role === "assistant" && !message.consentRequired && isRatableId(message.id) && (
         <ReplyFeedback feedback={feedback} busy={feedbackBusy} failed={feedbackFailed} onRate={onRate} />
       )}

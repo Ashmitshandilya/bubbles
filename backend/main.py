@@ -44,6 +44,7 @@ from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
 from chat_feedback import build_router as build_chat_feedback_router
+import consent_ledger
 from consent_api import build_router as build_consent_router
 from onboarding_api import build_router as build_onboarding_router, style_block_for
 from consent import consent_needed_reply, has_ai_consent
@@ -877,7 +878,8 @@ def chat(
         # The model only PROPOSES events; the backend keeps those the user really asserted about themselves.
         t0 = perf_counter()
         reconciled = reconcile_ai_events(ai_events, turn, rule_events, user_message_id)
-        persisted = persist_events(supabase, user_id, user_message_id, rule_events + reconciled)
+        # Details noticed in chat are only suggested when the person has turned that choice on (consent_ledger.py).
+        persisted = persist_events(supabase, user_id, user_message_id, rule_events + reconciled) if consent_ledger.is_granted(supabase, user_id, "health_memory_from_chat") else []
         timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
         if is_degraded(ai_result):
             response_text = ai_failed_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))

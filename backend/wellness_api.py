@@ -541,6 +541,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     def settings_put(uid: str, body: dict) -> dict:
         s = N.normalize_settings(body, N.load_settings(db, uid))
         N.save_settings(db, uid, s)
+        import consent_ledger
+        consent_ledger.record_if_changed(db, uid, "email_reminders", bool((s.get("channels") or {}).get("email")), "settings")
         return ok(settings=s, channels=N.channel_status())
 
     @router.put("/notifications/settings")
