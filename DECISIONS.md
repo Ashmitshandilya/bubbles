@@ -160,6 +160,11 @@ Entry template:
 - Today shows a "Last updated" card: the newer of this browser's last change and the server's `last_update` from `/health/summary`, so a change made on another device shows as well.
 - Not done: the Android app does not yet listen for changes made on another device while it is open (it picks them up on the next load).
 
+### 2026-10 · Plain weight and height from chat are saved at once
+- `backend/body_stats.py`: when someone plainly states their own weight ("I weigh 110 kg", already parsed and staged) or height ("my height is 6'1", "I am 185 cm tall"), chat saves it without a Save tap. Weight goes through the same confirm path as the Save button (only pending, present-tense, confidence 0.9 or more); height is written to `profiles.height_cm` and the body profile document. The reply says what was saved.
+- Everything else Bubbles picks up (symptoms, medicines, moods, food) still waits for Save. Questions, negations, other people's heights and implausible values (120-230 cm) are ignored.
+- Not done: no undo button in the chat reply. Weight can be removed on the Weight page; height can be corrected by saying it again or in Fitness setup.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.
