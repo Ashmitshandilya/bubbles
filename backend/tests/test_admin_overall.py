@@ -11,6 +11,7 @@ import pytest
 import client_events_api
 import ops_metrics
 import ops_rollups
+import consent
 import ops_snapshots
 import ops_telemetry
 from fake_db import FakeDB, Query, Result, _get
@@ -302,17 +303,20 @@ def test_snapshots_are_integers_only_and_hide_the_table_when_missing(opsdb):
         {"user_id": "u1", "role": "user", "created_at": iso(0.2)}, {"user_id": "u1", "role": "user", "created_at": iso(3)},
         {"user_id": "u2", "role": "user", "created_at": iso(5)}, {"user_id": "u2", "role": "assistant", "created_at": iso(0.1)},
         {"user_id": "u3", "role": "user", "created_at": iso(0.4)}]
+    tv = consent.PURPOSES["ai_chat_processing"]["text_version"]
     opsdb.tables["consent_events"] = [
-        {"user_id": "u1", "purpose": "ai_chat_processing", "granted": False, "created_at": iso(9)},
-        {"user_id": "u1", "purpose": "ai_chat_processing", "granted": True, "created_at": iso(2)},
-        {"user_id": "u2", "purpose": "ai_chat_processing", "granted": False, "created_at": iso(2)}]
+        {"user_hash": "h1", "purpose": "ai_chat_processing", "granted": False, "text_version": tv, "created_at": iso(9)},
+        {"user_hash": "h1", "purpose": "ai_chat_processing", "granted": True, "text_version": tv, "created_at": iso(2)},
+        {"user_hash": "h2", "purpose": "ai_chat_processing", "granted": False, "text_version": tv, "created_at": iso(2)}]
     opsdb.tables["community_posts"] = [{"id": "p1", "status": "visible"}, {"id": "p2", "status": "held"}]
     u = ops_snapshots.users(opsdb, now)
     assert (u["dau"], u["wau"], u["mau"], u["signups_total"]) == (2, 3, 3, 3)
     assert u["signups"] == {"24h": 1, "7d": 1, "30d": 3}
     assert u["retention"]["d1"] == {"eligible": 2, "returned": 2, "rate": 1.0}
     assert u["retention"]["d7"]["eligible"] == 2 and u["retention"]["d7"]["returned"] == 1   # u1 on/after day 7; u2 last wrote on day 5
-    assert ops_snapshots.consent_rates(opsdb) == [{"purpose": "ai_chat_processing", "granted": 1, "declined": 1, "decided": 2, "rate": 0.5}]
+    rates = {r["purpose"]: r for r in ops_snapshots.consent_rates(opsdb)}
+    assert (rates["ai_chat_processing"]["granted"], rates["ai_chat_processing"]["declined"], rates["ai_chat_processing"]["rate"]) == (1, 1, 0.5)
+    assert "product_usage_metrics" not in rates   # not offered yet, so no rate to show
     assert ops_snapshots.community(opsdb) == {"visible": 1, "held": 1, "removed": 0}
     assert ops_snapshots.push(opsdb) is None or ops_snapshots.push(opsdb) == {"active_devices": 0}
     assert "u1" not in json.dumps([u, ops_snapshots.consent_rates(opsdb)])
