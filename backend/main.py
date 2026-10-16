@@ -47,11 +47,15 @@ from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
 from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
-from onboarding_api import build_router as build_onboarding_router
 import chat_cache
 from chat_concurrency import settled, submit, submit_io
 import chat_concurrency
-from consent import consent_needed_reply, has_ai_consent
+from chat_counts import message_counts
+from schema_status import build_router as build_schema_router
+from onboarding_api import build_router as build_onboarding_router, style_block_for
+import consent as consent_module
+from consent import chat_prompt, consent_needed_reply, has_ai_consent, persist_chat_events
+from mind_chat import loneliness_no_consent_reply, mind_support_block
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -108,7 +112,7 @@ from state_normalizer import normalize_health_state, normalize_living_signal_map
 from womens_health_intelligence import classify_womens_health
 from medication_intelligence import medication_overview
 from preventive_health import preventive_snapshot
-from sharing_architecture import build_share_plan
+from sharing_architecture import SCOPES as SHARE_SCOPES, build_share_plan
 from provider_integration import to_fhir_resource
 from advanced_agent import plan_agent
 from knowledge_learning import knowledge_health
@@ -305,7 +309,7 @@ def _record_api_event(request, response, started: float) -> None:
 
 
 # Coarse protection for the Whole-Health OS routes: a request-size cap and a per-user request budget (the chat has its own limiter).
-_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback")
+_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback", "/consents")
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing
@@ -416,6 +420,11 @@ def _warm_database_probe() -> None:
     if ops_telemetry._persist_enabled():   # saved admin settings (provider pauses, retention): read once, in the background
         import threading
         threading.Thread(target=admin_settings.load, name="bubbles-settings-load", daemon=True).start()
+    try:   # phone reminders while the app is closed; does nothing until FIREBASE_SERVICE_ACCOUNT_JSON is set (push_fcm.py)
+        import push_fcm
+        push_fcm.start_background(supabase)
+    except Exception:  # noqa: BLE001 - startup must never fail because of an optional channel
+        pass
 
 
 # HEAD is allowed too: uptime monitors (UptimeRobot, Render, load balancers) often probe with HEAD and would otherwise see 405 and report "down"
@@ -562,6 +571,7 @@ app.include_router(build_import_router(get_authenticated_user, supabase))
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
 app.include_router(build_organ_map_router(get_authenticated_user, supabase))
+app.include_router(build_schema_router(supabase))
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
 
@@ -907,11 +917,12 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         # Deterministic copy: RED is a hard gate, so neither the message nor health context reaches a provider.
         t0 = perf_counter()
         # While waiting for the yes nothing is saved: the same message is asked again after it and saved once then (saving both would count a symptom twice).
-        persisted = [] if state.consent_required else persist_events(supabase, user_id, user_message_id, state.rule_events, fresh=state.fresh)
+        persisted = [] if state.consent_required else persist_chat_events(supabase, user_id, user_message_id, state.rule_events, persist=persist_events, fresh=state.fresh)
         timings["events_ms"] = _ms(t0)
         if state.consent_required:
             # An urgent message still gets the fixed urgent text, not a question about AI models.
-            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else consent_needed_reply(name)
+            consent_ask = chat_prompt(supabase, user_id, name)   # declined within 14 days: a calm line, no card
+            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (loneliness_no_consent_reply(turn, name) or consent_ask["reply"])
         else:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
@@ -955,13 +966,13 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         ]))
         style = style_job.result()[0] or ""
         # What the person said about themselves is saved while the model thinks (the model only PROPOSES more events afterwards).
-        rule_job = submit_io(settled, persist_events, supabase, user_id, user_message_id, state.rule_events, fresh=state.fresh) if state.rule_events else None
+        rule_job = submit_io(settled, persist_chat_events, supabase, user_id, user_message_id, state.rule_events, persist=persist_events, fresh=state.fresh) if state.rule_events else None
         t0 = perf_counter()
         ai_result = ask_bubbles(
             user_message,
             memory_context=memory_context,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if style else ""),
+            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if style else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else ""),
             conversation_context=conversation_context,
         )
         stage["ai"] = _ms(t0)
@@ -975,7 +986,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
 
         t0 = perf_counter()
         reconciled = reconcile_ai_events(ai_events, turn, state.rule_events, user_message_id)
-        proposed_saved = persist_events(supabase, user_id, user_message_id, reconciled, fresh=state.fresh)
+        proposed_saved = persist_chat_events(supabase, user_id, user_message_id, reconciled, persist=persist_events, fresh=state.fresh)
         rule_saved = (rule_job.result()[0] or []) if rule_job is not None else []
         persisted = rule_saved + proposed_saved
         timings["events_ms"] = _ms(t0)
@@ -1043,6 +1054,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         "message_id": bubbles_message_id,
         "user_message_id": user_message_id,
         "consent_required": state.consent_required,
+        "consent_ask": consent_ask["ask"] if state.consent_required else False,
         "conversation_id": state.conversation_id,
         "user_id": state.user.id,
         "evidence": [
@@ -1163,16 +1175,10 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
         has_more = len(conversations) > limit
         conversations = conversations[:limit]
 
-        # Message count for each conversation, asked at the same time: one after another this was up to 50 round trips
-        # to the database before the chat screen could show anything.
-        def _count(conv: dict) -> int:
-            return (supabase.table("chat_messages")
-                    .select("id", count="exact", head=True)
-                    .eq("conversation_id", conv["id"])
-                    .execute().count or 0)
-        with ThreadPoolExecutor(max_workers=8, thread_name_prefix="history-count") as pool:
-            for conv, msg_count in zip(conversations, pool.map(_count, conversations)):
-                conv["message_count"] = msg_count
+        # One round trip for every count (chat_counts.py); it was one query per conversation, up to 50.
+        counts = message_counts(supabase, user_id, [c["id"] for c in conversations])
+        for conv in conversations:
+            conv["message_count"] = counts.get(str(conv["id"]), 0)
 
         return {"conversations": conversations, "has_more": has_more}
     except Exception as e:
@@ -1316,8 +1322,10 @@ def intelligence_all(authorization: str | None = Header(default=None), days: int
 
 @app.post("/sharing/plan")
 def sharing_plan(request: dict, authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
-    return build_share_plan(request.get("scopes") or [], request.get("consent") or {})
+    user = get_authenticated_user(authorization)
+    # The answer is the stored record, never a dict the browser sends.
+    on = consent_module.is_granted(supabase, str(user.id), "partner_sharing")
+    return build_share_plan(request.get("scopes") or [], {scope: on for scope in SHARE_SCOPES})
 
 @app.get("/production/readiness")
 def production_readiness(authorization: str | None = Header(default=None)):
@@ -1998,8 +2006,10 @@ def privacy_redact(request: RedactionRequest, authorization: str | None = Header
 
 @app.post("/privacy/consent/check")
 def privacy_consent(request: ConsentRequest, authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
-    return {"status":"success","policy":consent_policy(request.consent,request.purpose)}
+    user = get_authenticated_user(authorization)
+    purpose = consent_module.canonical(request.purpose)
+    # The answer is the stored record, never the dict the browser sends (request.consent is ignored).
+    return {"status":"success","policy":consent_policy({purpose: consent_module.is_granted(supabase, str(user.id), purpose)}, purpose)}
 
 @app.get("/privacy/security-baseline")
 def privacy_security_baseline(authorization: str | None = Header(default=None)):

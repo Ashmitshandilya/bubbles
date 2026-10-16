@@ -17,6 +17,7 @@ from fastapi import APIRouter, Body, Header, HTTPException
 import consent
 import chat_cache
 import ops_telemetry
+import consent_ledger
 import doc_store
 import onboarding as ob
 from calc_core import local_today
@@ -260,8 +261,9 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                     save_domain(db, "allergies", DOMAINS["allergies"], uid, {"allergen": labels[kind], "notes": "Told by you at setup"})
 
         attempt("allergies", allergies)
-        if answers.get("ai_consent") == "yes":
-            attempt("consent", lambda: consent.set_ai_chat(db, uid, True))
+        if answers.get("ai_consent") in ("yes", "not_now"):
+            # recorded either way: a "not now" is a decision too, and it is logged like a yes
+            attempt("consent", lambda: consent_ledger.set_purpose(db, uid, "ai_chat_processing", answers.get("ai_consent") == "yes", "onboarding"))
 
         now = datetime.now(timezone.utc).isoformat()
         try:

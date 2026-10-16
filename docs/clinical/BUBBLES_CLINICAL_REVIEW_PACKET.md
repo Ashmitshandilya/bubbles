@@ -382,3 +382,9 @@ The setup builds a short Care checklist from what a person says. Each item is wo
 
 **Release rule:** the owner sets `BUBBLES_CLINICALLY_REVIEWED=true` in `backend/.env` only after this table is signed and any
 requested changes are made in `clinical_constants.py`. Until then every plan carries the "pending clinician review" banner.
+
+## Draft addition (2026-10): passive-ideation phrases
+
+Added to the `suicidal_ideation` pattern in `backend/health_semantics.py`, all treated as crisis language (the deterministic crisis reply, nothing stored):
+"burden to everyone / my family / my friends", "nobody would miss me", "everyone would be better off without me", "I am / I feel worthless", and Hinglish "marna chahta/chahti hun", "jeena nahi chahta/chahti", "jeene ka mann nahi", "main bojh hun", "koi miss nahi karega".
+Near-misses that must stay quiet are covered by tests (for example "my worthless ex", "a burden on the team"). Clinician sign-off needed on the list and on whether "worthless" alone should escalate.

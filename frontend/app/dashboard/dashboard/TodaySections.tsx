@@ -4,6 +4,8 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BubblesMascot } from "../../../components/BubblesMascot";
+import { InsightDetailSheet } from "../../../components/InsightDetailSheet";
+import { fromToday, type InsightDetail } from "../../insights/detail";
 import { askHref } from "../../lib/ask-handoff";
 import { TREND_WORDS, confidenceDots, sparkPath, sparkPoints } from "./brief";
 import { sourceLine } from "../../lib/track-pulse";
@@ -450,6 +452,7 @@ const CARD = "flex flex-col gap-2 rounded-[24px] border border-line bg-surface p
 const TEXT_LINK = "inline-flex min-h-[44px] items-center self-start text-sm font-extrabold text-bubbles-pink-ink";
 
 export function Patterns({ state, items, note, onRetry }: { state: "loading" | "error" | "ready"; items: PatternItem[]; note?: string; onRetry: () => void }) {
+  const [open, setOpen] = useState<InsightDetail | null>(null);
   return (
     <div className="flex flex-col gap-3.5">
       <h2 id="today-patterns" className="sr-only">Patterns Bubbles noticed</h2>
@@ -473,12 +476,13 @@ export function Patterns({ state, items, note, onRetry }: { state: "loading" | "
               <EvidenceChip pill={item.pill} />
               <strong data-private className="text-base leading-snug">{item.title}</strong>
               {item.detail && <p data-private className="m-0 text-sm leading-relaxed text-ink-soft">{item.detail}</p>}
-              <Link href="/insights" className={TEXT_LINK}>See the evidence</Link>
+              <button type="button" onClick={() => setOpen(fromToday(item))} className={`${TEXT_LINK} border-0 bg-transparent p-0`}>Details<span className="sr-only">: {item.title}</span></button>
             </li>
           ))}
         </ul>
       )}
       {note && <p className="m-0 text-chip font-semibold text-ink-soft">{note}</p>}
+      <InsightDetailSheet detail={open} onClose={() => setOpen(null)} />
     </div>
   );
 }

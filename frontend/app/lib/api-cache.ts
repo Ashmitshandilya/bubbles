@@ -9,7 +9,7 @@
 // ponytail: whole-cache invalidation on every write; move to per-resource keys (e.g. SWR) if screens need finer control.
 
 export const API_CACHE_TTL_MS = 20_000;
-const NEVER_CACHED = ["/health", "/chat", "/me/consent", "/admin"];
+const NEVER_CACHED = ["/health", "/chat", "/me/consent", "/consents", "/admin"];
 
 function neverCached(path: string): boolean {
   return NEVER_CACHED.some((prefix) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`));

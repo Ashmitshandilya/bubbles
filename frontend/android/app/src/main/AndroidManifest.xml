@@ -38,9 +38,25 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Firebase (docs/FIREBASE.md). Dormant unless the build had google-services.json. Nothing is collected or created
+             until the person turns it on in Settings: crash reports stay off, no notification token exists before they turn
+             phone reminders on, and Google Analytics is never used (Bubbles promises no analytics). -->
+        <meta-data android:name="firebase_crashlytics_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_deactivated" android:value="true" />
+        <meta-data android:name="google_analytics_adid_collection_enabled" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_analytics_storage" android:value="false" />
+        <meta-data android:name="google_analytics_default_allow_ad_storage" android:value="false" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="reminders" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_bubbles" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/bubbles_notification" />
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: asked only when the person turns phone reminders on (Settings, Reminders). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

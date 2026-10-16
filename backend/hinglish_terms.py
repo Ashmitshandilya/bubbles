@@ -189,6 +189,16 @@ LEXICON: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         "(?:khud|apne aap|apne) ko (?:maar|mar|khatam) (?:du|dun|doon|dunga|dungi|lu|lun|loon|lunga|lungi|dalu|dalun|daalu|daalun|dalunga|dena|lena|dalna|daalna)",
         "(?:zinda?gi|jinda?gi|jeevan) se haar (?:gaya|gayi|gya|gyi|chuka|chuki)",
         "sab (?:kuch )?khatam kar (?:dena|lena) " + _WANT,
+        # passive ideation, second list (additive; needs clinician and native-speaker review, see docs/drafts/l3-clinical.md)
+        "(?:main|mai|me|mein) (?:sabke|sab ke|sabhi ke|sabki|sab pe|sab par|ghar walon ke|gharwalon ke|sabke liye|sab ke liye|sabhi ke liye) (?:"
+        + _W + "){0,2}(?:bojh|bhoj|boj|burden)(?: (?:hoon|hun|hu|ban gaya|ban gayi|bn gya|bn gyi))?",         # main sabke liye bojh hoon
+        "(?:mere|meri) (?:jaane|jane|chale jaane|chale jane|marne|na rehne|na rahne) (?:se|ke baad) (?:kisi ko|kisiko|kissi ko|kisi ko bhi) "
+        "(?:koi )?(?:farak|fark|fraq|asar|dukh) (?:" + NEG + "|na) (?:padega|padegi|padta|hoga|hogi)",          # mere jaane se kisi ko farak nahi padega
+        "(?:koi|kisi ko|kisiko) meri (?:kami|yaad|kmi) (?:(?:mehsoos|mehsus) )?(?:" + NEG + ")",             # koi meri kami mehsoos nahi karega
+        "(?:main|mai|me) kisi kaam (?:ka|ki) (?:" + NEG + ") (?:hoon|hun|hu)",                              # main kisi kaam ka nahi hoon
+        "(?:meri|mera) (?:koi )?(?:value|keemat|kimat|aukaat|ahmiyat) (?:" + NEG + ")",                     # meri koi value nahi hai
+        "(?:main|mai|me|mujhe) (?:(?:bahut|bohot|bilkul|ekdum|ek dum) )?(?:worthless|useless) (?:feel|lag|mehsoos)",  # main worthless feel karta hoon
+        "(?:main|mai|me) (?:bilkul|ekdum|ek dum) (?:bekaar|bekar|nikamm[ai]|nalayak) (?:hoon|hun|hu|insaan|insan)",   # main bilkul bekaar hoon
     )),
     ("self_harm", "red", "possible self-harm crisis language", (
         "(?:khud|apne aap|apne|khud ke) ko (?:nuk?saa?n|nukasan|nuqsan|chot|hurt|harm|zakhmi|jakhmi|takl(?:ee|i)f|dard) "

@@ -46,7 +46,7 @@ def test_the_bank_is_well_formed():
             assert set(q.get("exclusive", [])) <= set(ids), q["id"]
         assert q["step"] in {s["id"] for s in ob.STEPS}, q["id"]
         assert q["required"] == (q["id"] in ob.REQUIRED)
-    assert set(ob.REQUIRED) == {"preferred_name", "birth_date", "body", "language", "goals", "conditions", "tone"}
+    assert set(ob.REQUIRED) == {"body", "birth_date", "preferred_name", "goals", "conditions"}
 
 
 def test_no_visible_words_use_banned_style():
@@ -109,7 +109,7 @@ def test_required_questions_are_the_only_ones_that_cannot_be_skipped():
     assert ob.required_missing({}, TODAY) == list(ob.REQUIRED)
     assert ob.required_missing(base(), TODAY) == []
     with pytest.raises(ob.AnswerError):
-        ob.apply_answers(base(), {"tone": None}, TODAY)
+        ob.apply_answers(base(), {"goals": None}, TODAY)
     answers, _d, skipped = ob.apply_answers(base(), {"sleep_hours": 7, "screen_hours": None}, TODAY)
     assert answers["sleep_hours"] == 7 and skipped == ["screen_hours"]
 
@@ -263,7 +263,7 @@ def test_a_new_person_starts_empty_and_resumes_where_they_left_off(api):
     assert r.status_code == 200
     again = client.get("/onboarding/state", headers=H).json()
     assert again["step"] == 1 and again["answers"]["body"] == "female" and "periods" in again["visible"]
-    assert again["required_missing"] == ["language", "goals", "conditions", "tone"]
+    assert again["required_missing"] == ["goals", "conditions"]
 
 
 def test_a_skipped_optional_question_is_recorded_and_a_bad_answer_names_the_field(api):
@@ -310,7 +310,7 @@ def test_completing_needs_every_required_answer(api):
     client, _ = api
     put(client, {"preferred_name": "Riya"})
     r = client.post("/onboarding/complete", headers=H)
-    assert r.status_code == 422 and set(r.json()["detail"]["missing"]) == {"birth_date", "body", "language", "goals", "conditions", "tone"}
+    assert r.status_code == 422 and set(r.json()["detail"]["missing"]) == {"birth_date", "body", "goals", "conditions"}
 
 
 def finish(client, **more):

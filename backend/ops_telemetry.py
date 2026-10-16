@@ -98,7 +98,7 @@ NOTE_VALUES: dict[str, frozenset] = {
 
 
 # Events whose one field may only be one of these fixed names; anything else drops the whole event (no free text can arrive this way).
-FUNNEL_STEPS = ("about", "goals", "health", "life", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
+FUNNEL_STEPS = ("about", "goals", "health", "life", "more_health", "choices", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
 CLIENT_CODES = ("render_error", "unhandled_rejection", "chunk_load_failed", "api_unreachable", "sign_in_refresh_failed", "stream_fallback")
 FIELD_ENUMS: dict[str, dict[str, frozenset]] = {"funnel": {"step": frozenset(FUNNEL_STEPS)}, "client": {"code": frozenset(CLIENT_CODES)}}
 # Kinds added after the first migration: stored only if the database accepts them (supabase/migrations/20261016_bubbles_ops_funnel.sql).

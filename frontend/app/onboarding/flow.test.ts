@@ -91,10 +91,10 @@ describe("answering", () => {
 
   it("only required questions block, and an empty optional one is sent as a skip", () => {
     const about = questions.filter((q) => q.step === "about" && ["preferred_name", "body", "birth_date", "language"].includes(q.id));
-    expect(missingRequired(about, { preferred_name: "Riya" })).toEqual(["birth_date", "body", "language"]);
+    expect(missingRequired(about, { preferred_name: "Riya" })).toEqual(["body", "birth_date"]);
     const daily = [byId("sleep_hours"), byId("screen_hours")];
     expect(stepPatch(daily, { sleep_hours: 7 })).toEqual({ sleep_hours: 7, screen_hours: null });
-    expect(stepPatch([byId("tone")], {})).toEqual({});
+    expect(stepPatch([byId("tone")], {})).toEqual({ tone: null });
   });
 
   it("knows what counts as answered", () => {

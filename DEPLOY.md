@@ -27,6 +27,7 @@ Environment (names are `BUBBLES_*`; old `COCO_*` names are still mapped by `env_
 | `CHAT_RAG_BUDGET_S` (2), `CHAT_CONTEXT_BUDGET_S` (8), `RAG_EMBED_TIMEOUT_S` (3) | How long a chat turn waits for the evidence lookup, the person's own context and the meaning-search call before answering without them. |
 | `BUBBLES_CLINICALLY_REVIEWED` | Leave `false` until a clinician signs `docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md`. |
 | `BUBBLES_ENABLE_RXNAV` | Leave unset (drug names are not sent to an outside service). |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Optional. Turns on phone reminders for the Android app (Firebase Cloud Messaging). Secret: the service-account key file, pasted whole. See `docs/FIREBASE.md`. `PUSH_SWEEP_SECONDS` (default 300) and `BUBBLES_PUSH_SWEEP=0` tune or stop the background check. |
 
 Run: `uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'` (see `backend/Procfile`). Python packages: `pip install -r backend/requirements.txt` (versions are pinned; use the same Python minor version you develop with; test tools are in `backend/requirements-dev.txt`, which the server does not need). Health check: `GET /health` (answers HEAD too, for uptime monitors).
 - **RAG switches (all optional, defaults are the tested setting):** `RAG_EXPAND=0` turns off lay-term expansion, `RAG_EXPAND_MODE=or|embed|and`, `RAG_LINKS=0` turns off link-aware retrieval. After any new ingest run `python rag_links.py` (dry run) and `--apply` to keep the `link:` tags current, then `python eval_retrieval.py`.

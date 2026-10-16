@@ -182,3 +182,28 @@ def test_recent_queries_and_suggestions():
         db.rows.setdefault("chat_messages", []).append({"id": text, "user_id": "user-1", "role": "user", "content": text, "created_at": "x"})
     assert client.get("/intelligence/recent-queries?limit=4", headers=H).json()["queries"] == ["how is my sleep", "when is my period"]
     assert len(client.get("/intelligence/suggestions?limit=3", headers=H).json()["suggestions"]) == 3
+
+
+def test_crisis_wording_in_a_tracker_note_stores_nothing_and_returns_support():
+    client, db = make_client()
+    for slug, field in (("mood", "notes"), ("symptoms", "notes"), ("medications", "notes")):
+        body = {"notes": "I feel like a burden to everyone", "date": "2026-10-05T10:00:00Z", "mood": 3, "name": "x", "symptom": "x"}
+        r = client.post(f"/health/{slug}", json=body, headers=H)
+        assert r.status_code == 200, slug
+        out = r.json()
+        assert out["status"] == "safety" and out["saved"] is False and "14416" in out["message"], slug
+    assert client.get("/health/mood?days=30", headers=H).json()["entries"] == []
+
+
+def test_near_misses_in_a_tracker_note_are_saved_normally():
+    client, _ = make_client()
+    r = client.post("/health/mood", json={"mood": 6, "notes": "this project is a burden on the team", "date": "2026-10-05T10:00:00Z"}, headers=H)
+    assert r.status_code == 201
+
+
+def test_new_passive_phrases_are_crisis_and_near_misses_are_not():
+    from safety_engine import assess_safety
+    for t in ("I feel like a burden to everyone", "nobody would miss me", "I feel worthless", "I am worthless", "mujhe marna chahta hun", "jeena nahi chahti"):
+        assert assess_safety(t).crisis, t
+    for t in ("I'm not a burden, the bus was late", "my worthless ex", "the dish is a burden on the table", "nobody would miss the bus"):
+        assert not assess_safety(t).crisis, t
