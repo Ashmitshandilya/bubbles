@@ -87,12 +87,16 @@ export const SECTIONS: readonly Section[] = [
   },
   {
     id: "track", label: "Track", icon: "activity", href: "/sleep",
-    match: ["/sleep", "/hydration", "/mood", "/mind", "/symptoms", "/eyes", "/vitals", "/weight", "/activity", "/nutrition"],
+    match: ["/sleep", "/hydration", "/symptoms", "/eyes", "/vitals", "/weight", "/activity", "/nutrition"],
     tabs: [
-      { label: "Sleep", href: "/sleep" }, { label: "Water", href: "/hydration" }, { label: "Mood", href: "/mood" }, { label: "Mind", href: "/mind" },
+      { label: "Sleep", href: "/sleep" }, { label: "Water", href: "/hydration" }, 
       { label: "Symptoms", href: "/symptoms" }, { label: "Eyes", href: "/eyes" }, { label: "Vitals", href: "/vitals" }, { label: "Weight", href: "/weight" },
       { label: "Activity", href: "/activity" }, { label: "Food", href: "/nutrition" },
     ],
+  },
+  {
+    id: "mind", label: "Mind", icon: "mood", href: "/mind", match: ["/mind", "/mood"],
+    tabs: [{ label: "Mind", href: "/mind" }, { label: "Mood log", href: "/mood" }],
   },
   {
     id: "cycle", label: "Cycle", icon: "cycle", href: "/cycle", match: ["/cycle", "/partner"],

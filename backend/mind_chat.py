@@ -6,7 +6,7 @@ exist in the app (Mind > Loneliness check-in, Breathe and ground, Missing someon
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Iterable
 
 from consent import consent_needed_reply
 
@@ -23,10 +23,16 @@ TOPICS: dict[str, tuple[str, str, str]] = {
 }
 
 
+def mind_topics(facts: Iterable[Any]) -> list[str]:
+    """Mind concepts the person reports about themselves right now, most pressing first (accepts a turn or its facts)."""
+    facts = getattr(facts, "facts", facts) or ()
+    active = {f.concept for f in facts if f.active}
+    return [c for c in ORDER if c in active]
+
+
 def mind_concept(turn: Any) -> str | None:
     """The most specific Mind concept the person reports about themselves right now, or None."""
-    active = {f.concept for f in getattr(turn, "facts", ()) or () if f.active}
-    return next((c for c in ORDER if c in active), None)
+    return next(iter(mind_topics(turn)), None)
 
 
 def mind_support_block(turn: Any) -> str:
@@ -39,7 +45,7 @@ def mind_support_block(turn: Any) -> str:
         "MIND SUPPORT (the person mentioned " + noticed + "):\n"
         "- Reply like a close friend: one warm line that shows you heard them, then one small step, then at most one question.\n"
         f"- The small step: {step}. Name this tool in the app: {tool}.\n"
-        "- Never name or label a condition (no 'you have an anxiety disorder'), never say it is nothing, never promise it will pass.\n"
+        "- Never name or label a condition (no 'you have an anxiety disorder'). Never name a condition as theirs, never say it is nothing, never promise it will pass.\n"
         "- No medicine or supplement advice. If they mention not coping or feeling unsafe, stay gentle and point to a person they trust.")
 
 
@@ -54,3 +60,12 @@ def loneliness_no_consent_reply(turn: Any, name: str | None = None) -> str | Non
     if mind_concept(turn) != "loneliness":
         return None
     return LONELY_REPLY.format(name=f", {name}" if name else "") + "\n\n" + consent_needed_reply(name)
+
+
+def mind_fixed_reply(facts: Iterable[Any]) -> str:
+    """A short fixed supportive reply for when no outside AI may be asked, or "" when no Mind topic applies."""
+    concept = mind_concept(facts)
+    if not concept:
+        return ""
+    noticed, step, tool = TOPICS[concept]
+    return f"Thank you for telling me about {noticed}. One small step that often helps: {step}. You'll find it under {tool}."

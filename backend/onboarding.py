@@ -21,7 +21,7 @@ from typing import Any
 BANK_VERSION = "2026-10a"
 MIN_AGE = 18
 MAX_AGE = 110
-REQUIRED = ("preferred_name", "birth_date", "body", "language", "goals", "conditions", "tone")
+REQUIRED = ("body", "birth_date", "preferred_name", "goals", "conditions")
 
 BODIES = ("female", "male", "trans", "other", "prefer_not")
 REPRO = ("female", "trans", "other", "prefer_not")   # may have periods: the question is asked and "I don't get periods" is an answer. Never a male body.
@@ -30,16 +30,19 @@ STRICT_REPRO = ("female",)                           # pregnancy, menopause and 
 #: free-text answers: each goes through the safety engine before it is stored (onboarding_api.py)
 FREE_TEXT = ("conditions_other", "mind_note", "drains_other")
 
-STEPS: list[dict[str, str]] = [
+STEPS: list[dict[str, Any]] = [
     {"id": "about", "title": "About you", "intro": "Bubbles uses this to speak to you the right way and to pick what to show."},
     {"id": "goals", "title": "What brings you here", "intro": "Pick what you would like help with. You can change it any time."},
     {"id": "health", "title": "Your health", "intro": "Only what you are comfortable sharing. Bubbles never diagnoses, and this stays private to your account."},
     {"id": "life", "title": "Your body and life stage", "intro": "These help Bubbles suggest the right check-ups. Skip any you prefer not to answer."},
-    {"id": "daily", "title": "Daily life", "intro": "A few habits, so your first view is not empty."},
-    {"id": "mind", "title": "Your mind", "intro": "How you have been feeling. You can skip all of this."},
-    {"id": "people", "title": "People around you", "intro": "Just so Bubbles knows how you like to be supported."},
-    {"id": "drains", "title": "What drains you, what helps", "intro": "So Bubbles can notice what is behind a rough day."},
-    {"id": "talk", "title": "How Bubbles talks with you", "intro": "The last step."},
+    # everything from here to "choices" is the optional "A little more" stage: the app can skip it whole
+    {"id": "more_health", "title": "A little more about your health", "intro": "All optional. Skip any.", "extra": True},
+    {"id": "daily", "title": "Daily life", "intro": "A few habits, so your first view is not empty.", "extra": True},
+    {"id": "mind", "title": "Your mind", "intro": "How you have been feeling. You can skip all of this.", "extra": True},
+    {"id": "people", "title": "People around you", "intro": "Just so Bubbles knows how you like to be supported.", "extra": True},
+    {"id": "drains", "title": "What drains you, what helps", "intro": "So Bubbles can notice what is behind a rough day.", "extra": True},
+    {"id": "talk", "title": "How Bubbles talks with you", "intro": "Optional. Bubbles starts gentle and short.", "extra": True},
+    {"id": "choices", "title": "Your choices", "intro": "Bubbles asks before it uses an outside helper. You can change this any time in Settings."},
 ]
 
 
@@ -67,11 +70,11 @@ _NOT_NEVER = {"answers": {"alcohol_freq": ["monthly_or_less", "two_four_month", 
 
 QUESTIONS: list[dict[str, Any]] = [
     # ---- about you
-    _q("preferred_name", "about", "text", "What should Bubbles call you?", maxlength=40),
-    _q("birth_date", "about", "date", "When were you born?", "Bubbles is for people 18 and over for now, and your age decides which check-ups to suggest."),
     _q("body", "about", "single", "Which best describes you?",
        "Bubbles uses this to choose your body map, cycle tracking and check-up reminders. You can change it any time in Settings.",
        options=[_o("female", "Female"), _o("male", "Male"), _o("trans", "Transgender"), _o("other", "Other"), _o("prefer_not", "Prefer not to say")]),
+    _q("birth_date", "about", "date", "When were you born?", "Bubbles is for people 18 and over for now, and your age decides which check-ups to suggest."),
+    _q("preferred_name", "about", "text", "What should Bubbles call you?", maxlength=40),
     _q("language", "about", "single", "Which language feels easiest?",
        options=[_o("english", "English"), _o("hinglish", "Hinglish"), _o("hindi", "Hindi")]),
     # ---- goals
@@ -89,15 +92,15 @@ QUESTIONS: list[dict[str, Any]] = [
         _o("migraine", "Migraine"), _o("anaemia", "Anaemia"), _o("depression_anxiety", "Depression or anxiety"), _o("kidney", "Kidney condition"),
         _o("liver", "Liver condition"), _o("arthritis", "Arthritis"), _o("other", "Something else"), _o("none", "None of these"), _o("prefer_not", "Prefer not to say")]),
     _q("conditions_other", "health", "text", "What else?", show_if={"answers": {"conditions": ["other"]}}, maxlength=80),
-    _q("takes_medicines", "health", "single", "Do you take any medicines or supplements regularly?", "You can add them in Care after setup.",
+    _q("takes_medicines", "more_health", "single", "Do you take any medicines or supplements regularly?", "You can add them in Care after setup.",
        options=[_o("yes", "Yes"), _o("no", "No"), _o("prefer_not", "Prefer not to say")]),
-    _q("allergies", "health", "single", "Any allergies?", options=[_o("no", "No"), _o("yes", "Yes"), _o("not_sure", "Not sure")]),
-    _q("allergy_types", "health", "multi", "Which kind?", show_if={"answers": {"allergies": ["yes"]}}, options=[
+    _q("allergies", "more_health", "single", "Any allergies?", options=[_o("no", "No"), _o("yes", "Yes"), _o("not_sure", "Not sure")]),
+    _q("allergy_types", "more_health", "multi", "Which kind?", show_if={"answers": {"allergies": ["yes"]}}, options=[
         _o("food", "Food"), _o("medicine", "Medicine"), _o("dust_pollen", "Dust or pollen"), _o("other", "Something else")]),
-    _q("family_history", "health", "multi", "Has anyone in your close family had any of these?", exclusive=("none", "not_sure"), options=[
+    _q("family_history", "more_health", "multi", "Has anyone in your close family had any of these?", exclusive=("none", "not_sure"), options=[
         _o("heart_disease", "Heart disease"), _o("diabetes", "Diabetes"), _o("high_bp", "High blood pressure"), _o("cancer", "Cancer"),
         _o("mental_health", "Mental health conditions"), _o("none", "None of these"), _o("not_sure", "Not sure")]),
-    _q("height_weight", "health", "number_pair", "Height and weight", "Used for fitness and food guidance. Optional."),
+    _q("height_weight", "more_health", "number_pair", "Height and weight", "Used for fitness and food guidance. Optional."),
     # ---- body and life stage (each only when it applies)
     _q("periods", "life", "single", "Do you get periods?", "So Cycle can be set up properly.", show_if={"body_in": list(REPRO), "age_gte": 18, "age_lt": 56},
        options=[_o("regular", "Yes, fairly regular"), _o("irregular", "Yes, but irregular"), _o("not_now", "Not at the moment"), _o("none", "I don't get periods"), _o("prefer_not", "Prefer not to say")]),
@@ -165,7 +168,7 @@ QUESTIONS: list[dict[str, Any]] = [
     _q("tone", "talk", "single", "How should Bubbles talk with you?", options=[
         _o("gentle_warm", "Gentle and warm"), _o("calm_direct", "Calm and direct"), _o("cheerful_playful", "Cheerful and playful")]),
     _q("reply_length", "talk", "single", "How long should replies be?", options=[_o("short", "Short"), _o("detailed", "Detailed")]),
-    _q("ai_consent", "talk", "single", "May Bubbles use an outside AI model to answer open questions?",
+    _q("ai_consent", "choices", "single", "May Bubbles use an outside AI model to answer open questions?",
        "Only your message, recent messages here, and a short profile summary are sent. You can change this any time in Settings.",
        options=[_o("yes", "Yes"), _o("not_now", "Not now")]),
 ]
