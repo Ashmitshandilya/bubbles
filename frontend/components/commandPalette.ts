@@ -28,7 +28,7 @@ const QUICK_ACTIONS: readonly { slug: string; label: string; href: string }[] = 
   { slug: "log-water", label: "Log water", href: "/hydration" },
   { slug: "log-sleep", label: "Log sleep", href: "/sleep" },
   { slug: "log-mood", label: "Log mood", href: "/mood" },
-  { slug: "new-conversation", label: "New conversation", href: "/companion" },
+  { slug: "new-conversation", label: "New chat", href: "/companion?new=1" },
   { slug: "open-today", label: "Open Today", href: "/dashboard" },
   { slug: "partner-sharing", label: "Partner sharing", href: "/partner" },
   { slug: "settings", label: "Settings", href: "/settings" },
