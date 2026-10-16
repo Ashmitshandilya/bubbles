@@ -52,7 +52,7 @@ DISPLAY = {
     "persistent_vomiting": "persistent vomiting", "unusual_bleeding": "unusual bleeding",
     "heavy_bleeding": "heavy bleeding", "spotting": "spotting", "suicidal_ideation": "thoughts of suicide",
     "self_harm": "self-harm", "stroke_signs": "stroke warning signs", "allergic_reaction": "a severe allergic reaction",
-    "heart_attack": "a possible heart attack", "anxiety": "anxiety", "panic_attack": "panic attacks", "loneliness": "loneliness", "separation_anxiety": "missing someone / being apart", "low_mood": "low mood", "insomnia": "trouble sleeping",
+    "heart_attack": "a possible heart attack", "anxiety": "anxiety", "panic_attack": "panic attacks", "loneliness": "loneliness", "separation_anxiety": "missing someone / being apart", "low_mood": "low mood", "hair_loss": "hair loss", "insomnia": "trouble sleeping",
     "diarrhea": "diarrhea", "constipation": "constipation", "rash": "rash", "swelling": "swelling",
     "numbness": "numbness", "blurred_vision": "blurred vision", "period": "your period",
     "eye_strain": "eye strain", "dry_eyes": "dry eyes", "red_eye": "red eyes", "eye_pain": "eye pain", "eye_itch": "itchy eyes",
@@ -203,6 +203,8 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
         "can't (?:bear|stand|handle) (?:being )?(?:apart|away|without)|miss(?:ing)? (?:him|her|them|my (?:partner|mom|mum|dad|mother|father|family|child|kids?|husband|wife)) (?:so much|terribly|badly|a lot)|"
         "(?:anxious|panic\\w*) when (?:he|she|they|my \\w+) (?:leaves?|goes away|travels|is (?:gone|away)|isn't (?:here|around))",)),
     ("anxiety", None, "anxiety", ("anxi\\w+|panic(?: attacks?)?|panicky",)),
+    ("hair_loss", None, "hair loss", (
+        "hair (?:loss|fall(?:ing)?|thinning|is thinning|is falling)|losing (?:my )?hair|(?:my )?hair (?:is )?(?:falling|coming) out|bal (?:jhad|gir)\\w*",)),
     ("low_mood", None, "low mood", (
         "low mood|depress\\w+|hopeless\\w*|(?:feel|feeling|felt) (?:(?:really|very|so|quite|pretty|rather|extremely|a bit|a little|kind of) )?(?:sad|down|low|blue)|sad|sadness|tearful",)),
     ("insomnia", None, "insomnia", (

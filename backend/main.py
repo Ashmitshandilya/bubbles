@@ -54,6 +54,7 @@ from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
 from organ_map_api import build_router as build_organ_map_router
 import association_loader
+import nutrient_loader
 from context_engine import build_user_context, format_user_context
 from safety_engine import assess_safety, safety_instruction, urgent_fallback_response
 from chat_pipeline import (
@@ -833,6 +834,7 @@ def chat(
 
         try:  # the user's own log patterns (cached; never waits on a computation)
             memory_context += association_loader.chat_block(supabase, user_id)
+            memory_context += nutrient_loader.chat_block(supabase, user_id)
         except Exception as error:  # noqa: BLE001
             from logging_util import logger
             logger.warning(component="CHAT", operation="association_block", error=error, fallback_action="continuing_without_patterns")

@@ -16,6 +16,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request
 from starlette.concurrency import run_in_threadpool
 
 import association_loader as AL
+import nutrient_loader as NL
 import clinical_constants as K
 import doc_store
 import hydration_engine as H
@@ -502,6 +503,12 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         """Patterns between the things the signed-in user logs (sleep, mood, activity, drinks, food, symptoms, heart rate, cycle)."""
         uid, _ = await auth(authorization)
         return await run(lambda: ok(**AL.get(db, uid, days, tz_offset_minutes, refresh)))
+
+    @router.get("/wellness/nutrient-nudges")
+    async def nutrient_nudges_route(refresh: bool = False, authorization: str | None = Header(default=None)):
+        """Gentle "might be worth a blood test" notes from the signed-in user's own logs, plus labs outside the range they entered."""
+        uid, _ = await auth(authorization)
+        return await run(lambda: ok(**NL.get(db, uid, refresh)))
 
     # ======================================================== NOTIFICATIONS ================================================
     def notif_list(uid: str, user: Any, limit: int, unread_only: bool, refresh: bool) -> dict:
