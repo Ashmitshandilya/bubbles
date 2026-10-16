@@ -154,6 +154,8 @@ def save_settings(db: Any, uid: str, body: dict) -> dict:
     cfg = _load(db, uid)
     cfg.update(categories=cats, note=note if "support_note" in cats else "", owner_name=_clean_name(body.get("owner_name"), "Your name"))
     _save(db, uid, cfg)
+    import consent_ledger
+    consent_ledger.record_if_changed(db, uid, "partner_sharing", True, "settings")   # choosing what to share is the yes, and it is logged
     return status(db, uid)
 
 
@@ -245,6 +247,8 @@ def stop_all(db: Any, uid: str) -> dict:
     if cfg.get("connection"):
         doc_store.delete(db, cfg["connection"]["uid"], WITH_KIND, _owner_id(uid))
     doc_store.delete(db, uid, SHARE_KIND, "main")
+    import consent_ledger
+    consent_ledger.record_if_changed(db, uid, "partner_sharing", False, "settings")   # stopping everything is a withdrawal, and it is logged
     return status(db, uid)
 
 

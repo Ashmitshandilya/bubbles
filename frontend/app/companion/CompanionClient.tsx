@@ -354,7 +354,7 @@ export function CompanionClient() {
     async (replyId: string) => {
       setConsentBusy(true);
       try {
-        const response = await fetchBubbles("/me/consent", { method: "PUT", body: JSON.stringify({ ai_chat: true }) });
+        const response = await fetchBubbles("/consents/ai_chat_processing", { method: "PUT", body: JSON.stringify({ granted: true, source: "chat_card" }) });
         if (!response.ok) throw new Error(`consent ${response.status}`);
         const at = messages.findIndex((m) => m.id === replyId);
         const asked = at > 0 ? messages[at - 1] : undefined;
@@ -367,6 +367,23 @@ export function CompanionClient() {
       }
     },
     [fetchBubbles, messages, sendMessage]
+  );
+
+  /** The no is recorded too (and logged), and the question is simply left unanswered by an outside model. */
+  const declineAi = useCallback(
+    async (replyId: string) => {
+      setConsentBusy(true);
+      try {
+        const response = await fetchBubbles("/consents/ai_chat_processing", { method: "PUT", body: JSON.stringify({ granted: false, source: "chat_card" }) });
+        if (!response.ok) throw new Error(`consent ${response.status}`);
+        setMessages((prev) => prev.map((m) => (m.id === replyId ? { ...m, consentRequired: false } : m)));
+      } catch {
+        setError("Bubbles couldn't save that just now. Please try again.");
+      } finally {
+        setConsentBusy(false);
+      }
+    },
+    [fetchBubbles]
   );
 
   const rateReply = useCallback(
@@ -634,6 +651,7 @@ export function CompanionClient() {
                       feedbackFailed={ratingFailed[m.id] === true}
                       onRate={(rating, reason) => void rateReply(m.id, rating, reason)}
                       onConsent={m.id === messages.at(-1)?.id ? () => void allowAi(m.id) : undefined}
+                      onDecline={m.id === messages.at(-1)?.id ? () => void declineAi(m.id) : undefined}
                       consentBusy={consentBusy}
                     />
                   )

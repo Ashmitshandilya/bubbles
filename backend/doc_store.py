@@ -144,12 +144,13 @@ def delete(db: Any, uid: str, kind: str, key: str) -> bool:
     return True
 
 
-SAFETY_HOLD_KINDS = ("safety_pause", "eating_screen")   # kept by "delete all": they only ever make Bubbles MORE careful
+SAFETY_HOLD_KINDS = ("safety_pause", "eating_screen", "consent_event")   # kept by "delete all": safety holds only make Bubbles MORE careful, and the consent trail must outlive a deletion
 
 
 def delete_everything(db: Any, uid: str, keep: tuple[str, ...] = SAFETY_HOLD_KINDS) -> int:
     """Remove every Whole-Health OS document for the user except the safety holds in ``keep``. Returns how many were removed."""
     from consent import forget   # the remembered AI-consent answer must not outlive the deleted document, even if a delete fails
+    from consent_ledger import forget as forget_all
     try:
         rows = (db.table(TABLE).select("id,title").eq("user_id", uid).eq("event_type", EVENT_TYPE).limit(20000).execute().data or [])
         removed = 0
@@ -161,3 +162,4 @@ def delete_everything(db: Any, uid: str, keep: tuple[str, ...] = SAFETY_HOLD_KIN
         return removed
     finally:
         forget(uid)
+        forget_all(uid)
