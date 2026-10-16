@@ -13,6 +13,10 @@ import { createApiCache } from "../app/lib/api-cache";
 import { gateDecision, readExperience, readSetupState, type Experience, type SetupState } from "../app/lib/experience";
 import { ackStore, flushAcknowledgement } from "../app/lib/acknowledgement";
 import { BubblesMascot } from "./BubblesMascot";
+import dynamic from "next/dynamic";
+
+// App only (isNativeApp): the first-run "reminders on this phone?" card. Loaded on demand so the website never ships it.
+const PhoneReminderPromptLazy = dynamic(() => import("./PhoneReminderPrompt").then((m) => m.PhoneReminderPrompt), { ssr: false });
 
 type User = {
   id: string;
@@ -558,7 +562,12 @@ function ExperienceProvider({ children }: { children: ReactNode }) {
       </main>
     );
   }
-  return <ExperienceContext.Provider value={value}>{children}</ExperienceContext.Provider>;
+  return (
+    <ExperienceContext.Provider value={value}>
+      {children}
+      {isNativeApp && uid && setup !== "loading" && !pathname.startsWith("/onboarding") && <PhoneReminderPromptLazy />}
+    </ExperienceContext.Provider>
+  );
 }
 
 /** The person's setup: `experience` is null until it is known (or when they have not finished setup); `setup` says which. */
