@@ -93,6 +93,10 @@ class Query:
         self.filters.append(lambda r, c=col, v=val: _get(r, c) is not None and str(_get(r, c)) >= str(v))
         return self
 
+    def lt(self, col, val):
+        self.filters.append(lambda r, c=col, v=val: _get(r, c) is not None and str(_get(r, c)) < str(v))
+        return self
+
     def lte(self, col, val):
         self.filters.append(lambda r, c=col, v=val: _get(r, c) is not None and str(_get(r, c)) <= str(v))
         return self

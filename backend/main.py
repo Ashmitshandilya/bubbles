@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 import threading
 import time
 
@@ -55,6 +56,7 @@ import association_loader
 from context_engine import build_user_context, format_user_context
 from safety_engine import assess_safety, safety_instruction, urgent_fallback_response
 from chat_pipeline import (
+    overlay_event_status,
     RateLimiter, ai_failed_reply, analyze_turn, build_rule_events, conversation_block, deterministic_reply,
     evidence_query, find_stored_reply, first_name, load_history, persist_events, reconcile_ai_events, reply_kind,
     safety_payload, semantic_trace, shown_evidence, state_block, stored_metadata,
@@ -89,7 +91,7 @@ from digital_twin import build_digital_twin
 from health_agent import plan_agent_actions
 from memory_manager import extract_explicit_personal_facts, persist_explicit_facts, memory_diagnostics
 from response_formatter import normalize_response, response_style_instruction
-from response_quality import lint, scrub_doses
+from response_quality import lint, scrub_doses, strip_attribution
 from metric_names import plain_metric
 from personalization_engine import build_personalization
 from habit_intelligence import analyze_habits
@@ -882,7 +884,7 @@ def chat(
         if is_degraded(ai_result):
             response_text = ai_failed_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         else:
-            response_text = normalize_response(ai_result.response)
+            response_text = strip_attribution(normalize_response(ai_result.response))
             # Output guard: a medicine amount or schedule never reaches the user, whatever the model wrote (the no-dosing rule).
             response_text, _dose_removed = scrub_doses(response_text)
             _issues = lint(response_text, user_message=user_message, has_evidence=bool(evidence_results)) + (["dose_removed"] if _dose_removed else [])
@@ -890,6 +892,8 @@ def chat(
                 from logging_util import logger
                 logger.warning(component="CHAT", operation="reply_lint", error=None, user_id=user_id, context={"issues": _issues},
                                fallback_action="reply_sent")
+            if safety.state == "URGENT" and not re.search(r"today|doctor|clinician|urgent[- ]care|emergency", response_text, re.I):
+                response_text += "\n\nPlease speak to a clinician or an urgent-care service today."   # a soft tone can never drop the call to action
             note = contradiction_note(turn.conflicts)
             if note:
                 response_text += "\n\n" + note
@@ -1017,19 +1021,32 @@ def chat_conversation_messages_api(
     conversation_id: str,
     authorization: str | None = Header(default=None),
     limit: int = Query(100, ge=1, le=200),
+    before: str | None = Query(None, max_length=40),
 ):
-    """Owner-scoped read of one conversation's latest messages, oldest first."""
+    """Owner-scoped read of one conversation's latest messages, oldest first. `before` (an ISO time) pages to older ones."""
     user = get_authenticated_user(authorization)
     user_id = str(user.id)
     # Same ownership gate as /chat: 400 for a malformed id, 404 for anyone else's conversation.
     _ensure_conversation(user_id, conversation_id, "")
-    rows = (supabase.table("chat_messages")
-            .select("id,role,content,created_at,metadata")
-            .eq("conversation_id", conversation_id)
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .limit(limit)
-            .execute().data or [])
+    return _conversation_messages(user_id, conversation_id, limit, before)
+
+
+def _conversation_messages(user_id: str, conversation_id: str, limit: int, before: str | None = None) -> dict:
+    query = (supabase.table("chat_messages")
+             .select("id,role,content,created_at,metadata")
+             .eq("conversation_id", conversation_id)
+             .eq("user_id", user_id))
+    if before:
+        try:
+            datetime.fromisoformat(before.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="before must be an ISO date and time")
+        query = query.lt("created_at", before)
+    rows = query.order("created_at", desc=True).limit(limit + 1).execute().data or []
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    overlay_event_status(supabase, user_id, [r["metadata"]["health_events"] for r in rows
+                                             if isinstance(r.get("metadata"), dict) and isinstance(r["metadata"].get("health_events"), list)])
     def _message(row: dict) -> dict:
         meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
         safety = meta.get("safety") if isinstance(meta.get("safety"), dict) else {}
@@ -1060,7 +1077,31 @@ def chat_conversation_messages_api(
         "status": "success",
         "conversation_id": conversation_id,
         "messages": [_message(row) for row in reversed(rows)],
+        "has_more": has_more,
     }
+
+
+@app.get("/chat/latest")
+def chat_latest_api(authorization: str | None = Header(default=None), limit: int = Query(100, ge=1, le=200)):
+    """The conversation with the newest message, with its latest messages: what Talk opens on. One owner-scoped read of the newest message first."""
+    user = get_authenticated_user(authorization)
+    user_id = str(user.id)
+    try:
+        newest = (supabase.table("chat_messages").select("conversation_id").eq("user_id", user_id)
+                  .order("created_at", desc=True).limit(1).execute().data or [])
+        if not newest:
+            return {"status": "success", "conversation": None, "messages": [], "has_more": False}
+        conversation_id = str(newest[0]["conversation_id"])
+        conv = (supabase.table("chat_conversations").select("id,title,created_at,updated_at")
+                .eq("id", conversation_id).eq("user_id", user_id).limit(1).execute().data or [])
+    except Exception as error:  # noqa: BLE001
+        from logging_util import logger
+        logger.error(component="CHAT", operation="chat_latest", error=error, user_id=user_id, fallback_action="degraded")
+        return {"status": "success", "conversation": None, "messages": [], "has_more": False, "degraded": True}
+    payload = _conversation_messages(user_id, conversation_id, limit)
+    payload["conversation"] = conv[0] if conv else {"id": conversation_id, "title": None}
+    payload.pop("conversation_id", None)
+    return payload
 
 @app.get("/profile")
 def profile_api(authorization: str | None = Header(default=None)):
@@ -1275,32 +1316,27 @@ class HealthEventConfirmationRequest(BaseModel):
     confirmed: bool
 
 
-@app.patch("/health-events/{event_id}/confirmation")
-def confirm_health_event(
-    event_id: str,
-    request: HealthEventConfirmationRequest,
-    authorization: str | None = Header(default=None),
-):
-    user = get_authenticated_user(authorization)
+def _confirm_event(user_id: str, event_id: str, confirmed: bool) -> dict:
+    """Save one confirm/dismiss decision (shared by the single and the batch route)."""
     try:
         event_id = str(UUID(event_id))   # ids are UUIDs: anything else cannot exist, so it is "not found" and never reaches the database
     except ValueError:
         raise HTTPException(status_code=404, detail="That item was not found.")
-    if request.confirmed:
+    if confirmed:
         # A rejected/retracted/superseded event (e.g. withdrawn by a correction) must not come back to life.
         current = (supabase.table("extracted_health_events").select("id, extraction_status")
-                   .eq("id", event_id).eq("user_id", str(user.id)).limit(1).execute().data or [])
+                   .eq("id", event_id).eq("user_id", user_id).limit(1).execute().data or [])
         if current and (current[0].get("extraction_status") or "pending") in DEAD_STATUSES:
             raise HTTPException(status_code=409, detail="This item was withdrawn and can no longer be saved.")
     try:
         result = (
             supabase.table("extracted_health_events")
             .update({
-                "user_confirmed": request.confirmed,
-                "extraction_status": "confirmed" if request.confirmed else "rejected",
+                "user_confirmed": confirmed,
+                "extraction_status": "confirmed" if confirmed else "rejected",
             })
             .eq("id", event_id)
-            .eq("user_id", str(user.id))
+            .eq("user_id", user_id)
             .select("id, message_id, event_type, extracted_data, confidence, user_confirmed, extraction_status")
             .execute()
         )
@@ -1310,8 +1346,8 @@ def confirm_health_event(
             component="HEALTH_EVENT",
             operation="confirm_health_event",
             error=error,
-            user_id=str(user.id),
-            context={"event_id": event_id, "confirmed": request.confirmed},
+            user_id=user_id,
+            context={"event_id": event_id, "confirmed": confirmed},
             fallback_action="raising_http_exception",
         )
         raise HTTPException(status_code=500, detail="Unable to update health event") from error
@@ -1320,11 +1356,11 @@ def confirm_health_event(
 
     event = result.data[0]
     projection = None
-    if request.confirmed:
+    if confirmed:
         try:
             projection = project_confirmed_event(
                 db=supabase,
-                user_id=str(user.id),
+                user_id=user_id,
                 event_id=str(event["id"]),
                 event_type=str(event["event_type"]),
                 extracted_data=event.get("extracted_data") or {},
@@ -1345,13 +1381,53 @@ def confirm_health_event(
                 component="HEALTH_EVENT",
                 operation="project_confirmed_event",
                 error=error,
-                user_id=str(user.id),
+                user_id=user_id,
                 context={"event_id": str(event["id"]), "event_type": str(event["event_type"])},
                 fallback_action="raising_http_exception",
             )
-            raise HTTPException(status_code=500, detail="Event confirmed but canonical projection failed") from error
+            # The decision itself is saved and durable: report it as saved and say the canonical copy will be retried, instead of
+            # turning a stored decision into an error the person has to press again.
+            return {"status": "success", "event": event,
+                    "projection": {"status": "queued", "domain_table": None, "reason": "projection_failed_will_retry"}}
 
     return {"status": "success", "event": event, "projection": projection}
+
+
+@app.patch("/health-events/{event_id}/confirmation")
+def confirm_health_event(
+    event_id: str,
+    request: HealthEventConfirmationRequest,
+    authorization: str | None = Header(default=None),
+):
+    user = get_authenticated_user(authorization)
+    return _confirm_event(str(user.id), event_id, request.confirmed)
+
+
+class HealthEventDecision(BaseModel):
+    id: str
+    confirmed: bool
+
+
+class HealthEventBatchRequest(BaseModel):
+    decisions: list[HealthEventDecision] = Field(min_length=1, max_length=30)
+
+
+@app.post("/health-events/confirmation")
+def confirm_health_events_batch(request: HealthEventBatchRequest, authorization: str | None = Header(default=None)):
+    """Save many decisions in one request (one sign-in check). Each id answers on its own, so one failure never undoes the others."""
+    user_id = str(get_authenticated_user(authorization).id)
+
+    def one(decision: HealthEventDecision) -> dict:
+        try:
+            out = _confirm_event(user_id, decision.id, decision.confirmed)
+            return {"id": decision.id, "status": "confirmed" if decision.confirmed else "rejected",
+                    "projection": (out.get("projection") or {}).get("status") or ("done" if decision.confirmed else None)}
+        except HTTPException as error:
+            return {"id": decision.id, "status": "error", "code": error.status_code, "detail": error.detail}
+
+    with ThreadPoolExecutor(max_workers=6, thread_name_prefix="confirm") as pool:
+        results = list(pool.map(one, request.decisions))
+    return {"status": "success", "results": results}
 
 # --------------------------------------------------
 # MEMORY PROMOTION

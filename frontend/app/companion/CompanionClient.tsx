@@ -19,6 +19,7 @@ import {
 } from "../lib/bubbles-events";
 import { askHandle, readAsk } from "../lib/ask-handoff";
 import { CHAT_TIMEOUT_MS, chatErrorMessage, isTimeoutError, needsFreshMessageId, resetsConversation } from "../lib/chat-flow";
+import { applyOutcomes, optimistic, outcomesFromBatch, type DecisionOutcome } from "./event-decisions";
 import { parseRatings, ratingsPath, type Feedback, type FeedbackReason, type Rating } from "./feedback";
 import {
   BubblesReply,
@@ -72,8 +73,10 @@ export function CompanionClient() {
   const [history, setHistory] = useState<ConversationSummary[]>([]);
   const [historyState, setHistoryState] = useState<"loading" | "error" | "ready">("loading");
   const [loadingConversation, setLoadingConversation] = useState(false);
+  // Talk opens on the latest chat: "pending" until that has been looked up, so the welcome cards never flash and a handoff question waits.
+  const [resume, setResume] = useState<"pending" | "done">("pending");
+  const jumpRef = useRef(false);
   const [conversationError, setConversationError] = useState<string | null>(null);
-  const [memoryLine, setMemoryLine] = useState("Checking memory…");
   const [eventStatus, setEventStatus] = useState<Record<string, EventStatus>>({});
   const [eventErrors, setEventErrors] = useState<Record<string, string>>({});
   const [consentBusy, setConsentBusy] = useState(false);
@@ -130,24 +133,6 @@ export function CompanionClient() {
     seenReconnects.current = reconnects;
     if (session) void loadHistory();
   }, [reconnects, session, loadHistory]);
-
-  useEffect(() => {
-    if (!session) return;
-    let live = true;
-    fetchBubbles("/memory/diagnostics")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`memory ${r.status}`))))
-      .then((payload) => {
-        const memory = payload?.memory ?? {};
-        const saved = (Number(memory.L2) || 0) + (Number(memory.L3) || 0);
-        if (live) setMemoryLine(saved ? `Memory on · ${saved} ${saved === 1 ? "thing" : "things"} remembered` : "Memory on · nothing confirmed yet");
-      })
-      .catch(() => {
-        if (live) setMemoryLine("Memory status unavailable right now");
-      });
-    return () => {
-      live = false;
-    };
-  }, [session, fetchBubbles]);
 
   const sendMessage = useCallback(
     async (raw: string, retry?: { messageId: string; fresh?: boolean }) => {
@@ -253,15 +238,15 @@ export function CompanionClient() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const handle = askHandle(params);
-    if (!handle || authLoading || !session || handledAsk.current === handle) return;
+    if (!handle || authLoading || !session || resume !== "done" || handledAsk.current === handle) return;
     handledAsk.current = handle;
     const question = readAsk(params);
     router.replace("/companion");
     if (question) void sendMessage(question);
-  }, [authLoading, session, sendMessage, router]);
+  }, [authLoading, session, sendMessage, router, resume]);
 
   const openConversation = useCallback(
-    async (id: string) => {
+    async (id: string, prefetched?: { messages?: unknown }) => {
       setDrawerOpen(false);
       if (id === conversationId && !conversationError) return;
       const view = ++viewRef.current;
@@ -272,10 +257,14 @@ export function CompanionClient() {
       setConversationError(null);
       setLoadingConversation(true);
       try {
-        const response = await fetchBubbles(`/chat/conversations/${encodeURIComponent(id)}/messages?limit=100`);
-        if (!response.ok) throw new Error(`messages ${response.status}`);
-        const payload = await response.json();
+        let payload = prefetched;
+        if (!payload) {
+          const response = await fetchBubbles(`/chat/conversations/${encodeURIComponent(id)}/messages?limit=100`);
+          if (!response.ok) throw new Error(`messages ${response.status}`);
+          payload = await response.json();
+        }
         if (view !== viewRef.current) return;
+        jumpRef.current = true;   // a loaded conversation opens on its last message at once, never scrolling down the whole thread
         const rows: Array<{
           id?: unknown;
           role?: unknown;
@@ -324,6 +313,28 @@ export function CompanionClient() {
     },
     [conversationId, conversationError, fetchBubbles]
   );
+
+  // Open the latest chat once, as soon as signed in. `?new=1` (or a handoff on a fresh account) starts blank.
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (authLoading || !session || resumed.current) return;
+    resumed.current = true;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("new") === "1") {
+      params.delete("new");
+      router.replace(`/companion${params.toString() ? `?${params}` : ""}`);
+      setResume("done");
+      return;
+    }
+    fetchBubbles("/chat/latest?limit=100")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`latest ${r.status}`))))
+      .then((payload: { conversation?: { id?: unknown } | null; messages?: unknown }) => {
+        const id = payload?.conversation?.id;
+        if (typeof id === "string" && Array.isArray(payload.messages) && payload.messages.length > 0) void openConversation(id, payload);
+      })
+      .catch(() => undefined)   // a blank chat is a fine fallback: the history list is still one tap away
+      .finally(() => setResume("done"));
+  }, [authLoading, session, fetchBubbles, openConversation, router]);
 
   function startNewConversation() {
     viewRef.current += 1;
@@ -380,39 +391,45 @@ export function CompanionClient() {
 
   const decideEvents = useCallback(
     async (messageId: string, ids: string[], confirmed: boolean) => {
-      setEventStatus((prev) => ({ ...prev, ...Object.fromEntries(ids.map((id) => [id, "busy" as const])) }));
+      // The card answers at once with the person's choice; the server catches up behind it and only a failed id rolls back.
+      setEventStatus((prev) => ({ ...prev, ...optimistic(ids, confirmed) }));
       setEventErrors((prev) => {
         const next = { ...prev };
         delete next[messageId];
         return next;
       });
-      // 409/410: Bubbles withdrew this event after a correction, so it is settled rather than retryable.
-      const results = await Promise.all(
-        ids.map(async (id): Promise<"done" | "withdrawn" | "failed"> => {
-          try {
-            // A sleeping free host can take about a minute to answer: wait for it instead of failing the save at 15 seconds.
-            const response = await fetchBubbles(`/health-events/${encodeURIComponent(id)}/confirmation`, {
-              method: "PATCH",
-              body: JSON.stringify({ confirmed }),
-            }, { timeoutMs: 65000, retries: 0 });
-            if (response.ok) return "done";
-            return response.status === 409 || response.status === 410 ? "withdrawn" : "failed";
-          } catch {
-            return "failed";
-          }
-        })
-      );
-      setEventStatus((prev) => {
-        const next = { ...prev };
-        results.forEach((r, i) => {
-          if (r === "done") next[ids[i]] = confirmed ? "saved" : "dismissed";
-          else if (r === "withdrawn") next[ids[i]] = "retracted";
-          else delete next[ids[i]];
-        });
-        return next;
-      });
-      const failedCount = results.filter((r) => r === "failed").length;
-      const withdrawnCount = results.filter((r) => r === "withdrawn").length;
+      // A sleeping free host can take about a minute to answer: wait for it instead of failing the save at 15 seconds.
+      const limits = { timeoutMs: 65000, retries: 1 };
+      let outcomes: DecisionOutcome[];
+      try {
+        const response = await fetchBubbles("/health-events/confirmation", {
+          method: "POST",
+          body: JSON.stringify({ decisions: ids.map((id) => ({ id, confirmed })) }),
+        }, limits);
+        if (response.ok) {
+          outcomes = outcomesFromBatch(ids, ((await response.json()) as { results?: unknown }).results);
+        } else if (response.status === 404 || response.status === 405) {
+          // An older server without the batch route: one request per event, as before.
+          outcomes = await Promise.all(
+            ids.map(async (id): Promise<DecisionOutcome> => {
+              try {
+                const one = await fetchBubbles(`/health-events/${encodeURIComponent(id)}/confirmation`, { method: "PATCH", body: JSON.stringify({ confirmed }) }, limits);
+                if (one.ok) return "done";
+                return one.status === 409 || one.status === 410 ? "withdrawn" : "failed";
+              } catch {
+                return "failed";
+              }
+            })
+          );
+        } else {
+          outcomes = ids.map(() => "failed" as const);
+        }
+      } catch {
+        outcomes = ids.map(() => "failed" as const);
+      }
+      setEventStatus((prev) => applyOutcomes(prev, ids, confirmed, outcomes) as typeof prev);
+      const failedCount = outcomes.filter((r) => r === "failed").length;
+      const withdrawnCount = outcomes.filter((r) => r === "withdrawn").length;
       if (failedCount) {
         const which = failedCount < ids.length ? `${failedCount} of these` : ids.length === 1 ? "this" : "these";
         setEventErrors((prev) => ({
@@ -442,7 +459,11 @@ export function CompanionClient() {
     const last = messages.at(-1);
     const urgentBanner = last && isUrgentMessage(last) ? el.querySelector("li:last-of-type [role='alert']") : null;
     if (urgentBanner) urgentBanner.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
-    else el.scrollTo({ top: el.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+    else {
+      const instant = reduce || jumpRef.current;
+      jumpRef.current = false;
+      el.scrollTo({ top: el.scrollHeight, behavior: instant ? "auto" : "smooth" });
+    }
   }, [messages, sending]);
 
   useEffect(() => {
@@ -484,6 +505,7 @@ export function CompanionClient() {
         ? FOLLOW_UPS
         : [];
   const composerDisabled = sending || loadingConversation || conversationError !== null;
+  const opening = resume === "pending" && messages.length === 0;
   const nearLimit = input.length > MAX_MESSAGE - 1000;
 
   const conversationList = (
@@ -511,27 +533,30 @@ export function CompanionClient() {
         <section aria-label="Chat with Bubbles" className="flex min-w-0 flex-1 flex-col">
           <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b-2 border-line bg-blush px-4 py-3 lg:px-7 lg:py-4">
             <div className="flex min-w-0 items-center gap-3">
+              {!urgent && !caution && <BubblesMascot size={44} animated={false} />}
+              <div className="min-w-0">
+                <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">Bubbles</h1>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 lg:hidden">
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
                 aria-haspopup="dialog"
                 aria-expanded={drawerOpen}
-                aria-label="Your conversations"
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink lg:hidden"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-ink"
               >
-                <Icon d={ICONS.menu} size={20} />
+                <Icon d={ICONS.menu} size={18} />
+                History
               </button>
-              {!urgent && !caution && <BubblesMascot size={44} animated={false} />}
-              <div className="min-w-0">
-                <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">Bubbles</h1>
-                <p
-                  className={`m-0 truncate font-mono text-xs ${
-                    "text-ink-soft"
-                  }`}
-                >
-                  {memoryLine}
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={startNewConversation}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-line bg-surface px-4 text-body-sm font-extrabold text-ink"
+              >
+                <Icon d={ICONS.plus} size={18} />
+                New chat
+              </button>
             </div>
             <p className="m-0 rounded-2xl border border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:rounded-full sm:text-[0.8125rem]">
               Not a diagnosis · for emergencies call your local number
@@ -541,7 +566,7 @@ export function CompanionClient() {
           <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
             <div className="mx-auto flex w-full max-w-[860px] flex-col px-4 py-6 lg:px-7">
               <h2 className="sr-only">Conversation</h2>
-              {messages.length === 0 && !loadingConversation && !conversationError && !sending && (
+              {messages.length === 0 && !loadingConversation && resume === "done" && !conversationError && !sending && (
                 <div className="mx-auto flex w-full flex-col items-center gap-6 py-8 text-center">
                   <div className="bubbles-rise flex max-w-md flex-col items-center gap-3">
                     <BubblesMascot size={96} mood="happy" />
@@ -555,7 +580,7 @@ export function CompanionClient() {
                 </div>
               )}
 
-              {loadingConversation && (
+              {(loadingConversation || opening) && (
                 <div role="status" aria-label="Loading conversation" className="flex flex-col gap-4">
                   <span className="bubbles-skeleton block h-14 w-3/5 self-end rounded-3xl" />
                   <span className="bubbles-skeleton block h-28 w-4/5 rounded-3xl" />
