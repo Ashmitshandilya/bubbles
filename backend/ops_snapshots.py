@@ -98,19 +98,15 @@ def _retention(profiles: list[dict[str, Any]], days_by_user: dict[str, set[str]]
 
 
 def consent_rates(db: Any) -> list[dict[str, Any]] | None:
-    """Per purpose: how many people have it on, how many turned it off. Counts of the latest decision per person only."""
+    """Per purpose: how many people's newest decision is yes / no (counts only), from the consent ledger."""
     try:
-        rows, _ = _pages(lambda: db.table("consent_events").select("user_id,purpose,granted,created_at").order("created_at", desc=True))
+        import consent
+        got = consent.consent_rates(db)
     except Exception:  # noqa: BLE001
         return None
-    latest: dict[tuple[str, str], bool] = {}
-    for r in rows:   # newest first, so the first row per person and purpose is the current decision
-        latest.setdefault((str(r.get("user_id")), str(r.get("purpose"))), bool(r.get("granted")))
-    purposes: dict[str, list[int]] = {}
-    for (_uid, purpose), granted in latest.items():
-        counts = purposes.setdefault(purpose, [0, 0])
-        counts[0 if granted else 1] += 1
-    return [{"purpose": p, "granted": g, "declined": d, "decided": g + d, "rate": round(g / (g + d), 3)} for p, (g, d) in sorted(purposes.items())]
+    if not got.get("available"):
+        return None
+    return [{"purpose": p, "title": consent.PURPOSES[p]["title"], **v} for p, v in got["purposes"].items() if consent.PURPOSES[p]["available"]]
 
 
 def community(db: Any) -> dict[str, int] | None:
