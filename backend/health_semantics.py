@@ -52,7 +52,7 @@ DISPLAY = {
     "persistent_vomiting": "persistent vomiting", "unusual_bleeding": "unusual bleeding",
     "heavy_bleeding": "heavy bleeding", "spotting": "spotting", "suicidal_ideation": "thoughts of suicide",
     "self_harm": "self-harm", "stroke_signs": "stroke warning signs", "allergic_reaction": "a severe allergic reaction",
-    "heart_attack": "a possible heart attack", "anxiety": "anxiety", "low_mood": "low mood", "insomnia": "trouble sleeping",
+    "heart_attack": "a possible heart attack", "anxiety": "anxiety", "panic_attack": "panic attacks", "loneliness": "loneliness", "separation_anxiety": "missing someone / being apart", "low_mood": "low mood", "insomnia": "trouble sleeping",
     "diarrhea": "diarrhea", "constipation": "constipation", "rash": "rash", "swelling": "swelling",
     "numbness": "numbness", "blurred_vision": "blurred vision", "period": "your period",
     "eye_strain": "eye strain", "dry_eyes": "dry eyes", "red_eye": "red eyes", "eye_pain": "eye pain", "eye_itch": "itchy eyes",
@@ -193,6 +193,15 @@ _LEX_SRC: tuple[tuple[str, str | None, str, tuple[str, ...]], ...] = (
     ("spotting", None, "spotting", ("spotting",)),
     ("unusual_bleeding", None, "unusual bleeding", (
         "(?:unusual|abnormal|unexpected|irregular|excessive|breakthrough) (?:vaginal |menstrual )?bleeding|bleeding between (?:my )?periods|(?:vaginal|rectal) bleeding|blood in (?:my |the )?(?:stool|urine|poop)|bloody (?:stool|urine)|post[\\s-]?coital bleeding",)),
+    ("panic_attack", None, "panic attacks", (
+        "panic attacks?|panic(?:king)?|panicky|ghabrahat|ghabra(?:hat|ta|ti)\\w*|dil bahut tez dhadak\\w*",)),
+    ("loneliness", None, "loneliness", (
+        "lonel(?:y|iness)|so alone|all alone|feel(?:ing)? alone|(?:have|has) no ?one to talk to|nobody (?:talks|to talk) to (?:me|with)|no friends|isolated|left out|"
+        "akela(?:pan)?|akeli|bahut akela lagta|koi (?:nahi|nhi) hai (?:baat|bolne)",)),
+    ("separation_anxiety", None, "missing someone / being apart", (
+        "separation anxiety|(?:anxious|panic\\w*|upset|sad|scared|worried|uneasy) (?:when|if|whenever) (?:i(?:'m| am) |we(?:'re| are) )?(?:apart|away from|separated from|without)|"
+        "can't (?:bear|stand|handle) (?:being )?(?:apart|away|without)|miss(?:ing)? (?:him|her|them|my (?:partner|mom|mum|dad|mother|father|family|child|kids?|husband|wife)) (?:so much|terribly|badly|a lot)|"
+        "(?:anxious|panic\\w*) when (?:he|she|they|my \\w+) (?:leaves?|goes away|travels|is (?:gone|away)|isn't (?:here|around))",)),
     ("anxiety", None, "anxiety", ("anxi\\w+|panic(?: attacks?)?|panicky",)),
     ("low_mood", None, "low mood", (
         "low mood|depress\\w+|hopeless\\w*|(?:feel|feeling|felt) (?:(?:really|very|so|quite|pretty|rather|extremely|a bit|a little|kind of) )?(?:sad|down|low|blue)|sad|sadness|tearful",)),
