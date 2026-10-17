@@ -169,7 +169,7 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 /** What still has to be sent for the screens up to `upTo`: new or changed answers, and null for an optional answer that was cleared.
  *  Null while the date of birth is not known: nothing is saved before the 18+ check, so body and language wait for it. */
 export function pendingPatch(screens: readonly Screen[], upTo: number, qs: readonly Question[], answers: Answers, saved: Answers, today: Date): Record<string, unknown> | null {
-  if (!isAnswered(qs.find((q) => q.id === "birth_date")!, answers.birth_date)) return null;
+  if (ageOn(answers.birth_date, today) === null) return null;
   const patch: Record<string, unknown> = {};
   for (const screen of screens.slice(0, upTo + 1)) {
     for (const q of screenQuestions(screen, qs)) {

@@ -1,4 +1,4 @@
-// The first-run tour: which stops it makes and how it moves. Pure logic only (the component in Tour.tsx measures and draws).
+// The first-run tour: which stops it makes and how it moves. Pure logic only (the component in FirstRunTour.tsx measures and draws).
 
 export interface TourStep {
   id: string;
@@ -64,7 +64,7 @@ export function placeCard(target: Box, viewport: { width: number; height: number
   const centre = target.left + target.width / 2 - width / 2;
   const left = Math.min(Math.max(margin, centre), viewport.width - margin - width);
   const below = target.top + target.height + gap;
-  if (below + card.height + margin <= viewport.height) return { top: below, left };
+  if (below + card.height + margin <= viewport.height) return { top: Math.max(margin, below), left };
   const above = target.top - gap - card.height;
   if (above >= margin) return { top: above, left };
   return { top: Math.max(margin, viewport.height - card.height - margin), left };

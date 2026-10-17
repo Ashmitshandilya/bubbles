@@ -15,7 +15,7 @@ import {
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
 import { WeekRecapCard } from "./WeekRecapCard";
-import { FirstRunTour } from "../../onboarding/Tour";
+import { FirstRunTour } from "../../onboarding/FirstRunTour";
 import { buildWeekRecap } from "./recap";
 import {
   WINDOW_DAYS, buildPatterns, buildTodayItems, greeting, readTracker, summarizeCycle, summarizeSignal, upcomingVisits,

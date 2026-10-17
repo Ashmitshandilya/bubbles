@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { BubblesMascot } from "../../components/BubblesMascot";
 
-const MIN_WORKING_MS = 1200;
-const LINE_GAP_MS = 250;
-const AUTO_OPEN_MS = 2000;
-const MAX_LINES = 4;
+export const MIN_WORKING_MS = 1200;
+export const LINE_GAP_MS = 250;
+export const AUTO_OPEN_MS = 2000;
+export const MAX_LINES = 4;
 
 export interface CreatingResult {
   lines: string[];

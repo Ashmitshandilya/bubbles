@@ -9,7 +9,7 @@ import { changeBody, readOverview, type ConsentPurpose } from "../lib/consents";
 import { ChoicesStep, OFFERED_PURPOSES } from "./ChoicesStep";
 import { Creating } from "./Creating";
 import {
-  advancesOnPick, buildScreens, isAnswered, isRequired, missingRequired, pendingPatch, pick, picked, progressLabel, resumeIndex, screenQuestions,
+  advancesOnPick, ageOn, buildScreens, isAnswered, isRequired, missingRequired, pendingPatch, pick, picked, progressLabel, resumeIndex, screenQuestions,
   titleFor, visibleOptions, type Answers, type Question, type Screen,
 } from "./flow";
 
@@ -310,7 +310,7 @@ export function OnboardingClient() {
     if (value === undefined) delete withAnswers[q.id];
     if (!advancesOnPick(screen, bank.questions, q.id, withAnswers)) return;
     // the first screen only moves on once the date of birth can be checked, so it waits for nothing: it just moves
-    if (isAnswered(bank.questions.find((x) => x.id === "birth_date")!, withAnswers.birth_date)) {
+    if (ageOn(withAnswers.birth_date, today) !== null) {
       const { list, at } = followingScreen(withAnswers);
       const following = list[at + 1];
       stepRef.current = stageStep(screen);
