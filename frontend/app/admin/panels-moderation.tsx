@@ -63,10 +63,10 @@ function QueueItem({ item, onDone }: { item: Item; onDone: () => void }) {
       </p>
       {error && <p role="alert" className="m-0 mt-2 text-body-sm font-bold text-bubbles-pink-deep">{error}</p>}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button type="button" disabled={busy} onClick={() => void decide("approve")} className={`${ACT} border-bubbles-grape bg-tint-grape text-bubbles-grape-deep`}>Approve</button>
-        <button type="button" disabled={busy} onClick={() => void decide("remove")} className={`${ACT} border-line-strong bg-surface text-ink`}>Remove</button>
-        <button type="button" disabled={busy} onClick={() => void decide("ban")} className={`${ACT} border-bubbles-urgent bg-surface text-ink`}>Remove and ban</button>
-        <button type="button" disabled={busy} onClick={() => void resolve()} className={`${ACT} border-line bg-surface text-ink-soft`}>Who wrote this</button>
+        <button type="button" disabled={busy} onClick={() => void decide("approve")} aria-label={`Approve ${item.kind} by ${item.alias}`} className={`${ACT} border-bubbles-grape bg-tint-grape text-bubbles-grape-deep`}>Approve</button>
+        <button type="button" disabled={busy} onClick={() => void decide("remove")} aria-label={`Remove ${item.kind} by ${item.alias}`} className={`${ACT} border-line-strong bg-surface text-ink`}>Remove</button>
+        <button type="button" disabled={busy} onClick={() => void decide("ban")} aria-label={`Remove and ban ${item.kind} by ${item.alias}`} className={`${ACT} border-bubbles-urgent bg-surface text-ink`}>Remove and ban</button>
+        <button type="button" disabled={busy} onClick={() => void resolve()} aria-label={`Who wrote this ${item.kind} by ${item.alias}`} className={`${ACT} border-line bg-surface text-ink-soft`}>Who wrote this</button>
       </div>
       {who && <div className="mt-2"><CopyUid uid={who} /></div>}
     </li>

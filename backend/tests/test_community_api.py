@@ -113,6 +113,14 @@ def test_withdrawing_the_consent_closes_posting_again(env):
     assert codes(env.new_post("ann", body=GOOD + " Again?")) == "consent_needed"
 
 
+def test_withdrawing_the_consent_hides_what_they_already_posted(env):
+    import consent
+    pid = env.new_post("ann").json()["post"]["id"]
+    consent.set_purpose(env.db, IDS["ann"], "community_visibility", False, source="settings")
+    consent.forget(IDS["ann"])
+    assert [r["status"] for r in env.db.rows("community_posts") if r["id"] == pid] == ["held"]
+
+
 @pytest.mark.parametrize("doc", [None, {"answers": {}}, {"age_gate": "under_18"}, {"answers": {"birth_date": "2012-01-01"}}, {"answers": {"birth_date": "junk"}}])
 def test_under_18_or_unknown_age_cannot_read_or_post(env, doc):
     grant_consent(env.db, IDS["eve"], "community_visibility")

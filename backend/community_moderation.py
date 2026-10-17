@@ -412,10 +412,11 @@ def _judge(clean: str, crisis: bool, lists, found: dict) -> tuple[str, str | Non
 # --- crisis wording (the safety engine decides; nothing about the text is kept) -------------------------------------------
 
 def safety_signal(text: str):
-    """The safety engine's assessment of a post, or None when it finds nothing or fails. Deterministic, local, no model."""
+    """The safety engine's assessment of a post, or None when it finds nothing (a failure counts as a crisis signal). Deterministic, local, no model."""
     try:
         import safety_engine
         a = safety_engine.assess_safety(text)
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception:  # noqa: BLE001 - fail closed: treat an unreadable post as a crisis one (held for review, support lines shown)
+        from types import SimpleNamespace
+        return SimpleNamespace(crisis=True, state="URGENT")
     return a if (a.crisis or a.state in ("URGENT", "EMERGENCY")) else None

@@ -207,8 +207,8 @@ function PostCard({ post, send, canPost, limit, onReact, onDelete, onSaid, onSup
         {pill("me_too", "Me too")}
         {pill("helpful", "Helpful")}
         <span className="grow" />
-        {post.mine ? <button type="button" onClick={onDelete} className={SMALL}>Delete</button>
-          : <button type="button" aria-expanded={menu} onClick={() => setMenu((m) => !m)} className={SMALL}>Report or block</button>}
+        {post.mine ? <button type="button" onClick={onDelete} aria-label={`Delete your post from ${post.alias}`} className={SMALL}>Delete</button>
+          : <button type="button" aria-expanded={menu} aria-label={`Report or block ${post.alias}`} onClick={() => setMenu((m) => !m)} className={SMALL}>Report or block</button>}
       </div>
       {menu && (
         <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Report this post">
@@ -269,7 +269,7 @@ function Comments({ postId, send, canPost, limit, onSaid, onSupport }: {
               <span className="font-extrabold text-ink">{c.alias}</span>
               <span className="text-ink-soft">{` ${c.body}`}</span>
               {c.mine && c.status && c.status !== "visible" && <span className="text-muted">{` (${c.status === "held" ? "waiting for review" : "not shown"})`}</span>}
-              {c.mine && <button type="button" onClick={() => void del(c.id)} className="ml-2 min-h-[44px] text-chip font-extrabold text-ink-soft">Delete</button>}
+              {c.mine && <button type="button" onClick={() => void del(c.id)} aria-label="Delete your comment" className="ml-2 min-h-[44px] text-chip font-extrabold text-ink-soft">Delete</button>}
             </li>
           ))}
         </ul>

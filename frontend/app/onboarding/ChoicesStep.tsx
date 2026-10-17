@@ -44,8 +44,8 @@ export function ChoicesStep({ purposes, on, failed, busy, onToggle, onNotNow, on
                 </div>
                 <button type="button" role="switch" aria-checked={checked} aria-labelledby={labelId} aria-describedby={hintId} disabled={busy} onClick={() => onToggle(p.id)}
                   className="bubbles-press inline-flex min-h-[44px] min-w-[64px] shrink-0 items-center justify-center rounded-full disabled:opacity-60">
-                  <span aria-hidden="true" className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors ${checked ? "border-bubbles-grape bg-bubbles-grape" : "border-line-strong bg-surface"}`}>
-                    <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-7" : "translate-x-1 !bg-line-strong"}`} />
+                  <span aria-hidden="true" className={`relative inline-flex h-8 w-14 items-center rounded-full border transition-colors ${checked ? "border-bubbles-grape bg-bubbles-grape" : "border-ink-soft bg-surface"}`}>
+                    <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-7" : "translate-x-1 !bg-ink-soft"}`} />
                   </span>
                 </button>
               </li>

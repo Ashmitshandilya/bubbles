@@ -92,8 +92,12 @@ def block_key(author_id: str) -> str:
 
 # ---- small helpers -------------------------------------------------------------------------------------------------------
 
-def _err(status: int, code: str, message: str) -> HTTPException:
-    return HTTPException(status_code=status, detail={"code": code, "message": message})
+def _err(status: int, code: str, message: str, signal: Any = None) -> HTTPException:
+    detail: dict[str, Any] = {"code": code, "message": message}
+    if signal is not None:
+        import safety_engine
+        detail["support"] = {"kind": "crisis" if getattr(signal, "crisis", False) else "urgent", "message": "You do not have to carry this alone.", "lines": safety_engine.CRISIS_LINES}
+    return HTTPException(status_code=status, detail=detail)
 
 
 def _safe(fn: Callable) -> Callable:
@@ -233,6 +237,15 @@ def forget(db: Any, uid: str) -> dict[str, int]:
     return counts
 
 
+def hold_all(db: Any, uid: str) -> None:
+    """Consent to be visible was withdrawn: every visible post and comment of theirs goes back to held (reason 'consent')."""
+    for table in ("community_posts", "community_comments"):
+        try:
+            db.table(table).update({"status": "held", "reason_code": "consent"}).eq("author_id", uid).eq("status", "visible").execute()
+        except Exception:  # noqa: BLE001 - table not created yet
+            pass
+
+
 # ---- request bodies ------------------------------------------------------------------------------------------------------
 
 class PostIn(BaseModel):
@@ -302,11 +315,11 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             raise _err(422, "empty", "Write something first.")
         if len(text) > limit_chars:
             raise _err(422, "too_long", f"Please keep it to {limit_chars} characters.")
+        signal = cm.safety_signal(text)   # first, so someone in crisis who is rate-limited or repeats themselves still gets the support lines
         if over_limit(table, uid, per_hour):
-            raise _err(429, "slow_down", "You have posted a lot in the last hour. Please try again a little later.")
+            raise _err(429, "slow_down", "You have posted a lot in the last hour. Please try again a little later.", signal)
         if is_duplicate(table, uid, text):
-            raise _err(409, "duplicate", cm.REASON_TEXT["duplicate"])
-        signal = cm.safety_signal(text)
+            raise _err(409, "duplicate", cm.REASON_TEXT["duplicate"], signal)
         d = cm.moderate(text, crisis=signal is not None)
         if d.action == cm.REMOVE:
             return "removed", d.reason, "[removed by moderation]", signal
