@@ -67,7 +67,7 @@ CONCEPT_ORGANS: dict[str, tuple[str, ...]] = {
     "chest_pain": ("heart",), "heart_attack": ("heart",), "palpitations": ("heart",), "fainting": ("heart", "brain"),
     "shortness_of_breath": ("lungs",), "cough": ("lungs",), "sore_throat": ("lungs",), "allergic_reaction": ("lungs", "skin"),
     "headache": ("brain",), "dizziness": ("brain",), "seizure": ("brain",), "stroke_signs": ("brain",), "confusion": ("brain",),
-    "numbness": ("brain",), "blurred_vision": ("brain", "eyes"), "anxiety": ("brain",), "low_mood": ("brain",), "insomnia": ("brain",),
+    "numbness": ("brain",), "blurred_vision": ("brain", "eyes"), "anxiety": ("brain",), "panic_attack": ("brain",), "loneliness": ("brain",), "separation_anxiety": ("brain",), "low_mood": ("brain",), "insomnia": ("brain",),
     "suicidal_ideation": ("brain",), "self_harm": ("brain",),
     "loneliness": ("brain",), "panic_attack": ("brain",), "separation_anxiety": ("brain",),
     "nausea": ("stomach_intestines",), "vomiting": ("stomach_intestines",), "persistent_vomiting": ("stomach_intestines",),
