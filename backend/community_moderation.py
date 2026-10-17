@@ -164,7 +164,7 @@ def strip_contact_details(text: str) -> tuple[str, dict[str, int]]:
 
 _YOU = r"(?:you|u|ur|your|yourself|urself|tu|tum|tera|teri|tere|tujhe|tumhe|tumko|tujhko|aap|aapko|tumhari|tumhara)"
 _THREAT = re.compile(
-    r"\bkys\b"
+    r"\bkys\b|\b(?:kill|hang|burn)\s+(?:yourself|urself)\b"
     r"|\b(?:go|just|please)\s+(?:and\s+)?(?:die|kill\s+yourself|jump\s+off)\b"
     r"|\byou\s+(?:should|must|need\s+to|ought\s+to|deserve\s+to|better)\s+(?:just\s+)?(?:die|kill\s+yourself|be\s+killed|get\s+raped|rot)\b"
     r"|\bi(?:'ll|\s+will|\s+am\s+going\s+to|'m\s+going\s+to|'m\s+gonna|\s+would)\s+(?:kill|murder|beat|rape|find|hurt|stab|shoot|burn)\s+(?:you|u|him|her|them)\b"
@@ -334,56 +334,79 @@ def _moderate(raw: str, crisis: bool) -> Decision:
         return out(HOLD, "moderation_error")
     if not re.search(r"[^\W_]", clean.replace(_REMOVED, "")):
         return out(HOLD, "spam")
+    verdict = _judge(clean, crisis, lists, found)
+    if verdict[0] == ALLOW:   # the same rules over a decoded copy: leetspeak (T@ke 5OO), dotted or spaced letters (k.i.l.l)
+        alt = _decode(clean)
+        if alt != clean:
+            again = _judge(alt, crisis, lists, found)
+            if again[0] != ALLOW:
+                verdict = again
+    return out(*verdict)
 
+
+_SPACED = re.compile(r"(?<![^\W\d_])(?:[^\W\d_][.\-_*\s]){3,}[^\W\d_](?![^\W\d_])")
+_INWORD = {"@": "a", "$": "s", "3": "e", "1": "i", "0": "o", "4": "a", "5": "s", "7": "t", "!": "i"}
+
+
+def _decode(text: str) -> str:
+    """A reading of the text with common disguises undone. Only used to look for rule hits; never stored or shown."""
+    t = _SPACED.sub(lambda m: re.sub(r"[.\-_*\s]", "", m.group()), text)
+    t = re.sub(r"(?<=[^\W\d_])([@$3140 57!])(?=[^\W\d_])", lambda m: _INWORD.get(m.group(1), m.group(1)), t)
+    for _ in range(3):   # 5OO -> 500
+        t = re.sub(r"(?<=\d)[oOlI](?=[\doOlI\s]|$)|(?<=[ ])[oO](?=\d)", lambda m: "0" if m.group() in "oO" else "1", t)
+    return t
+
+
+def _judge(clean: str, crisis: bool, lists, found: dict) -> tuple[str, str | None]:
     sentences = _sentences(clean)
     folded = clean.casefold()
 
     # threats and hate aimed at people are removed even when the writer is also in crisis
     if _THREAT.search(folded):
-        return out(REMOVE, "threat")
+        return (REMOVE, "threat")
     if _HATE.search(folded):
-        return out(REMOVE, "hate")
+        return (REMOVE, "hate")
     if crisis:
-        return out(ALLOW, None)
+        return (ALLOW, None)
 
     if lists.slurs.search(folded):
-        return out(REMOVE, "hate")
+        return (REMOVE, "hate")
     if lists.sex_remove.search(folded):
-        return out(REMOVE, "sexual")
+        return (REMOVE, "sexual")
     strong = [s for s in sentences if lists.strong.search(s.casefold())]
     if any(_directed(s) for s in strong):
-        return out(REMOVE, "abuse")
+        return (REMOVE, "abuse")
     selling_hit = bool(lists.selling.search(folded))
-    if selling_hit and (contact or _PRICE.search(folded) or _PRODUCT.search(folded)):
-        return out(REMOVE, "selling")
+    if selling_hit and (sum(found.values()) or _PRICE.search(folded) or _PRODUCT.search(folded)):
+        return (REMOVE, "selling")
     for s in sentences:
         if _stop_medicine(s):
-            return out(REMOVE, "stop_medicine")
+            return (REMOVE, "stop_medicine")
     unsure: str | None = None
     for s in sentences:
         verdict = _dose_advice(s)
         if verdict == "dose_advice":
-            return out(REMOVE, "dose_advice")
+            return (REMOVE, "dose_advice")
         if verdict == "dose_review":
             unsure = unsure or "dose_review"
 
     if strong:
-        return out(HOLD, "profanity")
+        return (HOLD, "profanity")
     if lists.sex_hold.search(folded):
-        return out(HOLD, "sexual_review")
+        return (HOLD, "sexual_review")
     if selling_hit:
-        return out(HOLD, "selling_review")
+        return (HOLD, "selling_review")
     if found["url"] >= 2 or _repeats(clean):
-        return out(HOLD, "spam")
+        return (HOLD, "spam")
     if _shouting(clean):
-        return out(HOLD, "shouting")
+        return (HOLD, "shouting")
     if any(_diagnosis(s) for s in sentences):
-        return out(HOLD, "diagnosis_claim")
+        return (HOLD, "diagnosis_claim")
     if any(_cure_claim(s) for s in sentences):
-        return out(HOLD, "cure_claim")
+        return (HOLD, "cure_claim")
     if unsure:
-        return out(HOLD, unsure)
-    return out(ALLOW, None)
+        return (HOLD, unsure)
+    return (ALLOW, None)
 
 
 # --- crisis wording (the safety engine decides; nothing about the text is kept) -------------------------------------------

@@ -19,14 +19,14 @@ REMOVE = [
     ("tujhe maar dunga", "threat"),
     ("mar jao tum sab", "threat"),
     ("tumhe jaan se maar denge", "threat"),
-    ("kill all muslims", "threat"),
+    ("kill all muslims", "hate"),
     # slurs and hate
     ("you filthy nigger", "hate"),
     ("what a retard", "hate"),
     ("faggot", "hate"),
     ("these chamar people are useless", "hate"),
     ("tranny freak", "hate"),
-    ("hindus should die", "threat"),
+    ("hindus should die", "hate"),
     # abuse aimed at a person
     ("you are such a bitch", "abuse"),
     ("fuck you", "abuse"),
@@ -254,3 +254,17 @@ def test_safety_signal_finds_crisis_and_urgent_and_stays_quiet_for_loneliness():
     assert cm.safety_signal("I want to kill myself").crisis
     assert cm.safety_signal("I have chest pain right now") is not None
     assert cm.safety_signal("I am so lonely, any advice?") is None
+
+
+@pytest.mark.parametrize("text,reason", [
+    ("k.i.l.l yourself", "threat"), ("k i l l yourself", "threat"), ("kill yourself", "threat"),
+    ("T@ke 5OO mg of dolo 650 twice daily", "dose_advice"), ("take 5OO mg paracetamol every 4 hours", "dose_advice"),
+])
+def test_disguised_text_is_read_through(text, reason):
+    d = cm.moderate(text)
+    assert (d.action, d.reason) == (cm.REMOVE, reason)
+
+
+@pytest.mark.parametrize("text", ["Slept 7 hours, woke at 5 am, felt ok", "I take my thyroid tablet at 6 am as my doctor said", "My a1c was 5.4 last month"])
+def test_decoding_does_not_flag_ordinary_numbers(text):
+    assert cm.moderate(text).action == cm.ALLOW
