@@ -158,7 +158,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     apiCache.clear();
     resetExperience();
     // The app deletes this phone's notification token first, so the next person to sign in here never gets these reminders.
-    if (isNativeApp) await import("../lib/firebase-native").then((m) => m.forgetPhoneOnSignOut()).catch(() => undefined);
+    if (isNativeApp) {
+      const accessToken = session?.access_token;
+      const base = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
+      const api = accessToken
+        ? (path: string, options: RequestInit = {}) =>
+            fetch(`${base}${path}`, { ...options, headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(4000) })
+        : undefined;
+      await import("../lib/firebase-native").then((m) => m.forgetPhoneOnSignOut(api)).catch(() => undefined);
+    }
     await supabase.auth.signOut();
     router.push("/login");
   }

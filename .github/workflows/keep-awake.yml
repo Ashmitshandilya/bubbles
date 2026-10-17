@@ -1,9 +1,13 @@
-name: Keep API awake
+name: Keep API awake and run reminders
 
 # Render's free plan puts the API to sleep after about 15 minutes without a request, and waking it takes up to a
 # minute: that is the "Can't connect to Bubbles" / slow first reply people see. A light /health call every 10 minutes
 # keeps it awake (one always-on free service fits inside Render's monthly free hours). GitHub may run scheduled jobs
 # a few minutes late, so a rare wake-up can still happen.
+#
+# The second step asks the API to send the phone reminders that are due (POST /internal/push/run). It is skipped until the
+# repository secret BUBBLES_CRON_SECRET exists (it must equal BUBBLES_CRON_SECRET on Render). Runs are idempotent, so a late or
+# repeated run never sends a reminder twice; the reminder windows are wide because this schedule is best effort.
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -14,7 +18,7 @@ permissions: {}
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
     steps:
       - name: Ping /health
         run: |
@@ -25,3 +29,18 @@ jobs:
             sleep 10
           done
           echo "::warning::The API did not answer /health with 200"
+      - name: Send due phone reminders
+        env:
+          BUBBLES_CRON_SECRET: ${{ secrets.BUBBLES_CRON_SECRET }}
+        run: |
+          if [ -z "$BUBBLES_CRON_SECRET" ]; then
+            echo "BUBBLES_CRON_SECRET is not set: skipping phone reminders."
+            exit 0
+          fi
+          for attempt in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "X-Cron-Secret: $BUBBLES_CRON_SECRET" --max-time 120 https://bubbles-dk3v.onrender.com/internal/push/run || true)
+            echo "attempt $attempt: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "::warning::The reminder run did not answer with 200"
