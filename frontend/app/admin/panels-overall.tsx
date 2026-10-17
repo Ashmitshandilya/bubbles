@@ -13,7 +13,7 @@ type Pair = { p50_ms: number | null; p95_ms: number | null };
 type Provider = {
   provider: string; model: string; attempts: number; success: number; failed: number; success_rate: number | null; timeout_rate: number | null;
   answered_replies: number; tokens_in: number; tokens_out: number; p50_ms: number | null; p95_ms: number | null;
-  cost: { usd: number | null; basis: string };
+  cost: { label: string; cost_usd: number | null };
 };
 type Rate = { eligible: number; returned: number; rate: number | null };
 type Overall = {
@@ -89,7 +89,7 @@ function Table({ title, id, range, headers, rows, show, empty, note }: {
 }
 
 function money(c: Provider["cost"]): string {
-  return c.usd === null ? "Unknown" : c.usd === 0 ? "$0, free tier" : `$${c.usd.toFixed(2)}`;
+  return c.cost_usd === null ? "Unknown" : c.cost_usd === 0 ? "$0, free tier" : `$${c.cost_usd.toFixed(2)}`;
 }
 
 function Sources({ o }: { o: Overall }) {

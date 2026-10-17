@@ -43,11 +43,31 @@ def _event_matches_query(event: dict, query: str) -> bool:
     return any(word in searchable for word in query_words)
 
 
+EVENT_COLUMNS = "id, event_type, extracted_data, confidence, created_at, extraction_status, user_confirmed"
+MEMORY_COLUMNS = ("id, memory_type, content, structured_data, "
+                  "confidence, created_at, updated_at, review_after, verification_status")
+
+
+def fetch_event_rows(user_id: str) -> list[dict]:
+    """The newest 100 event rows of this person (raises on a database problem). One read serves memory AND the context engine."""
+    return list(supabase.table("extracted_health_events").select(EVENT_COLUMNS)
+                .eq("user_id", user_id).order("created_at", desc=True).limit(100).execute().data or [])
+
+
+def fetch_memory_rows(user_id: str) -> list[dict]:
+    """The newest 100 active memory items of this person (raises on a database problem)."""
+    return list(supabase.table("memory_items").select(MEMORY_COLUMNS)
+                .eq("user_id", user_id).eq("is_active", True).order("updated_at", desc=True).limit(100).execute().data or [])
+
+
 def get_relevant_memories(
     user_id: str,
     query: str,
     limit_l1: int = 12,
     limit_l2_l3: int = 12,
+    *,
+    event_rows: "list[dict] | Exception | None" = None,
+    memory_rows: "list[dict] | Exception | None" = None,
 ) -> dict[str, list[dict]]:
     """
     Retrieve relevant personal health context.
@@ -55,6 +75,9 @@ def get_relevant_memories(
     L1 = raw health events
     L2 = persistent health facts
     L3 = derived patterns
+
+    ``event_rows`` / ``memory_rows`` let a caller that already read (or is reading in parallel) hand the rows in; an Exception
+    there means that read failed and is handled exactly like a failed read here.
     """
 
     l1: list[dict] = []
@@ -66,20 +89,11 @@ def get_relevant_memories(
     # --------------------------------------------------
 
     try:
-        result = (
-            supabase
-            .table("extracted_health_events")
-            .select(
-                "id, event_type, extracted_data, "
-                "confidence, created_at, extraction_status, user_confirmed"
-            )
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .limit(100)
-            .execute()
-        )
+        if isinstance(event_rows, Exception):
+            raise event_rows
+        rows_l1 = event_rows if event_rows is not None else fetch_event_rows(user_id)
 
-        for event in result.data or []:
+        for event in rows_l1:
             # live positives, plus screen rows that carry explicit denials; rejected rows never reach the prompt
             if not (counts_as_observation(event) or pertinent_negatives(event)):
                 continue
@@ -105,21 +119,11 @@ def get_relevant_memories(
     # --------------------------------------------------
 
     try:
-        result = (
-            supabase
-            .table("memory_items")
-            .select(
-                "id, memory_type, content, structured_data, "
-                "confidence, created_at, updated_at, review_after, verification_status"
-            )
-            .eq("user_id", user_id)
-            .eq("is_active", True)
-            .order("updated_at", desc=True)
-            .limit(100)
-            .execute()
-        )
+        if isinstance(memory_rows, Exception):
+            raise memory_rows
+        rows_l2 = memory_rows if memory_rows is not None else fetch_memory_rows(user_id)
 
-        for memory in result.data or []:
+        for memory in rows_l2:
             memory_type = memory.get("memory_type")
             review_after = memory.get("review_after")
             if review_after:

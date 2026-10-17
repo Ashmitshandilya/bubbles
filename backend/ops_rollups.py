@@ -90,7 +90,7 @@ def count_events(events: Iterable[dict[str, Any]]) -> Counter:
         elif kind == "funnel":
             c[day, "funnel", _s(d.get("step"))] += 1
         elif kind == "client":
-            c[day, "client", f"{_s(d.get('code'))}|{_s(d.get('surface'))}"] += 1
+            c[day, "client", _s(d.get('code'))] += 1
     return c
 
 

@@ -53,6 +53,10 @@ export interface TrackerResponse {
 
 /** GET /insights/weekly -> { insights: WeeklyInsights } */
 export interface InsightItem {
+  /** Stable id (rec:..., co:...) that GET /insights/{id} resolves; absent on an older server. */
+  id?: string | null;
+  /** The server's one confidence word ("low" | "medium" | "high"), the same one the Patterns page shows. */
+  confidence_label?: string | null;
   title: string;
   description: string;
   category: string;
@@ -72,6 +76,8 @@ export interface WeeklyInsights {
 }
 
 export interface CorrelationItem {
+  id?: string | null;
+  confidence_label?: string | null;
   kind: string;
   pair_count: number;
   strength: number;
@@ -88,7 +94,12 @@ export interface BriefAction {
 
 /** POST /intelligence/brief -> { brief: IntelligenceBrief } */
 export interface IntelligenceBrief {
-  state?: { status?: string; correlations?: { items: CorrelationItem[] } } | null;
+  state?: {
+    status?: string;
+    correlations?: { items: CorrelationItem[] };
+    /** This window against the person's usual, per metric (sleep_hours, water_ml, ...). */
+    deviations?: Record<string, { current?: number | null; baseline?: number | null; delta?: number | null; percent?: number | null } | null>;
+  } | null;
   companion?: { safety_note?: string | null; disclaimer?: string | null } | null;
   actions?: BriefAction[] | null;
 }

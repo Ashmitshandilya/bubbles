@@ -14,7 +14,9 @@ import {
   tileFromCycle, tileFromSignal, type HeroState, type Tile,
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
+import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
 import { WeekRecapCard } from "./WeekRecapCard";
+import { FirstRunTour } from "../../onboarding/FirstRunTour";
 import { buildWeekRecap } from "./recap";
 import {
   WINDOW_DAYS, buildPatterns, buildTodayItems, greeting, readTracker, summarizeCycle, summarizeSignal, upcomingVisits,
@@ -176,7 +178,7 @@ export function DashboardClient() {
 
   const trackersLoading = TILE_ORDER.some((slug) => trackers[slug].status === "loading");
   const trackersFailed = TILE_ORDER.every((slug) => trackers[slug].status === "error");
-  const items = buildTodayItems(signals, cycle, briefData?.actions ?? []);
+  const items = buildTodayItems(signals, cycle, briefData?.actions ?? [], briefData?.state?.deviations);
   const heroState: HeroState =
     trackersLoading || brief.status === "loading" ? "loading"
     : trackersFailed ? "error"
@@ -217,6 +219,7 @@ export function DashboardClient() {
 
           {safety.level !== "GREEN" && <SafetyBanner level={safety.level} reasons={safety.reasons} />}
 
+          <InsightSheetProvider>
           <TodayBrief state={heroState} items={items} showMascot={showMascot} onRetry={reload} onAddWater={addWater} waterBusy={water === "saving"} />
 
           <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
@@ -239,7 +242,7 @@ export function DashboardClient() {
               />
             </MoreFold>
             <MoreFold title="Your week">
-              <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} />
+              <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} onRetry={reload} />
             </MoreFold>
             <MoreFold title="Coming up">
               <ComingUp
@@ -258,6 +261,7 @@ export function DashboardClient() {
             </MoreFold>
             {showBodyMap && <BodyMapCard />}
           </div>
+          </InsightSheetProvider>
 
           <footer className="text-chip font-semibold leading-relaxed text-ink-soft">
             <p className="m-0">Patterns and guidance, not diagnoses. Missing data is a gap, never an all-clear.</p>
@@ -267,6 +271,7 @@ export function DashboardClient() {
 
         <MobileNav />
       </div>
+      <FirstRunTour />
     </div>
   );
 }

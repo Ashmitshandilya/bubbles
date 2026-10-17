@@ -58,13 +58,13 @@ def test_red_safety_path_has_hard_llm_gate():
     lives only in the final else-branch.
     """
     source = _read_main()
-    routes = 'deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup"}'
+    routes = '_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup"}'
     assert routes in source          # emergency is on the list of routes that never reach a model
-    gate = 'if turn.route in deterministic_routes or consent_required:'
+    gate = 'if turn.route in _DETERMINISTIC_ROUTES or state.consent_required:'
     assert gate in source
-    assert 'consent_required = turn.route not in deterministic_routes and not has_ai_consent(' in source  # consent can only ADD a reason not to call a model
+    assert 'state.consent_required = turn.route not in _DETERMINISTIC_ROUTES and not has_ai_consent(' in source  # consent can only ADD a reason not to call a model
     start = source.index(gate)
-    ai_branch = source.index("user_context = build_user_context(", start)   # the first line of the branch that talks to a model
+    ai_branch = source.index("ctx_job = submit(_context_stage,", start)   # the first line of the branch that talks to a model
     deterministic_block = source[start:ai_branch]
     assert "deterministic_reply(" in deterministic_block
     assert "ask_bubbles(" not in deterministic_block

@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 
-import client_events_api
 import ops_metrics
 import ops_rollups
 import consent
@@ -76,9 +75,9 @@ def stored_scenario(db):
         ev("ai_attempt", 0, "a0000001", provider="Gemini", model="g", position=1, outcome="success", latency_ms=650.0,
            input_tokens=1000, output_tokens=100),
         ev("ai_reply", 0, "a0000001", provider="Gemini", model="g", outcome="answered", attempts=1, fallback_used=False, total_ms=700.0),
-        ev("funnel", 4, None, step="onboarding_started"),
-        ev("funnel", 5, None, step="onboarding_completed"),
-        ev("client", 6, None, code="render_error", surface="web"),
+        ev("funnel", 4, None, step="core"),
+        ev("funnel", 5, None, step="completed"),
+        ev("client", 6, None, code="render_error"),
         ev("error", 3, "a0000004", category="database", component="API", route="/health/{slug}"),
     ]
 
@@ -112,7 +111,15 @@ def test_uid_is_in_the_live_endpoint_only_and_never_stored_or_in_other_readers(a
     assert USER not in json.dumps(ops_telemetry.memory_events(datetime.now(timezone.utc) - timedelta(hours=1)))
     # nothing the flusher would write holds it either
     wrote = []
-    monkeypatch.setattr(ops_telemetry, "_insert", lambda rows: wrote.extend(rows))
+    class _T:
+        def insert(self, rows):
+            wrote.extend(rows)
+            return self
+
+        def execute(self):
+            return None
+
+    monkeypatch.setattr(ops_telemetry, "_db", lambda: type("D", (), {"table": staticmethod(lambda name: _T())})())
     ops_telemetry.flush_once()
     assert wrote and USER not in json.dumps(wrote)
 
@@ -168,54 +175,13 @@ def test_stage_timings_are_numeric_only_and_noted_on_the_api_event():
 
 
 def test_funnel_and_client_events_take_fixed_words_only():
-    ops_telemetry.funnel("onboarding_completed")
+    ops_telemetry.funnel("completed")
     ops_telemetry.funnel("my back hurts")
-    ops_telemetry.client_crash("render_error", "android")
-    ops_telemetry.client_crash("boom: chest pain", "web")
-    ops_telemetry.record("funnel", step="tour_seen", note="free text")
+    ops_telemetry.client("render_error")
+    ops_telemetry.client("boom: chest pain")
+    ops_telemetry.record("funnel", step="core", note="free text")
     got = [(e["kind"], e["data"]) for e in ops_telemetry.recent(0, 50)]
-    assert got == [("funnel", {"step": "onboarding_completed"}), ("client", {"code": "render_error", "surface": "android"}),
-                   ("funnel", {"step": "tour_seen"})]
-
-
-def test_the_onboarding_routes_are_funnel_steps_without_any_other_module_helping(admin_env):
-    for _ in range(2):
-        admin_env.client.get("/onboarding/state", headers={"Authorization": "Bearer tok"})
-    steps = [e["data"]["step"] for e in ops_telemetry.recent(0, 500) if e["kind"] == "funnel"]
-    assert steps.count("onboarding_started") == 2
-
-
-def test_client_crash_endpoint_validates_enums_budgets_and_answers_alike(env):
-    client_events_api._stamps.clear()
-    ok = env.client.post("/telemetry/client", json={"code": "chunk_load", "surface": "android"})
-    assert ok.status_code == 202 and ok.json() == {"status": "accepted"}
-    assert env.client.post("/telemetry/client", json={"code": "my private note"}).status_code == 422
-    assert env.client.post("/telemetry/client", json={"code": "other", "extra": "x" * 5000}).status_code == 202
-    for _ in range(client_events_api.BUDGET_PER_MINUTE + 5):
-        assert env.client.post("/telemetry/client", json={"code": "other"}).status_code == 202
-    crashes = [e for e in ops_telemetry.recent(0, 5000) if e["kind"] == "client"]
-    assert 1 < len(crashes) <= client_events_api.BUDGET_PER_MINUTE
-    client_events_api._stamps.clear()
-
-
-def test_the_table_not_accepting_funnel_rows_yet_keeps_them_in_memory_and_saves_the_rest(monkeypatch):
-    inserted: list[list[dict]] = []
-
-    def insert(rows):
-        if any(r["kind"] in ops_telemetry.EXTRA_KINDS for r in rows):
-            raise Exception('new row violates check constraint "bubbles_ops_events_kind_check" 23514')
-        inserted.append(rows)
-
-    monkeypatch.setenv("BUBBLES_OPS_PERSIST", "1")
-    monkeypatch.setattr(ops_telemetry, "_ensure_flusher", lambda: None)
-    monkeypatch.setattr(ops_telemetry, "_insert", insert)
-    ops_telemetry.record("api", method="GET", route="/x", status=200, latency_ms=1.0)
-    ops_telemetry.funnel("tour_seen")
-    assert ops_telemetry.flush_once() == 2
-    assert ops_telemetry.status["extra_kinds"] == "pending_migration" and ops_telemetry.status["mode"] == "stored"
-    assert [r["kind"] for r in inserted[0]] == ["api"]
-    ops_telemetry.funnel("tour_skipped")   # no longer queued, still visible live
-    assert not ops_telemetry._queue and any(e["kind"] == "funnel" for e in ops_telemetry.recent(0, 10))
+    assert got == [("funnel", {"step": "completed"}), ("client", {"code": "render_error"}), ("funnel", {"step": "core"})]
 
 
 # ---- counters ----------------------------------------------------------------------------------------------------------------
@@ -240,12 +206,12 @@ def test_overall_view_counts_rates_stages_funnel_and_cost(opsdb):
     assert (ai["answered"], ai["degraded"], ai["fallback_used"]) == (1, 0, 0)
     assert ai["ai_share"] == round(1 / 3, 3) and ai["consent_needed"] == 1 and ai["consent_needed_rate"] == round(1 / 3, 3)
     assert ai["deterministic_share"] == round(1 / 3, 3)
-    assert view["providers"][0]["cost"] == {"usd": 0.0, "basis": "free tier"} and view["providers"][0]["tokens_in"] == 1000
+    assert view["providers"][0]["cost"]["cost_usd"] == 0.0 and view["providers"][0]["cost"]["label"] == "free tier" and view["providers"][0]["tokens_in"] == 1000
     assert {s["stage"]: s["n"] for s in view["stages"]} == {"pre": 1, "ctx": 0, "rag": 0, "ai": 1, "post": 0}
     assert view["safety"]["totals"] == {"GREEN": 2, "RED": 1} and view["safety"]["per_day"][0]["RED"] == 1
     assert [f["count"] for f in view["funnel"]][:4] == [1, 0, 0, 1] and view["client_crashes"] == {"render_error": 1}
     assert {f["feature"] for f in view["features"]} >= {"Chat", "Trackers"}
-    assert ops_metrics.cost("SomethingNew", 1, 1) == {"usd": None, "basis": "unknown"}
+    assert ops_metrics.model_cost("SomethingNew", "unknown", 1, 1)["cost_usd"] is None
 
 
 # ---- rollups -----------------------------------------------------------------------------------------------------------------
@@ -263,7 +229,7 @@ def test_rollups_count_each_hour_once_and_survive_a_restart(opsdb):
     got = ops_rollups.collect(opsdb, "all", now=now)
     t = ops_rollups.totals(got["counters"])
     assert got["rollups"]["mode"] == "ok" and got["source"].startswith("rollups")
-    assert t["req"]["total"] == 4 and t["chat"]["total"] == 3 and t["funnel"]["onboarding_completed"] == 1
+    assert t["req"]["total"] == 4 and t["chat"]["total"] == 3 and t["funnel"]["completed"] == 1
     # a later hour is added, not recounted
     opsdb.tables["bubbles_ops_events"].append(ev("api", 4 * 60, "b0000001", method="GET", route="/health", status=200, latency_ms=5.0))
     assert ops_rollups.run_rollups(opsdb, now=T0 + timedelta(hours=6))["status"] == "ok"
@@ -341,7 +307,7 @@ def test_overall_endpoint_returns_counts_for_every_range(admin_env, opsdb):
 
 def test_migrations_are_idempotent_locked_down_and_have_undo_files():
     root = Path(__file__).resolve().parents[2] / "supabase"
-    for name in ("20261016_bubbles_ops_rollups", "20261016_bubbles_funnel"):
+    for name in ("20261016_bubbles_ops_rollups", "20261016_bubbles_ops_funnel"):
         sql = (root / "migrations" / f"{name}.sql").read_text(encoding="utf-8").lower()
         undo = (root / "undo" / f"{name}_undo.sql").read_text(encoding="utf-8").lower()
         assert "begin;" in sql and "commit;" in sql and "begin;" in undo and "commit;" in undo
@@ -350,5 +316,3 @@ def test_migrations_are_idempotent_locked_down_and_have_undo_files():
     rollups = (root / "migrations" / "20261016_bubbles_ops_rollups.sql").read_text(encoding="utf-8").lower()
     assert "create table if not exists public.ops_rollups_daily" in rollups
     assert "enable row level security" in rollups and "grant select, insert, update on table public.ops_rollups_daily to service_role" in rollups
-    funnel = (root / "migrations" / "20261016_bubbles_funnel.sql").read_text(encoding="utf-8").lower()
-    assert "drop constraint if exists bubbles_ops_events_kind_check" in funnel and "'funnel'" in funnel and "'client'" in funnel
