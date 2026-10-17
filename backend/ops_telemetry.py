@@ -107,19 +107,6 @@ def current_note() -> dict:
     return {k: v for k, v in (_request_note.get() or {}).items() if not k.startswith("_")}
 
 
-_UID = re.compile(r"^[0-9a-fA-F-]{8,64}$")
-
-
-def bind_user(uid: Any) -> None:
-    """The signed-in person of this request, for the live admin view only (see the module note). Never raises."""
-    try:
-        current = _request_note.get()
-        if current is not None and isinstance(uid, str) and _UID.match(uid):
-            current["_uid"] = uid
-    except Exception:  # noqa: BLE001
-        pass
-
-
 # The only values a chat note may carry. Anything else is dropped: no free text can ever reach an event this way.
 NOTE_VALUES: dict[str, frozenset] = {
     "route_kind": frozenset({"ai", "emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer",
