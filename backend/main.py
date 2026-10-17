@@ -50,6 +50,7 @@ from schema_status import build_router as build_schema_router
 from onboarding_api import build_router as build_onboarding_router, style_block_for
 import consent as consent_module
 from consent import chat_prompt, has_ai_consent, persist_chat_events
+from mind_chat import loneliness_no_consent_reply, mind_support_block
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -411,6 +412,11 @@ def _warm_database_probe() -> None:
     if ops_telemetry._persist_enabled():   # saved admin settings (provider pauses, retention): read once, in the background
         import threading
         threading.Thread(target=admin_settings.load, name="bubbles-settings-load", daemon=True).start()
+    try:   # phone reminders while the app is closed; does nothing until FIREBASE_SERVICE_ACCOUNT_JSON is set (push_fcm.py)
+        import push_fcm
+        push_fcm.start_background(supabase)
+    except Exception:  # noqa: BLE001 - startup must never fail because of an optional channel
+        pass
 
 
 # HEAD is allowed too: uptime monitors (UptimeRobot, Render, load balancers) often probe with HEAD and would otherwise see 405 and report "down"
@@ -802,7 +808,7 @@ def chat(
         if consent_required:
             # An urgent message still gets the fixed urgent text, not a question about AI models.
             consent_ask = chat_prompt(supabase, user_id, name)   # declined within 14 days: a calm line, no card
-            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else consent_ask["reply"]
+            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (loneliness_no_consent_reply(turn, name) or consent_ask["reply"])
         else:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
@@ -869,7 +875,7 @@ def chat(
             user_message,
             memory_context=memory_context,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else ""),
+            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else ""),
             conversation_context=conversation_context,
         )
         timings["ai_ms"] = round((perf_counter() - t0) * 1000, 1)

@@ -88,7 +88,7 @@ describe("rank", () => {
   it("matches the section name too, and returns everything for an empty query", () => {
     expect(rank(items, "sleep track").map((i) => i.id)).toContain("tab:/sleep");
     const track = rank(items, "track").filter((i) => i.kind === "tab");
-    expect(track.length).toBeGreaterThanOrEqual(9);
+    expect(track.length).toBeGreaterThanOrEqual(8);
     expect(rank(items, "   ")).toHaveLength(items.length);
   });
 

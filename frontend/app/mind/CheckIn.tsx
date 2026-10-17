@@ -32,11 +32,26 @@ function Face({ n }: { n: number }) {
   );
 }
 
+function Slider({ id, label, value, onChange }: { id: string; label: string; value: number | null; onChange: (v: number) => void }) {
+  const text = value === null ? "Not set" : `${value} of 10`;
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className="flex items-baseline justify-between text-body-sm font-extrabold text-ink">
+        {label}
+        <span className="font-semibold text-muted">{text}</span>
+      </label>
+      <input id={id} type="range" min={0} max={10} step={1} value={value ?? 5} onChange={(e) => onChange(Number(e.target.value))} aria-valuetext={text} className="h-11 w-full accent-bubbles-grape" />
+    </div>
+  );
+}
+
 export function CheckIn({ overview, onSaved }: { overview: MindOverview; onSaved: () => void }) {
   const send = useWellnessSend();
   const [face, setFace] = useState<number | null>(null);
   const [acts, setActs] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [stress, setStress] = useState<number | null>(null);
+  const [anxiety, setAnxiety] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -53,6 +68,8 @@ export function CheckIn({ overview, onSaved }: { overview: MindOverview; onSaved
     setError("");
     const body: Record<string, unknown> = { face, activities: acts };
     if (notes.trim()) body.notes = notes.trim();
+    if (stress !== null) body.stress = stress;
+    if (anxiety !== null) body.anxiety = anxiety;
     const result = await send<{ level: number; support?: string } | SafetyResponse>("/wellness/mind/checkin", "POST", body);
     setBusy(false);
     if (!result.ok) {
@@ -73,6 +90,8 @@ export function CheckIn({ overview, onSaved }: { overview: MindOverview; onSaved
     setFace(null);
     setActs([]);
     setNotes("");
+    setStress(null);
+    setAnxiety(null);
     onSaved();
   }
 
@@ -113,6 +132,13 @@ export function CheckIn({ overview, onSaved }: { overview: MindOverview; onSaved
           signal="sun"
           optional
         />
+        <details className="rounded-2xl border border-line px-4 py-2">
+          <summary className="flex min-h-[44px] cursor-pointer items-center text-body-sm font-extrabold text-ink-soft">Add stress or anxiety (optional)</summary>
+          <div className="flex flex-col gap-4 pb-3 pt-1">
+            <Slider id="checkin-stress" label="Stress today" value={stress} onChange={setStress} />
+            <Slider id="checkin-anxiety" label="Anxiety today" value={anxiety} onChange={setAnxiety} />
+          </div>
+        </details>
         <TextArea id="checkin-notes" label="Anything to add?" value={notes} onChange={setNotes} maxLength={1000} placeholder="Just for you. A few words are plenty." optional />
 
         {error && <ErrorNotice message={error} />}

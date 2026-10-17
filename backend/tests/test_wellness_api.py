@@ -69,7 +69,7 @@ def test_every_route_requires_authentication(env):
             r = client.request(method, path, json={} if method in ("POST", "PUT") else None)
             assert r.status_code == 401, (method, path, r.status_code)
             n += 1
-    assert n == 31
+    assert n == 35
 
 
 def test_associations_endpoint_reports_gaps_without_zero_filling_and_is_per_user(env):
@@ -360,7 +360,7 @@ def test_mind_checkin_pixels_and_overview(env):
     o = client.get("/wellness/mind/overview", headers=H1).json()
     assert o["entries"][0]["activities"] == ["exercise", "social"] and o["screen"]["due"] is True and o["average_mood"] == 8
     low = client.post("/wellness/mind/checkin", json={"mood": 1}, headers=H1).json()
-    assert "crisis line" in low["support"] or "emergency number" in low["support"]
+    assert "14416" in low["support"]
 
 
 def test_year_pixels_keep_old_days_even_when_tracker_rows_roll_off(env):
