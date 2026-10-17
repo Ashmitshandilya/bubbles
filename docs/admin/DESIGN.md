@@ -4,7 +4,7 @@ Branch `admin-portal-2026-10-13`, cut from `origin/main` at `502f5f1` on 2026-10
 
 **Status:** reviewed 2026-10-13. Sir Noah: ACCEPT WITH CONDITIONS (15 testable conditions, implemented and tested in `backend/tests/test_admin_portal.py`). Lixie: UI direction (one route with tabs, light dedicated header, denied view = the normal not-found page). Changes from this draft after review: the admin gate moved into the middleware (before routing) so wrong methods and malformed bodies cannot reveal a route; bad tokens on /admin still count toward the bad-token limit; refusal audit sampled to one row a minute; aal2 required; the admin's id is kept on audit rows; `/admin/requests/{id}` and the refresh setting were cut (the `request_id` filter and a fixed 5 s cover them); p99 kept only where the sample allows; the migration uses plain `create table` in one transaction with sequence revokes and a verification query. The built system is documented in `README.md`; this file stays as the Phase 0 record.
 
-Guiding rule: **observe the system, not the user.** Nothing in this design stores or shows a message, prompt, reply, symptom, medication, cycle detail, note or user id.
+Guiding rule: **observe the system, not the user.** (One named exception, decided by the owner: the live view shows the account id of a request, from memory only; see README, "The one named exception".) Nothing in this design stores or shows a message, prompt, reply, symptom, medication, cycle detail, note or user id.
 
 ## 1. What already exists (discovery)
 
@@ -102,7 +102,7 @@ One route, client-rendered, tabs instead of many pages (Overview, AI and provide
 
 ### 2.8 Out of scope (YAGNI, free tier)
 
-Redis, Prometheus/Grafana, Kafka, Elasticsearch, WebSockets/SSE, dynamic provider scoring, a second auth system.
+Redis, Prometheus/Grafana, Kafka, Elasticsearch, WebSockets/SSE (the Live page polls a cursor every 3 s instead; SSE on the Render free plan was not verified), dynamic provider scoring, a second auth system.
 
 ## 3. Risks
 
