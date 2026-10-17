@@ -1,7 +1,0 @@
-# L5 draft: clinical packet
-
-B1 and B2 add no threshold, symptom word, supportive-content rule or safety phrase. For sign-off only:
-
-1. **The frozen consent reply.** `consent.consent_needed_reply`: the last sentence ("If something feels urgent, call your local emergency number.") is unchanged and is pinned by `tests/test_consent_purposes.py::test_the_frozen_consent_reply_is_unchanged`. The rest of the text is unchanged too. An urgent message never receives this reply: it keeps the fixed urgent text (`urgent_fallback_response`).
-2. **A new calm reply after a "No".** `consent.declined_reply`: "No problem. Nothing is sent to an outside AI. I can still log things, show your patterns and answer questions about your cycle, sleep and fitness. If you change your mind, it is one switch in Privacy choices." followed by the same emergency sentence. It is shown for at most 14 days after a No, then the question is asked again (once). It contains no medical advice.
-3. **When health details noticed in chat are not saved.** With `health_memory_from_chat` off, chat still answers, deterministic safety (including emergency routing) still runs first and unchanged, and details are not extracted into storage. Anything the person logs themselves is still saved. A clinician may want to confirm that not saving a symptom mentioned in chat (until the person agrees) is acceptable, given that Bubbles then cannot remind them later of a symptom they mentioned.
