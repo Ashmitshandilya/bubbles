@@ -14,6 +14,10 @@ Entry template:
 - Where: files or folders
 - Notes: trade-offs, rejected options, follow-ups
 ```
+### 2026-10-17 · Caching, organ map reads in parallel, load test
+- What: /organs/map reads its five sources in parallel; backend/loadtest (httpx, AI stubbed, localhost only) shows ~94 req/s on one process with 0 errors at 50 users and p95 847 ms; FirstRunTour loads on demand; /models/* cached for a week; fixed a startup crash in main._warm_database_probe (duplicate local import of threading).
+- Why: speed; numbers and method in docs/LOAD_TEST.md.
+
 
 ---
 

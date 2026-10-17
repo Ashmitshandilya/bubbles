@@ -395,7 +395,6 @@ def _warm_database_probe() -> None:
         pass
     threading.Thread(target=lambda: analyze_turn("hello", []), name="bubbles-warm-analyze", daemon=True).start()   # the first message after a deploy no longer pays the one-off start-up cost
     if ops_telemetry._persist_enabled():   # saved admin settings (provider pauses, retention): read once, in the background
-        import threading
         threading.Thread(target=admin_settings.load, name="bubbles-settings-load", daemon=True).start()
     try:   # phone reminders while the app is closed; does nothing until FIREBASE_SERVICE_ACCOUNT_JSON is set (push_fcm.py)
         import push_fcm

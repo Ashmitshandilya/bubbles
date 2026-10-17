@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header, Sidebar, MobileNav, ApiAlert } from "../../../components/Navigation";
@@ -16,7 +17,6 @@ import {
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
 import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
 import { WeekRecapCard } from "./WeekRecapCard";
-import { FirstRunTour } from "../../onboarding/FirstRunTour";
 import { buildWeekRecap } from "./recap";
 import {
   WINDOW_DAYS, buildPatterns, buildTodayItems, greeting, readTracker, summarizeCycle, summarizeSignal, upcomingVisits,
@@ -25,6 +25,10 @@ import {
 import type {
   IntelligenceBrief, LivingMapData, Loadable, ProfileData, SignalSlug, TrackerEntry, TrackerResponse, WeeklyInsights,
 } from "./types";
+
+// Only brand-new accounts see the tour, so its code loads on demand instead of with the Today screen.
+const FirstRunTour = dynamic(() => import("../../onboarding/FirstRunTour").then((m) => m.FirstRunTour), { ssr: false });
+
 
 const DAILY = ["sleep", "mood", "activity", "hydration", "nutrition"] as const;
 const TILE_ORDER: SignalSlug[] = ["cycle", "sleep", "mood", "activity", "hydration", "nutrition"];

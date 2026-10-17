@@ -98,6 +98,8 @@ const nextConfig: NextConfig = {
           return [
             // The CSP is production only: the dev server needs eval and a websocket for hot reload.
             { source: "/:path*", headers: production ? [...SECURITY_HEADERS, { key: "Content-Security-Policy", value: contentSecurityPolicy() }] : SECURITY_HEADERS.filter((h) => h.key !== "Strict-Transport-Security") },
+            // The 3D body model is a fixed 6 MB file: cache it for a week and let a stale copy serve while it refreshes.
+            { source: "/models/:file*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
             // Share links carry a secret token in the address: never send it to another site as a referrer.
             { source: "/partner/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
             { source: "/cycle/partner/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
