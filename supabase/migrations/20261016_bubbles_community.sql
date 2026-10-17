@@ -122,6 +122,15 @@ grant select, insert, update, delete on table public.community_bans to service_r
 
 commit;
 
+-- Record that this migration was applied (only if 20261016_bubbles_schema_migrations.sql has been run). Safe to run twice.
+do $$
+begin
+  if to_regclass('public.bubbles_schema_migrations') is not null then
+    insert into public.bubbles_schema_migrations (name) values ('20261016_bubbles_community') on conflict (name) do nothing;
+  end if;
+end $$;
+
+
 -- Verification (run after the script; every line must match the expectation in its comment):
 --
 -- select relname, relrowsecurity from pg_class where relname like 'community\_%' and relkind = 'r';

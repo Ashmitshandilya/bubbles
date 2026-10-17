@@ -101,7 +101,7 @@ def client():
               "GEMINI_API_KEY", "GOOGLE_API_KEY"):
         os.environ.pop(k, None)
     os.environ.update(SUPABASE_URL="http://localhost", SUPABASE_SECRET_KEY="dummy",
-                      ALLOW_PAID_AI="false", ALLOW_KEYLESS_AI="false")
+                      ALLOW_PAID_AI="false", ALLOW_KEYLESS_AI="false", COMMUNITY_ALIAS_SECRET="smoke-test-secret-0123456789")
     fake_mod = types.ModuleType("supabase_client")
     fake_mod.supabase = _FakeSupabase()
     saved = sys.modules.get("supabase_client")

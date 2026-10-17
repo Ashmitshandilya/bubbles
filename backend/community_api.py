@@ -540,7 +540,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         items.sort(key=lambda i: (not i["crisis"], i["created_at"]))
         return items
 
-    @router.get("/admin/community/status")
+    @router.get("/admin/community/status", include_in_schema=False)
     @_safe
     def admin_status(request: Request):
         _admin(request)
@@ -550,19 +550,19 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                 counts[f"{t[10:]}_{s}"] = len(db.table(t).select("id").eq("status", s).limit(20000).execute().data or [])
         return {"enabled": enabled(), "message": admin_message(), "counts": counts, "banned": len(db.table("community_bans").select("user_id").limit(20000).execute().data or [])}
 
-    @router.get("/admin/community/queue")
+    @router.get("/admin/community/queue", include_in_schema=False)
     @_safe
     def admin_queue(request: Request):
         _admin(request)
         return {"items": hidden_items(), "enabled": enabled(), "message": admin_message()}
 
-    @router.get("/admin/community/log")
+    @router.get("/admin/community/log", include_in_schema=False)
     @_safe
     def admin_log(request: Request, limit: int = Query(default=100, ge=1, le=300)):
         _admin(request)
         return {"log": db.table("community_moderation_log").select("*").order("created_at", desc=True).limit(limit).execute().data or []}
 
-    @router.post("/admin/community/decide")
+    @router.post("/admin/community/decide", include_in_schema=False)
     @_safe
     def admin_decide(body: DecideIn, request: Request):
         _admin(request)
@@ -587,7 +587,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         _log(db, target, body.action, "admin" if body.action != "approve" else None, "admin")
         return {"status": "success"}
 
-    @router.post("/admin/community/resolve")
+    @router.post("/admin/community/resolve", include_in_schema=False)
     @_safe
     def admin_resolve(body: TargetIn, request: Request):
         _admin(request)
