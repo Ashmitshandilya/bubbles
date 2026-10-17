@@ -64,6 +64,7 @@ from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
 from organ_map_api import build_router as build_organ_map_router
 from deficiency_api import build_router as build_deficiency_router
+from community_api import build_router as build_community_router
 import deficiency_api
 import association_loader
 from context_engine import build_user_context, format_user_context
@@ -580,6 +581,7 @@ app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
 app.include_router(build_organ_map_router(get_authenticated_user, supabase))
 app.include_router(build_deficiency_router(get_authenticated_user, supabase))
+app.include_router(build_community_router(get_authenticated_user, supabase))   # /community/* and /admin/community/* (off until COMMUNITY_ALIAS_SECRET is set)
 app.include_router(build_schema_router(supabase))
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 

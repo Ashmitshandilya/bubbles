@@ -10,6 +10,7 @@ export const TABS = [
   { id: "live", label: "Live" },
   { id: "api", label: "API routes" },
   { id: "logs", label: "Logs" },
+  { id: "moderation", label: "Moderation" },
   { id: "settings", label: "Settings" },
 ] as const;
 export type TabId = (typeof TABS)[number]["id"];
