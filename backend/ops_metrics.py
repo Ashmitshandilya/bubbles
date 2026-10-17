@@ -5,8 +5,6 @@ MIN_SAMPLE attempts, otherwise it says there is not enough data yet.
 """
 from __future__ import annotations
 
-import os
-
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any, Iterable
@@ -222,6 +220,8 @@ def headline(*, database: str, persistence_mode: str, all_paused: bool, ai_now: 
 
 # ---------------------------------------------------------------- Overall page (counters from ops_rollups.count_events)
 
+# Cost is computed here, at read time, never stored. Every provider in the chat chain is on a free tier ($0 AI policy), so the
+# honest figure is zero; a provider not listed here is "unknown" instead of a made-up number.
 FEATURES: tuple[tuple[str, str], ...] = (
     ("/chat", "Chat"), ("/onboarding", "Onboarding"), ("/experience", "Onboarding"), ("/wellness/mind", "Mind"), ("/mind", "Mind"),
     ("/health", "Trackers"), ("/wellness", "Wellness"), ("/cycle", "Cycle"), ("/fitness", "Fitness"), ("/organs", "Body map"),
@@ -234,13 +234,6 @@ FEATURES: tuple[tuple[str, str], ...] = (
 def feature_of(route: str | None) -> str:
     route = route or ""
     return next((label for prefix, label in FEATURES if route == prefix or route.startswith(prefix + "/")), "Other")
-
-
-def cost(provider: str, model: str, tokens_in: int, tokens_out: int) -> dict[str, Any]:
-    """The Overall page's cost cell, worked out at read time by model_cost (the one cost rule): {'usd', 'basis'}."""
-    paid = os.getenv("ALLOW_PAID_AI", "false").strip().lower() in {"1", "true", "yes"}
-    got = model_cost(provider, model, tokens_in, tokens_out, paid_allowed=paid)
-    return {"usd": got["cost_usd"], "basis": got["label"]}
 
 
 def _hist(counters: dict[str, Counter], dim: str, prefix: str = "") -> dict[str, int]:
@@ -282,7 +275,7 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
         p50, p95 = pair(_hist(t, "hist.attempt", f"{provider}|{model}|"))
         rows.append({**row, "failed": row["attempts"] - row["success"], "success_rate": _rate(row["success"], row["attempts"]),
                      "timeout_rate": _rate(row["timeouts"], row["attempts"]), "p50_ms": p50, "p95_ms": p95,
-                     "cost": cost(provider, model, row["tokens_in"], row["tokens_out"])})
+                     "cost": model_cost(provider, model, row["tokens_in"], row["tokens_out"])})
     rows.sort(key=lambda x: (-x["answered_replies"], -x["attempts"]))
 
     answered = sum(n for k, n in t["reply"].items() if k.endswith("|answered"))
@@ -337,7 +330,7 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
 # ---------------------------------------------------------------- usage and cost (aggregates only: counts, rates, no user ids)
 
 CHAT_ROUTES = frozenset({"/chat", "/chat/stream"})
-FUNNEL_ORDER = ("about", "goals", "health", "life", "more_health", "choices", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
+FUNNEL_ORDER = ("core", "extras", "later", "completed", "under_18")
 FREE_TIER = "free tier"
 
 

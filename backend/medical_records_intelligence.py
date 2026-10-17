@@ -2,7 +2,6 @@
 """Batch 21: safe medical-record/lab/report normalization using existing tables."""
 from __future__ import annotations
 from collections import Counter
-from typing import Any
 
 def _label(row:dict)->str:
     return str(row.get("title") or row.get("name") or row.get("test_name") or row.get("report_name") or row.get("event_type") or "record")

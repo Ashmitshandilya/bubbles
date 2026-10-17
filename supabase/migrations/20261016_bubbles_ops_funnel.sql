@@ -4,7 +4,7 @@
 -- Apply ONCE in the Supabase SQL editor (Dashboard > SQL editor > New query > paste > Run), after 20261013_bubbles_ops.sql.
 -- Until it is applied nothing breaks: the API keeps these two kinds in memory only and the technical events are saved as before.
 --
--- Privacy: a funnel row holds a fixed step name (about, goals, health, life, daily, mind, people, drains, talk, completed, under_18) and a
+-- Privacy: a funnel row holds a fixed step name (core, extras, later, completed, under_18) and a
 -- client row holds a fixed problem code (render_error, chunk_load_failed, ...). No user id, answer, message or address. The API refuses any
 -- other value before it reaches this table. RLS and the revoked grants from the ops migration still apply (nothing here changes them).
 -- Funnel rows are kept 90 days by the API's own pruning, technical rows 14 days, audit rows 365 days.

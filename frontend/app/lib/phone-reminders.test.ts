@@ -41,3 +41,14 @@ describe("wording", () => {
     }
   });
 });
+
+import { routeForReminder } from "./phone-reminders";
+
+describe("routeForReminder", () => {
+  it("opens the matching screen and falls back to the notification list for anything else", () => {
+    expect(routeForReminder("water")).toBe("/hydration");
+    expect(routeForReminder("med")).toBe("/medications");
+    expect(routeForReminder("winddown")).toBe("/sleep");
+    for (const odd of ["system", "", undefined, null, 7, { path: "/admin" }, "/admin", "../../etc"]) expect(routeForReminder(odd)).toBe("/notifications");
+  });
+});

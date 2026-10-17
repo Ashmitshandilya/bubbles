@@ -169,6 +169,11 @@ def delete_everything(db: Any, uid: str, keep: tuple[str, ...] = SAFETY_HOLD_KIN
     import consent   # the remembered answer must not outlive the deleted document, even if a delete fails
     keep = tuple(keep) + TRAIL_KINDS
     try:
+        try:
+            import community_api
+            community_api.forget(db, uid)   # posts, comments, reactions, reports and blocks go too
+        except Exception:  # noqa: BLE001
+            pass
         consent.on_data_deleted(db, uid)   # withdraws what was granted and unlinks the ledger rows from the person
         rows = (db.table(TABLE).select("id,title").eq("user_id", uid).eq("event_type", EVENT_TYPE).limit(20000).execute().data or [])
         ids = [r["id"] for r in rows if str(r.get("title") or "").split(":", 1)[0] not in keep]

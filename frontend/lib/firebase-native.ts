@@ -3,7 +3,7 @@
 // Everything resolves to "off" on an app built without google-services.json, and on older APKs without the BubblesFirebase plugin.
 
 import type { PluginListenerHandle } from "@capacitor/core";
-import type { PhoneProblem } from "../app/lib/phone-reminders";
+import { routeForReminder, type PhoneProblem } from "../app/lib/phone-reminders";
 
 /** The app's own plugin (android/.../BubblesFirebasePlugin.java). */
 type BubblesFirebase = {
@@ -57,7 +57,7 @@ export async function setCrashReports(enabled: boolean): Promise<boolean> {
 }
 
 /** This phone's notification token. `ask` shows Android's permission prompt (only from a tap on the switch). */
-async function phoneToken(ask: boolean): Promise<{ ok: true; token: string } | { ok: false; problem: PhoneProblem }> {
+export async function phoneToken(ask: boolean): Promise<{ ok: true; token: string } | { ok: false; problem: PhoneProblem }> {
   if (!(await firebaseStatus()).configured) return { ok: false, problem: "unavailable" };
   const { PushNotifications } = await import("@capacitor/push-notifications");
   const handles: PluginListenerHandle[] = [];
@@ -93,18 +93,22 @@ async function phoneToken(ask: boolean): Promise<{ ok: true; token: string } | {
   }
 }
 
-/** Gets this phone's token and gives it to the server for the signed-in person. */
-export async function connectPhone(api: ApiFetch, ask: boolean): Promise<PhoneResult> {
-  const result = await phoneToken(ask);
-  if (!result.ok) return result;
+/** Gives this phone's token to the server for the signed-in person. The server refuses it until the person's yes is saved. */
+export async function registerPhone(api: ApiFetch, token: string): Promise<PhoneResult> {
   try {
-    const response = await api("/notifications/devices", { method: "POST", body: JSON.stringify({ token: result.token, platform: "android" }) });
+    const response = await api("/notifications/devices", { method: "POST", body: JSON.stringify({ token, platform: "android" }) });
     if (!response.ok) return { ok: false, problem: "failed" };
   } catch {
     return { ok: false, problem: "failed" };
   }
-  saveToken(result.token);
+  saveToken(token);
   return { ok: true };
+}
+
+/** Gets this phone's token and gives it to the server (the yes is already saved). */
+export async function connectPhone(api: ApiFetch, ask: boolean): Promise<PhoneResult> {
+  const result = await phoneToken(ask);
+  return result.ok ? registerPhone(api, result.token) : result;
 }
 
 /** Takes the token back from the server (when it can) and deletes it on the phone, so nothing more can arrive. Never throws. */
@@ -136,15 +140,31 @@ export async function refreshPhone(uid: string, api: ApiFetch): Promise<void> {
     if (!response.ok) return;
     const body = (await response.json()) as { settings?: { channels?: { push?: boolean } }; channels?: { push?: { available?: boolean } } };
     if (body.settings?.channels?.push === true && body.channels?.push?.available === true) await connectPhone(api, false);
+    else if (body.settings?.channels?.push === false && savedToken()) await disconnectPhone(api);   // withdrawn elsewhere (Privacy choices)
   } catch {
     refreshed.delete(uid);
   }
 }
 
-/** Sign-out: delete the token on the phone, so the next person to sign in here never gets this person's reminders. */
-export async function forgetPhoneOnSignOut(): Promise<void> {
+/**
+ * Sign-out: tell the server to forget this phone (while the session still works), then delete the token on the phone, so the next
+ * person to sign in here never gets this person's reminders. `api` is optional so a failed or offline call still deletes the token.
+ */
+export async function forgetPhoneOnSignOut(api?: ApiFetch): Promise<void> {
   refreshed.clear();
-  await disconnectPhone();
+  await disconnectPhone(api);
+}
+
+/** A tap on a reminder (also the tap that launched the app) opens the matching screen. Resolves to a function that stops listening. */
+export async function onReminderTap(go: (path: string) => void): Promise<() => void> {
+  try {
+    if (!(await firebaseStatus()).configured) return () => undefined;
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    const handle = await PushNotifications.addListener("pushNotificationActionPerformed", ({ notification }) => go(routeForReminder(notification.data?.kind)));
+    return () => void handle.remove();
+  } catch {
+    return () => undefined;
+  }
 }
 
 const ASKED = "bubbles.phoneRemindersAsked";   // this phone already showed the first-run card (either answer)

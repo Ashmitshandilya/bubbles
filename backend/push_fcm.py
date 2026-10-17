@@ -23,6 +23,7 @@ import base64
 import hashlib
 import json
 import os
+import random
 import re
 import threading
 import time
@@ -43,6 +44,8 @@ TTL = "3600s"                      # a reminder more than an hour late is noise,
 TEST_COOLDOWN_S = 60
 SWEEP_DEFAULT_S, SWEEP_MIN_S = 300, 60
 SWEEP_MAX_USERS = 5000
+SWEEP_BATCH = int(os.getenv("BUBBLES_PUSH_BATCH", "200"))         # people handled per run; the rest are picked up by the next runs
+SWEEP_BUDGET_S = float(os.getenv("BUBBLES_PUSH_BUDGET_S", "90"))  # the host answers within this, even for a big batch
 
 _lock = threading.Lock()
 _cached: tuple[str, dict | None] = ("", None)
@@ -141,19 +144,33 @@ def register_device(db: Any, uid: str, token: Any, platform: Any = "android", no
     return {"registered": True, "devices": min(len(devices), MAX_DEVICES)}
 
 
+def remove_all_devices(db: Any, uid: str) -> int:
+    """Forget every phone of this person (the push choice was withdrawn). Never raises."""
+    try:
+        return sum(int(doc_store.delete(db, uid, DEVICE_KIND, device_key(d["token"]))) for d in list_devices(db, uid))
+    except Exception as exc:  # noqa: BLE001
+        _log("remove_all", exc)
+        return 0
+
+
 def remove_device(db: Any, uid: str, token: Any) -> bool:
     return valid_token(token) and doc_store.delete(db, uid, DEVICE_KIND, device_key(token))
 
 
 # --- sending --------------------------------------------------------------------------------------------------------------
 
-def allowed(db: Any, uid: str, settings: dict) -> bool:
-    """Both yeses (the reminder switch and the consent log) and a configured server."""
-    if not configured() or not (settings.get("channels") or {}).get("push"):
+def wanted(db: Any, uid: str, settings: dict) -> bool:
+    """Both yeses: the reminder switch and a current yes in the consent log."""
+    if not (settings.get("channels") or {}).get("push"):
         return False
     import consent_ledger
 
     return consent_ledger.is_granted(db, uid, "push_notifications")
+
+
+def allowed(db: Any, uid: str, settings: dict) -> bool:
+    """Both yeses and a configured server."""
+    return configured() and wanted(db, uid, settings)
 
 
 def _message(token: str, kind: str, title: str, body: str) -> dict:
@@ -193,6 +210,8 @@ def send_to_user(db: Any, uid: str, kind: str, title: str | None = None, body: s
         if not devices:
             return {"sent": 0, "removed": 0, "reason": "no_devices"}
         t, b = N.sanitise(kind, title, body)
+        if kind == "med":   # a lock screen is not private: even "Medicine check-in" says something about the person's health
+            t, b = N.TEMPLATES["system"][0], "You have a reminder in Bubbles."
         project = _service_account()["project_id"]   # type: ignore[index]
         url = f"https://fcm.googleapis.com/v1/projects/{project}/messages:send"
         headers = {"Authorization": f"Bearer {_access_token()}", "Content-Type": "application/json; charset=utf-8"}
@@ -247,20 +266,33 @@ def users_with_devices(db: Any, limit: int = SWEEP_MAX_USERS) -> list[str]:
     return sorted({str(r["user_id"]) for r in rows if isinstance(r, dict) and r.get("user_id")})
 
 
-def sweep(db: Any, now: datetime | None = None) -> dict[str, int]:
-    """Create the reminders due now for everyone with phone notifications on; create_notification sends each one."""
+def sweep(db: Any, now: datetime | None = None, *, batch: int = SWEEP_BATCH, budget_s: float = SWEEP_BUDGET_S) -> dict[str, Any]:
+    """Create the reminders due now for everyone with phone notifications on; create_notification sends each one.
+    Bounded (``batch`` people, ``budget_s`` seconds) and idempotent (per-slot de-duplication). A person whose choice was withdrawn
+    has their phones forgotten here too."""
     import notifications as N
 
-    checked = made = 0
-    for uid in users_with_devices(db):
+    started = time.monotonic()
+    out: dict[str, Any] = {"checked": 0, "created": 0, "revoked": 0, "errors": 0, "partial": False}
+    uids = users_with_devices(db)
+    if len(uids) > batch:   # a random slice, a different one each run: fair over time without a stored cursor
+        uids, out["partial"] = random.sample(uids, batch), True
+    for uid in uids:
+        if time.monotonic() - started > budget_s:
+            out["partial"] = True
+            break
         try:
-            if not allowed(db, uid, N.load_settings(db, uid)):
+            if not wanted(db, uid, N.load_settings(db, uid)):
+                out["revoked"] += int(remove_all_devices(db, uid) > 0)
                 continue
-            checked += 1
-            made += len(N.generate_due(db, uid, now))
+            if not configured():
+                continue
+            out["checked"] += 1
+            out["created"] += len(N.generate_due(db, uid, now))
         except Exception as exc:  # noqa: BLE001 - one person's data must not stop everyone else's reminders
+            out["errors"] += 1
             _log("sweep_user", exc)
-    return {"checked": checked, "created": made}
+    return out
 
 
 def sweep_interval() -> int:

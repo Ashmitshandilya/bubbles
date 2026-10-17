@@ -14,6 +14,10 @@ Entry template:
 - Where: files or folders
 - Notes: trade-offs, rejected options, follow-ups
 ```
+### 2026-10-17 · Caching, organ map reads in parallel, load test
+- What: /organs/map reads its five sources in parallel; backend/loadtest (httpx, AI stubbed, localhost only) shows ~94 req/s on one process with 0 errors at 50 users and p95 847 ms; FirstRunTour loads on demand; /models/* cached for a week; fixed a startup crash in main._warm_database_probe (duplicate local import of threading).
+- Why: speed; numbers and method in docs/LOAD_TEST.md.
+
 
 ---
 
@@ -184,6 +188,399 @@ Entry template:
 - A bare "today" from chat is stamped with the current time, not midnight, so a weight told in chat after an earlier tracker entry the same day is the latest one.
 - Fixed a startup crash already on main: a stray `import threading` inside `_warm_database_probe` made the first line raise `UnboundLocalError`, so the server could not boot. A test now runs the startup hooks.
 - The Android app bundles the web files in the APK: backend changes reach it at once, screen changes (live refresh, Remove button, Last updated card) need a new APK from `npm run android:release` and a signed release.
+
+### 2026-10 · Mega task (lane decisions)
+
+# L1 (chat backend) decision draft
+
+For the lead to fold into DECISIONS.md (one entry per feature, newest first) and one line into CLAUDE.md conventions:
+`No authority names in reply prose; sources only as links.`
+
+### 2026-10-16 · Chat reply speed: fewer round trips, parallel reads, one model call
+- What: `POST /chat` is split into a "prepare" half (sign-in to the safety gate) and a "respond" half. The conversation check and the recent
+  turns are read together; the user message is inserted first (the unique client-message index refuses a repeat, the read happens only then);
+  after the safety gate the person's own context, the evidence lookup and the tone settings are read side by side (two small thread pools,
+  context copied so telemetry and the reply budget keep working); the facts the person stated are saved while the model thinks; the
+  conversation timestamp and the turn log run after the reply is out; saving an empty event list does nothing; a message created a moment ago
+  skips the duplicate-events read. Optional extras are time-boxed (evidence 2 s, the person's own context 8 s, both logged, never silent).
+  The model gets the three sources the screen shows (1,200 characters each) instead of six at 2,000.
+- AI quick wins: Gemini minimal-cost settings (thinking level `low`, `GEMINI_THINKING_LEVEL`; retried once without it if a model refuses the
+  setting), 900 output tokens (generous on purpose: the reply is JSON), one shared Gemini client, a pooled `requests.Session` for the others
+  (`max_tokens`, `reasoning_effort: low` for gpt-oss, JSON response format), `GEMINI_TIMEOUT_S` 9, `AI_REQUEST_TIMEOUT` 18 (the 50 s budget is
+  still the ceiling), embedding call 3 s on a pooled session, `analyze_turn` warmed at start-up.
+- Caches (ttl_cache rules, admin off switches `cache_enabled.<name>`): embedding per normalised question (1 h, no user id in the key), RAG
+  handling policy per document (1 h, cleared on ingest), tone settings (2 min, cleared when the first-run setup or the name is saved, empty never
+  stored), profile + preferences for replies (1 min, same invalidation). Memory items and health events are NOT cached: a just-saved symptom
+  is in the next turn (tested).
+- Numbers (local benchmark `backend/loadtest/chat_bench.py`, real FastAPI app on FakeDB with every database call and the embedding call
+  sleeping 80 ms, AI stubbed with 0 ms; n = 30, p50): baseline origin/main d8d5add **1222 ms** for an AI-route message, branch **584 ms**
+  (52 % lower); deterministic daily log 580 ms to 422 ms (27 % lower). With a 2 s stubbed model the branch's p50 is 2512 ms (about 500 ms
+  of overhead around the model; the baseline was not measured at 2 s). Streaming (`/chat/stream`) total time to `done` is about the same as `/chat`.
+- Why: the owner wants speed "at any cost"; an AI turn made about 17 mostly serial round trips around one blocking call.
+- Where: `backend/main.py` (`_chat_prepare`, `_chat_respond`, `_context_stage`, `_evidence_stage`), `chat_pipeline.py`, `chat_cache.py`,
+  `chat_concurrency.py`, `context_engine.py`, `memory_retrieval.py`, `rag.py`, `ai_provider.py`, `bubbles_ai.py`, `admin_settings.py`.
+- Notes: the insert-first path trusts the unique index `uq_chat_messages_user_client_message` (migration 20260919_coco_r7_chat_write_authority);
+  the owner should confirm it exists (query in docs/OWNER_TODO.md). Hedging providers (start Groq if Gemini has not answered in 3 to 4 s and
+  take the first valid reply) was considered and NOT done: provider order and the allowlist are unchanged. `tests/test_production_contracts.py`
+  pins the chat source; its strings were updated deliberately (`_DETERMINISTIC_ROUTES`, `state.consent_required`, `ctx_job = submit(`).
+
+### 2026-10-16 · POST /chat/stream (server-sent events)
+- What: beside the untouched `/chat`. Events: `meta` (conversation_id, user_message_id, safety, kind, consent_required) as soon as the safety gate
+  is known, `delta` (pieces of the finished reply), `done` (exactly today's `/chat` JSON), `error`; `: ping` every 10 s. Deterministic routes, an
+  empty message and a replayed retry send `meta` and `done` only. Headers: `Cache-Control: no-store`, `X-Accel-Buffering: no`.
+- Honest limits: (1) `delta` pieces are sentences of the FINISHED reply, cut after the dose scrubber, attribution stripper, lint and the urgent
+  call-to-action line, so the person never sees raw model text; this does not make the model faster (the model is still one blocking JSON
+  call), it shows text sooner after the model finishes and lets the screen show the safety state before the reply. True token streaming would
+  need provider streaming plus an incremental JSON-string reader and was not built. (2) **Whether the Vercel rewrite `/bubbles-api/*` passes
+  chunks through is UNVERIFIED** (Vercel cannot be run here, and `next start` cannot stand in for Vercel's edge). The client must fall back to
+  plain `/chat` on any error, and may call the API origin directly for the stream. (3) The stream's `api` telemetry event is written when the
+  stream opens, so it carries `stage_pre_ms` and the route kind only; ctx, rag, ai and post numbers come from `/chat` turns.
+- Where: `backend/main.py` (`chat_stream`, `_sse`, `_delta_chunks`), `backend/tests/test_chat_speed.py`.
+
+### 2026-10-16 · Batch confirmation of chat details
+- What: `POST /health-events/confirmation {decisions:[{id, confirmed}]}` (1 to 30) in its own router (`health_event_confirm.py`); the old
+  `PATCH /health-events/{id}/confirmation` runs the same code. One read of the current statuses and one update per decision value with a
+  status condition (a second press changes nothing). The decision is durable when the update commits; copying into the health record
+  (batch variant `project_confirmed_events`: one read, one list insert) and into memory (the usual `promote_health_event` rules) happens after
+  the response and never turns a saved decision into an error (failure is logged and retried the next time that detail is saved). Dismissing
+  something already saved answers 409. A permission error from the record tables switches the answers to `compat` for 10 minutes.
+- The saved state survives a reload: `GET /chat/conversations/{id}/messages`, `GET /chat/latest` and idempotent replays overlay the real status
+  from `extracted_health_events` (one owner-scoped query per 100 ids). The stored cap of events per reply is 100 with `health_events_more`.
+- Defaults chosen: confirming a fact also promotes it to memory (so the header count can move); a withdrawn (retracted, superseded or rejected)
+  detail can never be re-saved (409); dismissing a saved detail is 409 rather than a silent half undo.
+
+### 2026-10-16 · Resumed chats: the 48 hour rule
+- What: in a resumed thread, what the person said more than 48 hours ago is history. The model sees those turns labelled "earlier, N days ago,
+  not necessarily true now", their symptoms are listed as past (never as current), and an old "no X" is no longer a standing denial.
+  The safety engine only ever reads the current message, so this cannot soften an alarm.
+- Where: `chat_pipeline.py` (`HISTORY_NOW_HOURS`, `history_user_facts`, `conversation_block`). Clinical note: `docs/drafts/l1-clinical.md`.
+
+### 2026-10-16 · Friend voice (finishing PR #27)
+- What: `response_style_instruction()` is the single voice and format rule; the old conflicting lines are gone from `bubbles_ai.py`; the model
+  is told to use the evidence silently and never name a publisher; the evidence wrapper carries the fixed sentence about Source/Publisher/URL
+  lines. Output guards on AI text only, after the dose scrubber: `strip_attribution` now rewrites any SENTENCE that opens with "NHS guidance
+  says", "According to the WHO,", "Studies show" (not just the first), `authority_citation` and `heavy_verdict` lint codes, and the fixed
+  call-to-action line on URGENT replies. `normalize_response` no longer turns a friendly paragraph into bullets. "Detailed" users get about 160
+  words (was 250), lint `max_words` 150. Care checklist copy and tags in `onboarding.py` no longer name programmes or societies.
+- Freeze list: `tests/test_freeze_list.py` hashes every fixed safety text (nine messages through the four safety responses, CRISIS_LINES,
+  follow-up, ai_failed, correction, consent, degraded, dose note and the two urgent organ sentences) against the values computed on d8d5add.
+- Not done (optional in the brief): trimming an over-long AI reply at a sentence boundary (the prompt asks for 60 to 120 words and lint warns at 150).
+- Not mine, still open for their lanes: source chip rows and "Read more" fold (L2, `ChatBits.tsx`), Insights "Sources" label and snippet (L4), the
+  `rag_links.py` snippet.
+
+### 2026-10-16 · Model tracking, cost at read time, funnel and app problems (A7)
+- What: the five `stage_*_ms` numbers on chat events (numeric allow-list), `funnel` (setup steps reached, fixed names, kept 90 days) and `client`
+  (app problem codes, fixed names) event kinds with migration `20261016_bubbles_ops_funnel.sql` (+ undo); until it is applied they stay in memory and the
+  technical events still save (own insert, check-violation detected). `POST /telemetry/client {code}` takes one code and nothing else.
+  `GET /admin/usage?range=` returns counts and rates (safety tiers per day, reply-kind mix, AI share, consent asks, fallback / degraded /
+  timeout rates, route use, funnel, app problems), cost at read time (free tier shows $0 and "free tier", a model with no name or price shows
+  "unknown", `if_paid_usd` shows what the tokens would cost at the published price) and distinct-active-people / signup integers (`ops_usage.py`).
+- Defaults: while `ALLOW_PAID_AI` is off, every model counts as free tier; Gemini is outside `FREE_MODEL_ALLOWLIST` (documented in DEPLOY.md, `.env.example`
+  and docs/admin/README.md as an asymmetry, not changed).
+- Where: `ops_telemetry.py`, `ops_metrics.py`, `ops_usage.py`, `client_telemetry.py`, `admin_api.py` (`/usage`), `onboarding_api.py` (three funnel calls),
+  `docs/admin/README.md`.
+
+# L2 (chat frontend): decision entry draft
+
+**Talk opens on the latest chat, the loader is the mascot, and a save is instant.** (A1 loader, A3, A4 frontend)
+
+- Opening `/companion` calls `GET /chat/latest?limit=100` once and shows that chat scrolled to its last message (jump, not smooth). Smooth scrolling happens only when the last message id changes; older pages prepend without moving the reader (`resume.ts`, `scrollPlan`). The welcome cards never flash while this loads. Entry points all behave the same: plain Talk, Today ask, body map and the palette. `?new=1` starts blank, and a blank "New chat" is not remembered. No recency cutoff. A server without `/chat/latest` falls back to `/chat/history`.
+- `?ask=` / `?askref=` are read once into a ref and sent as a normal message into the chat that ended up open, after resume finishes (`readAsk` deletes the stored text as it reads, so it must not be re-read).
+- `degraded: true` or a failed read is an error state with "Try again" and "Start a new chat", never an empty screen that hides history.
+- History and New chat buttons are in the header at every width; the palette entry is "New chat" and links to `/companion?new=1`.
+- Loader: `ThinkingBubble` is the thinking mascot with a small bob (`bubbles-loader-bob`, in the reduced-motion kill list) inside the same `role="status"` element plus `sr-only` "Bubbles is replying". Caution and urgent states get three plain dots, never the mascot. The send button shows three soft dots (`bubbles-send-dot`). The "Checking memory" header line and its `/memory/diagnostics` call are gone (one call fewer per chat open); the "nothing confirmed yet" line went with it.
+- Save / dismiss: `event-decisions.ts` (reducer, optimistic, rollback, settle from server, card view). Pressing a button flips the card at once and sends ONE `POST /health-events/confirmation {decisions:[{id,confirmed}]}` (chunks of 30), commits each id as the answer arrives, rolls back only failed ids, retries once on network errors, refreshes the session once on 401. Timeout or 5xx is "ambiguous": the card says "Saving, checking..." and the real status is re-read from the messages endpoint instead of assuming failure. A second press on a decided event sends nothing. An error row with code 409/410 means Bubbles withdrew the event after a correction and settles as withdrawn. The card counts server-settled events (a reloaded message shows them as saved) and says "Saved" (not "Saved to your health record") unless the projection finished.
+- Optional streaming client (`stream.ts`): tries `POST /chat/stream` (events meta, delta, done, error) and falls back to plain `POST /chat` on 404/405/501, 5xx, a broken stream or a stall; the result of the probe is remembered for the page's lifetime. Only text the server already scrubbed is shown, and the real reply replaces the partial text the moment `done` arrives. The backend route does not exist on this branch yet, so today every send takes the plain `/chat` path after one cheap probe.
+- Decline: the chat consent card has an equal-weight "No, not now" (`decline.ts`: remembered 14 days on this device, recorded with `PUT /consents/ai_chat_processing {granted:false, source:'chat_card'}` when the server has it). This overlaps L5's planned ConsentCard change; keep one copy when merging.
+
+Defaults chosen: latest chat regardless of age; a missing `/chat/latest` falls back to history; day dividers not built (a quiet "Continuing your chat from <day>" line is shown instead); streaming is a no-op until the backend route lands.
+
+# L3 (Mind): decision entry draft
+
+**Mind is a top-level section with loneliness, anxiety and separation-anxiety support, and every tracker note is safety-screened.** (A5)
+
+- One shared gate: `backend/safety_gate.py` (`safety_gate(*texts, crisis_only=False)`). The wellness routes, the Mind check-ins and now `health_logs` create_entry call it for free-text fields (`notes`, `description`, `reason`, `findings`; the `symptom` name only on crisis wording, because a symptom name is the thing being logged). A hit stores nothing and answers with the same `status: "safety"` shape as before. `mind_checkins.safety_gate` stays as a re-export so existing callers keep working. The old Mood form is therefore screened.
+- Support copy now carries the India-first line (112, Tele-MANAS 14416) by reusing `safety_engine.CRISIS_LINES`; no new safety wording was written.
+- New ordinary concepts `loneliness`, `panic_attack`, `separation_anxiety` (Hinglish forms included); `anxiety` stays the parent (`CONCEPT_PARENT`). None escalates alone. All map to the brain area.
+- Quick scores are screens in `mind_checkins.SCREENS`: `loneliness` (one question, 1 to 5) and `anxiety` (0 to 10). A score only is stored (`doc_store` kind `mind_screen`, key `<kind>:<date>`); no free text, no labels. They do not move the 2 week PHQ-2 / GAD-2 offer timer (`screen_due` counts only those two).
+- Brain map feed: `_ev_mood` reads the `Stress n/10; Anxiety n/10` the tracker folds into the note and exposes `stress_score` / `anxiety_score`; `organ_map_engine.observations` emits them; the brain rule watches an average anxiety score at or above `STRESS_HIGH_AVERAGE` (7) over at least `ORGAN_MIN_ENTRIES_FOR_AVERAGE` check-ins, in soft words. No new association pair was added: the data does not yet support one, and every pair makes the false-discovery correction stricter.
+- Chat: `backend/mind_chat.py`. `mind_support_block(turn)` (own, current / recent / recurring loneliness, panic, separation anxiety, anxiety or low mood) is appended to the safety context: friend tone, one line of acknowledgement, one small step naming a Mind tool, at most one question, never a label, no medicine. Loneliness is answerable without the AI yes: `loneliness_no_consent_reply` returns a short fixed supportive reply followed by the unchanged frozen `consent_needed_reply` (the consent card still shows). Other topics without the yes still get the plain consent wall.
+- Touch points in lane L1's file `backend/main.py` (3 lines, no restructuring): the import, one expression in the `consent_required` reply branch, and one `+ mind_support_block(turn)` on the `safety_context` argument.
+- Hub: `/mind` has one primary tile (how are you feeling, with optional stress and anxiety sliders) and closed `Fold` rows: Anxiety check-in, Loneliness check-in, Missing someone / apart, Breathe and ground, Journal, Patterns (year in pixels and own patterns), Your brain on the body map. A visible "Feeling panicky? Breathe with me" button opens the one-tap panic flow (calm words, longer-exhale guide that starts at once, support line, no mascot). The first exercise in the list is now the longer-exhale one. Patterns and the brain row load only when opened.
+- `/body?organ=<id>` selects that area (`app/body/organParam.ts`, plain ids only).
+- Defaults chosen: loneliness positive at 4 or more (often, almost always); anxiety quick score positive at 7 or more; the standalone anxiety quick score is stored as a score only and does not feed the brain map (only the check-in's optional anxiety / stress sliders do, because the tracker needs a mood to save a row); the optional "gentle mind notification" kind was not built (notifications.py belongs to the push lane and `is_generic` blocks anxiety words).
+- Navigation (lead edits once): Mind becomes the 8th top-level item (in the More sheet on phones), `/mood` and `/mind` leave the Track tabs; `/mood` keeps working and is linked from the Mind page footer.
+
+## Insight details: one sheet, one id, one confidence word (A6)
+
+- Every insight has a stable URL-safe id: `rec:<event_type>:<subject>` (repeated), `co:<a>|<b>` (together), `<x>-><y>` (links between logged series). The ids are on `/patterns/analyze`, `/insights/weekly`, the brief's correlations and `/wellness/associations`, and `GET /insights/{id}` (owner-scoped, `days` 7..365) returns the detail with dated entries (ISO days only, never free text).
+- One detail sheet (`frontend/app/insights/InsightDetailSheet.tsx`, native `<dialog>`) with six sections in a fixed order: What Bubbles saw, The days and numbers (a real table or a gap sentence), How sure, What this does not mean, One thing to try, Ask Bubbles about it. Built by the pure `detail.ts` for Patterns, links and Today.
+- One confidence scale: the server's word (low, medium, high) in `confidence_label`; older responses fall back to the same 0.75 / 0.5 cut-offs (`insights/confidence.ts`). Links between logged series never read High unless the direction repeated.
+- Reach: an explicit "Details" button (44 px, name includes the headline) on every Patterns card, link card and Today pattern/also card. Deep link `/insights?item=<id>` is read once, cleared with `history.replaceState`, and says "This pattern is no longer in the last N days" if the window no longer holds it.
+- "Your week" on Today never opens to an empty box: a failed call says so with Try again; a week with too little logged says it is a gap.
+- Organ-map evidence: the server sends only the newest entries, so the panel says "Showing the N newest of M entries" instead of implying the list is complete.
+- Wording: Insights "Sources" is now "Read more", the raw snippet is gone.
+- Default chosen: Today's cards still keep the small "Why does Bubbles think this?" fold for the short reasons; Details is the full view.
+
+# L5 draft: decision log entries (B1 database, B2 consent) and the contract for other lanes
+
+For the lead to fold into DECISIONS.md (newest first, one entry per feature). Written on branch `lane/l5-data-trust`.
+
+## Entry: Consent is granular, logged, and off until the person turns it on (B2)
+
+- **Purposes** (stable ids, each separate, default off, nothing pre-ticked): `ai_chat_processing` (alias `ai_chat`), `health_memory_from_chat`, `partner_sharing`, `push_notifications`, `email_reminders`, `community_visibility`, `product_usage_metrics` (listed, `available: false`, cannot be turned on: the standing rule is no analytics; the owner decides). Keeping a person's own logs and chat is a disclosure (`service_storage`), not a consent.
+- **Ledger.** `consent_events` is append only (database trigger blocks delete and any update except unlinking the person). Current state = newest row per purpose, and it counts only while its `text_version` is still the current one (changing a description or bumping `text_version` re-asks everyone for that purpose). Nothing but ids, a yes/no, versions, a text hash, a source and a time is stored: never free text.
+- **Without the table.** If the migration is not applied (or the table is not granted to the backend, 42501) the same events are written as signed `consent_event` documents via `doc_store`, which `delete_everything` always keeps. The older single yes (document `consent/ai_chat`, version `2026-10b`) still counts for `ai_chat_processing` until a newer decision exists.
+- **Delete my data keeps a minimised trail** (default chosen): every granted purpose is first withdrawn (a `system` row), then the ledger rows lose their `user_id` link. What stays: purpose, decision, timestamps, versions, text hash and a one-way HMAC of the user id (key: the doc-signing key). The privacy notice says so in plain words. This lets the owner show an audit trail without keeping a person's identity.
+- **Wording fingerprint.** `PUT /consents/{purpose}` for a yes must quote the `text_hash` of the wording currently shown (409 if it changed, 422 if missing); a withdrawal never needs it. Server stamps `policy_version` (= the privacy notice version) and `text_version`.
+- **Enforcement points** (server side, never from the client): AI provider calls (`has_ai_consent`, existing gate in `chat()`), chat-derived events (`consent.persist_chat_events`: when `health_memory_from_chat` is off nothing is extracted into storage; explicit tracker logs still save), partner sharing (every owner action, accepting an invite, the public quick link, and the partner's view; withdrawal calls `partner_sharing.stop_all`), email reminders (the channel is mirrored from the purpose; `create_notification` checks it again), push (the channel switch is mirrored; L8 gates registration with `is_granted(..., "push_notifications")`), `/privacy/consent/check` and `/sharing/plan` (they ignore any dict the browser sends). `PUT /notifications/settings` cannot turn email or push on by itself.
+- **Chat card.** Equal-weight "No, not now" records a decline (source `chat_card`), shows a calm line and stops re-asking: the server asks again at most once per 14 days or when the wording changes (`consent_ask: false` in the `/chat` response; the card is not shown, the reply is the short fixed `declined_reply`). The frozen last sentence of `consent_needed_reply` ("If something feels urgent, call your local emergency number.") is unchanged; a test pins it. An urgent message still gets the fixed urgent text.
+- **Defaults to flag to the owner.** In-app reminders and the three reminder types (water, medicine, wind-down) remain on by default because they only appear inside the app; they are not a processing choice. Email and push are off and need the matching purpose. The sign-up Terms/Privacy tick is an acknowledgement (ledger purpose `ack_terms_privacy`), recorded after the first signed-in request, not a bundled consent.
+- **Admin.** `consent.consent_rates(db)` returns counts only per purpose (granted, declined, rate; people are counted by their one-way hash). L9 renders it. When the table is missing it returns `available: false` (the fallback documents are per person and cannot be counted across people).
+
+## Entry: Database: indexes, register, N+1, and an optional tightening (B1)
+
+- Migrations (all `20261016_bubbles_*`, idempotent, with undo): `indexes_v2` (earlier on main), `schema_migrations`, `lookup_indexes`, `consent_ledger`, `rls_tightening` (**optional, default off**). Run order in `docs/OWNER_TODO.md`. Findings and the owner's read-only checks: `docs/DB_AUDIT.md`.
+- `bubbles_schema_migrations` records applied migrations; `GET /admin/schema` (admin gate) lists the missing ones from `schema_status.KNOWN`. Lanes with a migration add its name to `KNOWN` and end the file with the guarded insert (see the other files).
+- N+1: `/chat/history` counts via `bubbles_chat_counts` (fallback: parallel counts), `/health/summary` reads concurrently and skips the compat scan for people with none (flag cached 5 min, cleared by any compat save), `/chat/feedback` one read (`doc_store.get_many`), `delete_everything` chunked deletes.
+- The tightening migration replaces browser-writable `FOR ALL` policies with select-only and hides signed documents from browsers. The website never uses the Data API for tables (grep: only `supabase.auth.*`). Owner applies it deliberately.
+
+## Contract for other lanes (exact)
+
+- `consent.is_granted(db, uid: str, purpose: str) -> bool`. Missing, unknown, unavailable, unreadable all return `False`. 5 minute per-user cache, cleared on every write. Accepts the alias `ai_chat`. Other lanes may import it directly (it exists on this branch); the try/except ImportError shim is only needed until this branch merges.
+- Purpose ids: `ai_chat_processing`, `health_memory_from_chat`, `partner_sharing`, `push_notifications`, `email_reminders`, `community_visibility`, `product_usage_metrics`. Also `consent.ACK_PURPOSE = "ack_terms_privacy"` (acknowledgement events only).
+- Text hashes right now (always read them from `GET /consents`, they change when a description changes; never hard-code): ai_chat_processing `9d2ef9c15f26233c` (text_version 2026-10b), health_memory_from_chat `28f84d6ff7698c3c`, partner_sharing `f48f4cbb5702a3e8`, push_notifications `3b50bf7bee8ed9bc`, email_reminders `4a80ff6d3d6a9357`, community_visibility `c5c88ba9183cf800` (all 2026-10a), product_usage_metrics `33ed14157270f8a4` (unavailable). Server side: `consent.text_hash(purpose)`.
+- Endpoints (all need the Bearer token):
+  - `GET /consents` -> `{status, policy_version, purposes:[{id, title, description, text_version, text_hash, available, granted, decision: "granted"|"declined"|"none", decided_at}], disclosures:[{id,title,text}]}`
+  - `PUT /consents/{purpose}` body `{granted: bool, source: "settings"|"chat_card"|"onboarding"|"system"|"signup", text_hash: string (required when granted)}` -> `{status, consent:{...purpose state}}`; 404 unknown, 409 hash mismatch or unavailable, 422 bad body.
+  - `GET /consents/history?limit=100` -> `{status, events:[{purpose, title, granted, source, text_version, created_at, kind: "consent"|"acknowledgement"}]}`
+  - `POST /consents/acknowledgements` body `{version}` -> `{status, acknowledged, version}`
+  - `GET|PUT /me/consent` shim: `{ai_chat: bool}` (+ optional `source`) for `ai_chat_processing`.
+- **L6 (onboarding consent step)**: remove the bundled `ai_consent` question; after the required questions show one unticked switch per offered purpose (suggested: `ai_chat_processing`, `health_memory_from_chat`, `push_notifications` and `email_reminders` only if the user wants reminders; not `partner_sharing`/`community_visibility`), each with `title` and `description` from `GET /consents` and a neutral "Not now" (Continue always enabled). For each switch the person turns on: `PUT /consents/{id}` with `source: "onboarding"` and that purpose's `text_hash`. A "Not now" for a purpose is recorded as `granted: false` with the same call (no hash needed). `backend/onboarding_api.py` still writes the older yes through `consent.set_ai_chat(db, uid, True)` when the old `ai_consent` answer is "yes"; delete that when the bundled question goes.
+- **L8 (push)**: gate `POST /notifications/push/register` with `consent.is_granted(db, uid, "push_notifications")`; consent already mirrors `channels.push` in `notification_settings` and calls `notifications.save_settings`; on withdrawal revoke tokens (hook point: `consent._after_change`, branch `push_notifications`; add a call there). `wellness_api.settings_put` now forces `channels.email`/`channels.push` to the purpose state.
+- **L9 (admin)**: `consent.consent_rates(db)` (counts only) and `schema_status.report(db)` / `GET /admin/schema`.
+- **L10 (community)**: require `is_granted(db, uid, "community_visibility")` before a post or comment; withdrawal should hide the person's posts (hook point: `consent._after_change`).
+- **L1/L2**: `/chat` response gained `consent_ask: bool` (true when the Yes/No card should show; false after a recent No). `CompanionClient.tsx` got two one-line changes (see below).
+
+## Files outside this lane's ownership that were touched (smallest change; tell the lead)
+
+- `frontend/app/companion/ChatBits.tsx` (L2): `ConsentCard` only: a "No, not now" button, reads `/consents` once to stay quiet after an answer, imports `useApi`, `Link`, `aiCardView`, `readOverview`.
+- `frontend/app/companion/CompanionClient.tsx` (L2): `allowAi` sends `source: "chat_card"`; `consentRequired` also requires `payload.consent_ask !== false`.
+- `backend/wellness_api.py` (L3 area): `settings_put` forces email/push to the purpose (3 lines + import).
+- `frontend/components/Providers.tsx`: one effect in `ExperienceProvider` that records the sign-up acknowledgement after the first signed-in load (+ import).
+- `frontend/components/wellness/NotificationSettingsCard.tsx` (L8 area): the Email switch became a line with a link to Privacy choices.
+- `backend/health_logs.py`: compat flag and concurrent summary (B1). `backend/main.py`: `message_counts`, `schema_status` router, consent enforcement lines.
+- `frontend/app/landing/Landing.tsx`: footer link "Privacy choices".
+- Navigation: no entry needed (Privacy choices is reached from Settings > Privacy and data and the footer). Optionally add `{ href: "/privacy-choices", label: "Privacy choices" }` to the command palette.
+
+# A6. Insight details: problem statement and what was built
+
+Line numbers are from the session branch before this lane's change (commit 7b3b038).
+
+## Problem
+
+A person sees "Your sleep has moved" or "Headache came up 5 times" and cannot find out why. Every insight lives on one of five
+surfaces (Today folds, Patterns page, link cards, weekly recap, organ-map evidence) and none has a detail view or an address.
+Affected: everyone who logs, most of all people using a screen reader or keyboard only (links share one name, headlines are not
+headings) and people on a phone, where the only path was a bare `/insights` list.
+
+## Root causes
+
+1. Today's "See the evidence" and "Why does Bubbles think this?" go to bare `/insights`: `TodaySections.tsx:316` (`whyHref`), `today.ts:339`
+   (`whyHref: "/insights"`). `InsightsClient.tsx` read no id, hash or query, so the link landed on the top of an unrelated page.
+2. No shared id. Today used positional ids (`insight-N`, `corr-N`, `today.ts:395`), Patterns used `r-<type>-<subject>` / `c-<a>-<b>`
+   (`patterns.ts:73,88`), links used `x->y`. The same finding had three names.
+3. Evidence was a count sentence. `source_event_ids` (`pattern_engine.py:151,204`, `weekly_insights.py:60,70`) could not be resolved: no
+   `GET /insights/{id}`, no dated entries, no pairs. Fields the API returns (deviations, rho/q/lag, supporting_events,
+   suggested_action) were never rendered.
+4. Three confidence scales behind one chip: entry confidence in the pattern engine, a count heuristic `0.3 + 0.05 * evidence`
+   (`weekly_insights.py:108-110`), and strength words for links.
+5. Accessibility: card headlines were `<p>`/`<strong>`, link names were not unique, "Your week" opened to an empty box when its call failed.
+
+## What changed
+
+Backend (additive, no schema change)
+- One stable URL-safe id per insight: `rec:<type>:<subject>`, `co:<a>|<b>`, `x->y`, `gap:week` (`pattern_engine.slug/recurrence_id/correlation_id`),
+  on `/patterns/analyze`, `/insights/weekly` (`schemas.InsightItem.id`), the brief's correlations and `/wellness/associations`.
+- One confidence word (`confidence_label`: low/medium/high) from `pattern_engine.recurrence_confidence/correlation_confidence`; the
+  weekly number now agrees with it.
+- Dated detail: `occurrences` (newest 14, ISO day + event id), correlation `pairs` (newest 12), association `pairs`, `p`, `repeated`,
+  `limitations` list. Days only, never free text.
+- `GET /insights/{id}?days=7..365` (`insights_api.py`): owner-scoped by `user_id`, id length capped at 120, unknown or malformed id is a
+  plain 404, `source_event_ids` stripped, retracted/rejected rows never count. Registered after `/insights/weekly` so that path wins.
+
+Frontend
+- `app/insights/detail.ts` (`toDetail`, pure): six sections in one order for every kind. `confidence.ts`: one scale.
+- `InsightDetailSheet.tsx`: native modal `<dialog>`, heading focus on open, `aria-labelledby`, Esc/backdrop/44 px Close, focus returns to
+  the trigger, scroll lock. Android back already closes `dialog[open]` (`NativeBridge.tsx:28`), so no Android change was needed.
+- Details button (44 px, name "Details about <headline>") on every Patterns card, link card and Today pattern card; headlines are
+  `<h3>`. `/insights?item=<id>` is read once, cleared with `history.replaceState`, falls back to "This pattern is no longer in the last N days".
+- "Your week" never opens empty; organ-map evidence says "Showing the N newest of M entries".
+- Replaced the session branch's smaller frontend-only first pass (`components/InsightDetailSheet.tsx`, old `detail.ts`) with this one.
+
+Voice and consent: no authority names anywhere (tested), no cause or diagnosis wording. Insights only read the person's own saved events;
+what is saved is already governed by `consent.is_granted` at write time, and no new write path exists here.
+Today's first-run tour selectors (`#today-ask`, quick-log, signals, body-map, profile-link) were not touched.
+
+# C1 first-run setup: problem statement (lane L6)
+
+## Problem
+The first run asked 44 questions in 9 steps (about 30 answered), required 7, hid Skip, put gender third, said "About three minutes",
+ran the 18+ check only when `birth_date` was in the same request (a body saved first was stored before the age was known), and held
+people on a 4.5 s "Creating your personal companion" screen. Most answers changed nothing visible. There was no tour.
+
+## Every old question, what it changed, what became of it
+Real effect = it is read by a feature today. Kept = asked on first run. Later = only in Me > Your setup (`edit=1`). Dropped = gone.
+
+| Old question(s) | What it changed in the product | Now |
+|---|---|---|
+| body | menu (Cycle), body map, cycle mode, profiles.gender, formula basis | Kept, FIRST screen, one tap, required |
+| language | chat style (Hinglish/Hindi), Hinglish question titles | Kept, same first screen as a 3-chip row (default from browser), required |
+| birth_date | profile, age-based care checklist, 18+ gate | Kept, required, saved in the same request as body |
+| preferred_name | profile display name, chat greeting | Kept, required |
+| goals (multi 10) | trackers_suggested, mind offer | Merged into `main_goal` (single, 9 options, cycle only for REPRO bodies), required |
+| conditions (16, required) | saved to Care conditions | `conditions_any` yes/no/prefer not (required) then the 16-list only after yes |
+| conditions_other | Care condition, safety-checked free text | Kept as follow-up after "other" |
+| feeling_lately | mind offer | Replaced by `stress_level` (4 chips, required): drives mind check-in offer and trackers |
+| sleep_hours (slider, optional) | stored, never read | Replaced by `sleep_pattern` (4 chips, required): drives sleep tracker and a Care item; old hours convert on load |
+| periods (+ reason, last_period, pregnancy_plans, due_date, baby_birth_date) | cycle settings, cycle mode, body profile flags | `periods` required for a female body only (`REQUIRED_IF`); follow-ups are optional extras |
+| height_weight, activity, diet_style | body profile, fitness and food plans | Kept as optional extras; `diet_style` key kept (L7) |
+| (new) recent_blood_test | read by the deficiency work (L7) | Optional extra, key kept |
+| allergies, allergy_types | Care allergies | Optional extra |
+| takes_medicines | stored, never read | Optional extra yes/no (one tap; stored for later use) |
+| avoid_topics, tone, reply_length | chat style block | Optional extras ("How Bubbles talks") |
+| support_people, drains, drains_other, checkins_wanted | companion context only (comfort and stressors) | Optional extras |
+| helps, mind_check, mind_note | stored, never read; mind_note was free text about distress | Dropped (mind_note removed: no reason to collect free text about distress at sign-up) |
+| family_history, tobacco(4 forms), alcohol_freq/amount/heavy | stored, never read | Family history and alcohol dropped; tobacco moved to Later |
+| eyes, last_eye_exam, screen_hours | stored, never read | Eyes dropped; last_eye_exam and screen_hours in Later |
+| bp_sugar_check, cervical_screen, midlife_changes, urinary_changes | one care-checklist line each | Later only (never on first run) |
+| ai_consent (inside the bank) | wrote a consent | REMOVED as a question. Consent is a separate "Your choices" step writing the consent ledger; setup itself never writes a consent |
+
+Result: required core is 7 taps for a male body, 8 for a female body (body, language, date and name on one screen, main goal,
+conditions yes/no, sleep, stress, periods). Optional extras are grouped on 6 screens behind one intro with "Skip all extras".
+
+## What was built
+- Server bank (`backend/onboarding.py`): screens, `REQUIRED_IF`, answer migration from the old bank, `BANK_VERSION 2026-10b` (finished people are not sent back).
+- Gate ordering (`onboarding_api.py`): the age check runs on the date in the request or the date already known; no date means 422 and nothing is stored; under 18 stores only `age_gate`.
+- Client (`flow.ts`, `OnboardingClient.tsx`): body is a single tap that waits; it is sent only together with a valid date. Auto-advance on single choice, explicit Skip, "Needed" lock tag, "Question n of N" then "A few extras (skip any)", honest "About a minute" copy.
+- Setup screen: "Setting up your app" / "Set up my app", min 1200 ms, 250 ms per line, at most 4 lines, auto-open 2000 ms, retry state kept.
+- Tour (`tour.ts`, `FirstRunTour.tsx`, `GET/PUT /onboarding/tour`): five coach marks on Today, skippable (button or Esc), focus kept inside, replay from Settings.
+
+## Defaults chosen
+Hindi browsers default `language` to Hindi, everyone else English. Tour state lives in a signed doc (`tour/v1`), no schema change.
+`tone` and `reply_length` moved out of the required set (the brief asked tone stay short; it is now an optional 3-chip extra defaulting to gentle).
+
+# E1 Android push: problem statement (lane L8)
+
+Written against the session branch `mega/part2-chat-backend` (which already contains main's #33 Firebase and #34 Android 1.2.0). Line numbers are from that branch before this lane's changes.
+
+## What the brief assumed, and what is really there
+
+The brief (E1) says "today there is no push of any kind". That was true of the repo at d8d5add. It is not true of the session branch: #33 already added the phone-reminder stack. This lane therefore **builds on it and does not duplicate it**. An earlier WIP of this lane (a `device_tokens` table, `push_devices.py`, a second FCM sender, `push_api.py` with register routes) was dropped at merge for that reason.
+
+Already present (do not redo):
+
+| Piece | Where |
+|---|---|
+| FCM HTTP v1 sender, service account from `FIREBASE_SERVICE_ACCOUNT_JSON` (JSON or base64), google-auth OAuth, 5 s timeout, fail-soft | `backend/push_fcm.py` (`send_to_user` 186, `_token_is_gone` ~175) |
+| Device store: signed `push_device` documents, one owner per phone (`_release_elsewhere`), max 5 per person, token regex | `backend/push_fcm.py:127` `register_device`, `:144` `remove_device` |
+| Routes: `POST /notifications/devices`, `/notifications/devices/remove`, `/notifications/push/test` | `backend/wellness_api.py:564-592` |
+| Push as a channel inside `create_notification` (so quiet hours, daily cap, dedupe are decided once; a push-only user is not dropped) | `backend/notifications.py:216-232` |
+| Consent: `push_notifications` purpose; switch and consent mirrored | `backend/consent.py:62, 294`, `wellness_api.py:555` |
+| Generic text only (`sanitise`), Android `visibility: PRIVATE`, TTL 1 h | `backend/push_fcm.py` `_message`, `notifications.py:76` |
+| "Delete my data" removes `push_device` docs | `doc_store.delete_everything` (all non-trail kinds), test `test_delete_everything_forgets_the_phone` |
+| Android: `BubblesFirebasePlugin`, conditional google-services plugin, manifest meta-data, `ic_stat_bubbles`, `@capacitor/push-notifications`, Settings switch "On this phone", sign-in refresh, back button | `frontend/android/**`, `frontend/lib/firebase-native.ts`, `components/wellness/NotificationSettingsCard.tsx`, `components/NativeBridge.tsx` |
+| `keep-awake.yml` second step calling `/internal/push/run` | `.github/workflows/keep-awake.yml` (from this lane's WIP, kept) |
+
+## What was actually missing (the problems this lane fixes)
+
+1. **No scheduler that works on the free host.** The only trigger was an in-process thread (`push_fcm.start_background`, `push_fcm.py:273`). Render's free plan sleeps the process, so nothing runs while it is asleep; the keep-awake cron only pings `/health`. There was no protected endpoint for the cron to call, no `BUBBLES_CRON_SECRET`, and `ops_rollups.run_rollups` (L9) had no scheduled caller.
+2. **A phone could be registered without any yes on record.** `device_add` (`wellness_api.py:564`) stored a token whether or not the switch or the consent was on; only sending checked. The brief requires a refusal (422) unless push consent is granted.
+3. **Withdrawing consent left the tokens behind.** `notifications.save_settings` (`notifications.py:154`) and `consent._mirror_channel` only flipped the switch. Tokens stayed stored and (on the phone) the FCM token stayed alive.
+4. **Sign-out did not tell the server.** `forgetPhoneOnSignOut()` (`firebase-native.ts:145`, called at `Providers.tsx:161`) deleted the token on the phone only; the server kept the row for the old account until FCM reported it gone.
+5. **The card sent the token before the yes was saved** (`connectPhone` at toggle time), which would now be refused; and a consent withdrawn in Privacy choices never disconnected the phone.
+6. **Notification tap did nothing.** No `pushNotificationActionPerformed` handler: a tap just opened the app wherever it was.
+7. **Dedupe not safe against overlapping runs.** `create_notification` checks the last 200 docs, then writes with a random id (`notifications.py:219, 224`): two runs can both pass the check and both send.
+8. **Windows too narrow for a best-effort cron.** Wind-down `< 30` min (`notifications.py:286`), water `< 60` min (`hydration_engine.py:142`), while GitHub cron is 5-15 min late.
+9. **A lock screen is not private.** The medicine reminder pushed the title "Medicine check-in", which says the person takes medicine. Brief: no health details on the lock screen.
+10. **No unbounded-run protection** in `push_fcm.sweep`: no batch size, no time budget, no overlap guard, no clean-up of phones whose owner no longer says yes.
+11. **Tests**: the happy paths existed (`test_push_fcm.py`), but no tests for the negative cases in the brief (wrong/missing secret, replays, in-flight withdrawal, FCM errors, other users' tokens, garbage input, payload content), and none for the phone-side flows (denied permission, offline, sign-out).
+
+## Decisions
+
+- **No `device_tokens` table / migration.** The doc-store `push_device` rows already are the token store and the fan-out index (`users_with_devices` selects by kind), are signed, owner-scoped, RLS-protected like every doc, wiped by "Delete my data" and need no migration the owner has to run. A second store would duplicate #33 and add a migration for no gain. If the 5,000-row scan in `users_with_devices` ever matters, a table can be added behind the same functions.
+- Cron secret env: `BUBBLES_CRON_SECRET` (also accepts `NOTIFY_CRON_SECRET`, the name in brief section 8). Unset or wrong secret, wrong method: the same plain 404 as an unknown path.
+- Reminder windows: wind-down +-45 min, water 90 min; the per-slot dedupe key keeps wide windows from sending twice.
+- Push text for medicine reminders is the neutral "Bubbles / You have a reminder in Bubbles." (the in-app copy keeps "Medicine check-in").
+
+## Owner steps (for docs/OWNER_TODO.md)
+
+1. Firebase console: create a project, add an Android app with package `in.heybubbles.app`, download `google-services.json` to `frontend/android/app/` (never commit it).
+2. Project settings, Service accounts: generate a private key. Render env: `FIREBASE_SERVICE_ACCOUNT_JSON` (the JSON, or its base64). The brief's `FCM_SERVICE_ACCOUNT_B64` / `FCM_SERVICE_ACCOUNT_JSON` names are NOT what the merged code reads (#33 chose `FIREBASE_SERVICE_ACCOUNT_JSON`).
+3. Render env `BUBBLES_CRON_SECRET` = a long random string (`NOTIFY_CRON_SECRET` also accepted). GitHub repository secret `BUBBLES_CRON_SECRET` = the same value; until it exists the workflow step skips itself.
+4. No device-token migration is needed (tokens are signed doc-store rows).
+5. Rebuild and re-sign the APK after step 1 (`npm run android:release`); older APKs keep working without phone reminders.
+6. Check: Settings, Reminders, On this phone, Save, then "Send a test to this phone".
+
+# F1 + F2: Admin Live and Overall pages (lane L9)
+
+## Problem statement
+
+The owner runs Bubbles from the admin portal and cannot answer four plain questions today.
+
+1. **"Who just hit the app, and how did it go?"** The old Live tab lists technical events but by design carries no account id, so a report like "my chat was slow" cannot be matched to a request. Cause: `ops_telemetry.record()` accepted no user field (the ring held `{seq, at, kind, request_id, data}` only, `backend/ops_telemetry.py` module note) and `/admin/events/live` returned the raw ring. The tab also showed one line per event rather than one row per request, so an AI try, its fallback and the reply were three unrelated lines to stitch by hand (old `frontend/app/admin/panels.tsx`).
+2. **"Where does a chat turn spend its time?"** The api event carried no stage timings. The stage field names (`stage_pre_ms`, `stage_ctx_ms`, `stage_rag_ms`, `stage_ai_ms`, `stage_post_ms`) were not on the `api` allow-list (`ops_telemetry.FIELDS["api"]`), so the pipeline's measurements would have been silently dropped.
+3. **"How is Bubbles doing overall, since the start?"** Every number on the portal is computed from at most 20,000 raw events (`ops_telemetry.READ_CAP`), which are pruned after 14 days and are memory-only until the owner applies `20261013_bubbles_ops.sql`; a Render restart or sleep loses them. There was no all-time total, no 7d/30d beyond raw retention, no retention curve, no consent rate per purpose, no onboarding drop-off (`admin_api.py` had ranges up to `30d` only, all from raw events).
+4. **"What should I look at next?"** Nothing exported, nothing refreshed itself while the tab was hidden or paused correctly, and nobody could tell when the page was only showing memory.
+
+Constraints that shaped the fix: the admin gate (fresh sign-in, two-step, allow-list, byte-identical 404) stays exactly as it is; telemetry stays metadata only; the one owner-approved exception is the account id on the Live page, kept in the in-memory ring only; $0 infrastructure (no Redis, no SSE, no new dependency); the app must keep working when the owner has not applied the new migrations.
+
+## What changed
+
+Backend
+- `ops_telemetry.py`: `bind_user` (UUID-shaped only), a top-level `uid` on `api` and `ai_attempt` events in the ring only (never in `data`, the queue, the table or the notes), `recent(with_uid=True)` as the only reader that returns it, `STAGE_FIELDS`, numeric validation of stage values in `record()`, `until` on `stored_events` (hour-by-hour reads for the rollup).
+- `ops_rollups.py` (new): `count_events` (pure, tolerant of malformed rows), `run_rollups(db)` (idempotent hourly job with a watermark moved in the same upsert; exported for lane L8's cron endpoint), `collect(db, range)` for `1h/24h/7d/30d/all`, lazy refresh with a non-blocking lock.
+- `ops_metrics.overall_view`, `ops_snapshots.py` (new: DAU/WAU/MAU, signups, D1/D7/D30 retention, consent rates, community and push counts, integers only), `admin_api.py`: `GET /admin/live` (alias of `/events/live`, with `since` or `after` cursor) and `GET /admin/overall?range=`.
+- `supabase/migrations/20261016_bubbles_ops_rollups.sql` (+ undo): `ops_rollups_daily`, RLS on, service role only. Registered in `schema_status.py`.
+- Reconciled with the session branch: one `funnel`/`client` contract (L1's `FUNNEL_STEPS = core, extras, later, completed, under_18`, `ops_telemetry.client(code)`, `/telemetry/client`); my duplicate migration and `client_events_api.py` were removed; cost uses L1's `model_cost` (A7).
+
+Frontend (`frontend/app/admin`)
+- Live: one row per request (UID with copy button, time, route, feature, provider, model, fallback, safety, status, latency, stage breakdown, error), filters, pause/resume, row detail with the request-id chain, polling every 3 s paused when the tab is hidden, a banner when events are memory only.
+- Overall: totals, per-model rates, per-stage latency, funnel, retention, consent, safety, features, errors, community, push; range picker; CSV export per table (formula-safe); refresh every 20 s, paused when hidden.
+
+Docs: `docs/admin/README.md` (named exception, Add another admin, rollup and cron contract), `DESIGN.md`, one line on `/privacy`.
+
+## Decisions taken from defaults
+
+- Refusals stay a byte-identical 404 (the brief says keep the gate exactly as is); the "403 for non-admin, 401 for anonymous" in the lane message was not applied because it would reveal that `/admin` exists and break the existing contract and its tests.
+- Polling, not SSE (not verified on the Render free plan).
+- Cost shows `$0, free tier` while paid AI is off.
+
+## Open
+
+- Owner: apply `20261016_bubbles_ops_rollups.sql` (and `20261016_bubbles_ops_funnel.sql`) in Supabase; until then Overall counts only what is held.
+- Lane L8 must call `ops_rollups.run_rollups(db)` from its cron endpoint (optional: the page also rolls up lazily).
+- Single-instance assumption for the rollup watermark (no compare-and-swap).
+
+### 2026-10 · Community (G1)
+
+**Community v1: text-only, consented, alias-anonymous, bot-moderated, owner-reviewed.**
+- Text only. No images, video, files or link previews. Checking images for nudity needs a vision classifier, which the $0-AI policy does not provide. Images stay out of scope until the owner decides.
+- Off until `COMMUNITY_ALIAS_SECRET` (16+ characters) is set on the API host. There is no default secret on purpose. Unset means every community route answers "off" and the admin Moderation tab says why.
+- Aliases ("Quiet Otter 4821") come from an HMAC of (author, thread) with that secret: stable inside one thread, different across threads. No response ever carries `author_id`. Only the admin can resolve an alias (`POST /admin/community/resolve`), and the lookup is written to the moderation log before the answer leaves.
+- Who can post: signed in, 18+ (birth date from setup), `community_visibility` consent granted, not banned. Reading needs only sign-in and 18+. Deleting your own posts and comments works even after withdrawing consent.
+- Limits: 5 posts/hour, 20 comments/hour, 10 reports/hour, post 1,200 and comment 600 characters, duplicate text refused for 24 hours. Deleting leaves a stub so the hourly limit cannot be dodged.
+- Moderation order: deterministic filters (`community_moderation.py`, word lists as data), crisis wording kept and held for the owner with the caring banner (112, Tele-MANAS 14416 / 1-800-891-4416, findahelpline.com via `safety_engine.CRISIS_LINES`), held when unsure (visible to the author only), removed when certain, 3 distinct reporters auto-hide, admin decides. No AI text classifier in v1 (consent for `ai_chat_processing` does not cover posts).
+- Crisis posts are held (not on the feed) until the owner looks, then approved or removed. Frontend shows the banner without the mascot.
+- The admin sees post text in the Moderation tab: the owner is the data controller of a shared space. Add one plain line to the privacy notice.
+- Delete-my-data wipes posts, comments, reactions, reports and blocks (`community_api.forget`); the moderation log keeps codes only.
+
+## Frontend
+
+- `frontend/app/community/` (page, `CommunityClient.tsx`, pure `community.ts` + test): feed with topic chips and My posts, big "Ask or share" button opening a sheet (anonymous switch, topic, text), reactions (Me too, Helpful), closed Comments row, report / block, delete own, "Show more" cursor paging, mascot empty state, permanent line "Shared by people, not medical advice."
+- Posting needs consent: the button is disabled with a link to Privacy choices (`/privacy-choices`) when `reason` is `consent_needed`.
+- Admin: `frontend/app/admin/panels-moderation.tsx`, registered in `registry.tsx`, tab `moderation` in `format.ts` (queue with crisis first, approve / remove / remove and ban, "Who wrote this", audit log).
+
 
 ## 4. Open items
 

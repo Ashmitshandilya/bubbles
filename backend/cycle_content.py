@@ -5,7 +5,6 @@ non-shaming, never diagnose, never any contraception claim, never dose or medica
 """
 from __future__ import annotations
 
-import re
 
 NOT_CONTRACEPTION_NOTICE = (
     "These are estimates from your own logs. They are not birth control and can be wrong, "

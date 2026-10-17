@@ -36,7 +36,8 @@ const num = (v: unknown): number | null => (typeof v === "number" && Number.isFi
 /** Newest event first in, newest request first out. Events without a request id (errors, funnel steps) get a row each. */
 export function groupLive(events: OpsEvent[]): LiveRow[] {
   const groups = new Map<string, OpsEvent[]>();
-  for (const e of events) {
+  for (const raw of events) {
+    const e: OpsEvent = { ...raw, data: raw.data && typeof raw.data === "object" ? raw.data : {} };   // a malformed row never breaks the page
     const key = e.request_id ?? `seq-${e.seq ?? e.id ?? e.at}`;
     const list = groups.get(key);
     if (list) list.push(e);

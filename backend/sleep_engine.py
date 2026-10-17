@@ -20,7 +20,7 @@ from typing import Any
 import clinical_constants as K
 import doc_store
 from health_logs import DOMAINS, list_domain
-from wellness_common import InputError, fmt_hhmm, number, parse_date, parse_hhmm, text
+from wellness_common import InputError, fmt_hhmm, number, parse_hhmm
 
 TAG_LABELS = {"caffeine": "caffeine", "alcohol": "alcohol", "stress": "a stressful day", "late_meal": "a late meal",
               "screen": "late screen time", "exercise": "exercise that day"}

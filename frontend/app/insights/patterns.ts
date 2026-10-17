@@ -1,10 +1,23 @@
 // Pure view-model for the Patterns screen (POST /patterns/analyze, POST /intelligence/longitudinal).
 // Kept free of React and of HubKit so the real response shapes can be fixtured in api-contract.test.ts.
 import { formatWhen, parseWhen } from "../lib/dates";
+import { LEVEL_RANK, levelFromLabel, type Level } from "./confidence";
 
 /* ── Backend shapes: POST /patterns/analyze, POST /intelligence/longitudinal ── */
 
+/** A dated entry behind a pattern: a calendar day, never free text. */
+export interface Occurrence {
+  id: string | null;
+  date: string;
+}
+
 export interface Recurrence {
+  /** Stable id (rec:<type>:<subject>); GET /insights/{id} resolves it. */
+  id?: string;
+  /** The server's one confidence word, when it sends one. */
+  confidence_label?: string;
+  /** The newest dated entries (up to 14), newest first. */
+  occurrences?: Occurrence[];
   event_type: string;
   subject: string;
   occurrence_count: number;
@@ -16,6 +29,10 @@ export interface Recurrence {
 }
 
 export interface CoOccurrence {
+  id?: string;
+  confidence_label?: string;
+  /** The newest co-occurring pairs (up to 12), newest first. */
+  pairs?: Array<{ a: Occurrence; b: Occurrence }>;
   a: { event_type: string; subject: string };
   b: { event_type: string; subject: string };
   pair_count: number;
@@ -39,10 +56,15 @@ export interface LongitudinalResponse {
 
 /* ── View model ───────────────────────────────────────── */
 
-export type Confidence = "High" | "Medium" | "Low";
+export type Confidence = Level;
+
+export type CardSource = { kind: "pattern"; item: Recurrence } | { kind: "correlation"; item: CoOccurrence };
 
 export interface PatternCard {
   key: string;
+  /** Server id for GET /insights/{id} and `?item=`; null for an older response without one. */
+  id: string | null;
+  source: CardSource;
   headline: string;
   confidence: Confidence;
   /** `subject` is the raw backend word ("sleep"); `toneKey` is what the view hands to toneFor(). */
@@ -52,14 +74,14 @@ export interface PatternCard {
   note: string;
 }
 
-export const RANK: Record<Confidence, number> = { High: 0, Medium: 1, Low: 2 };
+export const RANK: Record<Confidence, number> = LEVEL_RANK;
 
 /** Cards shown before "Show all": a regular logger gets a dozen-plus pairs ("X and Y show up together"). Strongest first. */
 export const CARD_LIMIT = 8;
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
-// ponytail: confidence labels are a front-end heuristic on counts; move to the backend when it scores patterns.
+/** Same rule as pattern_engine.recurrence_confidence: used only when an older response has no `confidence_label`. */
 export function recurrenceConfidence(p: Recurrence): Confidence {
   if (p.average_confidence < 0.5) return "Low";
   if (p.occurrence_count >= 8 && p.span_days >= 14) return "High";
@@ -71,8 +93,10 @@ export function toCards(analysis: NonNullable<PatternsResponse["analysis"]>, day
     const linked = p.source_event_ids?.length ?? 0;
     return {
       key: `r-${p.event_type}-${p.subject}`,
+      id: p.id ?? null,
+      source: { kind: "pattern", item: p },
       headline: `${cap(p.subject)} came up ${p.occurrence_count} times`,
-      confidence: recurrenceConfidence(p),
+      confidence: levelFromLabel(p.confidence_label) ?? recurrenceConfidence(p),
       signals: [{ subject: p.subject, toneKey: `${p.event_type} ${p.subject}` }],
       window: `${formatWhen(p.first_seen)} – ${formatWhen(p.last_seen)}`,
       evidence: [
@@ -86,8 +110,10 @@ export function toCards(analysis: NonNullable<PatternsResponse["analysis"]>, day
 
   const together = (analysis.correlations ?? []).map((c): PatternCard => ({
     key: `c-${c.a.subject}-${c.b.subject}`,
+    id: c.id ?? null,
+    source: { kind: "correlation", item: c },
     headline: `${cap(c.a.subject)} and ${c.b.subject} often show up together`,
-    confidence: c.pair_count >= 6 ? "High" : c.pair_count >= 4 ? "Medium" : "Low",
+    confidence: levelFromLabel(c.confidence_label) ?? (c.pair_count >= 6 ? "High" : c.pair_count >= 4 ? "Medium" : "Low"),
     signals: [
       { subject: c.a.subject, toneKey: `${c.a.event_type} ${c.a.subject}` },
       { subject: c.b.subject, toneKey: `${c.b.event_type} ${c.b.subject}` },

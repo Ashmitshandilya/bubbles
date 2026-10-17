@@ -22,7 +22,7 @@ import doc_store
 from health_logs import DOMAINS, list_domain
 from safety_engine import CRISIS_LINES
 from safety_gate import safety_gate  # noqa: F401 - re-exported: wellness_api and the tests call Mind.safety_gate
-from wellness_common import InputError, choice, local_date_of, number, parse_date, text
+from wellness_common import InputError, choice, local_date_of, number, text
 
 SCREENS = {"phq2": {"questions": K.PHQ2_QUESTIONS, "positive_at": K.PHQ2_POSITIVE_AT, "topic": "low mood"},
            "gad2": {"questions": K.GAD2_QUESTIONS, "positive_at": K.GAD2_POSITIVE_AT, "topic": "worry"},

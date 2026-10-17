@@ -3,6 +3,7 @@
 import { isNativeApp } from "../../../lib/native";
 import { AppHome } from "../../../components/AppHome";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Header, Sidebar, MobileNav, ApiAlert } from "../../../components/Navigation";
@@ -16,6 +17,7 @@ import {
   tileFromCycle, tileFromSignal, type HeroState, type Tile,
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
+import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
 import { LastUpdatedCard } from "./LastUpdatedCard";
 import { pickLastUpdate } from "../../lib/data-sync";
 import { WeekRecapCard } from "./WeekRecapCard";
@@ -27,6 +29,10 @@ import {
 import type {
   IntelligenceBrief, LivingMapData, Loadable, ProfileData, SignalSlug, TrackerEntry, TrackerResponse, WeeklyInsights,
 } from "./types";
+
+// Only brand-new accounts see the tour, so its code loads on demand instead of with the Today screen.
+const FirstRunTour = dynamic(() => import("../../onboarding/FirstRunTour").then((m) => m.FirstRunTour), { ssr: false });
+
 
 const DAILY = ["sleep", "mood", "activity", "hydration", "nutrition"] as const;
 const TILE_ORDER: SignalSlug[] = ["cycle", "sleep", "mood", "activity", "hydration", "nutrition"];
@@ -189,7 +195,7 @@ export function DashboardClient() {
 
   const trackersLoading = TILE_ORDER.some((slug) => trackers[slug].status === "loading");
   const trackersFailed = TILE_ORDER.every((slug) => trackers[slug].status === "error");
-  const items = buildTodayItems(signals, cycle, briefData?.actions ?? []);
+  const items = buildTodayItems(signals, cycle, briefData?.actions ?? [], briefData?.state?.deviations);
   const heroState: HeroState =
     trackersLoading || brief.status === "loading" ? "loading"
     : trackersFailed ? "error"
@@ -230,6 +236,8 @@ export function DashboardClient() {
 
           {safety.level !== "GREEN" && <SafetyBanner level={safety.level} reasons={safety.reasons} />}
 
+          <InsightSheetProvider>
+
           {isNativeApp && <AppHome />}
 
           <LastUpdatedCard update={pickLastUpdate(lastUpdate, serverLastUpdate)} />
@@ -256,7 +264,7 @@ export function DashboardClient() {
               />
             </MoreFold>
             <MoreFold title="Your week">
-              <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} />
+              <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} onRetry={reload} />
             </MoreFold>
             <MoreFold title="Coming up">
               <ComingUp
@@ -275,6 +283,7 @@ export function DashboardClient() {
             </MoreFold>
             {showBodyMap && !isNativeApp && <BodyMapCard />}
           </div>
+          </InsightSheetProvider>
 
           <footer className="text-chip font-semibold leading-relaxed text-ink-soft">
             <p className="m-0">Patterns and guidance, not diagnoses. Missing data is a gap, never an all-clear.</p>
@@ -284,6 +293,7 @@ export function DashboardClient() {
 
         <MobileNav />
       </div>
+      <FirstRunTour />
     </div>
   );
 }

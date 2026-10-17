@@ -32,6 +32,7 @@ const QUICK_ACTIONS: readonly { slug: string; label: string; href: string }[] = 
   { slug: "open-today", label: "Open Today", href: "/dashboard" },
   { slug: "partner-sharing", label: "Partner sharing", href: "/partner" },
   { slug: "settings", label: "Settings", href: "/settings" },
+  { slug: "privacy-choices", label: "Privacy choices", href: "/privacy-choices" },
 ];
 
 /** Lowercase, accent-free, single-spaced. */

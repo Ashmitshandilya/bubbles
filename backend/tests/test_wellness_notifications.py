@@ -137,19 +137,29 @@ def test_list_and_mark_read_are_owner_scoped(db):
 
 # --- due reminders ---------------------------------------------------------------------------------------------------------------------
 
+def no_water(db, uid=U1):
+    """These tests are about medicine and wind-down; the water window is 90 minutes now, so switch the water type off."""
+    s = N.default_settings()
+    s["types"]["water"] = False
+    N.save_settings(db, uid, s)
+
+
 def test_generate_due_medicine_reminder_is_generic_and_deduped(db):
     schedule(db, times=["12:00"])
+    no_water(db)
     made = N.generate_due(db, U1, utc(12, 10))
     assert [n["kind"] for n in made] == ["med"]
     text = made[0]["title"] + made[0]["body"]
     assert "Metformin" not in text and "500" not in text
     assert N.generate_due(db, U1, utc(12, 20)) == []                      # same slot: no repeat
+    no_water(db, U2)
     assert N.generate_due(db, U2, utc(12, 10)) == []                      # other user has nothing
 
 
 def test_generate_due_skips_taken_doses(db):
     s = schedule(db, times=["12:00"])
     M.save_dose_doc(db, U1, {"schedule_id": s["id"], "date": "2026-10-08", "doses": {"12:00": {"status": "taken"}}})
+    no_water(db)
     assert N.generate_due(db, U1, utc(12, 10)) == []
 
 
@@ -171,6 +181,7 @@ def test_generate_due_no_water_for_fluid_restricted_users(db):
 
 
 def test_generate_due_winddown_and_quiet_hours(db):
+    no_water(db)
     made = N.generate_due(db, U1, utc(22, 20))
     assert [n["kind"] for n in made] == ["winddown"]
     assert N.generate_due(db, U1, utc(23, 30, day=9)) == []                # inside quiet hours
@@ -245,6 +256,7 @@ def test_email_channel_only_when_user_enabled_and_body_is_generic(db, monkeypatc
     assert N.create_notification(db, U1, "water", dedupe_key="3", now=utc(14), settings=s, email="a@example.com", mailer=FakeSMTP)   # email failure never blocks
 
 
-def test_push_is_a_documented_stub():
-    assert N.send_web_push({}, "t", "b") == {"sent": False, "reason": "not_configured"}
+def test_push_channel_is_off_until_firebase_is_configured(monkeypatch):
+    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
     assert N.channel_status()["push"]["available"] is False
+    assert N.default_settings()["channels"]["push"] is False

@@ -25,6 +25,10 @@ export interface Question {
   title: string;
   why: string;
   required: boolean;
+  /** Required only while this rule holds (periods for a female body). */
+  required_if?: Rule;
+  /** Questions that share a screen id are asked together on one screen. */
+  screen?: string;
   options?: Option[];
   show_if?: Rule;
   exclusive?: string[];
@@ -82,12 +86,6 @@ export function matches(rule: Rule | undefined, answers: Answers, today: Date): 
 export const visibleOptions = (q: Question, answers: Answers, today: Date): Option[] => (q.options ?? []).filter((o) => matches(o.show_if, answers, today));
 export const visibleQuestions = (questions: readonly Question[], answers: Answers, today: Date): Question[] => questions.filter((q) => matches(q.show_if, answers, today));
 
-/** Steps that have at least one visible question, in order. */
-export function activeSteps(steps: readonly Step[], questions: readonly Question[], answers: Answers, today: Date): Step[] {
-  const shown = new Set(visibleQuestions(questions, answers, today).map((q) => q.step));
-  return steps.filter((s) => shown.has(s.id));
-}
-
 export function isAnswered(q: Question, value: unknown): boolean {
   if (value === undefined || value === null || value === "") return false;
   if (Array.isArray(value)) return value.length > 0;
@@ -95,14 +93,108 @@ export function isAnswered(q: Question, value: unknown): boolean {
   return true;
 }
 
-/** Visible, required questions of a step that are still empty. */
-export function missingRequired(stepQuestions: readonly Question[], answers: Answers): string[] {
-  return stepQuestions.filter((q) => q.required && !isAnswered(q, answers[q.id])).map((q) => q.id);
+/** Always for a required question, and for a `required_if` question while its rule holds. */
+export const isRequired = (q: Question, answers: Answers, today: Date): boolean => q.required || (!!q.required_if && matches(q.required_if, answers, today));
+
+/** Visible, required questions that are still empty. */
+export function missingRequired(qs: readonly Question[], answers: Answers, today: Date): string[] {
+  return qs.filter((q) => isRequired(q, answers, today) && !isAnswered(q, answers[q.id])).map((q) => q.id);
 }
 
-/** The answer after tapping `optionId`: single replaces, multi adds or removes, and "None of these" style options stand alone. */
+// ---- screens: what one tap or one Next covers ---------------------------------------------------------------------------
+
+export type ScreenKind = "questions" | "choices" | "extras-intro";
+export interface Screen {
+  id: string;
+  kind: ScreenKind;
+  /** The bank step the questions belong to (core, extras, later). */
+  stage: string;
+  title: string;
+  ids: string[];
+  /** Asked only because of an earlier answer (the list of conditions after "yes"). It is not counted in "Question n of N". */
+  followUp: boolean;
+}
+
+/** The screens of a run, in order: the required core, the "Your choices" step, a stage intro, then the optional extras. Editing shows
+ *  every question (including "later") and none of the first-run-only screens. */
+export function buildScreens(qs: readonly Question[], titles: Record<string, string>, answers: Answers, today: Date, editing: boolean): Screen[] {
+  const out: Screen[] = [];
+  const byKey = new Map<string, Screen>();
+  for (const q of visibleQuestions(qs, answers, today)) {
+    if (!editing && q.step === "later") continue;
+    const key = q.screen ?? q.id;
+    const have = byKey.get(key);
+    if (have) {
+      have.ids.push(q.id);
+      have.followUp = have.followUp && !!q.show_if?.answers;
+      continue;
+    }
+    const screen: Screen = { id: key, kind: "questions", stage: q.step, title: titles[key] ?? "", ids: [q.id], followUp: !!q.show_if?.answers };
+    byKey.set(key, screen);
+    out.push(screen);
+  }
+  if (editing) return out;
+  const firstExtra = out.findIndex((s) => s.stage !== "core");
+  const at = firstExtra < 0 ? out.length : firstExtra;
+  const extras = out.slice(at);
+  const lead: Screen[] = [{ id: "choices", kind: "choices", stage: "core", title: "Your choices", ids: [], followUp: false }];
+  if (extras.length) lead.push({ id: "extras-intro", kind: "extras-intro", stage: "extras", title: "A little more", ids: [], followUp: false });
+  return [...out.slice(0, at), ...lead, ...extras];
+}
+
+export const screenQuestions = (screen: Screen, qs: readonly Question[]): Question[] => screen.ids.map((id) => qs.find((q) => q.id === id)).filter((q): q is Question => !!q);
+
+/** The line above a screen. The first screen has no total yet (periods only exists for some bodies). */
+export function progressLabel(screens: readonly Screen[], index: number, answers: Answers): string {
+  const screen = screens[index];
+  if (!screen) return "";
+  if (screen.kind === "choices") return "Your choices";
+  if (screen.kind === "extras-intro" || screen.stage === "extras") return "A few extras (skip any)";
+  if (screen.stage === "later") return "More about you (skip any)";
+  if (screen.followUp) return "A quick follow-up";
+  const numbered = screens.filter((s) => s.kind === "questions" && s.stage === "core" && !s.followUp);
+  const n = numbered.indexOf(screen) + 1;
+  return index === 0 && !answers.body ? `Question ${n}` : `Question ${n} of ${numbered.length}`;
+}
+
+/** After tapping `qid` on a single-choice question: move on when every other question on the screen already has an answer. */
+export function advancesOnPick(screen: Screen, qs: readonly Question[], qid: string, answers: Answers): boolean {
+  const q = qs.find((x) => x.id === qid);
+  if (screen.kind !== "questions" || !q || q.type !== "single" || !isAnswered(q, answers[qid])) return false;
+  return screen.ids.every((id) => id === qid || isAnswered(qs.find((x) => x.id === id)!, answers[id]));
+}
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+
+/** What still has to be sent for the screens up to `upTo`: new or changed answers, and null for an optional answer that was cleared.
+ *  Null while the date of birth is not known: nothing is saved before the 18+ check, so body and language wait for it. */
+export function pendingPatch(screens: readonly Screen[], upTo: number, qs: readonly Question[], answers: Answers, saved: Answers, today: Date): Record<string, unknown> | null {
+  if (ageOn(answers.birth_date, today) === null) return null;
+  const patch: Record<string, unknown> = {};
+  for (const screen of screens.slice(0, upTo + 1)) {
+    for (const q of screenQuestions(screen, qs)) {
+      const value = answers[q.id];
+      if (isAnswered(q, value)) {
+        if (!same(saved[q.id], value)) patch[q.id] = value;
+      } else if (isAnswered(q, saved[q.id]) && !isRequired(q, answers, today)) {
+        patch[q.id] = null;
+      }
+    }
+  }
+  return patch;
+}
+
+/** Where to pick up: the first core screen with a required question still open, else the choices step (or the extras once they were reached). */
+export function resumeIndex(screens: readonly Screen[], qs: readonly Question[], answers: Answers, reachedExtras: boolean, today: Date): number {
+  const open = screens.findIndex((s) => s.kind === "questions" && s.stage === "core" && missingRequired(screenQuestions(s, qs), answers, today).length > 0);
+  if (open >= 0) return open;
+  const target = screens.findIndex((s) => s.kind === (reachedExtras ? "extras-intro" : "choices"));
+  return target >= 0 ? target : 0;
+}
+
+/** The answer after tapping `optionId`: single replaces (skip clears it), multi adds or removes, and "None of these" style options stand alone. */
 export function pick(q: Question, current: unknown, optionId: string): unknown {
-  if (q.type === "single") return current === optionId ? undefined : optionId;
+  if (q.type === "single") return optionId;
   const now = picked(current);
   if (now.includes(optionId)) {
     const rest = now.filter((p) => p !== optionId);
@@ -112,13 +204,6 @@ export function pick(q: Question, current: unknown, optionId: string): unknown {
   const without = now.filter((p) => !(q.exclusive ?? []).includes(p));
   if (q.max_picks !== undefined && without.length >= q.max_picks) return without;
   return [...without, optionId];
-}
-
-/** Answers of one step as a PUT patch: what is answered, and null for an optional question left empty (a skip). */
-export function stepPatch(stepQuestions: readonly Question[], answers: Answers): Record<string, unknown> {
-  const patch: Record<string, unknown> = {};
-  for (const q of stepQuestions) patch[q.id] = isAnswered(q, answers[q.id]) ? answers[q.id] : q.required ? undefined : null;
-  return Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined));
 }
 
 /** The title in the person's language when the bank has one (Hinglish), else English. */

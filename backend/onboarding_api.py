@@ -2,7 +2,10 @@
 
 Storage is signed documents (doc_store), so there is no schema change: kind `onboarding` / key `v1` holds the answers, kind `experience` /
 key `main` holds the personalisation built from them. Completing also fills the stores the rest of the app already reads (profile, body
-profile, cycle settings, conditions, allergies, AI consent) through their own validators, best effort and one by one.
+profile, cycle settings, conditions, allergies) through their own validators, best effort and one by one. Consent is not stored
+here at all: the "Your choices" step of the setup writes the consent ledger on its own (PUT /consents/{purpose}).
+
+The first-run tour is one more small document (kind `tour`, key `v1`: seen, at, skipped) behind GET and PUT /onboarding/tour.
 
 Safety: free text goes through the safety engine first. Crisis wording returns the deterministic response and the text is not stored.
 Under 18: nothing but the age gate is stored. Nothing here calls an AI model and nothing is diagnosed.
@@ -25,6 +28,7 @@ from health_logs import DOMAINS, list_domain, save_domain
 from safety_engine import assess_safety, emergency_response, urgent_fallback_response
 
 KIND, KEY = "onboarding", "v1"
+TOUR_KIND, TOUR_KEY = "tour", "v1"
 EXP_KIND, EXP_KEY = "experience", "main"
 
 
@@ -86,7 +90,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     def load(uid: str, today: date) -> dict[str, Any]:
         doc = doc_store.get(db, uid, KIND, KEY) or {}
         under_18 = doc.get("age_gate") == "under_18"
-        stored = doc.get("answers") if isinstance(doc.get("answers"), dict) else {}
+        stored = ob.migrate_legacy(doc.get("answers")) if isinstance(doc.get("answers"), dict) else {}
         pre = {} if (under_18 or doc.get("completed_at")) else {k: v for k, v in prefill(uid, today).items() if k not in stored}
         answers = {**pre, **stored}
         missing = ob.required_missing(answers, today) if not under_18 else list(ob.REQUIRED)
@@ -94,17 +98,19 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
 
     def state_payload(uid: str, today: date) -> dict[str, Any]:
         s = load(uid, today)
-        complete = bool(s["doc"].get("completed_at")) and not s["under_18"] and not s["missing"]
+        # someone who finished setup under an earlier bank is not sent back for questions that did not exist then
+        stale = s["doc"].get("bank_version") != ob.BANK_VERSION
+        complete = bool(s["doc"].get("completed_at")) and not s["under_18"] and (stale or not s["missing"])
         return {"status": "success", "complete": complete, "under_18": s["under_18"], "step": int(s["doc"].get("step") or 0),
                 "answers": {} if s["under_18"] else s["answers"], "prefilled": s["prefilled"], "required_missing": s["missing"],
                 "visible": [] if s["under_18"] else ob.visible_ids(s["answers"], today), "bank_version": ob.BANK_VERSION,
-                "bank_changed": bool(s["doc"].get("completed_at")) and s["doc"].get("bank_version") != ob.BANK_VERSION}
+                "bank_changed": bool(s["doc"].get("completed_at")) and stale}
 
     # ---- routes ----------------------------------------------------------------------------------------------------------
     @router.get("/onboarding/questions")
     def questions(authorization: str | None = Header(default=None)):
         uid_of(authorization)
-        return {"status": "success", "version": ob.BANK_VERSION, "steps": ob.STEPS, "questions": ob.QUESTIONS, "titles_hi": ob.TITLES_HI,
+        return {"status": "success", "version": ob.BANK_VERSION, "steps": ob.STEPS, "screens": ob.SCREENS, "questions": ob.QUESTIONS, "titles_hi": ob.TITLES_HI,
                 "required": list(ob.REQUIRED), "min_age": ob.MIN_AGE}
 
     @router.get("/onboarding/state")
@@ -121,10 +127,12 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             raise HTTPException(status_code=422, detail="answers must be an object")
         step = payload.get("step")
         s = load(uid, today)
-        # 18 and over only. A younger person's answers are never stored, and the gate is all that is kept.
-        if "birth_date" in patch and patch["birth_date"] not in (None, ""):
+        # 18 and over only. A younger person's answers are never stored, and the gate is all that is kept. The age is checked before
+        # anything else is stored: the date of birth comes in this request or is already known, and nothing is saved without it.
+        raw_birth = patch.get("birth_date") if "birth_date" in patch else s["answers"].get("birth_date")
+        if raw_birth not in (None, ""):
             try:
-                born = ob.clean_answer(ob.BY_ID["birth_date"], patch["birth_date"], {}, today)
+                born = ob.clean_answer(ob.BY_ID["birth_date"], raw_birth, {}, today)
             except ob.AnswerError as err:
                 raise HTTPException(status_code=422, detail={"field": err.qid, "message": err.message})
             if (ob.age_on(born, today) or 0) < ob.MIN_AGE:
@@ -133,6 +141,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                 return {"status": "success", "under_18": True}
         if s["under_18"]:
             raise HTTPException(status_code=403, detail={"code": "under_18", "message": "Bubbles is for people 18 and over for now."})
+        if raw_birth in (None, "") and any(k != "birth_date" for k in patch):
+            raise HTTPException(status_code=422, detail={"field": "birth_date", "message": "Please tell Bubbles your date of birth first."})
         # free text first: crisis wording is answered, never stored
         safety = None
         clean_patch = dict(patch)
@@ -261,9 +271,6 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                     save_domain(db, "allergies", DOMAINS["allergies"], uid, {"allergen": labels[kind], "notes": "Told by you at setup"})
 
         attempt("allergies", allergies)
-        if answers.get("ai_consent") in ("yes", "not_now"):
-            # recorded either way: a "not now" is a decision too, and it is logged like a yes
-            attempt("consent", lambda: consent_ledger.set_purpose(db, uid, "ai_chat_processing", answers.get("ai_consent") == "yes", "onboarding"))
 
         now = datetime.now(timezone.utc).isoformat()
         try:
@@ -275,6 +282,23 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             _log("save_experience", exc)
             raise HTTPException(status_code=503, detail="Your answers are saved, but Bubbles couldn't finish setting up just now. Please try again.")
         return {"status": "success", "experience": exp, "applied": [{"id": f"line-{i}", "label": line} for i, line in enumerate(ob.setup_lines(exp))]}
+
+    # ---- the first-run tour: a tiny "have they seen it" document ------------------------------------------------------
+    @router.get("/onboarding/tour")
+    def tour_state(authorization: str | None = Header(default=None)):
+        doc = doc_store.get(db, uid_of(authorization), TOUR_KIND, TOUR_KEY) or {}
+        return {"status": "success", "seen": bool(doc.get("seen")), "skipped": bool(doc.get("skipped")), "at": doc.get("at")}
+
+    @router.put("/onboarding/tour")
+    def tour_seen(payload: dict = Body(default={}), authorization: str | None = Header(default=None)):
+        uid = uid_of(authorization)
+        skipped = payload.get("skipped")
+        if skipped is not None and not isinstance(skipped, bool):
+            raise HTTPException(status_code=422, detail="skipped must be true or false")
+        previous = doc_store.get(db, uid, TOUR_KIND, TOUR_KEY) or {}
+        doc = {"seen": True, "at": previous.get("at") or datetime.now(timezone.utc).isoformat(), "skipped": bool(previous.get("skipped")) if skipped is None else skipped}
+        doc_store.put(db, uid, TOUR_KIND, TOUR_KEY, doc)
+        return {"status": "success", **doc}
 
     @router.get("/experience")
     def experience(authorization: str | None = Header(default=None)):

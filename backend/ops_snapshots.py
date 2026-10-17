@@ -117,8 +117,5 @@ def community(db: Any) -> dict[str, int] | None:
 
 
 def push(db: Any) -> dict[str, int] | None:
-    """Phones registered for reminders: the signed ``push_device`` documents written by push_fcm (one per phone)."""
-    import doc_store
-    import push_fcm
-    active = _count(db, doc_store.TABLE, event_type=doc_store.EVENT_TYPE, **{"data->>kind": push_fcm.DEVICE_KIND})
+    active = _count(db, "device_tokens", revoked=False)
     return None if active is None else {"active_devices": active}

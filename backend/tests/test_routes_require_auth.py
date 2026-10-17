@@ -13,6 +13,7 @@ import fitness_api
 import health_event_confirm
 import health_logs
 import import_api
+import insights_api
 import partner_sharing
 import wellness_api
 
@@ -32,7 +33,8 @@ def refuse(_authorization=None):
 
 
 BUILDERS = [health_logs.build_router, fitness_api.build_router, data_rights.build_router, wellness_api.build_router,
-            import_api.build_router, cycle_api.build_router, partner_sharing.build_router, health_event_confirm.build_router]
+            import_api.build_router, cycle_api.build_router, partner_sharing.build_router, health_event_confirm.build_router,
+            insights_api.build_router]
 
 
 def find_leaks(router):

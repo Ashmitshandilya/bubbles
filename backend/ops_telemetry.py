@@ -2,7 +2,11 @@
 
 Events are small dicts ``{seq, at, kind, request_id, data}``. ``data`` holds only whitelisted technical fields (route template,
 status, latency, provider, model, outcome, error category, counts). There is no user id, message, prompt, reply, query text,
-token, key or address anywhere in an event, and ``record`` drops any field that is not on the list for its kind.
+token, key or address in ``data``, and ``record`` drops any field that is not on the list for its kind.
+
+One named exception (owner decision, docs/admin/README.md): api and ai_attempt events kept in the in-memory ring carry a
+top-level ``uid`` for the live admin view. It is never in ``data``, never queued, never written to the database, never logged,
+and only ``recent(..., with_uid=True)`` (the admin-gated live endpoint) returns it.
 
 Path: ``record`` appends to an in-memory ring (feeds the live view) and to a bounded queue that a daemon thread writes to
 ``bubbles_ops_events`` in one batch every few seconds. Every failure is swallowed and counted: a request never waits for
@@ -85,23 +89,22 @@ def current_request_id() -> str | None:
     return _request_id.get()
 
 
-def current_note() -> dict:
-    """The facts noted for this request. Keys starting with an underscore (the live-view user id) are never returned."""
-    return {k: v for k, v in (_request_note.get() or {}).items() if not k.startswith("_")}
-
-
 _UID = re.compile(r"^[0-9a-fA-F-]{8,64}$")
 
 
 def bind_user(uid: Any) -> None:
-    """The signed-in person of this request, for the live admin view only: it is kept in the in-memory ring, never in ``data``,
-    never queued, written or logged, and only ``recent(..., with_uid=True)`` (the admin-gated live endpoint) returns it."""
+    """The signed-in person of this request, for the live admin view only (see the module note). Never raises."""
     try:
         current = _request_note.get()
         if current is not None and isinstance(uid, str) and _UID.match(uid):
             current["_uid"] = uid
     except Exception:  # noqa: BLE001
         pass
+
+
+def current_note() -> dict:
+    """The facts noted for this request. Keys starting with an underscore (the live-view user id) are never returned."""
+    return {k: v for k, v in (_request_note.get() or {}).items() if not k.startswith("_")}
 
 
 # The only values a chat note may carry. Anything else is dropped: no free text can ever reach an event this way.
@@ -114,7 +117,7 @@ NOTE_VALUES: dict[str, frozenset] = {
 
 
 # Events whose one field may only be one of these fixed names; anything else drops the whole event (no free text can arrive this way).
-FUNNEL_STEPS = ("about", "goals", "health", "life", "more_health", "choices", "daily", "mind", "people", "drains", "talk", "completed", "under_18")
+FUNNEL_STEPS = ("core", "extras", "later", "completed", "under_18")
 CLIENT_CODES = ("render_error", "unhandled_rejection", "chunk_load_failed", "api_unreachable", "sign_in_refresh_failed", "stream_fallback")
 FIELD_ENUMS: dict[str, dict[str, frozenset]] = {"funnel": {"step": frozenset(FUNNEL_STEPS)}, "client": {"code": frozenset(CLIENT_CODES)}}
 # Kinds added after the first migration: stored only if the database accepts them (supabase/migrations/20261016_bubbles_ops_funnel.sql).
@@ -124,9 +127,8 @@ NEW_KINDS = frozenset({"funnel", "client"})
 # Where a chat turn spends its time, in order: pre (sign-in to understood), ctx (own data), rag (evidence lookup), ai (the model), post
 # (saving). ctx and rag run side by side, so their sum can exceed the request's own time. Numbers only, a fixed set of names.
 STAGES = ("pre", "ctx", "rag", "ai", "post")
-NOTE_NUMBERS = frozenset(f"stage_{name}_ms" for name in STAGES)
 STAGE_FIELDS = tuple(f"stage_{name}_ms" for name in STAGES)
-TECHNICAL_KINDS = ("api", "ai_attempt", "ai_reply", "error")
+NOTE_NUMBERS = frozenset(STAGE_FIELDS)
 _MAX_STAGE_MS = 600_000.0
 
 
@@ -162,19 +164,19 @@ def record(kind: str, **data: Any) -> None:
         if allowed is None:
             return
         clean = {k: (v[:MAX_TEXT] if isinstance(v, str) else v) for k, v in data.items() if k in allowed and v is not None}
-        for field in NOTE_NUMBERS & clean.keys():   # stage timings are numbers in milliseconds, nothing else
-            value = clean[field]
-            if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= _MAX_STAGE_MS:
-                del clean[field]
+        for k in [k for k in clean if k in NOTE_NUMBERS]:   # stage timings are numbers in milliseconds, nothing else
+            v = clean[k]
+            if isinstance(v, bool) or not isinstance(v, (int, float)) or not 0 <= v <= _MAX_STAGE_MS:
+                del clean[k]
         for field, values in FIELD_ENUMS.get(kind, {}).items():
             if clean.get(field) not in values:
                 return
-        note_ = _request_note.get()
-        uid = note_.get("_uid") if note_ and kind in ("api", "ai_attempt") else None
         with _lock:
             _seq += 1
             event = {"seq": _seq, "at": datetime.now(timezone.utc).isoformat(), "kind": kind,
                      "request_id": _request_id.get(), "data": clean}
+            note_ = _request_note.get()
+            uid = note_.get("_uid") if note_ and kind in ("api", "ai_attempt") else None
             _ring.append({**event, "uid": uid} if uid else event)   # the uid lives in the ring only, never in the queue
             if _persist_enabled() and not (kind in NEW_KINDS and status["new_kinds"] == "not_allowed"):
                 if len(_queue) == QUEUE_LIMIT:
@@ -297,20 +299,19 @@ def _flush_loop() -> None:
 
 
 def stored_events(since: datetime, kinds: list[str] | None = None, *, request_id: str | None = None,
-                  before: str | None = None, cap: int = READ_CAP, until: datetime | None = None
-                  ) -> tuple[list[dict[str, Any]], bool, str]:
+                  before: str | None = None, cap: int = READ_CAP, until: datetime | None = None) -> tuple[list[dict[str, Any]], bool, str]:
     """Events since ``since`` (newest first). Returns (events, capped, source). Falls back to memory when nothing is stored."""
     if _persist_enabled() and status["mode"] != "not_set_up":
         try:
             rows: list[dict[str, Any]] = []
             while len(rows) < cap:
                 q = _db().table(TABLE).select("id,at,kind,request_id,data").gte("at", since.isoformat())
-                if until:
-                    q = q.lt("at", until.isoformat())
                 if kinds:
                     q = q.in_("kind", kinds)
                 if request_id:
                     q = q.eq("request_id", request_id)
+                if until:
+                    q = q.lt("at", until.isoformat())
                 if before:
                     q = q.lt("at", before)
                 page = q.order("at", desc=True).range(len(rows), len(rows) + PAGE - 1).execute().data or []
@@ -322,9 +323,8 @@ def stored_events(since: datetime, kinds: list[str] | None = None, *, request_id
             status["last_error_class"] = type(error).__name__
             if _missing_table(error):
                 status["mode"] = "not_set_up"
-    end = until.isoformat() if until else None
     rows = [e for e in memory_events(since) if (not kinds or e["kind"] in kinds) and (not request_id or e["request_id"] == request_id)
-            and (not before or e["at"] < before) and (not end or e["at"] < end)]
+            and (not before or e["at"] < before) and (not until or e["at"] < until.isoformat())]
     rows.reverse()
     return rows[:cap], len(rows) > cap, "memory"
 

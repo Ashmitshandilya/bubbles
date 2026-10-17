@@ -51,7 +51,7 @@ It is not a separate product: same code, same FastAPI backend, same Supabase pro
 - `allowBackup="false"` plus `data_extraction_rules.xml`: the session and cached health data are excluded from cloud
   backup and device-to-device transfer.
 - No cleartext HTTP, no mixed content, WebView debugging off, Capacitor logging off, release build not debuggable.
-- Permissions: `INTERNET`, and `POST_NOTIFICATIONS` (asked only when the person turns on phone reminders). No deep links /
+- Permissions: `INTERNET`, and `POST_NOTIFICATIONS` (asked only when the person turns on phone reminders). Two notification channels are created at start (`reminders`, `checkins`; `MainActivity.java`), with a monochrome status icon (`ic_stat_bubbles`). Building without `google-services.json` works and leaves Firebase dormant. No deep links /
   intent filters besides the launcher (no link-hijack surface).
 - Firebase (phone reminders, crash reports, tester builds) is built in only when `android/app/google-services.json` exists;
   both features are off until the person turns them on, and Google Analytics is never used. See `docs/FIREBASE.md`.

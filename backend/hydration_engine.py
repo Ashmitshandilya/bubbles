@@ -119,10 +119,11 @@ def day_totals(entries: list[dict], day: str, tz_offset_min: int = 0) -> dict[st
 
 # --- reminders -----------------------------------------------------------------------------------------------------------
 
-def reminder_plan(goal_ml: float | None, effective_ml: float, now_min: int, wake_min: int = 7 * 60, sleep_min: int = 22 * 60) -> dict[str, Any]:
+def reminder_plan(goal_ml: float | None, effective_ml: float, now_min: int, wake_min: int = 7 * 60, sleep_min: int = 22 * 60,
+                  due_window_min: int = 60) -> dict[str, Any]:
     """Reminder slots every HYDRATION_REMINDER_EVERY_MIN inside waking hours, ending HYDRATION_REMINDER_BEFORE_SLEEP_MIN before sleep.
     A slot is 'needed' only when the user is behind the day's even pace by at least the tolerance, so reminders follow progress,
-    stop at the goal and never nag. ``due_now`` is the latest needed slot within the last hour."""
+    stop at the goal and never nag. ``due_now`` is the latest needed slot within the last ``due_window_min`` minutes (an hour in the app's own view)."""
     base = {"enabled": False, "slots": [], "due_now": None, "next": None, "reason": None}
     if goal_ml is None:
         return {**base, "reason": "no_target"}
@@ -139,7 +140,7 @@ def reminder_plan(goal_ml: float | None, effective_ml: float, now_min: int, wake
         status = "past" if t < now_min else "upcoming"
         slots.append({"time": fmt_hhmm(t), "minutes": t, "expected_ml": round(expected), "needed": needed, "status": status})
         t += K.HYDRATION_REMINDER_EVERY_MIN
-    due = [s for s in slots if s["needed"] and 0 <= now_min - s["minutes"] < 60]
+    due = [s for s in slots if s["needed"] and 0 <= now_min - s["minutes"] < due_window_min]
     nxt = next((s for s in slots if s["needed"] and s["minutes"] >= now_min), None)
     return {"enabled": True, "slots": slots, "due_now": due[-1]["time"] if due else None, "next": nxt["time"] if nxt else None, "reason": None}
 

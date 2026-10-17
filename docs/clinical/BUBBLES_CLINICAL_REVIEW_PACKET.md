@@ -388,3 +388,176 @@ requested changes are made in `clinical_constants.py`. Until then every plan car
 Added to the `suicidal_ideation` pattern in `backend/health_semantics.py`, all treated as crisis language (the deterministic crisis reply, nothing stored):
 "burden to everyone / my family / my friends", "nobody would miss me", "everyone would be better off without me", "I am / I feel worthless", and Hinglish "marna chahta/chahti hun", "jeena nahi chahta/chahti", "jeene ka mann nahi", "main bojh hun", "koi miss nahi karega".
 Near-misses that must stay quiet are covered by tests (for example "my worthless ex", "a burden on the team"). Clinician sign-off needed on the list and on whether "worthless" alone should escalate.
+
+## Mega task additions (2026-10, awaiting clinician sign-off)
+
+# L1 clinical packet draft
+
+For the lead to add as new numbered section(s) in `docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md`. Nothing here adds a symptom word or a threshold
+to the safety engine. These are rules about how replies are phrased and what history the model is shown.
+
+## Resumed-chat age limit (48 hours)
+
+- Rule: when a chat is resumed, what the person said in earlier messages is treated as history once it is more than **48 hours** old
+  (`HISTORY_NOW_HOURS = 48` in `chat_pipeline.py`). Those turns are shown to the model labelled "earlier, N days ago, not necessarily true now";
+  symptoms they reported are listed as past or resolved (never "reported now or recently"); an old denial ("no chest pain") and an old
+  "maybe" are dropped from the standing state, so they cannot be read as true today.
+- Why: a person who opens the latest chat days later should not be told about a headache from last week as if it were today, and should not be
+  reassured by a denial that was true then. Missing is unknown, never "all clear".
+- Safety effect: none on the alarm. The safety engine reads only the current message; this rule only changes the background the model sees and
+  the contradiction check against old statements.
+- Needs clinician review: whether 48 hours is the right cut-off (it is a deliberate default), and whether an old denial of a red-flag symptom
+  should instead be kept as "denied earlier" rather than dropped.
+
+## Reply wording rules (friend voice)
+
+- No organisation, guideline, study or source name in reply prose (NHS, WHO, CDC, NICE, NIH, ICMR, AHA, ADA, MedlinePlus, Mayo, "guidelines say",
+  "studies show", "according to"). Enforced in the prompt and, for AI text only, by `strip_attribution` and the `authority_citation` lint code.
+  Reading links under a reply remain the only place sources appear.
+- Soft, not scary: lead with what is common; never a list of scary possibilities; say a pattern gently and leave the decision to the person; never
+  a verdict about their body (`heavy_verdict` lint: "this means you have", "you are suffering from", "it is probably cancer/diabetes/tumour/heart disease").
+- Warn without alarm: name the one or two specific signs that mean "get checked" in calm concrete words.
+- URGENT replies: the softness is dropped, and if the model's text does not already say today, doctor, clinician, urgent care or emergency, the fixed
+  line "Please speak to a clinician or an urgent-care service today." is appended. The fixed safety texts on the freeze list are unchanged (hash-tested).
+- Length: about 60 to 90 words by default, up to about 120 for a symptom question, about 160 for people who asked for fuller answers (was 250).
+- Care checklist copy (first-run setup, not yet shown) now says "Worth asking your doctor..." and no longer names a programme or society.
+
+## What the new batch confirmation does with a person's decision (data handling)
+
+- Saving a detail promotes it to memory by the existing promotion rules (live, present, first-person observations only, L2 types need the person's yes).
+  Dismissing keeps nothing. A detail the person dismissed can still not be saved later if it was withdrawn by a correction (409).
+
+## 15. Mind: loneliness, anxiety, separation anxiety (added 2026-10-16; awaiting sign-off)
+
+Draft from lane L3, for the lead to fold in as the next numbered section. Nothing here diagnoses, labels or advises a medicine. Every item needs clinician sign-off; the Hinglish items also need a native-speaker check (add to HINGLISH_SAFETY_TERMS_REVIEW.md).
+
+### 15.1 Passive-ideation wording (the safety path: crisis reply 112 / Tele-MANAS 14416, nothing stored)
+Each pattern needs a first-person feeling or being cue. English (`health_semantics._LEX_SRC`, `suicidal_ideation`, second list):
+- "I am / I'm / I feel / I feel like / I have become ... (such a / a / nothing but a) burden" ("I feel like a burden to everyone", "I've become a burden")
+- "no one / nobody would (even) miss me"
+- "no one / nobody would (even) notice / care / know (if / when) I was / am / died / disappeared / am gone"
+- "I am / I feel / feeling (so, really, completely...) worthless"
+Must stay quiet (tested): "I don't want to be a burden" (a wish), "he called me worthless", "I'm not worthless", "I used to feel worthless years ago", "my friend feels worthless", "this phone is worthless", "nobody would miss that show", "burden of proof", "What does it mean to feel worthless?".
+Hinglish (`hinglish_terms.py`): "main sabke liye bojh hoon", "mere jaane se kisi ko farak nahi padega", "koi meri kami mehsoos nahi karega", "main kisi kaam ka nahi hoon", "meri koi value nahi hai", "main worthless / useless feel karta hoon", "main bilkul bekaar hoon". Near-misses kept quiet: "mujhe nahi lagta main bojh hoon", "kisi kaam ka nahi hai ye phone", "main bekaar hoon yaar cooking mein".
+Open question for the reviewer: "main kisi kaam ka nahi hoon" and "main bilkul bekaar hoon" can be said in frustration; they are treated as crisis wording on purpose (the reply is caring and nothing is lost). Say if they should be softened to a clarification.
+
+### 15.2 Ordinary concepts (never escalate alone; a self report that is current, recent or recurring)
+- `loneliness`: lonely / lonesome, "I feel (so) alone", "nobody to talk to / nobody talks to me", "I have no friends", "feel isolated / left out / cut off / unwanted"; Hinglish: akela / akeli / akelapan / tanha / tanhai with lagta / lagti / feel, "koi dost nahi", "koi baat karne wala nahi".
+- `panic_attack` (child of `anxiety`): panic / panic attack / panicky, "can't calm down".
+- `separation_anxiety` (child of `anxiety`): "separation anxiety", homesick, "anxious / scared when I'm apart / away", "can't bear being apart", "miss my mom so much"; Hinglish: "mummy ki bahut yaad aa rahi hai", "door rehna nahi ho pata".
+- `anxiety` (parent) gains the Hinglish ghabrahat / ghabra* / bechain* and "mujhe chinta / fikr / tension hai".
+Quiet by test: "I live alone and I like it", "leave me alone", "I'm not lonely", "Lonely Planet", "don't panic", other people's panic or loneliness, "I miss the bus".
+All four map to the brain area on the body map. No concept alone changes a safety state.
+
+### 15.3 Quick scores (no sum, no label, no diagnosis; a score is stored, never free text)
+- Loneliness: one question, "How often do you feel lonely?", answers 1 Never, 2 Rarely, 3 Sometimes, 4 Often, 5 Almost always. Offer-to-talk threshold: 4 or more.
+- Anxiety right now: 0 to 10. Threshold for the "talk to someone you trust, a counsellor or your doctor" line and the breathing offer: 7 or more.
+Both thresholds are Bubbles' own (not from a validated instrument) and are described to the user only as "a check-in, not a medical assessment". The PHQ-2 / GAD-2 rules are unchanged.
+
+### 15.4 Brain map
+An average anxiety score of 7 or more (`STRESS_HIGH_AVERAGE`) across at least `ORGAN_MIN_ENTRIES_FOR_AVERAGE` check-ins makes the brain "worth watching" with: "Your anxiety scores averaged N/10 across M check-ins. If it keeps feeling like a lot, talking to someone can help." The tracker's stress number now also reaches the existing stress rule. Nothing here sets "talk to a doctor".
+
+### 15.5 Chat behaviour (`mind_chat.py`)
+When the person reports their own current, recent or recurring panic, separation anxiety, loneliness, anxiety or low mood, the model gets: reply like a close friend; one warm line, one small step, at most one question; name the matching Mind tool; never name or label a condition; never say it is nothing or promise it will pass; no medicine or supplement advice; if they mention not coping or feeling unsafe, stay gentle and point to a person they trust. Safety routing is unchanged and runs first.
+Without the AI yes, loneliness gets this fixed reply (then the frozen consent text): "I'm really glad you said that. Feeling lonely is more common than people admit, and it doesn't mean something is wrong with you. One small thing that often helps is a short message to one person you like. The Loneliness check-in in the Mind section is there whenever you want it."
+
+### 15.6 Static supportive copy (Mind hub; friend voice, no labels)
+- Loneliness: "Feeling lonely is more common than people say, and it doesn't mean something is wrong with you. A small reach-out often helps: a short message to one person, or a walk where other people are around." Steps: send one short message to someone you like; go somewhere with other people nearby for ten minutes; say it in chat.
+- Panic: "You are safe right now. This feeling is strong, and it passes. Let's slow it down together." Steps: breathe in for 4; breathe out slowly for 6, longer than the breath in; press your feet into the floor and name 3 things you can see. (The "you are safe right now" and "it passes" sentences are reassurance about the feeling, not about health; reviewer to confirm they are acceptable.)
+- Missing someone / apart: "Missing someone you love is a sign of how much they matter. Being apart can feel heavy, and small rituals make it easier." Steps: pick a regular time to talk; send a voice note or a photo of your day; keep one small thing of theirs close and do one kind thing for yourself.
+- Result lines for a high loneliness or anxiety score end with the unchanged support line (reach out right away; 112; Tele-MANAS 14416).
+- Brain row wording: nothing to read yet; nothing stands out in what you have logged; worth a gentle look; worth talking through with someone you trust or a doctor. None says healthy or fine.
+
+## Insight detail wording (A6)
+
+No new threshold, symptom word or safety phrase. The sheet reuses existing confidence cut-offs (average entry confidence below 0.5 reads Low; score 0.75 / 0.5 for High / Medium on older responses).
+New fixed user-visible sentences for sign-off:
+- "It is not a diagnosis, and it does not mean something is wrong."
+- "Days with no log are blanks, not good days."
+- "It does not show that one thing causes the other."
+- "A gap is not a sign that all is well." / "It does not mean something is wrong either."
+- Try-this lines: "Keep logging when it happens, with what you were doing. If it bothers you, it is worth mentioning to a clinician." and "Keep logging both for a few more weeks and see whether they still show up together."
+
+# L5 draft: clinical packet
+
+B1 and B2 add no threshold, symptom word, supportive-content rule or safety phrase. For sign-off only:
+
+1. **The frozen consent reply.** `consent.consent_needed_reply`: the last sentence ("If something feels urgent, call your local emergency number.") is unchanged and is pinned by `tests/test_consent_purposes.py::test_the_frozen_consent_reply_is_unchanged`. The rest of the text is unchanged too. An urgent message never receives this reply: it keeps the fixed urgent text (`urgent_fallback_response`).
+2. **A new calm reply after a "No".** `consent.declined_reply`: "No problem. Nothing is sent to an outside AI. I can still log things, show your patterns and answer questions about your cycle, sleep and fitness. If you change your mind, it is one switch in Privacy choices." followed by the same emergency sentence. It is shown for at most 14 days after a No, then the question is asked again (once). It contains no medical advice.
+3. **When health details noticed in chat are not saved.** With `health_memory_from_chat` off, chat still answers, deterministic safety (including emergency routing) still runs first and unchanged, and details are not extracted into storage. Anything the person logs themselves is still saved. A clinician may want to confirm that not saving a symptom mentioned in chat (until the person agrees) is acceptable, given that Bubbles then cannot remind them later of a symptom they mentioned.
+
+# D1 intelligence: problem statement and findings (lane L7)
+
+## Problem
+After onboarding, Bubbles had no way to relate logs, labs and symptoms to vitamin, mineral, blood-marker and hormone gaps. Labs were
+only read by organ_map_engine (thyroid TSH rules). Chat context carried no lab or nutrient hint. The RAG corpus (rag_sources.json, 11
+sources) had no vitamin/mineral/hormone lab-test pages, so questions like "what does a ferritin test show" relied on whatever was
+already stored.
+
+## Findings
+- backend/rag.py hybrid_search + rag_links.py LINK_DOCS had links only for sleep/mood/activity/cycle/fatigue-labs; nothing for
+  nutrient-energy, iron-hair, vitaminD-mood, b12-diet, thyroid-cycle, hormones-cycle (rag_links.py, before this lane).
+- The live store was not reachable from the sandbox: topic-tag coverage was audited from rag_sources.json and the ingest scripts only.
+  No recall numbers are claimed (recall@5 1.00 / recall@1 0.85 was the last measurement, before these changes).
+- WIP defects found and fixed: lab_status accepted NaN/inf/negative/huge values and reversed or half ranges (deficiency_map.py
+  lab_status); free-text lab names/units were interpolated into user text and the chat context (now `_plain`, else the map's own
+  name); non-dict profile lists crashed signals_from_rows; the ingest validator accepted an empty manifest, non-dict rows and
+  non-list tags and crashed on odd types; 11 manifest titles had no LINK_DOCS prefix so `rag_links.py --apply` would not tag them
+  (prefixes added).
+- Onboarding keys `diet_style` exists (onboarding.py); `recent_blood_test` is not in the bank yet. Both are read defensively
+  (missing = a gap line, never a nudge).
+
+## What changed
+- deficiency_map.py: pure map (11 entries), nudges (low/medium, max 3), lab notes against the person's own range only.
+- deficiency_api.py: GET /nutrients/nudges (auth, owner-scoped, under-18 empty, best-effort sources named in `unavailable`);
+  chat_block(): one sentence, cached, never waits, needs consent `ai_chat_processing`; hooked in main.py `_context_stage`.
+- rag_nutrient_ingest.py + rag_nutrient_manifest.json (31 documents, MedlinePlus/NIDDK/NICHD/ODS; ICMR-NIN RDA deferred: priced,
+  copyrighted). Dry run by default. rag_sources.json: + NIH ODS, NICHD. rag_links.py: 6 new link ids.
+- tests/eval/retrieval_cases.jsonl: +23 cases (D101-D123).
+
+## Open (not verified, left out)
+- Per-page licence check of MedlinePlus/ODS pages before --apply (some MedlinePlus pages carry third-party credits).
+- Ingest and eval re-run need network + backend/.env: `python rag_nutrient_ingest.py --check-urls`, then `--apply --from-dir pages`
+  (ods_* are fetch=manual), `python rag_links.py --apply`, `python eval_retrieval.py`.
+- No unit-mismatch check: Bubbles keeps no range table, so a value is compared only to the range the person entered.
+- Today/Patterns closed row (frontend) is not built; API shape is ready. Android: no native work.
+- Clinical sign-off: rules, thresholds (30-day window, 2 days per sign, 90-day quiet lab, 365-day freshness, 2 heavy days) and
+  sentence templates are in deficiency_map.py; fold into the clinical packet.
+
+# D1 intelligence: problem statement and findings (lane L7)
+
+## Problem
+After onboarding, Bubbles had no way to relate logs, labs and symptoms to vitamin, mineral, blood-marker and hormone gaps. Labs were
+only read by organ_map_engine (thyroid TSH rules). Chat context carried no lab or nutrient hint. The RAG corpus (rag_sources.json, 11
+sources) had no vitamin/mineral/hormone lab-test pages, so questions like "what does a ferritin test show" relied on whatever was
+already stored.
+
+## Findings
+- backend/rag.py hybrid_search + rag_links.py LINK_DOCS had links only for sleep/mood/activity/cycle/fatigue-labs; nothing for
+  nutrient-energy, iron-hair, vitaminD-mood, b12-diet, thyroid-cycle, hormones-cycle (rag_links.py, before this lane).
+- The live store was not reachable from the sandbox: topic-tag coverage was audited from rag_sources.json and the ingest scripts only.
+  No recall numbers are claimed (recall@5 1.00 / recall@1 0.85 was the last measurement, before these changes).
+- WIP defects found and fixed: lab_status accepted NaN/inf/negative/huge values and reversed or half ranges (deficiency_map.py
+  lab_status); free-text lab names/units were interpolated into user text and the chat context (now `_plain`, else the map's own
+  name); non-dict profile lists crashed signals_from_rows; the ingest validator accepted an empty manifest, non-dict rows and
+  non-list tags and crashed on odd types; 11 manifest titles had no LINK_DOCS prefix so `rag_links.py --apply` would not tag them
+  (prefixes added).
+- Onboarding keys `diet_style` exists (onboarding.py); `recent_blood_test` is not in the bank yet. Both are read defensively
+  (missing = a gap line, never a nudge).
+
+## What changed
+- deficiency_map.py: pure map (11 entries), nudges (low/medium, max 3), lab notes against the person's own range only.
+- deficiency_api.py: GET /nutrients/nudges (auth, owner-scoped, under-18 empty, best-effort sources named in `unavailable`);
+  chat_block(): one sentence, cached, never waits, needs consent `ai_chat_processing`; hooked in main.py `_context_stage`.
+- rag_nutrient_ingest.py + rag_nutrient_manifest.json (31 documents, MedlinePlus/NIDDK/NICHD/ODS; ICMR-NIN RDA deferred: priced,
+  copyrighted). Dry run by default. rag_sources.json: + NIH ODS, NICHD. rag_links.py: 6 new link ids.
+- tests/eval/retrieval_cases.jsonl: +23 cases (D101-D123).
+
+## Open (not verified, left out)
+- Per-page licence check of MedlinePlus/ODS pages before --apply (some MedlinePlus pages carry third-party credits).
+- Ingest and eval re-run need network + backend/.env: `python rag_nutrient_ingest.py --check-urls`, then `--apply --from-dir pages`
+  (ods_* are fetch=manual), `python rag_links.py --apply`, `python eval_retrieval.py`.
+- No unit-mismatch check: Bubbles keeps no range table, so a value is compared only to the range the person entered.
+- Today/Patterns closed row (frontend) is not built; API shape is ready. Android: no native work.
+- Clinical sign-off: rules, thresholds (30-day window, 2 days per sign, 90-day quiet lab, 365-day freshness, 2 heavy days) and
+  sentence templates are in deficiency_map.py; fold into the clinical packet.

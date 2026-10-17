@@ -40,6 +40,10 @@ logger.error  ─▶ ops "error"                                              ad
 | `frontend/app/admin/*` | The console (`AdminClient.tsx` shell, `panels.tsx` tabs, `kit.tsx` shared pieces, `format.ts` wording with tests). |
 | `supabase/migrations/20261013_bubbles_ops.sql` | The two tables, RLS on with no policies, nothing granted to anon or authenticated. |
 
+## Add another admin
+
+Admins are the ids in `BUBBLES_ADMIN_USER_IDS` on Render (comma-separated, exact match). To add one: open Supabase, Authentication, Users, copy the person's UUID, append `,<uuid>` to the variable, save (Render restarts the service). They need the authenticator app switched on, because the gate asks for a two-step session. There is no in-app way to add an admin, on purpose. To remove one, delete the id the same way; the gate reads the variable on every request.
+
 ## Authorization
 
 - **Identity:** Supabase Auth through `get_authenticated_user(..., fresh=True)`. The sign-in cache is never used for admin requests.
@@ -54,6 +58,22 @@ logger.error  ─▶ ops "error"                                              ad
 
 **What is public on purpose:** the website route `/admin` exists for everyone (it answers 200 with the loading screen, then shows "We couldn't find that page" to a non-admin), and the console's code ships in the website bundle and the Android app. That reveals nothing about data: every number and every action is behind the API gate above. With `BUBBLES_ADMIN_USER_IDS` empty the gate refuses before any sign-in call.
 
+## The one named exception: the user id on the Live page
+
+Owner decision (mega task brief, F1): the owner sees which account made a request. Everything else about the design stays: `observe the system, not the user`. How it is kept narrow:
+
+- `uid` is a top-level field on `api` and `ai_attempt` events in the **in-memory ring only** (5,000 events, then it is gone). It is never in `data`, never in the write queue, never in `bubbles_ops_events`, never in a log line, and not in `ops_rollups_daily`.
+- Only `GET /admin/live` (and its alias `/admin/events/live`) returns it, and only to a session that passed the admin gate. `/admin/events`, `/overview`, `/overall`, `/usage` and every internal reader (`ops_telemetry.recent` without `with_uid`, `memory_events`) strip it.
+- `bind_user` accepts only a UUID-shaped string; anything else is ignored.
+- Messages, prompts, replies, symptoms and notes still never appear anywhere. The privacy notice says it in one line (operations monitoring).
+- Tests: `tests/test_admin_overall.py`, `tests/test_admin_negative.py`.
+
+## The Overall page and the hourly rollup
+
+`ops_rollups.py` turns each completed hour of raw events into additive counters in `ops_rollups_daily` (day, dimension, key, count; RLS on, no client policy; migration `20261016_bubbles_ops_rollups.sql`). The watermark (`_state / events_through`) moves in the same upsert as the counters, so a crash neither loses nor double counts an hour, and running it twice changes nothing. It runs lazily when the Overall page is read for 7d, 30d or all (at most every 10 minutes per process, never blocking a second caller) and from the cron call below. Before the migration is applied the page counts the events still held and says so.
+
+**Cron contract (for the push/keep-awake job, lane L8):** call `ops_rollups.run_rollups(db)` (db = `supabase_client.supabase`, or `None` to use it) from the same authenticated cron endpoint, once an hour. It never raises and returns `{"status": "ok" | "idle" | "skipped" | "not_set_up" | "error", ...}`; log only the status word. It does at most 72 hours per call, so a long gap catches up over several calls. Known ceiling: the watermark is read and written without a compare-and-swap, so two server instances rolling up at the same moment could double count an hour; Render free runs one instance.
+
 ## Telemetry events
 
 One table, `bubbles_ops_events(id, at, kind, request_id, data jsonb)`. `data` may only hold these keys (anything else is dropped in `record()`):
@@ -65,7 +85,7 @@ One table, `bubbles_ops_events(id, at, kind, request_id, data jsonb)`. `data` ma
 | `ai_reply` | outcome (`answered` or `degraded`), provider, model, attempts, fallback_used, total_ms. Written only after the answer passed validation. |
 | `error` | category (auth, authorization, validation, rate_limit, database, rag, ai_provider, timeout, network, cache, internal), component, route, error_class, severity. Never the message. |
 | `audit` | action, target, old, new, outcome, actor (the administrator's id; operators are not health-data subjects) |
-| `funnel` | step: one of a fixed list (`about`, `goals`, `health`, `life`, `daily`, `mind`, `people`, `drains`, `talk`, `completed`, `under_18`). A count of people reaching a first-run setup step, never an answer. Needs `20261016_bubbles_ops_funnel.sql`; until then it stays in memory. |
+| `funnel` | step: one of a fixed list (`core`, `extras`, `later`, `completed`, `under_18`). A count of people reaching a first-run setup step, never an answer. Needs `20261016_bubbles_ops_funnel.sql`; until then it stays in memory. |
 | `client` | code: one of a fixed list (`render_error`, `unhandled_rejection`, `chunk_load_failed`, `api_unreachable`, `sign_in_refresh_failed`, `stream_fallback`), sent by the website or app to `POST /telemetry/client`. Same migration. |
 
 The portal's own `/admin/*` requests are not recorded as traffic. Retention: technical events `telemetry_retention_days` (default 14, settable 1 to 90), funnel rows 90 days, audit rows 365 days, pruned at most hourly.
@@ -129,6 +149,8 @@ All routes are under `/admin`, admin only, and absent from the schema. Ranges ar
 | `GET /api?range=` | per-route table with 12-bucket trend |
 | `GET /events?kind=&provider=&outcome=&status=&route=&request_id=&before=&limit=` | log explorer with cursor paging (`before` is the `at` of the last row) |
 | `GET /events/live?after=&process_started_at=` | events after a cursor from memory; flags a restart or a gap |
+| `GET /live?since=<cursor>` (same as `/events/live?after=`) | the Live page: events after a cursor from memory, newest last, **with `uid` on `api` and `ai_attempt` events** (see the named exception below); `restarted` and `gap` flags |
+| `GET /overall?range=1h\|24h\|7d\|30d\|all` | the Overall page: totals, per-model rates and latency, per-stage latency, funnel, retention, consent rates, safety by day, community and push counts. Counters come from `ops_rollups_daily` (durable) plus raw events after the watermark |
 | `GET /usage?range=` | usage counts, cost at read time and active-people integers (see above) |
 | `GET /settings`, `PUT /settings {key, value}` | safe settings |
 | `GET /audit?range=` | admin actions and sampled refusals |
