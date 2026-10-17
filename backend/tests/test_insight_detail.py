@@ -155,3 +155,87 @@ def test_weekly_route_in_the_real_app_is_not_shadowed_by_the_detail_route(monkey
     monkeypatch.setattr(main, "_get_user_health_events", lambda uid, days=30: [])
     r = TestClient(main.app, raise_server_exceptions=False).get("/insights/weekly", headers=H1)
     assert r.status_code == 200 and r.json()["insights"]["insights"][0]["id"] == "gap:week"
+
+
+# ---- negative cases -------------------------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("days", ["0", "6", "-1", "366", "abc", ""])
+def test_bad_window_values_are_rejected(env, days):
+    client, _ = env
+    assert client.get(f"/insights/rec:symptom:low-back-pain?days={days}", headers=H1).status_code == 422
+
+
+def test_window_edges_are_accepted(env):
+    client, _ = env
+    for days in (7, 365):
+        assert client.get(f"/insights/rec:symptom:low-back-pain?days={days}", headers=H1).status_code in (200, 404)
+
+
+def test_bad_or_wrong_scheme_tokens_are_401(env):
+    client, _ = env
+    for headers in ({}, {"Authorization": "Basic abc"}):
+        assert client.get("/insights/rec:symptom:low-back-pain", headers=headers).status_code == 401
+
+
+def test_someone_elses_only_pattern_is_a_404_for_me(env):
+    client, db = env
+    db.tables["extracted_health_events"] = backaches(7, U2)          # only user 2 has this pattern
+    assert client.get("/insights/rec:symptom:low-back-pain", headers=H1).status_code == 404
+    assert client.get("/insights/rec:symptom:low-back-pain", headers=H2).status_code == 200
+
+
+def test_empty_history_is_a_404_not_a_500(env):
+    client, db = env
+    db.tables["extracted_health_events"] = []
+    for i in ("rec:symptom:low-back-pain", "co:symptom:a|symptom:b", "gap:week"):
+        assert client.get(f"/insights/{i}", headers=H1).status_code == 404, i
+
+
+def test_id_length_limit_is_exact(env, monkeypatch):
+    client, _ = env
+    looked_up = []
+    monkeypatch.setattr(insights_api, "find_detail", lambda db, uid, i, days: looked_up.append(i))
+    assert client.get("/insights/" + "x" * (insights_api.MAX_ID + 1), headers=H1).status_code == 404
+    # at the limit it is looked up (and simply not found), still a 404 but through the lookup path
+    assert looked_up == []                                  # an oversized id never reaches the database
+    assert client.get("/insights/rec:" + "x" * (insights_api.MAX_ID - 4), headers=H1).status_code == 404
+    assert len(looked_up) == 1                              # at the limit it is looked up
+
+
+def test_huge_history_is_capped_and_still_answers(env):
+    client, db = env
+    db.tables["extracted_health_events"] = [ev("symptom", "Low back pain", i % 28 + 1, f"big{i}") for i in range(1200)]
+    d = client.get("/insights/rec:symptom:low-back-pain?days=30", headers=H1).json()["insight"]
+    assert len(d["occurrences"]) == pe.MAX_OCCURRENCES
+    assert all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", o["date"]) for o in d["occurrences"])
+
+
+def test_retracted_rows_never_count_toward_a_detail(env):
+    client, db = env
+    db.tables["extracted_health_events"] = [{**e, "extraction_status": "retracted"} for e in backaches(8)]
+    assert client.get("/insights/rec:symptom:low-back-pain", headers=H1).status_code == 404
+
+
+def test_detail_never_returns_free_text_from_entries(env):
+    client, db = env
+    rows = backaches(6)
+    for r in rows:
+        r["extracted_data"]["notes"] = "SECRET-FREE-TEXT my boss is cruel"
+    db.tables["extracted_health_events"] = rows
+    assert "SECRET-FREE-TEXT" not in client.get("/insights/rec:symptom:low-back-pain", headers=H1).text
+
+
+def test_ids_survive_hostile_subjects():
+    assert pe.recurrence_id("symptom", "../../etc/passwd; DROP TABLE") == "rec:symptom:etc-passwd-drop-table"
+    assert pe.slug("") == "x" and pe.slug("   ") == "x" and len(pe.slug("a" * 500)) == 40
+    assert URL_SAFE.match(pe.correlation_id("symptom", "A B|C", "sleep", "é ü"))
+
+
+def test_dated_pairs_cap_and_skip_missing_values():
+    sx = {date(2026, 10, 1) + timedelta(days=i): float(i) for i in range(40)}
+    sy = {d: None for d in sx}
+    assert ai._dated_pairs(sx, sy, 0) == []
+    sy = {d: 1.0 for d in sx}
+    out = ai._dated_pairs(sx, sy, 0)
+    assert len(out) == ai.MAX_PAIRS and out[0]["date"] > out[-1]["date"]
+    assert ai._dated_pairs({}, {}, 1) == []
