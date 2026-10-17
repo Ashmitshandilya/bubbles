@@ -305,7 +305,7 @@ describe("Today: what matters, patterns and coming up", () => {
     expect(items.length).toBeLessThanOrEqual(3);
     const review = items.find((i) => i.id === "review-sleep_hours");
     expect(review?.slug).toBe("sleep");
-    expect(review?.whyHref).toBe("/insights");
+    expect(review?.source.id).toBe("review-sleep_hours"); // Details opens a sheet on Today instead of linking to bare /insights
   });
 
   it("does not understate how many logs back a weekly insight", () => {

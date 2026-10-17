@@ -8,7 +8,7 @@ Add a relationship: build two {date: value} series, add a spec to `_specs`, add 
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import correlation_core as cc
@@ -98,6 +98,22 @@ def _strength(rho: float) -> str:
     return "weak" if a < 0.4 else "moderate" if a < 0.6 else "strong"
 
 
+MAX_PAIRS = 12   # newest days returned with a link, so the detail view can show the numbers behind it
+
+
+def _dated_pairs(sx: dict[date, float | None], sy: dict[date, float | None], lag: int) -> list[dict[str, Any]]:
+    """Newest first: the day x was logged (y is on that day plus lag_days) and both values. Same pairing as cc.paired."""
+    out = []
+    for d in sorted(sx, reverse=True):
+        a, b = sx.get(d), sy.get(d + timedelta(days=lag))
+        if a is None or b is None:
+            continue
+        out.append({"date": d.isoformat(), "x": a, "y": b})
+        if len(out) == MAX_PAIRS:
+            break
+    return out
+
+
 def analyze(series: dict[str, dict[date, float | None]], pairs: list[tuple[str, str, int, str, str, str]] | None = None) -> dict[str, Any]:
     """series: {'sleep_hours': {date: value}, ...}. Returns {'insights': [...reliable only], 'gaps': [...what to log next],
     'data_days': {series: n}, 'message'?: ...}. One false-discovery correction covers every pair, so adding pairs gets stricter."""
@@ -109,7 +125,9 @@ def analyze(series: dict[str, dict[date, float | None]], pairs: list[tuple[str, 
     for (x, y, lag, up, down, caveat), f in zip(pairs, findings):
         if f.status in ("candidate_association", "repeated_pattern"):
             shown.append({"id": f.label, "domains": [x, y], "lag_days": lag, "status": f.status, "strength": _strength(f.rho),
-                          "direction": "up" if f.rho > 0 else "down", "n_days": f.n, "rho": f.rho, "q": f.q,
+                          "direction": "up" if f.rho > 0 else "down", "n_days": f.n, "rho": f.rho, "p": f.p, "q": f.q,
+                          "repeated": f.repeated, "limitations": ([caveat] if caveat else []) + list(f.limitations),
+                          "pairs": _dated_pairs(series.get(x, {}), series.get(y, {}), lag),
                           "text": (up if f.rho > 0 else down) + f" ({f.n} days logged). " + " ".join(([caveat] if caveat else []) + f.limitations)})
         elif f.status == "insufficient_data" and f.n >= 1 and series.get(x) and series.get(y):
             gaps.append({"id": f.label, "domains": [x, y], "n_days": f.n, "need": cc.MIN_PAIRS,

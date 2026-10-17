@@ -2,7 +2,9 @@
 // user's own tracker entries; nothing is invented. Missing data stays missing.
 import { readEntries } from "../../lib/api-adapters";
 import { calendarDay } from "../../lib/dates";
-import type { BriefAction, CorrelationItem, InsightItem, SignalSlug, TrackerEntry, TrackerResponse } from "./types";
+import { kindOf, levelFromLabel, levelFromScore, type Level } from "../../insights/confidence";
+import type { TodayDetailSource } from "../../insights/detail";
+import type { BriefAction, CorrelationItem, InsightItem, IntelligenceBrief, SignalSlug, TrackerEntry, TrackerResponse } from "./types";
 
 export const WEEK_DAYS = 7;
 /** Trackers are read for 4 weeks: this week, plus the previous 3 weeks as "your usual". */
@@ -240,14 +242,45 @@ export interface TodayItem {
   pill: { text: string; kind: PillKind };
   headline: string;
   body: string;
-  /** Plain-language reasons shown under "Why does Bubbles think this?". */
+  /** Plain-language reasons; they open in the Details sheet. */
   evidence?: string[];
-  /** When set, "Why does Bubbles think this?" links here instead of expanding. */
-  whyHref?: string;
   primary: { label: string; href: string } | "add-water";
   secondary?: { label: string; href: string };
   /** Set for "this week vs your usual" cards; absent when there is nothing to compare. */
   trend?: Trend;
+  /** What the Details sheet shows for this card. */
+  source: TodayDetailSource;
+}
+
+type Draft = Omit<TodayItem, "source">;
+
+type Deviations = NonNullable<NonNullable<IntelligenceBrief["state"]>["deviations"]>;
+
+const levelOf = (kind: PillKind): Level | null => (kind === "gap" ? null : ((kind[0].toUpperCase() + kind.slice(1)) as Level));
+
+/** The Details sheet's view of a card: the same words as the card, plus this week against usual when the brief has it. */
+function sourceFor(item: Draft, deviations: Deviations | undefined): TodayDetailSource {
+  const level = levelOf(item.pill.kind);
+  const metric = item.id.startsWith("review-") ? item.id.slice("review-".length) : null;
+  const dev = metric ? deviations?.[metric] : null;
+  const change =
+    metric && dev && typeof dev.current === "number" && typeof dev.baseline === "number"
+      ? { name: plainMetric(metric), current: dev.current, usual: dev.baseline, percent: typeof dev.percent === "number" ? dev.percent : null }
+      : undefined;
+  return {
+    id: item.id,
+    label: item.label,
+    title: item.headline,
+    body: item.body,
+    evidence: item.evidence ?? [],
+    level,
+    sureReason: metric ? "This comes from what you told Bubbles in chat, so treat it as a hint." : undefined,
+    change,
+    tryThis: level === null
+      ? "A quick log fills this gap. Even one entry helps Bubbles compare with your usual."
+      : "Keep logging the way you already do. A few more days gives Bubbles a steadier picture.",
+    askQuestion: metric ? `What changed in my ${plainMetric(metric)} recently?` : `Can you explain this to me: ${item.headline}`,
+  };
 }
 
 /** `log` opens the tracker with its log sheet ready (`?log=1`, see useOpenFromHub in components/tracking/kit.tsx). The Cycle page has no such flag. */
@@ -276,8 +309,8 @@ const STATE_METRIC_SLUG: Record<string, SignalSlug> = {
 
 const GAP_ORDER: DailySlug[] = ["hydration", "sleep", "mood", "activity", "nutrition"];
 
-export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | null, briefActions: BriefAction[]): TodayItem[] {
-  const items: TodayItem[] = [];
+export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | null, briefActions: BriefAction[], deviations?: Deviations): TodayItem[] {
+  const items: Draft[] = [];
 
   if (cycle?.next && cycle.daysUntil !== undefined && cycle.daysUntil <= 3 && cycle.daysUntil >= -7) {
     const intervals = Math.max(cycle.starts - 1, 1);
@@ -336,7 +369,6 @@ export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | nul
       headline: `Your ${label} has moved compared with your usual.`,
       // The headline already says what moved; the line below says where it comes from and what to do with it (never a repeat of the headline).
       body: "This comes from what you told Bubbles in chat, so treat it as a hint. Ask Bubbles what changed, or look at your own entries first.",
-      whyHref: "/insights",
       primary: { label: "Ask Bubbles about it", href: `/companion?ask=${encodeURIComponent(`What changed in my ${label} recently?`)}` },
     });
   }
@@ -361,7 +393,7 @@ export function buildTodayItems(signals: SignalSummary[], cycle: CycleInfo | nul
     });
   }
 
-  return items.slice(0, 3);
+  return items.slice(0, 3).map((item) => ({ ...item, source: sourceFor(item, deviations) }));
 }
 
 // ── Patterns & coming up ───────────────────────────────────────────────────
@@ -371,31 +403,53 @@ export interface PatternItem {
   title: string;
   detail?: string;
   pill: { text: string; kind: PillKind };
+  /** Server id: the Details sheet fetches the days behind it from GET /insights/{id}. Absent on an older server. */
+  insightId?: string;
+  source: TodayDetailSource;
 }
 
-export function confidenceKind(confidence: number): Exclude<PillKind, "gap"> {
-  return confidence >= 0.75 ? "high" : confidence >= 0.5 ? "medium" : "low";
-}
+/** Weekly insights cover the last 30 days (GET /insights/weekly), so that is the window a detail is looked up in. */
+export const PATTERN_DAYS = 30;
+
+const WEEKLY_TRY = "Keep logging the way you already do and see whether this shows up again in a few weeks.";
 
 export function buildPatterns(insights: InsightItem[], correlations: CorrelationItem[]): PatternItem[] {
   const fromInsights = insights
     .filter((i) => i.category !== "data_gap" && i.title)
     .map((i, index): PatternItem => {
-      const kind = confidenceKind(i.confidence);
+      const level = levelFromLabel(i.confidence_label) ?? levelFromScore(i.confidence);
+      const kind = kindOf(level);
+      const id = i.id || `insight-${index}`;
       // No log count here: `supporting_events` is a capped sample of ids (8 of 14), so its length understates the
       // real count, which the description already states.
       return {
-        id: `insight-${index}`,
+        id,
         title: i.title,
         detail: i.description,
-        pill: { text: `${kind[0].toUpperCase()}${kind.slice(1)} confidence`, kind },
+        pill: { text: `${level} confidence`, kind },
+        insightId: i.id || undefined,
+        source: {
+          id, label: "Pattern", title: i.title, body: i.description, level,
+          tryThis: i.suggested_action || WEEKLY_TRY,
+          askQuestion: `Can you tell me more about this in my logs: ${i.title}?`,
+        },
       };
     });
-  const fromCorrelations = correlations.map((c, index): PatternItem => ({
-    id: `corr-${index}`,
-    title: c.interpretation,
-    pill: { text: `Exploratory · seen ${plural(c.pair_count, "time")}`, kind: "low" },
-  }));
+  const fromCorrelations = correlations.map((c, index): PatternItem => {
+    const id = c.id || `corr-${index}`;
+    const level = levelFromLabel(c.confidence_label) ?? (c.pair_count >= 6 ? "High" : c.pair_count >= 4 ? "Medium" : "Low");
+    return {
+      id,
+      title: c.interpretation,
+      pill: { text: `Exploratory · seen ${plural(c.pair_count, "time")}`, kind: "low" },
+      insightId: c.id || undefined,
+      source: {
+        id, label: "Together", title: c.interpretation, level,
+        tryThis: "Keep logging both for a few more weeks and see whether they still show up together.",
+        askQuestion: "Do these two things seem connected in my logs?",
+      },
+    };
+  });
   return [...fromInsights, ...fromCorrelations].slice(0, 3);
 }
 

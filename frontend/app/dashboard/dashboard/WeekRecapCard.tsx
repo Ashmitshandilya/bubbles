@@ -7,11 +7,21 @@ import type { WeekRecap } from "./recap";
 const BUBBLE = ["bg-tint-pink text-bubbles-pink-deep", "bg-tint-grape text-bubbles-grape-deep", "bg-tint-sky text-bubbles-sky-deep"] as const;
 
 /**
- * "Your week" on Today. Shows nothing at all when the weekly call fails or cannot say how much was recorded, so a
- * missing recap never reads as an error or as a quiet week.
+ * "Your week" on Today. When the weekly call fails or cannot say how much was recorded it says so in one line, so the
+ * fold is never an empty box and a missing recap never reads as a quiet week.
  */
-export function WeekRecapCard({ state, recap }: { state: "loading" | "error" | "ready"; recap: WeekRecap | null }) {
-  if (state === "error" || (state === "ready" && !recap)) return null;
+export function WeekRecapCard({ state, recap, onRetry }: { state: "loading" | "error" | "ready"; recap: WeekRecap | null; onRetry?: () => void }) {
+  if (state === "error") {
+    return (
+      <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[20px] border border-dashed border-line-strong p-4 text-[0.9375rem] text-ink">
+        <p className="m-0 min-w-0 flex-1">Your week did not load just now.</p>
+        {onRetry && <button type="button" onClick={onRetry} className="bubbles-press inline-flex min-h-[44px] items-center rounded-full border border-line px-4 text-sm font-extrabold text-bubbles-grape-deep">Try again</button>}
+      </div>
+    );
+  }
+  if (state === "ready" && !recap) {
+    return <p className="m-0 rounded-[20px] border border-dashed border-line-strong p-4 text-[0.9375rem] text-ink">Not enough was logged this week to sum it up. That is a gap, not a quiet week.</p>;
+  }
   if (state === "loading" || !recap) return <div className="bubbles-skeleton bubbles-skeleton-card h-[220px]" aria-label="Loading your week" />;
 
   return (
