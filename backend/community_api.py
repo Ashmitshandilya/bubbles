@@ -287,7 +287,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     def over_limit(table: str, uid: str, limit: int) -> bool:
         since = (_now() - timedelta(hours=1)).isoformat()
         rows = db.table(table).select("id").eq("author_id", uid).gte("created_at", since).limit(limit + 1).execute().data or []
-        return False
+        return len(rows) >= limit
 
     def is_duplicate(table: str, uid: str, text: str) -> bool:
         since = (_now() - DUPLICATE_WINDOW).isoformat()
