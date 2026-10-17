@@ -62,6 +62,8 @@ from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
 from organ_map_api import build_router as build_organ_map_router
+from deficiency_api import build_router as build_deficiency_router
+import deficiency_api
 import association_loader
 from context_engine import build_user_context, format_user_context
 from safety_engine import assess_safety, safety_instruction, urgent_fallback_response
@@ -575,6 +577,7 @@ app.include_router(build_import_router(get_authenticated_user, supabase))
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
 app.include_router(build_organ_map_router(get_authenticated_user, supabase))
+app.include_router(build_deficiency_router(get_authenticated_user, supabase))
 app.include_router(build_schema_router(supabase))
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
@@ -879,6 +882,11 @@ def _context_stage(user_id: str, user_message: str) -> tuple[str, float]:
     except Exception as error:  # noqa: BLE001
         from logging_util import logger
         logger.warning(component="CHAT", operation="association_block", error=error, fallback_action="continuing_without_patterns")
+    try:  # at most one soft "might be worth a blood test" note (cached; never waits; needs the AI-processing yes)
+        memory_context += deficiency_api.chat_block(supabase, user_id)
+    except Exception as error:  # noqa: BLE001
+        from logging_util import logger
+        logger.warning(component="CHAT", operation="nutrient_hint", error=error, fallback_action="continuing_without_hint")
     return memory_context, _ms(t0)
 
 
