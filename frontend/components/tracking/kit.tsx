@@ -1,5 +1,6 @@
 "use client";
 
+import { buildEditBody, editableFields, isChanged } from "../../app/lib/entry-edit";
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ApiAlert, Header, MobileNav, SectionTabs, Sidebar } from "../Navigation";
@@ -639,11 +640,67 @@ function RemoveEntry({ id, onDelete }: { id: string; onDelete: (id: string) => P
   );
 }
 
-export function History({ title = "History", status, error, onRetry, entries, freshId, signal, renderEntry, empty, onDelete }: {
+/** Edit in place: the entry's own fields as a small form. Nothing changes on screen until the server has saved it. */
+function EditEntry({ entry, onEdit }: { entry: Entry; onEdit: (id: string, body: Record<string, string | number>) => Promise<string | null> }) {
+  const [open, setOpen] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [problem, setProblem] = useState("");
+  const baseId = useId();
+  const fields = editableFields(entry);
+  if (fields.length === 0) return null;
+  if (!open) {
+    return (
+      <button type="button" onClick={() => { setValues({}); setProblem(""); setOpen(true); }} className="bubbles-press mt-2 min-h-[44px] rounded-full px-3 text-body-sm font-extrabold text-muted underline">
+        Edit
+      </button>
+    );
+  }
+  async function save() {
+    const body = buildEditBody(fields, values, entry.date);
+    if (!body) { setProblem("Please check the numbers."); return; }
+    setBusy(true);
+    setProblem("");
+    const failure = await onEdit(entry.id, body);
+    setBusy(false);
+    if (failure) setProblem(failure);
+    else setOpen(false);
+  }
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); void save(); }} className="mt-3 flex flex-col gap-3" aria-label="Edit this entry">
+      {fields.map((f) => (
+        <label key={f.key} htmlFor={`${baseId}-${f.key}`} className="flex flex-col gap-1 text-body-sm font-extrabold text-default">
+          {f.label}
+          <input
+            id={`${baseId}-${f.key}`}
+            inputMode={f.kind === "number" ? "decimal" : undefined}
+            value={values[f.key] ?? f.value}
+            maxLength={f.kind === "text" ? 500 : 12}
+            onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.value }))}
+            className="min-h-[48px] rounded-[16px] border border-line-strong bg-surface px-4 text-body font-bold text-default"
+          />
+        </label>
+      ))}
+      {problem && <p role="alert" className="m-0 text-body-sm text-default">{problem}</p>}
+      <div className="flex flex-wrap gap-2">
+        <button type="submit" disabled={busy || !isChanged(fields, values)} className="bubbles-press min-h-[48px] rounded-full border border-line-strong bg-surface px-6 text-body font-extrabold text-default disabled:opacity-50">
+          {busy ? "Saving…" : "Save changes"}
+        </button>
+        <button type="button" disabled={busy} onClick={() => setOpen(false)} className="bubbles-press min-h-[48px] rounded-full px-4 text-body font-extrabold text-muted">
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function History({ title = "History", status, error, onRetry, entries, freshId, signal, renderEntry, empty, onDelete, onEdit }: {
   title?: string; status: LoadStatus; error: string; onRetry: () => void; entries: Entry[]; freshId: string | null;
   signal: Signal; renderEntry: (entry: Entry) => ReactNode; empty: ReactNode;
   /** When given, every entry can be removed (after a yes/no). */
   onDelete?: (id: string) => Promise<string | null>;
+  /** When given, every entry can be edited in place. */
+  onEdit?: (id: string, body: Record<string, string | number>) => Promise<string | null>;
 }) {
   const headingId = useId();
   const s = SIGNALS[signal];
@@ -689,7 +746,12 @@ export function History({ title = "History", status, error, onRetry, entries, fr
           {group.items.map((entry) => (
             <li key={entry.id} className={`rounded-[24px] border bg-surface p-4 ${s.border} ${entry.id === freshId ? "bubbles-rise" : ""}`}>
               {renderEntry(entry)}
-              {onDelete && !entry.id.startsWith("pending-") && <RemoveEntry id={entry.id} onDelete={onDelete} />}
+              {(onEdit || onDelete) && !entry.id.startsWith("pending-") && (
+                <div className="flex flex-wrap items-center gap-1">
+                  {onEdit && <EditEntry entry={entry} onEdit={onEdit} />}
+                  {onDelete && <RemoveEntry id={entry.id} onDelete={onDelete} />}
+                </div>
+              )}
             </li>
           ))}
         </ul>

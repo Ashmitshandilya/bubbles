@@ -128,6 +128,7 @@ function Hydration() {
 
       <History
         onDelete={history.remove}
+        onEdit={history.update}
         title="Your drinks"
         status={history.status}
         error={history.error}
