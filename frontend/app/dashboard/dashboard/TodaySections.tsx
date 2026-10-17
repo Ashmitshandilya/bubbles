@@ -7,7 +7,9 @@ import { BubblesMascot } from "../../../components/BubblesMascot";
 import { askHref } from "../../lib/ask-handoff";
 import { TREND_WORDS, confidenceDots, sparkPath, sparkPoints } from "./brief";
 import { sourceLine } from "../../lib/track-pulse";
-import { formatDay, SIGNAL_META, type CycleInfo, type PatternItem, type PillKind, type SignalSummary, type TodayItem, type Trend } from "./today";
+import { DetailsButton } from "../../insights/InsightDetailSheet";
+import { toDetail } from "../../insights/detail";
+import { formatDay, PATTERN_DAYS, SIGNAL_META, type CycleInfo, type PatternItem, type PillKind, type SignalSummary, type TodayItem, type Trend } from "./today";
 import type { SignalSlug, TrackerEntry } from "./types";
 
 // ── Primitives ─────────────────────────────────────────────────────────────
@@ -292,7 +294,7 @@ function AlsoCard({ item, onAddWater, waterBusy }: { item: TodayItem } & WaterPr
         <span className={`text-sm font-extrabold ${tone.ink}`}>{item.label}</span>
         <EvidenceChip pill={item.pill} />
       </div>
-      <strong data-private className="font-display text-lg font-semibold leading-snug">{item.headline}</strong>
+      <h3 data-private className="m-0 font-display text-lg font-semibold leading-snug">{item.headline}</h3>
       <p data-private className="m-0 text-[0.9375rem] leading-relaxed text-ink-soft">{item.body}</p>
       <div className="mt-auto flex flex-wrap items-start gap-2">
         <PrimaryAction item={item} onAddWater={onAddWater} waterBusy={waterBusy} quiet />
@@ -311,18 +313,29 @@ function PrimaryAction({ item, onAddWater, waterBusy, quiet = false }: { item: T
 }
 
 function Why({ item }: { item: TodayItem }) {
-  if (item.whyHref) return <Link href={item.whyHref} className={`${TEXT_LINK} relative`}>Why does Bubbles think this?</Link>;
-  if (!item.evidence?.length) return null;
+  const details = (
+    <DetailsButton
+      headline={item.headline}
+      target={() => ({ id: null, days: PATTERN_DAYS, fetch: false, base: toDetail({ kind: "today", item: item.source }) })}
+    />
+  );
+  if (!item.evidence?.length) return <div className="relative">{details}</div>;
   return (
-    <details className="group relative min-w-0">
-      <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-sm font-extrabold text-bubbles-grape-deep [&::-webkit-details-marker]:hidden">
-        Why does Bubbles think this?
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-180"><path d="m6 9 6 6 6-6" /></svg>
-      </summary>
-      <ul className="bubbles-rise mt-1 flex list-disc flex-col gap-1.5 rounded-[20px] bg-tint-grape py-3 pl-8 pr-4 text-sm leading-relaxed text-ink">
-        {item.evidence.map((line) => <li key={line}>{line}</li>)}
-      </ul>
-    </details>
+    <div className="relative flex flex-wrap items-start gap-x-3 gap-y-1">
+      <details className="group min-w-0">
+        <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 text-sm font-extrabold text-bubbles-grape-deep [&::-webkit-details-marker]:hidden">
+          <span>
+            Why does Bubbles think this?
+            <span className="sr-only"> for {item.headline}</span>
+          </span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-180"><path d="m6 9 6 6 6-6" /></svg>
+        </summary>
+        <ul className="bubbles-rise mt-1 flex list-disc flex-col gap-1.5 rounded-[20px] bg-tint-grape py-3 pl-8 pr-4 text-sm leading-relaxed text-ink">
+          {item.evidence.map((line) => <li key={line}>{line}</li>)}
+        </ul>
+      </details>
+      {details}
+    </div>
   );
 }
 
@@ -471,9 +484,17 @@ export function Patterns({ state, items, note, onRetry }: { state: "loading" | "
           {items.map((item) => (
             <li key={item.id} className={CARD}>
               <EvidenceChip pill={item.pill} />
-              <strong data-private className="text-base leading-snug">{item.title}</strong>
+              <h3 data-private className="m-0 text-base font-bold leading-snug">{item.title}</h3>
               {item.detail && <p data-private className="m-0 text-sm leading-relaxed text-ink-soft">{item.detail}</p>}
-              <Link href="/insights" className={TEXT_LINK}>See the evidence</Link>
+              <DetailsButton
+                headline={item.title}
+                target={() => ({
+                  id: item.insightId ?? null,
+                  days: PATTERN_DAYS,
+                  fetch: Boolean(item.insightId),
+                  base: toDetail({ kind: "today", item: item.source }),
+                })}
+              />
             </li>
           ))}
         </ul>

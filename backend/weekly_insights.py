@@ -11,6 +11,9 @@ from typing import Any
 from pattern_engine import analyze, normalize_events
 
 
+CONFIDENCE_NUMBER = {"high": 0.8, "medium": 0.6, "low": 0.35}
+
+
 def _week_boundaries(now: datetime | None = None) -> tuple[datetime, datetime]:
     now = now or datetime.now(timezone.utc)
     if now.tzinfo is None:
@@ -41,6 +44,7 @@ def build_weekly_insights(
         insights.append({
             "type": "data_gap",
             "priority": "low",
+            "id": "gap:week",
             "title": "Not enough data yet",
             "text": "Bubbles doesn't have enough recent health data to identify meaningful weekly patterns.",
             "evidence_count": 0,
@@ -48,6 +52,8 @@ def build_weekly_insights(
     else:
         for pattern in weekly_patterns[:5]:
             insights.append({
+                "id": pattern["id"],
+                "confidence_label": pattern["confidence_label"],
                 "type": "recurrence",
                 "priority": "medium" if pattern["occurrence_count"] >= 3 else "low",
                 "title": f"Repeated {pattern['subject']}",
@@ -62,6 +68,8 @@ def build_weekly_insights(
 
         for corr in weekly_correlations[:5]:
             insights.append({
+                "id": corr["id"],
+                "confidence_label": corr["confidence_label"],
                 "type": "association",
                 "priority": "low",
                 "title": "Two signals appeared together",
@@ -101,13 +109,16 @@ def to_response_shape(data: dict[str, Any]) -> dict[str, Any]:
     items = []
     for item in data.get("insights") or []:
         evidence = int(item.get("evidence_count") or 0)
+        label = item.get("confidence_label")
         items.append({
+            "id": item.get("id"),
+            "confidence_label": label,
             "title": item.get("title") or "Observation",
             "description": item.get("text") or "",
             "category": item.get("type") or "observation",
-            # ponytail: evidence-count heuristic (0 for gaps, 0.3 + 0.05/observation, capped 0.85);
-            # replace with a calibrated score once insights carry their own confidence.
-            "confidence": 0.0 if item.get("type") == "data_gap" else round(min(0.85, 0.3 + 0.05 * evidence), 2),
+            # The number agrees with confidence_label (same rule as the Patterns page); a gap has none.
+            # ponytail: evidence-count heuristic when an item has no label (0.3 + 0.05/observation, capped 0.85).
+            "confidence": 0.0 if item.get("type") == "data_gap" else CONFIDENCE_NUMBER.get(label) or round(min(0.85, 0.3 + 0.05 * evidence), 2),
             "supporting_events": [str(e) for e in (item.get("source_event_ids") or [])],
             "actionable": item.get("type") == "data_gap",
             "suggested_action": "Log this signal so Bubbles can compare it with your usual." if item.get("type") == "data_gap" else None,

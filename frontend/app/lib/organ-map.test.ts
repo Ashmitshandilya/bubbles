@@ -76,6 +76,7 @@ describe("readOrganMap", () => {
       notes: [],
       updatedAt: "2026-10-12",
       evidence: [{ date: "2026-10-12", value: "Chest pain: 7/10", source: "Chat" }],
+      evidenceCount: 1,
       confidence: "high",
       confidenceReason: "A recent entry needs attention whatever else the data says.",
       missing: ["Resting heart rate"],
@@ -105,6 +106,17 @@ describe("readOrganMap", () => {
       safety: null,
       chatPrompt: "What do my recent entries say about my lungs?",
     });
+  });
+
+  it("reports how many entries sit behind an organ, never fewer than the ones it was sent", () => {
+    const [more, fewer, none] = readOrganMap([
+      { organ_id: "heart", status: "worth_watching", evidence: [{ value: "a" }, { value: "b" }], evidence_count: 30 },
+      { organ_id: "lungs", status: "worth_watching", evidence: [{ value: "a" }, { value: "b" }], evidence_count: 1 },
+      { organ_id: "brain", status: "no_data", evidence_count: "7" },
+    ]);
+    expect(more.evidenceCount).toBe(30);
+    expect(fewer.evidenceCount).toBe(2);
+    expect(none.evidenceCount).toBe(0);
   });
 
   it("never turns an unknown or empty status into reassurance", () => {

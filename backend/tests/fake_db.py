@@ -12,9 +12,11 @@ import copy
 import itertools
 import types
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 _clock = itertools.count(1)
+_TODAY = datetime.now(timezone.utc).strftime("%Y-%m-%d")   # rows default to today, so "recent" logic (e.g. the 48 h rule for resumed chats) sees them as recent
 
 
 class FakeAPIError(Exception):
@@ -93,6 +95,10 @@ class Query:
         self.filters.append(lambda r, c=col, v=val: _get(r, c) is not None and str(_get(r, c)) >= str(v))
         return self
 
+    def lt(self, col, val):
+        self.filters.append(lambda r, c=col, v=val: _get(r, c) is not None and str(_get(r, c)) < str(v))
+        return self
+
     def lte(self, col, val):
         self.filters.append(lambda r, c=col, v=val: _get(r, c) is not None and str(_get(r, c)) <= str(v))
         return self
@@ -125,7 +131,7 @@ class Query:
             for item in items:
                 row = copy.deepcopy(item)
                 row.setdefault("id", str(uuid.uuid4()))
-                row.setdefault("created_at", f"2026-10-07T10:{next(_clock) // 60 % 60:02d}:{next(_clock) % 60:02d}+00:00")
+                row.setdefault("created_at", f"{_TODAY}T10:{next(_clock) // 60 % 60:02d}:{next(_clock) % 60:02d}+00:00")
                 for unique in self.db.unique.get(self.table, ()):
                     if any(r.get(unique) is not None and r.get(unique) == row.get(unique) and r.get("user_id") == row.get("user_id") for r in rows):
                         raise FakeAPIError(f"duplicate key value violates unique constraint ({unique})", "23505")
@@ -166,14 +172,32 @@ class FakeDB:
         self.tables: dict[str, list[dict]] = {}
         self.failures: dict[str, Exception] = {}
         self.unique: dict[str, tuple[str, ...]] = {"chat_messages": ("client_message_id",)}
+        self.missing_functions: set[str] = set()
+        self.rpc_calls = 0
         self.auth = FakeAuth(tokens or {"tok": "00000000-0000-0000-0000-000000000001"})
 
     def table(self, name: str) -> Query:
         return Query(self, name)
 
-    def rpc(self, *_a, **_k):
+    def rpc(self, name: str = "", params: dict | None = None, *_a, **_k):
+        if name == "bubbles_chat_counts":   # the SQL function of 20261016_bubbles_lookup_indexes.sql; add the name to ``missing_functions`` to simulate it not being installed
+            if name in self.missing_functions:
+                raise FakeAPIError("Could not find the function public.bubbles_chat_counts in the schema cache", "PGRST202")
+            self.rpc_calls += 1
+            rows = [r for r in self.tables.get("chat_messages", []) if str(r.get("user_id")) == str(params["p_user"]) and str(r.get("conversation_id")) in set(map(str, params["p_ids"]))]
+            counts: dict[str, int] = {}
+            for r in rows:
+                counts[str(r["conversation_id"])] = counts.get(str(r["conversation_id"]), 0) + 1
+            return types.SimpleNamespace(execute=lambda: Result([{"conversation_id": k, "message_count": v} for k, v in counts.items()]))
         return Query(self, "_rpc")
 
     # test helpers
     def rows(self, table: str, **match) -> list[dict]:
         return [r for r in self.tables.get(table, []) if all(r.get(k) == v for k, v in match.items())]
+
+
+def grant_consent(db: FakeDB, uid: str, *purposes: str) -> None:
+    """Test helper: record a yes (source "system") for each purpose, through the real ledger code."""
+    import consent
+    for purpose in purposes:
+        consent.set_purpose(db, uid, purpose, True, source="system", hash_seen=consent.text_hash(purpose))

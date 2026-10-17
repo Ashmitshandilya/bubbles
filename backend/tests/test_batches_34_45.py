@@ -21,8 +21,10 @@ def test_explicit_personal_facts():
     assert {f["key"] for f in facts} >= {"location","occupation"}
 
 def test_response_format():
-    out=normalize_response("First sentence. Second sentence. Third sentence.")
-    assert "\n" in out
+    friendly="First sentence. Second sentence. Third sentence. Fourth sentence. Fifth sentence."
+    assert normalize_response(friendly)==friendly            # a conversational paragraph is never turned into bullets
+    assert normalize_response("A\n\n\n\nB")=="A\n\nB"
+    assert normalize_response("  ")
 
 def test_personalization():
     assert build_personalization({"full_name":"Ashmit"},{},[] )["style"]=="warm_formal"

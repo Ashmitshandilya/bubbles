@@ -47,6 +47,8 @@ class ExtractedEventsListResponse(SuccessResponse):
 # ============================================================================
 
 class InsightItem(BaseModel):
+    id: Optional[str] = None  # stable, URL-safe: GET /insights/{id} resolves it
+    confidence_label: Optional[str] = None  # "low" | "medium" | "high", the same word the Patterns page shows
     title: str
     description: str
     category: str
@@ -156,6 +158,8 @@ class CorrelationItem(BaseModel):
     window_days: int
     strength: float
     interpretation: str
+    id: Optional[str] = None
+    confidence_label: Optional[str] = None
     source_event_ids: List[str] = Field(default_factory=list)
 
 

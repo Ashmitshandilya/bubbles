@@ -40,6 +40,10 @@ logger.error  ─▶ ops "error"                                              ad
 | `frontend/app/admin/*` | The console (`AdminClient.tsx` shell, `panels.tsx` tabs, `kit.tsx` shared pieces, `format.ts` wording with tests). |
 | `supabase/migrations/20261013_bubbles_ops.sql` | The two tables, RLS on with no policies, nothing granted to anon or authenticated. |
 
+## Add another admin
+
+Admins are the ids in `BUBBLES_ADMIN_USER_IDS` on Render (comma-separated, exact match). To add one: open Supabase, Authentication, Users, copy the person's UUID, append `,<uuid>` to the variable, save (Render restarts the service). They need the authenticator app switched on, because the gate asks for a two-step session. There is no in-app way to add an admin, on purpose. To remove one, delete the id the same way; the gate reads the variable on every request.
+
 ## Authorization
 
 - **Identity:** Supabase Auth through `get_authenticated_user(..., fresh=True)`. The sign-in cache is never used for admin requests.
@@ -54,21 +58,53 @@ logger.error  ─▶ ops "error"                                              ad
 
 **What is public on purpose:** the website route `/admin` exists for everyone (it answers 200 with the loading screen, then shows "We couldn't find that page" to a non-admin), and the console's code ships in the website bundle and the Android app. That reveals nothing about data: every number and every action is behind the API gate above. With `BUBBLES_ADMIN_USER_IDS` empty the gate refuses before any sign-in call.
 
+## The one named exception: the user id on the Live page
+
+Owner decision (mega task brief, F1): the owner sees which account made a request. Everything else about the design stays: `observe the system, not the user`. How it is kept narrow:
+
+- `uid` is a top-level field on `api` and `ai_attempt` events in the **in-memory ring only** (5,000 events, then it is gone). It is never in `data`, never in the write queue, never in `bubbles_ops_events`, never in a log line, and not in `ops_rollups_daily`.
+- Only `GET /admin/live` (and its alias `/admin/events/live`) returns it, and only to a session that passed the admin gate. `/admin/events`, `/overview`, `/overall`, `/usage` and every internal reader (`ops_telemetry.recent` without `with_uid`, `memory_events`) strip it.
+- `bind_user` accepts only a UUID-shaped string; anything else is ignored.
+- Messages, prompts, replies, symptoms and notes still never appear anywhere. The privacy notice says it in one line (operations monitoring).
+- Tests: `tests/test_admin_overall.py`, `tests/test_admin_negative.py`.
+
+## The Overall page and the hourly rollup
+
+`ops_rollups.py` turns each completed hour of raw events into additive counters in `ops_rollups_daily` (day, dimension, key, count; RLS on, no client policy; migration `20261016_bubbles_ops_rollups.sql`). The watermark (`_state / events_through`) moves in the same upsert as the counters, so a crash neither loses nor double counts an hour, and running it twice changes nothing. It runs lazily when the Overall page is read for 7d, 30d or all (at most every 10 minutes per process, never blocking a second caller) and from the cron call below. Before the migration is applied the page counts the events still held and says so.
+
+**Cron contract (for the push/keep-awake job, lane L8):** call `ops_rollups.run_rollups(db)` (db = `supabase_client.supabase`, or `None` to use it) from the same authenticated cron endpoint, once an hour. It never raises and returns `{"status": "ok" | "idle" | "skipped" | "not_set_up" | "error", ...}`; log only the status word. It does at most 72 hours per call, so a long gap catches up over several calls. Known ceiling: the watermark is read and written without a compare-and-swap, so two server instances rolling up at the same moment could double count an hour; Render free runs one instance.
+
 ## Telemetry events
 
 One table, `bubbles_ops_events(id, at, kind, request_id, data jsonb)`. `data` may only hold these keys (anything else is dropped in `record()`):
 
 | kind | fields |
 |---|---|
-| `api` | method, route (template such as `/partner/{token}`, or `unmatched`; never the raw path or query), status, latency_ms; chat adds route_kind, safety_level, ai_called (fixed value lists only) |
-| `ai_attempt` | provider, model, position (1 = first tried), outcome (`success`, `error`, `timeout`, `budget_spent`, `invalid_json`), error_category, latency_ms, token counts |
+| `api` | method, route (template such as `/partner/{token}`, or `unmatched`; never the raw path or query), status, latency_ms; chat adds route_kind, safety_level, ai_called (fixed value lists only) and the numbers `stage_pre_ms`, `stage_ctx_ms`, `stage_rag_ms`, `stage_ai_ms`, `stage_post_ms` (see below) |
+| `ai_attempt` | provider, model, position (1 = first tried), outcome (`success`, `error`, `timeout`, `budget_spent`, `invalid_json`), error_category, latency_ms, token counts (`input_tokens`, `output_tokens`, `total_tokens`, `cached_tokens`) |
 | `ai_reply` | outcome (`answered` or `degraded`), provider, model, attempts, fallback_used, total_ms. Written only after the answer passed validation. |
 | `error` | category (auth, authorization, validation, rate_limit, database, rag, ai_provider, timeout, network, cache, internal), component, route, error_class, severity. Never the message. |
 | `audit` | action, target, old, new, outcome, actor (the administrator's id; operators are not health-data subjects) |
+| `funnel` | step: one of a fixed list (`core`, `extras`, `later`, `completed`, `under_18`). A count of people reaching a first-run setup step, never an answer. Needs `20261016_bubbles_ops_funnel.sql`; until then it stays in memory. |
+| `client` | code: one of a fixed list (`render_error`, `unhandled_rejection`, `chunk_load_failed`, `api_unreachable`, `sign_in_refresh_failed`, `stream_fallback`), sent by the website or app to `POST /telemetry/client`. Same migration. |
 
-The portal's own `/admin/*` requests are not recorded as traffic. Retention: technical events `telemetry_retention_days` (default 14, settable 1 to 90), audit rows 365 days, pruned at most hourly.
+The portal's own `/admin/*` requests are not recorded as traffic. Retention: technical events `telemetry_retention_days` (default 14, settable 1 to 90), funnel rows 90 days, audit rows 365 days, pruned at most hourly.
+
+**Where a chat turn spends its time.** The five `stage_*_ms` numbers on a `/chat` event (numbers only, from a fixed list of names, each 0 to 600,000; text is refused): `pre` = sign-in checks to the safety gate (conversation, saving the message, understanding it), `ctx` = reading the person's own context, `rag` = the evidence lookup, `ai` = waiting for the model, `post` = checking and saving the reply. `ctx` and `rag` run side by side, so their sum can be more than the request's own time. The AI summary (`/admin/ai`, `/admin/overview`) carries p50 and p95 per stage as `stage_ms`. `/chat/stream` events carry only `stage_pre_ms` (the stream's event is written when the stream opens). Cost is never stored in an event; see Cost below.
 
 **Request id:** every response carries `X-Request-Id` (8 hex). The same id appears on the request's events and on log lines, so a user-reported failure can be traced in Logs without any content.
+
+## How Bubbles answers
+
+1. **Safety first, no model.** The safety engine reads the message before anything else. Emergencies, corrections, clarifications, daily logs, fitness, small talk and follow-ups to a safety reply are answered with fixed or rule-built text and never call a model.
+2. **Otherwise, with the person's yes to outside AI** (Settings), the reply is written by the first model that answers: **Gemini** (`gemini-3-flash-preview`, minimal thinking, 900 output tokens, 9 s per call), then **Groq** (`openai/gpt-oss-20b`), **NVIDIA** (`nvidia/nemotron-3.5-lightning-30b-a3b`), **Mistral** (`ministral-14b-latest`). One 50 s budget covers the whole chain and one retry on 429, 5xx or timeout. The keyless pool is off and paid AI is off.
+3. **If nobody answers** the person gets the fixed calm fallback and what Bubbles understood is still saved.
+4. **After the model:** the reply is checked (no doses, no source names, no verdicts, urgent replies keep their call to act today) before it is saved and shown.
+5. **Allowlist asymmetry:** Groq, NVIDIA and Mistral models must be on `FREE_MODEL_ALLOWLIST`; the Gemini model is read from `GEMINI_MODEL` and is not checked. Use a free-tier key.
+
+## Cost, usage and people (`GET /admin/usage`)
+
+Everything here is counts and rates, worked out when the page is read. **Cost** = tokens x the published price, per provider and model: while paid AI is off every model shows `$0, free tier` (with `if_paid_usd`, what the same tokens would cost at the published price where one is known); a model with no name or no price row shows `unknown`, never free. **Usage** = safety tiers per day (GREEN, AMBER, RED), the mix of reply kinds, the share answered by a model versus fixed text, how often a consent question was needed, fallback, degraded and timeout rates, which routes are used (successful calls only), the first-run funnel, and the app-problem codes. **People** = distinct people who sent a message in the last 1, 7 and 30 days and new profiles in the last 7 and 30 days, as integers only (`ops_usage.py`; reads at most 20,000 message rows and says `capped`).
 
 ## "Who is actually answering?"
 
@@ -82,7 +118,7 @@ The portal's own `/admin/*` requests are not recorded as traffic. Retention: tec
 | Key | Values | Effect |
 |---|---|---|
 | `provider_paused.<Gemini, Groq, NVIDIA, Mistral>` | true/false | Skips that provider. Applied after the policy gate, so it can only remove a provider, never add, reorder or reach the keyless pool. Read from memory on the chat path; if unreadable, nothing is paused. All paused = the existing calm fallback message, and the portal shows an urgent note. |
-| `cache_enabled.<sign_in, consent, profile_sync>` | true/false | Turns a server cache off (and empties it). |
+| `cache_enabled.<sign_in, consent, profile_sync, embedding, rag_policy, style_block, profile_context>` | true/false | Turns a server cache off (and empties it). |
 | `telemetry_retention_days` | 1 to 90 | Prune age for technical events. |
 
 Anything else is refused with 422 and the refusal is audited. Not editable from the portal: secrets, safety rules, clinical constants, sign-in providers, RLS, DNS, billing, model allow-lists, the paid and keyless switches. Settings live in one process (DEPLOY.md: one Render instance).
@@ -94,6 +130,8 @@ Anything else is refused with 422 and the refusal is audited. Not editable from 
 | `sign_in` | SHA-256 of the token | 30 s, never past the token's own expiry | expiry; Clear caches; turning it off | Successes only; the two-step check ran before storing; `/admin` always checks fresh. Accepted trade-off: a token signed out elsewhere keeps working for up to 30 s. |
 | `consent` | (user id, consent version) | 5 min | `consent.set_ai_chat` (before and after the write), `doc_store.delete_everything` | Read errors are never stored, and an unreadable answer means "no". A withdrawal applies to the very next message. |
 | `profile_sync` | user id | 1 h | expiry | Holds only "this person's name is already stored". |
+
+The chat path adds four more: `embedding` (the meaning-search numbers for a recent question; keyed by a hash of the normalised question, no user id, 1 h, a failed call is never stored), `rag_policy` (each reading page's handling rule, global, 1 h, cleared when a document is ingested), `style_block` (a person's tone settings, 2 min, cleared when the first-run setup or the name is saved, an empty answer is never stored) and `profile_context` (profile and preferences read for replies, 1 min, same invalidation). Memory items and health events are deliberately not cached: a detail saved a second ago is in the next reply.
 
 Every cache is per user or holds no user data, lives in process memory only, and falls back to the normal lookup on any internal error. Concurrent identical misses share one lookup. Stats (hit rate, misses, how long a miss takes) appear under Overview, then Errors and caches. The browser keeps its existing 20-second per-user read cache (`app/lib/api-cache.ts`), which already de-duplicates identical reads in flight. Admin reads bypass it.
 
@@ -111,6 +149,9 @@ All routes are under `/admin`, admin only, and absent from the schema. Ranges ar
 | `GET /api?range=` | per-route table with 12-bucket trend |
 | `GET /events?kind=&provider=&outcome=&status=&route=&request_id=&before=&limit=` | log explorer with cursor paging (`before` is the `at` of the last row) |
 | `GET /events/live?after=&process_started_at=` | events after a cursor from memory; flags a restart or a gap |
+| `GET /live?since=<cursor>` (same as `/events/live?after=`) | the Live page: events after a cursor from memory, newest last, **with `uid` on `api` and `ai_attempt` events** (see the named exception below); `restarted` and `gap` flags |
+| `GET /overall?range=1h\|24h\|7d\|30d\|all` | the Overall page: totals, per-model rates and latency, per-stage latency, funnel, retention, consent rates, safety by day, community and push counts. Counters come from `ops_rollups_daily` (durable) plus raw events after the watermark |
+| `GET /usage?range=` | usage counts, cost at read time and active-people integers (see above) |
 | `GET /settings`, `PUT /settings {key, value}` | safe settings |
 | `GET /audit?range=` | admin actions and sampled refusals |
 | `POST /cache/clear` | clears every server cache (audited) |

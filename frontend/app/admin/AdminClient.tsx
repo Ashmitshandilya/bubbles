@@ -9,9 +9,10 @@ import NotFound from "../not-found";
 import { useApi, useAuth } from "../../components/Providers";
 import { ApiAlert } from "../../components/Navigation";
 import { BubblesMascot } from "../../components/BubblesMascot";
-import { RANGES, TABS, parseView, viewSearch, type RangeId, type TabId } from "./format";
+import { OVERALL_RANGES, RANGES, TABS, parseView, rangeFor, viewSearch, type TabId, type ViewRange } from "./format";
 import { AdminContext, Pill, type AdminCtx, type Me, type Persistence } from "./kit";
-import { AiPanel, ApiPanel, LivePanel, LogsPanel, OverviewPanel, RequestDialog, SettingsPanel } from "./panels";
+import { RequestDialog } from "./panels";
+import { PANELS } from "./registry";
 
 function MemoryBanner({ persistence }: { persistence: Persistence }) {
   if (persistence.mode === "stored") return null;
@@ -57,11 +58,11 @@ function Tabs({ tab, onTab }: { tab: TabId; onTab: (t: TabId, push?: boolean) =>
   );
 }
 
-function RangePicker({ range, onRange }: { range: RangeId; onRange: (r: RangeId) => void }) {
+function RangePicker({ range, ranges, onRange }: { range: ViewRange; ranges: readonly { id: ViewRange; label: string }[]; onRange: (r: ViewRange) => void }) {
   return (
     <div role="group" aria-label="Time range"
       className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {RANGES.map((r) => (
+      {ranges.map((r) => (
         <button key={r.id} type="button" aria-pressed={r.id === range} onClick={() => onRange(r.id)}
           className={`min-h-[44px] shrink-0 rounded-full border px-3 text-body-sm font-extrabold ${
             r.id === range ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-ink-soft hover:border-line-strong"}`}>
@@ -105,7 +106,8 @@ export function AdminClient() {
   // The address is updated outside any state updater: Next.js listens to history changes and updates its own router state,
   // which must not happen while React is rendering this component.
   const go = useCallback((next: Partial<ReturnType<typeof parseView>>, push = true) => {
-    const merged = { ...viewRef.current, ...next };
+    const base = { ...viewRef.current, ...next };
+    const merged = { ...base, range: rangeFor(base.tab, base.range) };
     const url = `${window.location.pathname}${viewSearch(merged)}`;
     if (push) window.history.pushState(null, "", url);
     else window.history.replaceState(null, "", url);
@@ -143,6 +145,7 @@ export function AdminClient() {
   if (me === "denied") return <NotFound />;
   if (loading || me === null) return <Opening />;
 
+  const spec = PANELS[view.tab];
   const ctx: AdminCtx = { me, adminFetch, openRequest: (id) => go({ request: id }) };
   return (
     <AdminContext.Provider value={ctx}>
@@ -162,15 +165,12 @@ export function AdminClient() {
           <MemoryBanner persistence={me.persistence} />
           <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <Tabs tab={view.tab} onTab={(tab, push = true) => go({ tab }, push)} />
-            {view.tab !== "live" && view.tab !== "settings" && <RangePicker range={view.range} onRange={(range) => go({ range }, false)} />}
+            {spec.ranges !== "none" && (
+              <RangePicker range={view.range} ranges={spec.ranges === "overall" ? OVERALL_RANGES : RANGES} onRange={(range) => go({ range }, false)} />
+            )}
           </div>
           <div id="admin-panel" role="tabpanel" aria-labelledby={`tab-${view.tab}`} className="space-y-5">
-            {view.tab === "overview" && <OverviewPanel range={view.range} />}
-            {view.tab === "ai" && <AiPanel range={view.range} />}
-            {view.tab === "live" && <LivePanel />}
-            {view.tab === "api" && <ApiPanel range={view.range} />}
-            {view.tab === "logs" && <LogsPanel range={view.range} />}
-            {view.tab === "settings" && <SettingsPanel />}
+            {spec.render(view.range)}
           </div>
         </main>
         {view.request && <RequestDialog id={view.request} onClose={() => go({ request: null })} />}

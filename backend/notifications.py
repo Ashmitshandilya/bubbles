@@ -9,9 +9,10 @@ Rules this module enforces:
     here is a safety path, and any failure here is swallowed rather than allowed to affect a request.
 
 Channels: ``in_app`` (default on). ``email`` is off by default and only works when SMTP_HOST (and optionally SMTP_PORT,
-SMTP_USER, SMTP_PASSWORD, SMTP_FROM) are set; it fails soft. ``push`` is a stub: browser web push needs VAPID keys that the
-project owner generates (``npx web-push generate-vapid-keys``) plus a service worker and a ``push_subscriptions`` store;
-none of that exists yet, so ``send_web_push`` always reports ``not_configured``.
+SMTP_USER, SMTP_PASSWORD, SMTP_FROM) are set; it fails soft. ``push`` is phone notifications in the Android app through
+Firebase Cloud Messaging (``push_fcm.py``): off by default, works only when FIREBASE_SERVICE_ACCOUNT_JSON is set and the
+person has also said yes to ``push_notifications`` in the consent log. Browser web push is still a stub
+(``send_web_push`` always reports ``not_configured``).
 
 Docs: ``notification`` / key = id, ``notification_settings`` / key = ``me``.
 """
@@ -27,6 +28,7 @@ from email.message import EmailMessage
 from typing import Any, Callable
 
 import clinical_constants as K
+import consent
 import doc_store
 import hydration_engine as H
 import med_schedule as M
@@ -89,8 +91,11 @@ def smtp_configured() -> bool:
 
 
 def channel_status() -> dict[str, Any]:
+    import push_fcm
+
+    push = push_fcm.configured()
     return {"in_app": {"available": True}, "email": {"available": smtp_configured(), "note": "Needs SMTP_HOST on the server."},
-            "push": {"available": False, "note": "Browser push isn't set up yet; in-app notifications are used."}}
+            "push": {"available": push, "note": "Works in the Android app." if push else "Phone notifications aren't set up on the server yet."}}
 
 
 def normalize_settings(body: dict, current: dict | None = None) -> dict[str, Any]:
@@ -203,7 +208,7 @@ def create_notification(db: Any, uid: str, kind: str, *, title: str | None = Non
     settings = settings or load_settings(db, uid)
     if kind in SETTING_TYPES and not settings["types"].get(kind, True):
         return None
-    if not settings["channels"].get("in_app", True) and not settings["channels"].get("email"):
+    if not any(settings["channels"].get(c, c == "in_app") for c in ("in_app", "email", "push")):
         return None
     now = now or datetime.now(timezone.utc)
     local = W.local_now(now, settings["tz_offset_minutes"])
@@ -220,8 +225,12 @@ def create_notification(db: Any, uid: str, kind: str, *, title: str | None = Non
     payload = {"id": nid, "kind": kind, "title": t, "body": b, "created_at": now.astimezone(timezone.utc).isoformat(),
                "local_date": today, "read": False, "dedupe_key": dedupe_key}
     doc_store.put(db, uid, "notification", nid, payload, when=payload["created_at"])
-    if settings["channels"].get("email"):
+    if settings["channels"].get("email") and consent.is_granted(db, uid, "email_reminders"):   # the switch alone is not a yes
         send_email(email, t, b, smtp_factory=mailer)   # fail-soft; the in-app copy above already exists
+    if settings["channels"].get("push"):
+        import push_fcm
+
+        push_fcm.deliver(db, uid, payload, settings)   # fail-soft; checks the consent log too
     return payload
 
 

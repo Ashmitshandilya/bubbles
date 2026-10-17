@@ -28,6 +28,8 @@ export interface Organ {
   /** Day of the newest entry behind this organ, not when the map was built. */
   updatedAt: string | null;
   evidence: OrganEvidence[];
+  /** How many entries sit behind this organ. The server sends only the newest few in `evidence`, so this can be larger. */
+  evidenceCount: number;
   confidence: Confidence | null;
   /** Why Bubbles is that sure (or unsure), in the server's words. */
   confidenceReason: string | null;
@@ -197,6 +199,7 @@ function readOrgan(value: unknown): Organ | null {
     notes: strings(raw.notes),
     updatedAt: text(raw.updated_at),
     evidence,
+    evidenceCount: Math.max(evidence.length, typeof raw.evidence_count === "number" && Number.isFinite(raw.evidence_count) ? Math.floor(raw.evidence_count) : 0),
     confidence: status === "no_data" ? null : readConfidence(confidence ? confidence.level : raw.confidence),
     confidenceReason: confidence ? text(confidence.reason) : null,
     missing: strings(raw.missing),

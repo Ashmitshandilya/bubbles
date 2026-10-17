@@ -23,6 +23,28 @@ _DIAGNOSIS = re.compile(r"\b(?:you\s+(?:definitely|certainly|clearly)\s+(?:have|
 _FALSE_REASSURANCE = re.compile(r"\b(?:nothing\s+to\s+worry|no\s+need\s+to\s+worry|you(?:'re|\s+are)\s+fine|definitely\s+nothing|it(?:'s|\s+is)\s+nothing)\b", re.I)
 
 
+_AUTHORITY = re.compile(
+    r"\b(?:NHS|WHO|CDC|NICE|NIH|ICMR|AHA|ADA|MedlinePlus|Mayo(?:\s+Clinic)?|World\s+Health\s+Organi[sz]ation|(?i:guidelines?\s+(?:say|suggest|recommend|advise)|studies\s+(?:show|suggest)|according\s+to))\b")
+_LEAD_ATTRIBUTION = re.compile(
+    r"^(?:(?:according\s+to\s+(?:the\s+)?(?:NHS|WHO|CDC|NICE|NIH|ICMR|MedlinePlus|Mayo\s+Clinic|World\s+Health\s+Organi[sz]ation)[^,]*,\s*)|"
+    r"(?:(?:the\s+)?(?:NHS|WHO|CDC|NICE|NIH|ICMR|MedlinePlus|Mayo\s+Clinic)\s+(?:guidance\s+|guidelines\s+|advice\s+)?(?:says?|suggests?|recommends?|advises?)(?:\s+that)?\s+)|"
+    r"(?:studies\s+(?:show|suggest)(?:\s+that)?\s+))", re.I)
+_HEAVY_VERDICT = re.compile(r"\b(?:this\s+means\s+you\s+have|you\s+are\s+suffering\s+from|it(?:'s|\s+is)\s+probably\s+(?:cancer|diabetes|a\s+tumou?r|heart\s+disease))\b", re.I)
+
+
+def strip_attribution(text: str) -> str:
+    """Rewrite a sentence that opens with 'NHS guidance says (that) X' / 'According to the WHO, X' / 'Studies show X' to 'X', in every sentence.
+    AI-written text only, never safety copy. A name in the middle of a sentence is left alone (lint reports it)."""
+    def fix(piece: str) -> str:
+        body = piece.lstrip()
+        m = _LEAD_ATTRIBUTION.match(body)
+        if not m or not body[m.end():].strip():
+            return piece
+        rest = body[m.end():]
+        return piece[: len(piece) - len(body)] + rest[:1].upper() + rest[1:]
+    return "".join(fix(piece) for piece in re.findall(r"[^.!?\n]*[.!?]*\s*", text or ""))
+
+
 def scrub_doses(text: str) -> tuple[str, bool]:
     """Drop every sentence that pairs a medicine with an amount or schedule, then say plainly that doses are for a pharmacist or prescriber."""
     if not text or not _AMOUNT.search(text):
@@ -39,7 +61,7 @@ def scrub_doses(text: str) -> tuple[str, bool]:
     return (out + "\n\n" if out else "") + DOSE_NOTE, True
 
 
-def lint(text: str, *, user_message: str = "", has_evidence: bool = False, max_words: int = 220) -> list[str]:
+def lint(text: str, *, user_message: str = "", has_evidence: bool = False, max_words: int = 150) -> list[str]:
     """Issue codes (empty list is a pass)."""
     issues: list[str] = []
     t = text or ""
@@ -49,6 +71,10 @@ def lint(text: str, *, user_message: str = "", has_evidence: bool = False, max_w
         issues.append("false_reassurance")
     if any(_MEDICINE.search(s) and _AMOUNT.search(s) for s in _SENTENCE.split(t) if s):
         issues.append("dose_given")
+    if _AUTHORITY.search(t):
+        issues.append("authority_citation")
+    if _HEAVY_VERDICT.search(t):
+        issues.append("heavy_verdict")
     if len(t.split()) > max_words:
         issues.append("too_long")
     if t.count("?") > 2:

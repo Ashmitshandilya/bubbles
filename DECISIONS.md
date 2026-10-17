@@ -44,6 +44,27 @@ Entry template:
 
 ## 3. Decision log
 
+### 2026-10-16 · Firebase for the Android app: phone reminders, crash reports, tester builds (this PR)
+- What: (1) Phone reminders through Firebase Cloud Messaging: Settings → Reminders → "On this phone" (app only), device tokens as signed `push_device` documents, a background sweep that creates due reminders while the app is closed, "Send a test to this phone". The "Reminders on your phone" consent is now offered (wording version `2026-10b`). (2) Crashlytics crash reports, opt-in per phone (Settings → This device). (3) `npm run android:release -- --distribute` sends the APK to Firebase App Distribution testers. Privacy notice updated.
+- Why: the owner asked to add Firebase; the Android push gap was listed as not done in the chat-fixes entry below.
+- Use: people get water, medicine check-in and wind-down reminders on a closed phone; the owner sees native crashes and can test builds with testers first.
+- Where: `backend/push_fcm.py`, `notifications.py`, `wellness_api.py` (`POST /notifications/devices`, `/notifications/devices/remove`, `/notifications/push/test`), `consent_ledger.py`, `main.py` (startup); `frontend/lib/firebase-native.ts`, `app/lib/phone-reminders.ts`, `components/wellness/NotificationSettingsCard.tsx`, `components/settings/CrashReportsRow.tsx`, `components/Providers.tsx`; `frontend/android/**` (`BubblesFirebasePlugin.java`, manifest, Gradle); `scripts/build-android.mjs`; `docs/FIREBASE.md`.
+- Notes: dormant until the owner adds `android/app/google-services.json` (gitignored) and `FIREBASE_SERVICE_ACCOUNT_JSON` on Render; see `docs/FIREBASE.md`. Sending needs both the switch and a consent-log yes; text is only the fixed templates; one owner per phone (registering takes it from other accounts, sign-out deletes the token). No Google Analytics (manifest switches it off; never add `firebase-analytics`). No schema change and no new Python dependency (`google-auth` + `httpx` were already pinned). Rejected: App Check (needs Google Play distribution; adds reCAPTCHA to the site), SQL Connect / App Hosting / Firebase Auth (would replace working Supabase and Vercel), forwarding JavaScript errors to Crashlytics (could carry typed text). Reminders made by the background sweep are not emailed. The Android build could not be run in the cloud session (Google's Maven was unreachable); it needs one build on the owner's PC.
+
+### 2026-10-16 · Granular consent with a log (this PR)
+- What: seven separate choices, all OFF until the person turns them on: outside AI for open questions, save details noticed in chat, partner sharing, reminders by email (live), and phone reminders, community, usage counts (listed as "coming soon", cannot be granted yet). Every change appends one `consent_event` document (purpose, on/off, wording version, where it was changed: settings, chat card, onboarding, system; no free text). New screen `/privacy-choices` (switch per choice, "what you agreed to, and when"); the chat consent card has an equal "No, not now"; onboarding records a "not now" too.
+- Why: the owner wants no blanket or automatic consent, clear and granular choices, and a log.
+- Use: `consent_ledger.is_granted(db, uid, purpose)` (missing = not granted) is the one check other features call. Chat-noticed events (`persist_events` on the AI path) are saved only when "Save details I notice in chat" is on. The old `/me/consent` keeps working and writes the same record; the AI answer keeps its old key so nobody who already said yes loses it.
+- Where: `backend/consent_ledger.py`, `consent_api.py` (`GET /consents`, `GET /consents/history`, `PUT /consents/{purpose}`), `doc_store.py` (the trail survives "delete all my data"), `frontend/app/privacy-choices/*`, `app/companion/*` (decline button).
+- Notes: stored as signed documents, so no migration is needed. People who had already allowed AI keep it, but chat-noticed suggestions stay off until they turn that choice on (default off, as asked). Partner sharing and email reminders are logged when switched through their existing screens; they are not blocked by the ledger. Not built yet: the separate "Your choices" onboarding step, a Terms acknowledgement at sign-up, admin consent rates, and the privacy notice update.
+
+### 2026-10-16 · Chat fixes: friend voice, saved decisions stay saved, latest chat, mascot loader (this PR)
+- What: (1) Replies use one style block: short, soft, a friend, no authority names ("NHS says") in prose, never a heavy verdict; a deterministic guard strips a leading "NHS guidance says" and lints authority names and heavy verdicts; an URGENT reply always ends with "speak to a clinician or an urgent-care service today"; source links sit behind a closed "Read more" and show titles only; WHO wording removed from fitness notes. (2) Confirm/save: the decision is overlaid on reloaded messages (cards no longer ask again), `POST /health-events/confirmation` saves many in one request, a projection failure no longer turns a saved decision into an error (it reports `queued`), the card flips at once and rolls back only the ids that failed. (3) Talk opens on the latest conversation (`GET /chat/latest`, `before` cursor and `has_more` on messages), History and New chat are labelled buttons, `?new=1` starts blank, a handoff question lands in the latest chat. (4) The "Checking your history and trusted sources" line and the "Checking memory" header line are gone: the mascot is the loader. (5) Gemini replies use minimal thinking, a 900-token cap and a 12 s timeout (fallbacks 20 s), `persist_events` skips its read when there is nothing to save. (6) New migration `20261016_bubbles_indexes_v2.sql` (indexes for document, chat and memory reads; two exact duplicates dropped).
+- Why: the owner asked for no scary authority names, a cute loader, faster replies, opening the last chat, and fixed saving ("press twice", resets when reopened).
+- Root causes found: the decision was written to `extracted_health_events` but never overlaid on the stored message snapshot (always "pending"); a projection error after the status commit returned HTTP 500, so the UI rolled back although the row was saved.
+- Where: `backend/response_formatter.py`, `response_quality.py`, `bubbles_ai.py`, `rag.py`, `chat_pipeline.py` (`overlay_event_status`), `main.py` (`_confirm_event`, batch route, `/chat/latest`), `frontend/app/companion/*` (`event-decisions.ts`), `supabase/migrations/20261016_bubbles_indexes_v2.sql`.
+- Notes: not done in this pass (brief kept in the session): granular consent ledger, onboarding rewrite (gender first), Mind section, insight detail sheet, deficiency intelligence, Android push, admin Live/Overall pages, community, dead-code removal, load test, SSE streaming. The migration is applied by the owner in the Supabase SQL editor.
+
 ### 2026-10-15 · Eyes in the 3D body, and a quieter app (this PR)
 - What: (1) two eyes are now part of the live body model (globe, cornea, painted iris and pupil, optic nerves to the chiasm), selectable like any organ, with an **Eyes** area on the body map read from Track > Eyes and chat words. (2) A minimal pass over Today, Settings, Me, My health, Patterns, Care, Sleep and the body map: one clear thing first, everything else one tap away in a closed row, almost no explanatory paragraphs. (3) On a phone the body stays pinned under the header while the list scrolls, so a tap on a part is always seen.
 - Why: the owner asked for the eye part inside the model and for a calmer, friendlier, minimal app ("too many paras all over the website").
@@ -100,6 +121,23 @@ Entry template:
 - Figma kit: `D:\COCO\bubbles-figma-kit` (10 upload images, final prompt `upload-10/PROMPT-FINAL.txt`, decoded `.fig` notes in `fig/`).
 
 ---
+
+### 2026-10 · Lean first-run setup
+- Gender (`body`) is the first question, then date of birth (the 18+ gate), then name. Required is now only body, birth date, name, goals and conditions; language and tone default to English and gentle.
+- Everything else sits in an optional "A little more" stage (`extra` steps in `onboarding.STEPS`) behind one "Skip all extras" screen; optional steps have a Skip button and required questions carry a "Needed" tag.
+- AI consent moved to its own "Your choices" step. The setup screen is "Setting up your app" and takes about 3 seconds.
+- Not done yet: skippable app tour, per-purpose consent toggles inside setup, tap-to-advance for single choices.
+
+### 2026-10 · Mind: loneliness, panic, separation, safer notes
+- One shared crisis gate (`safety_gate.py`) now covers every tracker note, not only `/wellness/*`; a hit stores nothing and shows the support message (112, Tele-MANAS 14416). New passive-ideation phrases are crisis language (draft in the clinical packet, awaiting sign-off).
+- New plain concepts `loneliness`, `panic_attack`, `separation_anxiety` (never an emergency alone, all mapped to the brain). `mind_chat.py` gives the model a friend-style block and gives a short fixed kind reply even without AI consent.
+- Mind is a top-level section (Mind, Mood log). Hub has a loneliness check-in and four closed topic rows; `/body?organ=brain` opens the brain.
+- Not done: anxiety/stress scores into the brain map and patterns, a mind notification kind.
+
+### 2026-10 · Insight details
+- One `InsightDetailSheet` (native dialog) opens from a Details button on every Patterns card, every link between logs and every Today pattern. `app/insights/detail.ts` builds one shape for all three: what Bubbles saw, the days and numbers (a table or a stated gap), how sure (one scale: Early, Fairly steady, Steadier), what it does not mean, one thing to try, Ask Bubbles.
+- `/insights?item=<id>` opens one insight and cleans the address; an id no longer in the window shows a calm notice.
+- Not done: stable backend ids, `GET /insights/{id}` and per-day occurrence lists. The sheet uses numbers the pages already receive; Today items show a gap sentence for the table.
 
 ## 4. Open items
 
