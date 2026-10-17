@@ -90,3 +90,12 @@ def test_projection_maps_vitals_to_real_columns():
     row = db.inserts[-1][1]
     assert row["heart_rate_bpm"] == 78
     assert "metric" not in row
+
+
+def test_a_bare_today_is_stamped_now_not_midnight():
+    from datetime import datetime, timezone
+    from health_event_projection import _occurred_at
+    today = datetime.now(timezone.utc).date().isoformat()
+    assert _occurred_at({"date": today}) > f"{today}T00:00:01"           # sorts after anything logged earlier today
+    assert _occurred_at({"date": "2026-09-19"}) == "2026-09-19T00:00:00+00:00"   # a past day keeps its day
+    assert _occurred_at({"date": today, "time": "07:30:00"}).startswith(f"{today}T07:30")

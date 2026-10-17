@@ -48,6 +48,21 @@ Entry template:
 
 ## 3. Decision log
 
+### 2026-10-16 · Weight in kg or lbs (direct push to main, owner request)
+- What: the weight tracker has an lbs / kg switch above the stats. The form, history and stats follow the chosen unit. The unit is remembered on this device only.
+- Why: the owner asked to see and enter weight in kilograms as well as pounds.
+- Use: people who think in kg can log and read weight in kg; nothing changes for people who keep pounds.
+- Where: `frontend/app/lib/unit-switch.ts` (+ `.test.ts`), `frontend/components/GenericTrackingClient.tsx` (`altUnit` field option), `frontend/components/tracking/kit.tsx` (`SIGNALS` exported), `frontend/app/weight/page.tsx`.
+- Notes: the API still stores and receives pounds, so no backend or schema change. Converting kg to lbs and back can shift a value by about 0.1 lb. Pushed straight to `main` at the owner's explicit request, which departs from the "work on a branch, open a PR" rule above; the change had passed the frontend gates on its feature branch first. No browser click-through was done.
+
+### 2026-10-17 · Android 2.0: its own opening and app feel (this PR)
+- What: app-only redesign, about half the website look kept (pink, fonts, Bubbles). New welcome with three swipeable intro cards and page dots (`app/IntroSlides.tsx`); app bar with a big title and frosted glass; floating frosted dock with an active pill and icon pop; lilac-to-blush backdrop, rounder cards, pink-to-grape primary buttons; screens rise into place and everything presses. First-run permission step: a full screen right after setup, once per phone, that shows a sample reminder and three reasons before Android's own prompt ("Turn on reminders" is the consent; crash reports are a separate box, off by default; "Maybe later" or Back never asks again here). New premium app icon: the same mascot on a grape-to-pink gradient with a glow, soap bubbles and a soft shadow (`scripts/android-assets.mjs`; the website keeps `app/icon.svg`). Version 2.0.0 (5).
+- Why: the owner wants the app to feel like an app, not the website, while keeping the same accounts and setup.
+- Use: same account, same server-driven setup questions and same data as the website (one Supabase project, one API).
+- Where: `frontend/app/globals.css` (html[data-native], "Android 2.0"), `app/IntroSlides.tsx`, `app/NativeWelcome.tsx`, `components/Navigation.tsx` (data-dock, data-tab, data-app-bar hooks), `components/PhoneReminderPrompt.tsx`, `lib/firebase-native.ts`, `components/Providers.tsx`.
+- Premium pass (same PR): Today opens with a body-map hero tile and a feature grid that follows the person's setup (`components/AppHome.tsx`, `app/lib/app-home.ts`, tested); the dock is personal (Today, Body or Cycle or Mind, Talk, Track, More); glass cards, a segmented sub-tab control, sheets that slide up, shimmering placeholders.
+- Notes: everything is scoped to the app build; the website is unchanged. All motion is off under reduced motion. Needs an APK build on the owner's PC (`npm run android:release`).
+
 ### 2026-10-16 · Firebase for the Android app: phone reminders, crash reports, tester builds (this PR)
 - What: (1) Phone reminders through Firebase Cloud Messaging: Settings → Reminders → "On this phone" (app only), device tokens as signed `push_device` documents, a background sweep that creates due reminders while the app is closed, "Send a test to this phone". The "Reminders on your phone" consent is now offered (wording version `2026-10b`). (2) Crashlytics crash reports, opt-in per phone (Settings → This device). (3) `npm run android:release -- --distribute` sends the APK to Firebase App Distribution testers. Privacy notice updated.
 - Why: the owner asked to add Firebase; the Android push gap was listed as not done in the chat-fixes entry below.
@@ -142,6 +157,37 @@ Entry template:
 - One `InsightDetailSheet` (native dialog) opens from a Details button on every Patterns card, every link between logs and every Today pattern. `app/insights/detail.ts` builds one shape for all three: what Bubbles saw, the days and numbers (a table or a stated gap), how sure (one scale: Early, Fairly steady, Steadier), what it does not mean, one thing to try, Ask Bubbles.
 - `/insights?item=<id>` opens one insight and cleans the address; an id no longer in the window shows a calm notice.
 - Not done: stable backend ids, `GET /insights/{id}` and per-day occurrence lists. The sheet uses numbers the pages already receive; Today items show a gap sentence for the table.
+
+### 2026-10 · One record, updated everywhere
+- `ApiProvider` now exposes `dataVersion` and `lastUpdate`. Any successful write that `app/lib/data-sync.ts` `describeWrite` counts as a change to the record (tracker saves, chat, confirming picked-up events, profile) bumps `dataVersion`, remembers a label and time per person, and tells other tabs over `BroadcastChannel`. Consents, probes, feedback and onboarding never count.
+- Today refetches quietly on a bump (old data stays until the newer answer arrives; a failed quiet refresh never replaces good data with an error). `useTracker`, `useBubblesQuery` and the Track hub pulses refetch too, and a newer request always wins over an older one.
+- Today shows a "Last updated" card: the newer of this browser's last change and the server's `last_update` from `/health/summary`, so a change made on another device shows as well.
+- Not done: the Android app does not yet listen for changes made on another device while it is open (it picks them up on the next load).
+
+### 2026-10 · Plain weight and height from chat are saved at once
+- `backend/body_stats.py`: when someone plainly states their own weight ("I weigh 110 kg", already parsed and staged) or height ("my height is 6'1", "I am 185 cm tall"), chat saves it without a Save tap. Weight goes through the same confirm path as the Save button (only pending, present-tense, confidence 0.9 or more); height is written to `profiles.height_cm` and the body profile document. The reply says what was saved.
+- Everything else Bubbles picks up (symptoms, medicines, moods, food) still waits for Save. Questions, negations, other people's heights and implausible values (120-230 cm) are ignored.
+- Not done: no undo button in the chat reply. Weight can be removed on the Weight page; height can be corrected by saying it again or in Fitness setup.
+
+### 2026-10 · Delete a tracker entry
+- `DELETE /health/{tracker}/{id}` removes one of the signed-in person's own entries (normal table first, then this tracker's copy in the compatibility store). Someone else's id, an unknown id and an id that is already gone all answer 404.
+- Every tracker history list (weight and the other `History` lists) shows a Remove button with a yes/no step; the row leaves the list only after the server agrees, and the delete refreshes Today and the other screens like any other save.
+- Not done: deleting a weight the chat saved does not withdraw the matching memory note Bubbles kept from the same message.
+
+### 2026-10 · One value everywhere (trackers, Insights, Companion)
+- Where things live: each tracker saves to its own table; Insights, patterns and the doctor timeline read `extracted_health_events`, where a tracker save leaves a "mirror" event tagged with the entry id. A chat statement is a confirmed event that is also projected into the tracker table.
+- `DELETE /health/{tracker}/{id}` now removes the mirror too (and retracts a chat-saved weight with the same value on the same day); the earlier version left Insights counting deleted entries. New `PUT /health/{tracker}/{id}` changes the tracker row and rebuilds its mirror, so every reader agrees. Both are own-entries-only (404 otherwise).
+- Companion no longer depends on a copy: `latest_values_block.py` reads the newest weight, sleep, mood, water, activity and vitals entries straight from the tracker tables, plus height, and adds them to the chat context as "LATEST SAVED VALUES". A value saved or edited anywhere is what Companion says next; deleting it falls back to the previous real entry; an empty tracker is left out, never shown as zero.
+- Saving without a confirm step stays limited to plain, specific statements (own weight, own height). Everything else Bubbles picks up still waits for Save.
+- Not done: no Edit button in the apps yet (the API exists); chat-saved entries other than weight are not retracted when their tracker row is deleted; a database view or triggers were not added because the live schema has not been compared with the migrations.
+
+### 2026-10 · Names, live refresh and a startup crash
+- One name: `GET /profile` now resolves the display name as setup/settings name, then the profile row, then the sign-up name, and brings the profile row up to date when it had fallen behind (it was only copied when empty, so a changed name never reached pages that read the profile). It also fills `height_cm` from the body profile when the profile row has none.
+- Live refresh: the app asks again every 60 seconds while visible, when it is seen again after 10 seconds or more, and when the network returns (`LIVE_REFRESH_MS` in `app/lib/data-sync.ts`). Finishing setup or saving body figures counts as a record change.
+- Chat auto-save (plain own weight and height) now needs the "Save details Bubbles notices in chat" consent, like every other chat extraction; without it nothing is saved.
+- A bare "today" from chat is stamped with the current time, not midnight, so a weight told in chat after an earlier tracker entry the same day is the latest one.
+- Fixed a startup crash already on main: a stray `import threading` inside `_warm_database_probe` made the first line raise `UnboundLocalError`, so the server could not boot. A test now runs the startup hooks.
+- The Android app bundles the web files in the APK: backend changes reach it at once, screen changes (live refresh, Remove button, Last updated card) need a new APK from `npm run android:release` and a signed release.
 
 ### 2026-10 · Mega task (lane decisions)
 

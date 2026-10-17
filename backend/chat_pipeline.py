@@ -20,7 +20,7 @@ import hashlib
 import re
 import threading
 import time
-from collections import deque
+from collections import defaultdict, deque
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable

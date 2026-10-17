@@ -9,6 +9,8 @@ import { NotificationBell } from "./wellness/NotificationBell";
 import { BubblesMascot } from "./BubblesMascot";
 import { useApi, useExperience } from "./Providers";
 import { filterSections } from "../app/lib/experience";
+import { dockTabs } from "../app/lib/app-home";
+import { isNativeApp } from "../lib/native";
 import { connectionBanner, reconnectStatus } from "../app/lib/connection";
 
 // Stroke-based 24x24 icon paths. One consistent set instead of platform-dependent
@@ -37,11 +39,12 @@ const ICON_PATHS: Record<string, string> = {
   profile: "M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 21a7 7 0 0 1 14 0",
   fitness: "M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11",
   more: "M5 12h.01M12 12h.01M19 12h.01",
+  body: "M12 6.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 9.5l6 1.5 6-1.5M12 11v5M9 21l3-5 3 5",
   search: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20.5 20.5 16 16",
   settings: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1",
 };
 
-function NavIcon({ id, size = 18 }: { id: string; size?: number }) {
+export function NavIcon({ id, size = 18 }: { id: string; size?: number }) {
   const d = ICON_PATHS[id];
   if (!d) return null;
   return (
@@ -339,15 +342,19 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
   const pathname = usePathname() ?? "";
   const [moreOpen, setMoreOpen] = useState(false);
   const closeMore = useCallback(() => setMoreOpen(false), []);
+  const { experience } = useExperience();
   const current = sectionFor(pathname);
-  const onTab = MOBILE_TABS.some((tab) => tab.id === current?.id);
-  const tabLink = (item: (typeof MOBILE_TABS)[number]) => {
-    const active = current?.id === item.id;
+  // Android 2.0: a personal dock (Today, Body or Cycle or Mind, Talk, Track); the website keeps its fixed tabs.
+  const tabs = isNativeApp ? dockTabs(experience) : MOBILE_TABS;
+  const onTab = tabs.some((tab) => (tab.href === "/body" ? pathname.startsWith("/body") : tab.id === current?.id));
+  const tabLink = (item: (typeof tabs)[number]) => {
+    const active = item.href === "/body" ? pathname.startsWith("/body") : current?.id === item.id && !(isNativeApp && pathname.startsWith("/body"));
     return (
       <li key={item.id}>
         <Link
           href={item.href}
           aria-current={active ? "page" : undefined}
+          data-tab
           className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold no-underline ${
             active ? "text-bubbles-pink-ink" : "text-muted"
           }`}
@@ -358,16 +365,16 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
       </li>
     );
   };
-  const talk = MOBILE_TABS[2];
+  const talk = tabs[2];
   return (
     <>
       <nav
         className="lg:hidden sticky bottom-0 z-sticky px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-blush via-blush/95 to-transparent"
         aria-label="Bubbles navigation"
       >
-        <ul className="m-0 flex list-none items-end justify-around gap-1 rounded-full border border-line bg-surface px-2 py-1.5 shadow-lg">
-          {tabLink(MOBILE_TABS[0])}
-          {tabLink(MOBILE_TABS[1])}
+        <ul data-dock className="m-0 flex list-none items-end justify-around gap-1 rounded-full border border-line bg-surface px-2 py-1.5 shadow-lg">
+          {tabLink(tabs[0])}
+          {tabLink(tabs[1])}
           <li>
             <Link
               href={talk.href}
@@ -378,12 +385,14 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
               <NavIcon id="companion" size={26} />
             </Link>
           </li>
-          {tabLink(MOBILE_TABS[3])}
+          {tabLink(tabs[3])}
           <li>
             <button
               type="button"
               aria-haspopup="dialog"
               aria-expanded={moreOpen}
+              aria-current={!onTab ? "page" : undefined}
+              data-tab
               onClick={() => setMoreOpen(true)}
               className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold ${
                 !onTab ? "text-bubbles-pink-ink" : "text-muted"
@@ -410,14 +419,14 @@ export function Header({
 }) {
   return (
     <>
-      <header className="sticky top-0 z-sticky w-full border-b border-soft bg-blush/90 backdrop-blur-md">
+      <header data-app-bar className="sticky top-0 z-sticky w-full border-b border-soft bg-blush/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-content items-center justify-between gap-4 px-gutter py-3">
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/dashboard" className="lg:hidden -ml-1 flex h-11 w-11 shrink-0 items-center justify-center no-underline text-default" aria-label="Bubbles home">
               <BubblesMascot size={36} animated={false} />
             </Link>
             {currentPage && (
-              <p className="m-0 truncate font-display text-h3 text-default">{currentPage}</p>
+              <p data-app-title className="m-0 truncate font-display text-h3 text-default">{currentPage}</p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">

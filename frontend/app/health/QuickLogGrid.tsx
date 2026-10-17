@@ -24,7 +24,7 @@ const OWN_DATA = new Set(["cycle"]);
 type PulseMap = Record<string, Pulse | null>; // null = could not be read
 
 function useTrackerPulses(slugs: string[]) {
-  const { fetchBubbles, reconnects } = useApi();
+  const { fetchBubbles, reconnects, dataVersion } = useApi();
   const [pulses, setPulses] = useState<PulseMap | null>(null);
   const [tick, setTick] = useState(0);
   const key = slugs.join(",");
@@ -49,7 +49,7 @@ function useTrackerPulses(slugs: string[]) {
     return () => {
       alive = false;
     };
-  }, [key, fetchBubbles, tick, reconnects]);
+  }, [key, fetchBubbles, tick, reconnects, dataVersion]);
 
   // Coming back to this tab after logging elsewhere: refresh the hints.
   useEffect(() => {

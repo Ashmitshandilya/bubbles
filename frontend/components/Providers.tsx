@@ -1,5 +1,6 @@
 "use client";
 
+import { LIVE_REFRESH_MS, announceChange, describeWrite, listenForChanges, readLastUpdate, shouldRefreshOnResume, type LastUpdate } from "../app/lib/data-sync";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { isSupabaseConfigured, supabase, uiPreview } from "../lib/supabase";
@@ -13,6 +14,10 @@ import { createApiCache } from "../app/lib/api-cache";
 import { gateDecision, readExperience, readSetupState, type Experience, type SetupState } from "../app/lib/experience";
 import { ackStore, flushAcknowledgement } from "../app/lib/acknowledgement";
 import { BubblesMascot } from "./BubblesMascot";
+import dynamic from "next/dynamic";
+
+// App only (isNativeApp): the first-run "reminders on this phone?" card. Loaded on demand so the website never ships it.
+const PhoneReminderPromptLazy = dynamic(() => import("./PhoneReminderPrompt").then((m) => m.PhoneReminderPrompt), { ssr: false });
 
 type User = {
   id: string;
@@ -273,6 +278,10 @@ type ApiContextType = {
   retrying: boolean;
   /** Counts offline-to-online transitions; data hooks reload failed queries when it changes. */
   reconnects: number;
+  /** Bumps whenever the person's record changes (a save here, or in another tab). Data hooks refetch when it changes. */
+  dataVersion: number;
+  /** The newest change this browser knows of, or null. */
+  lastUpdate: LastUpdate | null;
 };
 
 /** Short cache for repeated reads (rules in app/lib/api-cache.ts). One per tab; emptied on sign-out and user change. */
@@ -287,6 +296,8 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   const [nextRetryAt, setNextRetryAt] = useState<number | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [reconnects, setReconnects] = useState(0);
+  const [dataVersion, setDataVersion] = useState(0);
+  const [lastUpdate, setLastUpdate] = useState<LastUpdate | null>(null);
   const [waking, setWaking] = useState(false);
   const firstProbeDone = useRef(false);
   const wasWaking = useRef(false);
@@ -373,11 +384,60 @@ export function ApiProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   /** rawFetch behind the short read cache: revisiting a screen is instant and identical reads in flight are shared. */
+  const uid = session?.user?.id ?? null;
   const fetchBubbles = useCallback(
-    (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) =>
-      apiCache.fetch(session?.user?.id ?? null, path, options.method || "GET", () => rawFetch(path, options, limits)),
-    [rawFetch, session],
+    async (path: string, options: RequestInit = {}, limits: FetchBubblesOptions = {}) => {
+      const response = await apiCache.fetch(uid, path, options.method || "GET", () => rawFetch(path, options, limits));
+      // A saved change: every open screen of this person (and other tabs) refetches, and the Today card remembers it.
+      const label = response.ok ? describeWrite(path, options.method) : null;
+      if (label) {
+        const update = { label, at: Date.now() };
+        announceChange(uid, update);
+        setLastUpdate(update);
+        setDataVersion((n) => n + 1);
+      }
+      return response;
+    },
+    [rawFetch, uid],
   );
+
+  // Start from what this browser remembered, and follow changes made in other tabs.
+  useEffect(() => {
+    setLastUpdate(readLastUpdate(uid));
+    return listenForChanges(uid, (update) => {
+      apiCache.clear();
+      setLastUpdate(update);
+      setDataVersion((n) => n + 1);
+    });
+  }, [uid]);
+
+  // Live: while the app is open and visible it asks again every minute, and at once when it is seen again after a while or the
+  // network returns, so a change made on another device (or in the other app) appears without a reload.
+  useEffect(() => {
+    if (!uid || typeof document === "undefined") return;
+    let hiddenSince: number | null = document.hidden ? Date.now() : null;
+    const refresh = () => {
+      if (document.hidden || !navigator.onLine) return;
+      apiCache.clear();
+      setDataVersion((n) => n + 1);
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        hiddenSince = Date.now();
+        return;
+      }
+      if (shouldRefreshOnResume(hiddenSince)) refresh();
+      hiddenSince = null;
+    };
+    const timer = window.setInterval(refresh, LIVE_REFRESH_MS);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", refresh);
+    };
+  }, [uid]);
 
   /** Any HTTP answer means the server is up (even a 5xx); only a rejected request means offline. */
   const probe = useCallback(async (): Promise<boolean> => {
@@ -475,7 +535,7 @@ export function ApiProvider({ children }: { children: ReactNode }) {
     <ApiContext.Provider
       value={{
         apiStatus, connectionError, fetchBubbles, checkApiHealth, health, databaseStatus: databaseStatusOf(health),
-        nextRetryAt, retrying, reconnects, waking,
+        nextRetryAt, retrying, reconnects, waking, dataVersion, lastUpdate,
       }}
     >
       <ExperienceProvider>{children}</ExperienceProvider>
@@ -566,7 +626,12 @@ function ExperienceProvider({ children }: { children: ReactNode }) {
       </main>
     );
   }
-  return <ExperienceContext.Provider value={value}>{children}</ExperienceContext.Provider>;
+  return (
+    <ExperienceContext.Provider value={value}>
+      {children}
+      {isNativeApp && uid && setup !== "loading" && !pathname.startsWith("/onboarding") && <PhoneReminderPromptLazy />}
+    </ExperienceContext.Provider>
+  );
 }
 
 /** The person's setup: `experience` is null until it is known (or when they have not finished setup); `setup` says which. */

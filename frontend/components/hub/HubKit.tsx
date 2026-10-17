@@ -58,7 +58,7 @@ export type Query<T> =
  * stopped, slow, database needs its permission update, signed out) and reloads by itself once Bubbles reconnects.
  */
 export function useBubblesQuery<T>(path: string, body?: object): [Query<T>, () => void] {
-  const { fetchBubbles, reconnects } = useApi();
+  const { fetchBubbles, reconnects, dataVersion } = useApi();
   const [state, setState] = useState<Query<T>>({ status: "loading" });
   const payload = body ? JSON.stringify(body) : undefined;
   const latest = useRef(0);
@@ -84,7 +84,7 @@ export function useBubblesQuery<T>(path: string, body?: object): [Query<T>, () =
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, dataVersion]);
 
   useEffect(() => {
     current.current = state;

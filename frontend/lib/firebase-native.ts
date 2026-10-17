@@ -166,3 +166,39 @@ export async function onReminderTap(go: (path: string) => void): Promise<() => v
     return () => undefined;
   }
 }
+
+const ASKED = "bubbles.phoneRemindersAsked";   // this phone already showed the first-run card (either answer)
+
+/** First-run card: offer phone reminders once per phone, only when they can work and are not on yet. Never throws. */
+export async function shouldOfferPhone(api: ApiFetch): Promise<boolean> {
+  try {
+    if (window.localStorage.getItem(ASKED)) return false;
+    if (!(await firebaseStatus()).configured) return false;
+    const response = await api("/notifications/settings");
+    if (!response.ok) return false;
+    const body = (await response.json()) as { settings?: { channels?: { push?: boolean } }; channels?: { push?: { available?: boolean } } };
+    return body.channels?.push?.available === true && body.settings?.channels?.push !== true;
+  } catch {
+    return false;
+  }
+}
+
+export function markPhoneOffered() {
+  try {
+    window.localStorage.setItem(ASKED, "1");
+  } catch {
+    // the card may show once more; harmless
+  }
+}
+
+/** "Turn on" on the first-run card: Android's prompt, connect this phone, switch phone reminders on (the server logs the consent). */
+export async function turnOnPhoneReminders(api: ApiFetch): Promise<PhoneResult> {
+  const connected = await connectPhone(api, true);
+  if (!connected.ok) return connected;
+  try {
+    const response = await api("/notifications/settings", { method: "PUT", body: JSON.stringify({ channels: { push: true } }) });
+    return response.ok ? { ok: true } : { ok: false, problem: "failed" };
+  } catch {
+    return { ok: false, problem: "failed" };
+  }
+}

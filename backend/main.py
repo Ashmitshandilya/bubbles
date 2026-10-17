@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
-from uuid import UUID
+from uuid import UUID, uuid4
 from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Header, Query
@@ -37,6 +37,7 @@ from bubbles_ai import ask_bubbles, is_degraded
 from memory_promotion import promote_health_event
 from rag import hybrid_search, build_evidence_context
 from evidence_package import build_package, package_audit, plan_task
+from health_event_pipeline import prepare_db_row
 from health_logs import build_router as build_health_logs_router
 from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
@@ -52,7 +53,7 @@ from chat_counts import message_counts
 from schema_status import build_router as build_schema_router
 from onboarding_api import build_router as build_onboarding_router
 import consent as consent_module
-from consent import chat_prompt, has_ai_consent, persist_chat_events
+from consent import chat_prompt, consent_needed_reply, has_ai_consent, persist_chat_events
 from mind_chat import loneliness_no_consent_reply, mind_support_block
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
@@ -830,6 +831,8 @@ def _context_stage(user_id: str, user_message: str) -> tuple[str, float]:
     t0 = perf_counter()
     user_context = build_user_context(user_id=user_id, query=user_message)
     memory_context = format_user_context(user_context)
+    from latest_values_block import latest_values_block
+    memory_context += latest_values_block(supabase, user_id)   # the trackers' own newest entries, so a value saved anywhere is what Companion says
 
     # Concrete metrics from stored events (best effort)
     try:
@@ -992,6 +995,13 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             note = contradiction_note(turn.conflicts)
             if note:
                 response_text += "\n\n" + note
+
+    # ---- 2b. a plainly stated weight or height is saved now, so every screen shows it without a Save tap
+    if not state.consent_required and turn.route != "correction" and safety.level != "RED":
+        from body_stats import auto_save_body_stats
+        saved_notes = auto_save_body_stats(supabase, user_id, user_message, persisted)
+        if saved_notes:
+            response_text += "\n\n" + " ".join(saved_notes)
 
     # ---- 3. save the reply (+ retract a wrong warning when the user corrected us)
     correction_payload = None
@@ -1269,16 +1279,46 @@ def chat_latest_api(authorization: str | None = Header(default=None), limit: int
     payload.pop("conversation_id", None)
     return payload
 
+def resolve_display_name(setup_name: object, profile_name: object, auth_name: object) -> str | None:
+    """The one name every screen shows: what the person last told Bubbles in setup/settings, else the profile row, else the sign-up name."""
+    for candidate in (setup_name, profile_name, auth_name):
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()[:40]
+    return None
+
+
 @app.get("/profile")
 def profile_api(authorization: str | None = Header(default=None)):
+    import context_engine
+    import doc_store
     user = get_authenticated_user(authorization)
     sync_profile_from_auth(user)
+    uid = str(user.id)
     try:
-        rows = supabase.table("profiles").select("*").eq("id", str(user.id)).limit(1).execute().data or []
+        rows = supabase.table("profiles").select("*").eq("id", uid).limit(1).execute().data or []
     except Exception:
         rows=[]
     meta = getattr(user, "user_metadata", {}) or {}
-    return {"profile": rows[0] if rows else {"id":str(user.id), "display_name": meta.get("display_name") or meta.get("full_name") or meta.get("name")}}
+    profile = dict(rows[0]) if rows else {"id": uid}
+    try:
+        setup_name = ((doc_store.get(supabase, uid, "experience", "main") or {}).get("name"))
+        body = doc_store.get(supabase, uid, "profile", "me") or {}
+    except Exception:
+        setup_name, body = None, {}
+    name = resolve_display_name(setup_name, profile.get("display_name"), meta.get("display_name") or meta.get("full_name") or meta.get("name"))
+    if name and name != profile.get("display_name"):
+        # The profile row fell behind what the person told Bubbles: bring it up to date once, so every other reader agrees.
+        profile["display_name"] = name
+        try:
+            supabase.table("profiles").upsert({"id": uid, "display_name": name}, on_conflict="id").execute()
+            chat_cache.forget_user(uid)
+            context_engine.forget_profile(uid)
+        except Exception:
+            pass
+    # Height and gender may live only in the body profile (chat, setup); show the saved value rather than a blank.
+    if profile.get("height_cm") is None and isinstance(body.get("height_cm"), (int, float)):
+        profile["height_cm"] = body["height_cm"]
+    return {"profile": profile}
 
 @app.post("/personalization/overview")
 def personalization_api(authorization: str | None = Header(default=None)):

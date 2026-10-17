@@ -33,7 +33,7 @@ export function SymptomsClient() {
 }
 
 function Symptoms() {
-  const { entries, status, error, retry, save, freshId } = useTracker("/health/symptoms", 30);
+  const { entries, status, error, retry, save, remove, update, freshId } = useTracker("/health/symptoms", 30);
   const [open, setOpen] = useState(false);
   const [symptom, setSymptom] = useState("");
   const [severity, setSeverity] = useState("");
@@ -113,6 +113,8 @@ function Symptoms() {
         </>
       )}
       <History
+        onDelete={remove}
+        onEdit={update}
         status={status}
         error={error}
         onRetry={retry}

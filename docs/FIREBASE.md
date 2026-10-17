@@ -52,6 +52,7 @@ installing the new one.
 
 ## How phone reminders flow
 
+0. In the app, right after setup, a one-time full-screen step shows a sample reminder and asks to turn them on (and, in a separate box, crash reports). Android's own prompt only follows "Turn on reminders".
 1. In the app, Settings → Reminders → **On this phone** asks Android for notification permission (Android 13+; never at launch,
    only from that tap) and gets the FCM token, but sends nothing yet. **Save** stores the switch and logs the consent
    (`push_notifications`); only then does the app hand the token to `POST /notifications/devices`, which answers 422 while

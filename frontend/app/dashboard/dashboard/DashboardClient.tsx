@@ -1,5 +1,7 @@
 "use client";
 
+import { isNativeApp } from "../../../lib/native";
+import { AppHome } from "../../../components/AppHome";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -16,6 +18,8 @@ import {
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
 import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
+import { LastUpdatedCard } from "./LastUpdatedCard";
+import { pickLastUpdate } from "../../lib/data-sync";
 import { WeekRecapCard } from "./WeekRecapCard";
 import { buildWeekRecap } from "./recap";
 import {
@@ -51,7 +55,7 @@ function Shell({ children }: { children: ReactNode }) {
 export function DashboardClient() {
   const router = useRouter();
   const { loading: authLoading, session, user } = useAuth();
-  const { apiStatus, connectionError, fetchBubbles, checkApiHealth, reconnects } = useApi();
+  const { apiStatus, connectionError, fetchBubbles, checkApiHealth, reconnects, dataVersion, lastUpdate } = useApi();
   const { experience } = useExperience();
   // the person's body decides what Today shows: no Cycle or Partner cards for a male body, no body-map card when the map is off
   const showCycle = experience?.cycleVisible !== false;
@@ -64,6 +68,8 @@ export function DashboardClient() {
   const [weekly, setWeekly] = useState<Loadable<WeeklyInsights>>(LOADING);
   const [livingMap, setLivingMap] = useState<Loadable<LivingMapData>>(LOADING);
   const [water, setWater] = useState<WaterState>("idle");
+  const [serverLastUpdate, setServerLastUpdate] = useState<string | null>(null);
+  const seenVersion = useRef(dataVersion);
   // fetchBubbles changes identity on every auth event (token refresh, tab refocus). Loading is keyed on the token, so
   // those events do not blank the page with skeletons and refire a dozen requests.
   const fetchRef = useRef(fetchBubbles);
@@ -78,16 +84,19 @@ export function DashboardClient() {
   useEffect(() => {
     if (!isSupabaseConfigured || !token) return;
     let alive = true;
+    // A change made elsewhere (another screen, tab or Companion) refreshes quietly: what is on screen stays until the newer answer replaces it.
+    const quiet = seenVersion.current !== dataVersion;
+    seenVersion.current = dataVersion;
     const get = async <T,>(path: string, init?: RequestInit): Promise<T> => {
       const response = await fetchRef.current(path, init, TODAY_LIMITS);
       if (!response.ok) throw new Error(`${path} failed with ${response.status}`);
       return (await response.json()) as T;
     };
     function settle<T>(request: Promise<T>, set: (value: Loadable<T>) => void) {
-      set(LOADING);
+      if (!quiet) set(LOADING);
       request.then(
         (data) => { if (alive) set({ status: "ready", data }); },
-        () => { if (alive) set({ status: "error" }); },
+        () => { if (alive && !quiet) set({ status: "error" }); },
       );
     }
     const post = (days: number): RequestInit => ({ method: "POST", body: JSON.stringify({ days }) });
@@ -101,12 +110,16 @@ export function DashboardClient() {
     settle(get<{ brief: IntelligenceBrief }>("/intelligence/brief", post(14)).then((r) => r.brief), setBrief);
     settle(get<{ insights: WeeklyInsights }>("/insights/weekly").then((r) => r.insights), setWeekly);
     settle(get<{ map: LivingMapData }>("/intelligence/living-map?days=14").then((r) => r.map), setLivingMap);
+    get<{ summary?: { last_update?: string } }>("/health/summary").then(
+      (r) => { if (alive) setServerLastUpdate(r.summary?.last_update ?? null); },
+      () => { /* the card falls back to what this browser saw */ },
+    );
     get<{ profile?: ProfileData | null }>("/profile").then(
       (r) => { if (alive) setProfile(r.profile ?? null); },
       () => { /* greeting falls back to a neutral form */ },
     );
     return () => { alive = false; };
-  }, [token, reloadKey]);
+  }, [token, reloadKey, dataVersion]);
 
   useEffect(() => {
     if (water !== "saved" && water !== "error") return;
@@ -224,6 +237,11 @@ export function DashboardClient() {
           {safety.level !== "GREEN" && <SafetyBanner level={safety.level} reasons={safety.reasons} />}
 
           <InsightSheetProvider>
+
+          {isNativeApp && <AppHome />}
+
+          <LastUpdatedCard update={pickLastUpdate(lastUpdate, serverLastUpdate)} />
+
           <TodayBrief state={heroState} items={items} showMascot={showMascot} onRetry={reload} onAddWater={addWater} waterBusy={water === "saving"} />
 
           <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
@@ -263,7 +281,7 @@ export function DashboardClient() {
             <MoreFold title="What Bubbles picked up from chat">
               <LivingSignalMap state={livingMap.status} map={livingMap.status === "ready" ? livingMap.data : null} onRetry={reload} />
             </MoreFold>
-            {showBodyMap && <BodyMapCard />}
+            {showBodyMap && !isNativeApp && <BodyMapCard />}
           </div>
           </InsightSheetProvider>
 

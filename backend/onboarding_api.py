@@ -17,8 +17,10 @@ from typing import Any, Callable
 
 from fastapi import APIRouter, Body, Header, HTTPException
 
+import consent
 import chat_cache
 import ops_telemetry
+import consent_ledger
 import doc_store
 import onboarding as ob
 from calc_core import local_today

@@ -206,7 +206,7 @@ export type LoadStatus = "loading" | "ready" | "error";
  */
 export function useTracker(endpoint: string, days: number, refetchAfterSave = false) {
   const { session } = useAuth();
-  const { fetchBubbles, reconnects } = useApi();
+  const { fetchBubbles, reconnects, dataVersion } = useApi();
   const token = session?.access_token;
   const slug = endpoint.replace(/^\/health\//, "");
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -242,7 +242,7 @@ export function useTracker(endpoint: string, days: number, refetchAfterSave = fa
     return () => {
       alive = false;
     };
-  }, [token, endpoint, slug, days, reloadKey, fetchBubbles]);
+  }, [token, endpoint, slug, days, reloadKey, dataVersion, fetchBubbles]);
 
   const retry = useCallback(() => {
     setStatus("loading");
@@ -283,5 +283,44 @@ export function useTracker(endpoint: string, days: number, refetchAfterSave = fa
     [fetchBubbles, endpoint, slug, refetchAfterSave],
   );
 
-  return { entries, summary, status, error, retry, save, freshId };
+  /** Delete one entry. Resolves null on success (it leaves the list at once) or an error message; nothing is hidden before the server agrees. */
+  const remove = useCallback(
+    async (id: string): Promise<string | null> => {
+      try {
+        const response = await fetchBubbles(`${endpoint}/${encodeURIComponent(id)}`, { method: "DELETE" });
+        if (response.status === 404) {
+          setEntries((list) => list.filter((e) => e.id !== id));   // already gone elsewhere
+          return null;
+        }
+        if (!response.ok) return (await responseFailure(response)).message;
+        setEntries((list) => list.filter((e) => e.id !== id));
+        return null;
+      } catch (error) {
+        return classifyFailure(failureFromError(error)).message;
+      }
+    },
+    [fetchBubbles, endpoint],
+  );
+
+  /** Change one entry. Resolves null on success (the row shows the saved values) or an error message; the old values stay until the server agrees. */
+  const update = useCallback(
+    async (id: string, body: Record<string, string | number>): Promise<string | null> => {
+      try {
+        const response = await fetchBubbles(`${endpoint}/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+        if (!response.ok) return saveFailureMessage(await responseFailure(response));
+        const payload: { entry?: Entry; status?: string; message?: string } | null = await response.json().catch(() => null);
+        // The safety engine answered instead of saving (crisis or urgent wording in a note): show its words, nothing was changed.
+        if (payload?.status === "safety" && payload.message) return payload.message;
+        const saved = payload?.entry?.id ? adaptTrackerEntry(slug, readEntries<Entry>([payload.entry])[0]) : undefined;
+        if (saved) setEntries((list) => list.map((e) => (e.id === id ? saved : e)));
+        else setReloadKey((k) => k + 1);
+        return null;
+      } catch (error) {
+        return saveFailureMessage(classifyFailure(failureFromError(error)));
+      }
+    },
+    [fetchBubbles, endpoint, slug],
+  );
+
+  return { entries, summary, status, error, retry, save, remove, update, freshId };
 }
