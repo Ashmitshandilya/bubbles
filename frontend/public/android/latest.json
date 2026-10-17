@@ -2,14 +2,14 @@
   "published": true,
   "appName": "Bubbles",
   "applicationId": "in.heybubbles.app",
-  "versionName": "2.0.0",
-  "versionCode": 5,
+  "versionName": "2.0.1",
+  "versionCode": 6,
   "releaseDate": "2026-10-17",
   "minSdk": 24,
   "minAndroid": "7.0",
   "targetSdk": 36,
   "file": "/android/bubbles.apk",
-  "sizeBytes": 13035550,
-  "sha256": "0b3828ae29ea868c18b533c01b8e205b95ac723c9968cc5c5bdd8313be2ebcfd",
+  "sizeBytes": 13027122,
+  "sha256": "3b00aa889fa692dd1ffbdc909f1784cc6d6bd54cd8334a80fbb197cc9d041705",
   "signingCertSha256": "FB:70:A3:F3:FE:DF:FF:A9:4B:65:15:C1:79:5F:E7:9F:18:AD:8D:5F:93:13:BE:99:B6:D8:8D:CC:21:C2:06:56"
 }
