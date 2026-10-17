@@ -16,6 +16,8 @@ import {
   useBubblesQuery,
 } from "../../components/hub/HubKit";
 import { formatWhen } from "../lib/dates";
+import { DetailsButton, InsightSheetProvider, useOpenItemFromUrl } from "./InsightDetailSheet";
+import { toDetail } from "./detail";
 import {
   caveats,
   closestGap,
@@ -70,13 +72,16 @@ const LOG_LINKS = [
 export function InsightsClient() {
   return (
     <HubPage title="Patterns">
-      <Patterns />
+      <InsightSheetProvider>
+        <Patterns />
+      </InsightSheetProvider>
     </HubPage>
   );
 }
 
 function Patterns() {
   const [days, setDays] = useState(30);
+  useOpenItemFromUrl(days);
   const [patterns, reloadPatterns] = useBubblesQuery<PatternsResponse>("/patterns/analyze", { days });
   const [trend, reloadTrend] = useBubblesQuery<LongitudinalResponse>("/intelligence/longitudinal", { days });
 
@@ -134,7 +139,7 @@ function Patterns() {
             <ul className="bubbles-stagger m-0 list-none space-y-4 p-0">
               {visible.map((card) => (
                 <li key={card.key}>
-                  <PatternCardView card={card} />
+                  <PatternCardView card={card} days={days} />
                 </li>
               ))}
             </ul>
@@ -153,7 +158,7 @@ function Patterns() {
           )}
           {trend.status === "ready" && <TrendView analysis={trend.data.analysis ?? {}} days={days} />}
           <div className={`${CARD} p-5`}>
-            <p className="font-display text-h4 text-ink">Curious about a pattern?</p>
+            <h2 className="font-display text-h4 text-ink">Curious about a pattern?</h2>
             <p className="mt-1 text-body-sm text-muted">Bubbles can talk it through with you and help you decide what to track next.</p>
             <Link href="/companion" className={`${BTN_SECONDARY} mt-3 no-underline`}>
               Talk to Bubbles
@@ -173,11 +178,14 @@ function Patterns() {
 
 const ARROWS = { up: "M7 17 17 7M9 7h8v8", down: "M7 7l10 10M17 9v8H9" } as const;
 
-function Disclosure({ title, children }: { title: string; children: ReactNode }) {
+function Disclosure({ title, context, children }: { title: string; context?: string; children: ReactNode }) {
   return (
     <details className="group rounded-2xl bg-blush">
       <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-4 text-body-sm font-extrabold text-bubbles-grape-deep [&::-webkit-details-marker]:hidden">
-        {title}
+        <span>
+          {title}
+          {context && <span className="sr-only"> for {context}</span>}
+        </span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-180">
           <path d="m6 9 6 6 6-6" />
         </svg>
@@ -218,7 +226,9 @@ function DirectionRow({ direction }: { direction: string | undefined }) {
 
 function AssociationCard({ item }: { item: Association }) {
   const note = caveats(item.text);
-  const sources = item.sources ?? [];
+  const sources = (item.sources ?? []).filter((source) => source.source_url?.startsWith("https://"));
+  const [x, y] = item.domains ?? [];
+  const pair = x && y ? `${topic(x)} and ${topic(y)}` : "this link";
   return (
     <article className={`${CARD} flex h-full flex-col gap-4 p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -243,7 +253,7 @@ function AssociationCard({ item }: { item: Association }) {
         </ul>
       )}
 
-      <p className="m-0 font-display text-h4 text-ink">{sentence(item.text)}.</p>
+      <h3 className="m-0 font-display text-h4 text-ink">{sentence(item.text)}.</h3>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <StrengthBar strength={item.strength} />
@@ -258,25 +268,30 @@ function AssociationCard({ item }: { item: Association }) {
       </div>
 
       <div className="mt-auto flex flex-col gap-2">
+        <DetailsButton headline={sentence(item.text)} target={() => ({ id: item.id, days: 90, fetch: false, base: toDetail({ kind: "association", item }) })} />
         {note && (
-          <Disclosure title="Things to keep in mind">
+          <Disclosure title="Things to keep in mind" context={pair}>
             <p className="m-0 text-body-sm text-muted">{note}</p>
           </Disclosure>
         )}
         {sources.length > 0 && (
-          <Disclosure title={`Sources (${sources.length})`}>
-            <ul className="m-0 list-none space-y-2 p-0">
+          <Disclosure title="Read more" context={pair}>
+            <ul className="m-0 list-none space-y-1 p-0">
               {sources.map((source, i) => (
-                <li key={`${source.source_url ?? source.title}-${i}`} className="text-body-sm text-muted">
-                  {source.snippet}
-                  {source.source_url?.startsWith("https://") && (
-                    <>
+                <li key={`${source.source_url}-${i}`}>
+                  <a
+                    href={source.source_url ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-[44px] items-center text-body-sm font-bold text-bubbles-grape-deep"
+                  >
+                    Read more
+                    <span className="sr-only">
                       {" "}
-                      <a href={source.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-bubbles-grape-deep">
-                        {source.source_name ?? "Source"}
-                      </a>
-                    </>
-                  )}
+                      about {pair}
+                      {sources.length > 1 ? `, link ${i + 1} of ${sources.length}` : ""}
+                    </span>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -297,7 +312,7 @@ function AssociationsEmpty({ data, days }: { data: AssociationsResponse; days: n
       <div className="flex flex-wrap items-center gap-4">
         <BubblesMascot size={64} mood="resting" animated={false} />
         <div className="min-w-[12rem] flex-1">
-          <p className="m-0 font-display text-h4 text-ink">No link to show yet</p>
+          <h3 className="m-0 font-display text-h4 text-ink">No link to show yet</h3>
           <p className="m-0 mt-1 text-body-sm text-muted">{data.message ?? "No reliable link between the things you log yet."}</p>
         </div>
       </div>
@@ -368,7 +383,11 @@ function LinksSection() {
   );
 }
 
-function PatternCardView({ card }: { card: PatternCard }) {
+function PatternCardView({ card, days }: { card: PatternCard; days: number }) {
+  const detailTarget = () =>
+    card.source.kind === "pattern"
+      ? { id: card.id, days, fetch: false, base: toDetail({ kind: "pattern", item: card.source.item, days }) }
+      : { id: card.id, days, fetch: false, base: toDetail({ kind: "correlation", item: card.source.item, days }) };
   return (
     <article className={`${CARD} p-5 sm:p-6`}>
       <div className="flex flex-wrap items-center gap-2">
@@ -389,7 +408,10 @@ function PatternCardView({ card }: { card: PatternCard }) {
       </ul>
       <details className="group mt-4 rounded-2xl bg-blush">
         <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-2 rounded-2xl px-4 text-body-sm font-extrabold text-bubbles-grape-deep [&::-webkit-details-marker]:hidden">
-          Why Bubbles thinks this
+          <span>
+            Why Bubbles thinks this
+            <span className="sr-only"> for {card.headline}</span>
+          </span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-180">
             <path d="m6 9 6 6 6-6" />
           </svg>
@@ -403,6 +425,9 @@ function PatternCardView({ card }: { card: PatternCard }) {
           <p className="mt-3 text-body-sm text-muted">{card.note}</p>
         </div>
       </details>
+      <div className="mt-3">
+        <DetailsButton headline={card.headline} target={detailTarget} />
+      </div>
     </article>
   );
 }
@@ -488,7 +513,7 @@ function TrendView({ analysis, days }: { analysis: NonNullable<LongitudinalRespo
 
       {domains.length > 0 && (
         <div className={`${CARD} p-5`}>
-          <p className="font-display text-h4 text-ink">What Bubbles can see</p>
+          <h2 className="font-display text-h4 text-ink">What Bubbles can see</h2>
           <p className="text-body-sm text-muted">Gaps stay gaps. Bubbles never reads missing logs as &ldquo;fine&rdquo;.</p>
           <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0">
             {domains.map(([key, domain]) => {

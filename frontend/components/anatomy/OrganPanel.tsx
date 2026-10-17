@@ -115,6 +115,11 @@ export function OrganPanel({ organ }: { organ: Organ | null }) {
                 <EvidenceRows items={organ.evidence.slice(SHOWN)} />
               </details>
             )}
+            {organ.evidenceCount > organ.evidence.length && (
+              <p className="mt-1 text-caption text-muted">
+                Showing the {organ.evidence.length} newest of {organ.evidenceCount} entries.
+              </p>
+            )}
           </>
         ) : (
           <p className="mt-1 text-body-sm text-muted">Nothing logged yet relates to this part of the body.</p>

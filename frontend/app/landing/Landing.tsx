@@ -413,6 +413,7 @@ export function Landing() {
           <div className="cw-footer-links">
             <Link href="/login">Sign in</Link>
             <Link href="/privacy">Privacy</Link>
+            <Link href="/privacy-choices">Privacy choices</Link>
             <Link href="/terms">Terms</Link>
             <Link href="/android">Android app</Link>
             <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a>

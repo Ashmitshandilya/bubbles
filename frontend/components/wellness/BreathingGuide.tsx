@@ -14,11 +14,11 @@ function clock(totalSeconds: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-export function BreathingGuide({ exercise }: { exercise: Exercise }) {
+export function BreathingGuide({ exercise, autoStart = false }: { exercise: Exercise; autoStart?: boolean }) {
   const reduced = useReducedMotion();
   const phases = phasesOf(exercise.pattern);
   const total = Math.max(exercise.minutes, 1) * 60;
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState(autoStart);
   const [elapsed, setElapsed] = useState(0);
   const [done, setDone] = useState(false);
   const last = useRef(0);

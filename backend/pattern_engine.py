@@ -6,6 +6,7 @@ causation or diagnose conditions.
 """
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from math import isfinite
@@ -91,6 +92,41 @@ def normalize_events(events: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(normalized, key=lambda e: e["created_at"])
 
 
+_SLUG = re.compile(r"[^a-z0-9_-]+")
+MAX_OCCURRENCES = 14   # newest dated occurrences returned for one pattern
+MAX_PAIRS = 12         # newest dated co-occurring pairs returned for one correlation
+
+
+def slug(value: Any) -> str:
+    """URL-safe fragment for a subject or event type ("Low back pain" -> "low-back-pain")."""
+    return _SLUG.sub("-", str(value).strip().lower()).strip("-")[:40] or "x"
+
+
+def recurrence_id(event_type: Any, subject: Any) -> str:
+    return f"rec:{slug(event_type)}:{slug(subject)}"
+
+
+def correlation_id(type_a: Any, subject_a: Any, type_b: Any, subject_b: Any) -> str:
+    return f"co:{slug(type_a)}:{slug(subject_a)}|{slug(type_b)}:{slug(subject_b)}"
+
+
+def recurrence_confidence(count: int, span_days: float, average: float) -> str:
+    """The one place a repeated item gets its confidence word (patterns page, Today and the detail sheet read this)."""
+    if average < 0.5:
+        return "low"
+    if count >= 8 and span_days >= 14:
+        return "high"
+    return "medium" if count >= 5 else "low"
+
+
+def correlation_confidence(pair_count: int) -> str:
+    return "high" if pair_count >= 6 else "medium" if pair_count >= 4 else "low"
+
+
+def _day(row: dict[str, Any]) -> str:
+    return row["created_at"].date().isoformat()
+
+
 def _number(data: dict[str, Any], *keys: str) -> float | None:
     for key in keys:
         value = data.get(key)
@@ -148,6 +184,9 @@ def recurring_patterns(events: Iterable[dict[str, Any]], *, min_occurrences: int
             "first_seen": rows[0]["created_at"].isoformat(),
             "last_seen": rows[-1]["created_at"].isoformat(),
             "span_days": round(span_days, 1),
+            "id": recurrence_id(event_type, subject),
+            "confidence_label": recurrence_confidence(len(rows), span_days, confidence),
+            "occurrences": [{"id": r["id"] or None, "date": _day(r)} for r in reversed(rows[-MAX_OCCURRENCES:])],
             "source_event_ids": [r["id"] for r in rows if r["id"]],
             "observation": f"{subject} was recorded {len(rows)} times.",
         })
@@ -171,7 +210,7 @@ def temporal_correlations(
     evidence that one event caused another.
     """
     rows = _episodic(normalize_events(events))
-    candidates: defaultdict[tuple[str, str, str, str], list[tuple[str, str]]] = defaultdict(list)
+    candidates: defaultdict[tuple[str, str, str, str], list[tuple[Any, Any, str, str]]] = defaultdict(list)
 
     for i, left in enumerate(rows):
         for right in rows[i + 1:]:
@@ -183,7 +222,8 @@ def temporal_correlations(
             key_right = (right["event_type"], right["subject"])
             ordered = sorted([key_left, key_right])
             key = (ordered[0][0], ordered[0][1], ordered[1][0], ordered[1][1])
-            candidates[key].append((left["id"], right["id"]))
+            pair = (left, right) if (left["event_type"], left["subject"]) == ordered[0] else (right, left)
+            candidates[key].append((pair[0]["id"], pair[1]["id"], _day(pair[0]), _day(pair[1])))
 
     results: list[dict[str, Any]] = []
     for (type_a, subject_a, type_b, subject_b), pairs in candidates.items():
@@ -196,12 +236,16 @@ def temporal_correlations(
             "pair_count": len(pairs),
             "window_days": window_days,
             "strength": round(min(1.0, len(pairs) / 6), 3),
+            "id": correlation_id(type_a, subject_a, type_b, subject_b),
+            "confidence_label": correlation_confidence(len(pairs)),
+            "pairs": [{"a": {"id": a_id or None, "date": a_day}, "b": {"id": b_id or None, "date": b_day}}
+                      for a_id, b_id, a_day, b_day in reversed(pairs[-MAX_PAIRS:])],
             "interpretation": (
                 f"{subject_a} and {subject_b} were recorded within "
                 f"{window_days} days of each other {len(pairs)} times. "
                 "This is a temporal association, not proof of causation."
             ),
-            "source_event_ids": [x for pair in pairs for x in pair if x][:12],
+            "source_event_ids": [x for pair in pairs for x in pair[:2] if x][:12],
         })
 
     return sorted(results, key=lambda x: (-x["pair_count"], x["a"]["subject"], x["b"]["subject"]))

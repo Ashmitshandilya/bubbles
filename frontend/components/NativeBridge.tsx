@@ -6,7 +6,7 @@
 // website must never download or run Capacitor.
 
 import { useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { PluginListenerHandle } from "@capacitor/core";
 
 /** The app's own plugin (android/.../PrintPlugin.java): the system print dialog, which also offers Save as PDF. */
@@ -47,6 +47,9 @@ async function goBack(canGoBack: boolean, minimize: () => Promise<void>) {
 
 export function NativeBridge() {
   const pathname = usePathname();
+  const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const splashHidden = useRef(false);
 
   // In the app "/" is NativeEntry (a redirect or, signed out, the welcome), so the first other path is the first real
@@ -91,6 +94,11 @@ export function NativeBridge() {
       ]);
       if (active) handles.push(...listeners);
       else listeners.forEach((listener) => void listener.remove());
+      // Tapping a phone reminder opens its screen (only the kind travels in the message).
+      const { onReminderTap } = await import("../lib/firebase-native");
+      const stopTap = await onReminderTap((path) => routerRef.current.push(path));
+      if (active) handles.push({ remove: async () => stopTap() });
+      else stopTap();
     })();
 
     return () => {

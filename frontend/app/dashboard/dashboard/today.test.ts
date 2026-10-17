@@ -1,6 +1,6 @@
 // Run: npx vitest run app/dashboard/dashboard/today.test.ts
 import { describe, expect, it } from "vitest";
-import { buildTodayItems, daysAgo, livingSignalLine, plainMetric, summarizeCycle, summarizeSignal, upcomingVisits } from "./today";
+import { buildPatterns, buildTodayItems, daysAgo, livingSignalLine, plainMetric, summarizeCycle, summarizeSignal, upcomingVisits } from "./today";
 import type { TrackerEntry } from "./types";
 
 const now = new Date(2026, 9, 6, 9, 0); // 6 Oct 2026, local time
@@ -76,5 +76,34 @@ describe("living map wording", () => {
     expect(livingSignalLine({ kind: "baseline_change", direction: "up", evidence: "" })).toBe("Higher than your usual lately.");
     expect(livingSignalLine({ kind: "repeated_cooccurrence", direction: "context", evidence: "" })).toMatch(/not proof/);
     expect(livingSignalLine({ kind: "something_new", evidence: "As sent" })).toBe("As sent");
+  });
+});
+
+describe("insight ids and details on Today", () => {
+  it("keeps the server id and its one confidence word for a weekly insight and a correlation", () => {
+    const [insight, corr] = buildPatterns(
+      [{ id: "rec:symptom:headache", confidence_label: "medium", title: "Headache came up 5 times", description: "d", category: "recurring_symptom", confidence: 0.9 } as never],
+      [{ id: "co:a|b", confidence_label: "low", kind: "co", pair_count: 3, strength: 0.4, interpretation: "A and B show up together" } as never],
+    );
+    expect(insight.insightId).toBe("rec:symptom:headache");
+    expect(insight.pill.text).toBe("Medium confidence");
+    expect(insight.source.level).toBe("Medium");
+    expect(corr.insightId).toBe("co:a|b");
+    expect(corr.source.level).toBe("Low");
+  });
+
+  it("falls back to a positional id and the score when an older server sends neither", () => {
+    const [insight] = buildPatterns([{ title: "t", description: "d", category: "c", confidence: 0.8 } as never], []);
+    expect(insight.id).toBe("insight-0");
+    expect(insight.insightId).toBeUndefined();
+    expect(insight.pill.text).toBe("High confidence");
+  });
+
+  it("gives a chat-derived card this week against the usual from the brief", () => {
+    const [item] = buildTodayItems([], null, [{ id: "review-sleep_hours", priority: "high" } as never], {
+      sleep_hours: { current: 5.5, baseline: 7, percent: -21.4 },
+    });
+    expect(item.source.change).toEqual({ name: plainMetric("sleep_hours"), current: 5.5, usual: 7, percent: -21.4 });
+    expect(item.source.level).toBe("Low");
   });
 });

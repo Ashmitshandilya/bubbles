@@ -1,19 +1,24 @@
+import contextvars
 import hashlib
+import json
 import os
+import re
 import threading
 import time
 
 import env_compat  # noqa: F401  (loads .env and maps legacy COCO_* names to BUBBLES_*; must run before config is read)
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
 from uuid import UUID, uuid4
+from typing import Any
 
-from fastapi import FastAPI, HTTPException, Header, Query
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Header, Query
 from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from wellness_common import REQUEST_TZ, parse_tz_header
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from auth_errors import (
     unauthorized_response,
@@ -37,16 +42,23 @@ from memory_promotion import promote_health_event
 from rag import hybrid_search, build_evidence_context
 from evidence_package import build_package, package_audit, plan_task
 from health_event_pipeline import prepare_db_row
-from health_event_projection import project_confirmed_event
 from health_logs import build_router as build_health_logs_router
 from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
+from insights_api import build_router as build_insights_router
 from push_api import build_router as build_push_router
 from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
-from onboarding_api import build_router as build_onboarding_router, style_block_for
-from consent import consent_needed_reply, has_ai_consent
+import chat_cache
+from chat_concurrency import settled, submit, submit_io
+import chat_concurrency
+from chat_counts import message_counts
+from schema_status import build_router as build_schema_router
+from onboarding_api import build_router as build_onboarding_router
+import consent as consent_module
+from consent import chat_prompt, has_ai_consent, persist_chat_events
+from mind_chat import loneliness_no_consent_reply, mind_support_block
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -55,6 +67,7 @@ import association_loader
 from context_engine import build_user_context, format_user_context
 from safety_engine import assess_safety, safety_instruction, urgent_fallback_response
 from chat_pipeline import (
+    overlay_event_status,
     RateLimiter, ai_failed_reply, analyze_turn, build_rule_events, conversation_block, deterministic_reply,
     evidence_query, find_stored_reply, first_name, load_history, persist_events, reconcile_ai_events, reply_kind,
     safety_payload, semantic_trace, shown_evidence, state_block, stored_metadata,
@@ -62,6 +75,8 @@ from chat_pipeline import (
 from conversation_correction import apply_correction, contradiction_note
 from health_semantics import display_name
 from event_filters import DEAD_STATUSES, event_moment
+from health_event_confirm import build_router as build_confirm_router
+from client_telemetry import build_router as build_client_telemetry_router
 from db_access import database_permission_response, is_permission_denied, probe_database, register_db_error_handlers
 from weekly_insights import build_weekly_insights, to_response_shape as weekly_insights_response_shape
 from pattern_engine import analyze as analyze_patterns
@@ -89,7 +104,7 @@ from digital_twin import build_digital_twin
 from health_agent import plan_agent_actions
 from memory_manager import extract_explicit_personal_facts, persist_explicit_facts, memory_diagnostics
 from response_formatter import normalize_response, response_style_instruction
-from response_quality import lint, scrub_doses
+from response_quality import lint, scrub_doses, strip_attribution
 from metric_names import plain_metric
 from personalization_engine import build_personalization
 from habit_intelligence import analyze_habits
@@ -100,7 +115,7 @@ from state_normalizer import normalize_health_state, normalize_living_signal_map
 from womens_health_intelligence import classify_womens_health
 from medication_intelligence import medication_overview
 from preventive_health import preventive_snapshot
-from sharing_architecture import build_share_plan
+from sharing_architecture import SCOPES as SHARE_SCOPES, build_share_plan
 from provider_integration import to_fhir_resource
 from advanced_agent import plan_agent
 from knowledge_learning import knowledge_health
@@ -297,7 +312,7 @@ def _record_api_event(request, response, started: float) -> None:
 
 
 # Coarse protection for the Whole-Health OS routes: a request-size cap and a per-user request budget (the chat has its own limiter).
-_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback")
+_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback", "/consents")
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing
@@ -404,9 +419,15 @@ def _warm_database_probe() -> None:
         _database_report(timeout=0.01)
     except Exception:  # noqa: BLE001 - startup must never fail because of a diagnostic
         pass
+    threading.Thread(target=lambda: analyze_turn("hello", []), name="bubbles-warm-analyze", daemon=True).start()   # the first message after a deploy no longer pays the one-off start-up cost
     if ops_telemetry._persist_enabled():   # saved admin settings (provider pauses, retention): read once, in the background
         import threading
         threading.Thread(target=admin_settings.load, name="bubbles-settings-load", daemon=True).start()
+    try:   # phone reminders while the app is closed; does nothing until FIREBASE_SERVICE_ACCOUNT_JSON is set (push_fcm.py)
+        import push_fcm
+        push_fcm.start_background(supabase)
+    except Exception:  # noqa: BLE001 - startup must never fail because of an optional channel
+        pass
 
 
 # HEAD is allowed too: uptime monitors (UptimeRobot, Render, load balancers) often probe with HEAD and would otherwise see 405 and report "down"
@@ -491,10 +512,12 @@ def get_authenticated_user(authorization: str | None, *, fresh: bool = False):
     token = _bearer_token(authorization)
     if fresh:
         return _verify_token(token)
-    return _sign_in_cache.get_or_compute(
+    user = _sign_in_cache.get_or_compute(
         hashlib.sha256(token.encode("utf-8")).hexdigest(), lambda: _verify_token(token),
         ttl_for=lambda _user: (token_exp(token) or 0) - time.time(),
     )
+    ops_telemetry.bind_user(str(getattr(user, "id", "")))   # live admin view only: held in the memory ring, never stored or logged
+    return user
 
 
 def _verify_token(token: str):
@@ -543,15 +566,18 @@ app.include_router(build_fitness_router(get_authenticated_user, supabase))
 app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 # Sleep, hydration, medications, mind check-ins and notifications.
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
-app.include_router(build_push_router(get_authenticated_user, supabase))   # /notifications/push/register and /internal/push/run
+app.include_router(build_push_router(supabase))   # POST /internal/push/run (cron secret, not a user route)
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_consent_router(get_authenticated_user, supabase))
+app.include_router(build_client_telemetry_router())   # POST /telemetry/client: a fixed problem code, nothing else
+app.include_router(build_confirm_router(get_authenticated_user, supabase))   # POST /health-events/confirmation (batch) + the old single PATCH
 app.include_router(build_onboarding_router(get_authenticated_user, supabase))
 app.include_router(build_import_router(get_authenticated_user, supabase))
 # Cycle: calendar, daily log, predictions with ranges, modes, insights, report, partner view.
 app.include_router(build_cycle_router(get_authenticated_user, supabase))
 app.include_router(build_partner_router(get_authenticated_user, supabase))
 app.include_router(build_organ_map_router(get_authenticated_user, supabase))
+app.include_router(build_schema_router(supabase))
 app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
 
 
@@ -583,6 +609,7 @@ def sync_profile_from_auth(user):
             {"id": str(user.id), "display_name": name},
             on_conflict="id",
         ).execute()
+        chat_cache.forget_user(str(user.id))   # the next reply sees the new name
         _profile_synced.put(str(user.id), True)
     except Exception as error:
         if is_permission_denied(error):
@@ -642,21 +669,13 @@ def _persist_chat_message(*, user_id: str, conversation_id: str, role: str, cont
     }
     if client_message_id:
         payload["client_message_id"] = client_message_id
-        existing = (supabase.table("chat_messages").select("id,conversation_id,role,content")
-                    .eq("user_id", user_id).eq("client_message_id", client_message_id)
-                    .limit(1).execute().data or [])
-        if existing:
-            prior = existing[0]
-            if (str(prior.get("conversation_id")) != conversation_id
-                    or prior.get("role") != role
-                    or prior.get("content") != content):
-                raise HTTPException(status_code=409, detail="Chat idempotency key was already used for different content")
-            return out(str(prior["id"]), False)
     try:
+        # Insert first: the unique index (uq_chat_messages_user_client_message) refuses a repeated key, so the common case (a new message)
+        # costs one round trip, not a read and then a write.
         saved = supabase.table("chat_messages").insert(payload).select("id").execute()
     except Exception as error:
-        # A concurrent retry can win the unique idempotency race. Resolve it by
-        # reading the winner rather than creating a second logical message.
+        # A concurrent retry can win the unique idempotency race (a plain repeat hits the same index). Resolve it by reading the winner
+        # rather than creating a second logical message.
         if client_message_id:
             winner = (supabase.table("chat_messages")
                       .select("id,conversation_id,role,content")
@@ -695,6 +714,12 @@ def _touch_conversation(conversation_id: str, user_id: str) -> None:
 
 _chat_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_CHAT_RATE_LIMIT", "30")), window=60.0)
 
+# Optional enrichers are time-boxed: a slow evidence lookup is dropped (the reply says no outside evidence was found), a slow read of
+# the person's own context is waited for longer and logged, never dropped quietly.
+RAG_BUDGET_S = max(0.5, float(os.getenv("CHAT_RAG_BUDGET_S", "2.0")))
+CONTEXT_BUDGET_S = max(2.0, float(os.getenv("CHAT_CONTEXT_BUDGET_S", "8.0")))
+_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup"}
+
 
 def _debug_trace_enabled() -> bool:
     # The trace puts fact text in /chat responses: never on the live server, whatever the setting says.
@@ -705,21 +730,60 @@ def _reasons_text(reasons: list[str]) -> list[str]:
     return [str(r) for r in reasons][:8]
 
 
-@app.post("/chat")
-def chat(
-    request: ChatRequest,
-    authorization: str | None = Header(default=None)
-):
-    user = get_authenticated_user(authorization)
+def _ms(since: float) -> float:
+    return round((perf_counter() - since) * 1000, 1)
+
+
+@dataclass
+class _ChatState:
+    """What the first half of a chat turn (sign-in to the safety gate) found out; the second half (the reply) works from it."""
+    user: Any
+    user_id: str
+    user_message: str
+    conversation_id: str
+    started: float
+    history: list = field(default_factory=list)
+    user_message_id: str | None = None
+    memory_saved: Any = None
+    turn: Any = None
+    name: str = ""
+    rule_events: list = field(default_factory=list)
+    consent_required: bool = False
+    fresh: bool = False   # the user message was just created (not a retry), so none of its events exist yet
+    timings: dict = field(default_factory=dict)
+    early: dict | None = None   # a finished answer (empty message, replay of a retry): nothing more to compute
+
+    @property
+    def deterministic(self) -> bool:
+        return self.turn is not None and (self.turn.route in _DETERMINISTIC_ROUTES or self.consent_required)
+
+    def meta(self) -> dict:
+        """What is known as soon as the safety gate is: shown by the stream before any reply text exists."""
+        if self.early is not None:
+            return {"conversation_id": self.conversation_id, "user_message_id": self.early.get("user_message_id"),
+                    "safety": self.early.get("safety"), "kind": self.early.get("kind", "reply"),
+                    "consent_required": bool(self.early.get("consent_required"))}
+        return {"conversation_id": self.conversation_id, "user_message_id": self.user_message_id, "safety": safety_payload(self.turn.safety),
+                "kind": reply_kind(self.turn.route), "consent_required": self.consent_required}
+
+
+def _chat_gate(user, request) -> str:
+    """Rate limit and profile sync for one chat request. Returns the user id."""
     user_id = str(user.id)
     if not _chat_limiter.allow(user_id):
         raise HTTPException(status_code=429, detail="You're sending messages very quickly. Please wait a moment and try again.")
-
     sync_profile_from_auth(user)
-    user_message = request.message.strip()
-    conversation_id = _ensure_conversation(user_id, request.conversation_id, user_message or "Bubbles conversation")
+    return user_id
 
+
+def _chat_prepare(user, user_id: str, request: ChatRequest) -> _ChatState:
+    """Sign-in to the safety gate: find or make the conversation (with its recent turns, read side by side), save the message, understand
+    it, decide which kind of reply it gets. Nothing here calls an AI model."""
+    started = perf_counter()
+    user_message = request.message.strip()
+    history: list = []
     if not user_message:
+        conversation_id = _ensure_conversation(user_id, request.conversation_id, "Bubbles conversation")
         response_text = "I'm here 💗 Tell me what's on your mind."
         ops_telemetry.note(route_kind="empty", safety_level="GREEN", ai_called=False)
         empty_safety = {"level": "GREEN", "state": "NO_REDFLAG", "reasons": [], "retracted": False}
@@ -728,124 +792,171 @@ def chat(
             metadata={"source": "bubbles_api", "kind": "reply", "safety": empty_safety},
         )
         _touch_conversation(conversation_id, user_id)
-        return {
-            "response": response_text,
-            "sentiment": "neutral",
-            "kind": "reply",
-            "safety": empty_safety,
-            "health_events": [],
-            "health_event_ids": [],
-            "message_id": bubbles_message_id,
-            "conversation_id": conversation_id,
-            "user_message_id": None,
-            "user_id": user.id,
+        state = _ChatState(user, user_id, user_message, conversation_id, started)
+        state.early = {
+            "response": response_text, "sentiment": "neutral", "kind": "reply", "safety": empty_safety, "health_events": [],
+            "health_event_ids": [], "message_id": bubbles_message_id, "conversation_id": conversation_id, "user_message_id": None, "user_id": user.id,
         }
+        return state
 
-    # Recent turns of THIS conversation (owner-scoped) give the message its antecedent: "I said no chest pain?"
-    # is meaningless without what was said before. Read before saving the new message.
-    history = load_history(supabase, user_id, conversation_id)
-    user_message_id, created = _persist_chat_message(
+    # Recent turns of THIS conversation (owner-scoped) give the message its antecedent: "I said no chest pain?" is meaningless without
+    # what was said before. Read before saving the new message, at the same time as the ownership check. A new chat has none to read.
+    if request.conversation_id:
+        history_job = submit_io(settled, load_history, supabase, user_id, request.conversation_id)
+        conversation_id = _ensure_conversation(user_id, request.conversation_id, user_message)
+        history = history_job.result()[0] or []
+    else:
+        conversation_id = _ensure_conversation(user_id, None, user_message)
+    state = _ChatState(user, user_id, user_message, conversation_id, started, history=history)
+    state.user_message_id, created = _persist_chat_message(
         user_id=user_id, conversation_id=conversation_id, role="user", content=user_message,
         metadata={"source": "user_input"}, client_message_id=request.message_id, return_created=True,
     )
+    state.fresh = created
     if not created:
         # A retry of a message we already answered: return the stored answer instead of re-running the model
         # and duplicating events.
-        replay = find_stored_reply(supabase, user_id, conversation_id, user_message_id)
+        replay = find_stored_reply(supabase, user_id, conversation_id, state.user_message_id)
         if replay:
             replay["user_id"] = user.id
-            return replay
+            state.early = replay
+            return state
     # Keep health content out of application logs; operational telemetry records only safe metadata.
 
     explicit_facts = extract_explicit_personal_facts(user_message)
-    memory_saved = persist_explicit_facts(user_id, user_message_id, explicit_facts)
+    state.memory_saved = persist_explicit_facts(user_id, state.user_message_id, explicit_facts)
 
     # ---- 1. understand: facts (negation, tense, who, severity), safety state, correction, contradictions, daily log
     turn = analyze_turn(user_message, history)
-    safety = turn.safety
-    name = first_name(user)
-    timings = dict(turn.timings_ms)
-    rule_events = [] if turn.route == "correction" else build_rule_events(turn, user_message_id)
+    state.turn = turn
+    state.name = first_name(user)
+    state.timings = dict(turn.timings_ms)
+    state.rule_events = [] if turn.route == "correction" else build_rule_events(turn, state.user_message_id)
     if turn.pause_strict_plan:   # restriction language arrived with an urgent/uncertain safety state: the safety reply wins, the plan still pauses
         try:
             from fitness_chat import pause_active_plan
             pause_active_plan(supabase, user_id)
         except Exception:  # noqa: BLE001
             pass
+    # Only open-ended replies go to an outside AI model, and only after a clear yes (consent.py). Everything else, including every
+    # emergency, is answered here and never depends on it.
+    state.consent_required = turn.route not in _DETERMINISTIC_ROUTES and not has_ai_consent(supabase, user_id)
+    # Technical facts only, from fixed lists (ops_telemetry.NOTE_VALUES): which kind of reply, the safety level, whether a model was asked.
+    try:
+        ops_telemetry.note(route_kind="consent_needed" if state.consent_required else turn.route, safety_level=turn.safety.level,
+                           ai_called=not state.deterministic, stage_pre_ms=_ms(started))
+    except Exception:  # noqa: BLE001 - telemetry never interrupts a reply
+        pass
+    return state
 
-    # ---- 2. respond
+
+def _context_stage(user_id: str, user_message: str) -> tuple[str, float]:
+    """The person's own context as prompt text (profile, memory, recent events, trends, patterns in their logs)."""
+    t0 = perf_counter()
+    user_context = build_user_context(user_id=user_id, query=user_message)
+    memory_context = format_user_context(user_context)
+
+    # Concrete metrics from stored events (best effort)
+    try:
+        recent_events = user_context.get("recent_events", [])
+        health_state = build_health_state(recent_events, days=14)
+        if health_state.get("baseline") or health_state.get("deviations"):
+            health_metrics = "\n\nRECENT HEALTH METRICS:\n"
+            if health_state.get("baseline"):
+                health_metrics += "Baseline (past 14 days):\n"
+                for metric, value in health_state["baseline"].items():
+                    health_metrics += f"- {metric}: {value}\n"
+            if health_state.get("deviations"):
+                health_metrics += "\nCurrent trends (last 14 days vs baseline):\n"
+                for metric, data in health_state["deviations"].items():
+                    health_metrics += f"- {metric}: {data.get('current')} (baseline: {data.get('baseline')}, change: {data.get('percent')}%)\n"
+            memory_context += health_metrics
+    except Exception as error:
+        from logging_util import logger
+        logger.warning(component="CHAT", operation="health_state_retrieval", error=error, user_id=user_id,
+                       fallback_action="continuing_without_metrics")
+
+    try:  # the user's own log patterns (cached; never waits on a computation)
+        memory_context += association_loader.chat_block(supabase, user_id)
+    except Exception as error:  # noqa: BLE001
+        from logging_util import logger
+        logger.warning(component="CHAT", operation="association_block", error=error, fallback_action="continuing_without_patterns")
+    return memory_context, _ms(t0)
+
+
+def _evidence_stage(user_id: str, query: str) -> tuple[list[dict], float]:
+    t0 = perf_counter()
+    try:
+        results = hybrid_search(query=query, user_id=user_id, limit=6)
+    except Exception as error:
+        from logging_util import logger
+        logger.error(component="RAG", operation="hybrid_search", error=error, user_id=user_id,
+                     context={"query_length": len(query)}, fallback_action="using_empty_evidence")
+        results = []
+    return results, _ms(t0)
+
+
+def _after_turn(conversation_id: str, user_id: str, route: str, state_name: str, event_count: int, timings: dict) -> None:
+    """Housekeeping that needs nothing from the person's screen: runs after the reply has been sent."""
+    _touch_conversation(conversation_id, user_id)
+    from logging_util import logger
+    logger.info(component="CHAT", operation="turn", user_id=user_id, context={
+        "route": route, "state": state_name, "events": event_count, "timings_ms": timings,
+    })  # no symptom concepts here: a log line tied to a user id must not say what they reported
+
+
+def _chat_respond(state: _ChatState, defer) -> dict:
+    """The second half of a chat turn: the reply text (deterministic copy, or the model's after the output guards), saving, the payload.
+    ``defer(fn, *args)`` runs housekeeping after the answer is out."""
+    if state.early is not None:
+        return state.early
+    user_id, user_message, turn, safety = state.user_id, state.user_message, state.turn, state.turn.safety
+    user_message_id, name, timings = state.user_message_id, state.name, state.timings
     ai_events: list = []
     evidence_results: list[dict] = []
     package_audit_meta: dict | None = None
     sentiment = "neutral"
     persisted: list[dict] = []
-    deterministic_routes = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup"}
-    # Only open-ended replies go to an outside AI model, and only after a clear yes (consent.py). Everything else, including every
-    # emergency, is answered here and never depends on it.
-    consent_required = turn.route not in deterministic_routes and not has_ai_consent(supabase, user_id)
-    # Technical facts only, from fixed lists (ops_telemetry.NOTE_VALUES): which kind of reply, the safety level, whether a model was asked.
-    try:
-        ops_telemetry.note(route_kind="consent_needed" if consent_required else turn.route, safety_level=safety.level,
-                           ai_called=not (turn.route in deterministic_routes or consent_required))
-    except Exception:  # noqa: BLE001 - telemetry never interrupts a reply
-        pass
-    if turn.route in deterministic_routes or consent_required:
+    stage = {"ctx": 0.0, "rag": 0.0, "ai": 0.0}
+    post_started = perf_counter()
+    if turn.route in _DETERMINISTIC_ROUTES or state.consent_required:
         # Deterministic copy: RED is a hard gate, so neither the message nor health context reaches a provider.
         t0 = perf_counter()
         # While waiting for the yes nothing is saved: the same message is asked again after it and saved once then (saving both would count a symptom twice).
-        persisted = [] if consent_required else persist_events(supabase, user_id, user_message_id, rule_events)
-        timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
-        if consent_required:
+        persisted = [] if state.consent_required else persist_chat_events(supabase, user_id, user_message_id, state.rule_events, persist=persist_events, fresh=state.fresh)
+        timings["events_ms"] = _ms(t0)
+        if state.consent_required:
             # An urgent message still gets the fixed urgent text, not a question about AI models.
-            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else consent_needed_reply(name)
+            consent_ask = chat_prompt(supabase, user_id, name)   # declined within 14 days: a calm line, no card
+            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (loneliness_no_consent_reply(turn, name) or consent_ask["reply"])
         else:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
             response_text = _fitness_text(user_id, user_message)
     else:
-        user_context = build_user_context(user_id=user_id, query=user_message)
-        memory_context = format_user_context(user_context)
-
-        # Concrete metrics from stored events (best effort)
-        try:
-            recent_events = user_context.get("recent_events", [])
-            health_state = build_health_state(recent_events, days=14)
-            if health_state.get("baseline") or health_state.get("deviations"):
-                health_metrics = "\n\nRECENT HEALTH METRICS:\n"
-                if health_state.get("baseline"):
-                    health_metrics += "Baseline (past 14 days):\n"
-                    for metric, value in health_state["baseline"].items():
-                        health_metrics += f"- {metric}: {value}\n"
-                if health_state.get("deviations"):
-                    health_metrics += "\nCurrent trends (last 14 days vs baseline):\n"
-                    for metric, data in health_state["deviations"].items():
-                        health_metrics += f"- {metric}: {data.get('current')} (baseline: {data.get('baseline')}, change: {data.get('percent')}%)\n"
-                memory_context += health_metrics
-        except Exception as error:
-            from logging_util import logger
-            logger.warning(component="CHAT", operation="health_state_retrieval", error=error, user_id=user_id,
-                           fallback_action="continuing_without_metrics")
-
-        try:  # the user's own log patterns (cached; never waits on a computation)
-            memory_context += association_loader.chat_block(supabase, user_id)
-        except Exception as error:  # noqa: BLE001
-            from logging_util import logger
-            logger.warning(component="CHAT", operation="association_block", error=error, fallback_action="continuing_without_patterns")
-
-        # Evidence is retrieved only after the safety gate, and only for topics the user actually raised
-        # (never for denied or other people's symptoms).
+        # The person's own context, the evidence lookup and the tone settings do not depend on each other: started together, after the
+        # safety gate (evidence is never fetched before it, and only for topics the person actually raised, never for denied or other
+        # people's symptoms).
         query = evidence_query(turn.facts, user_message)
-        t0 = perf_counter()
-        if query:
+        ctx_job = submit(_context_stage, user_id, user_message)
+        rag_job = submit(_evidence_stage, user_id, query) if query else None
+        style_job = submit_io(settled, chat_cache.style_block, supabase, user_id)
+        try:
+            memory_context, stage["ctx"] = ctx_job.result(timeout=CONTEXT_BUDGET_S)
+        except Exception as error:  # noqa: BLE001 - never a silent loss: the reply still goes out and the miss is logged
+            from logging_util import logger
+            logger.warning(component="CHAT", operation="context_stage", error=error, user_id=user_id, fallback_action="replying_without_personal_context")
+            memory_context, stage["ctx"] = "", CONTEXT_BUDGET_S * 1000
+        if rag_job is not None:
             try:
-                evidence_results = hybrid_search(query=query, user_id=user_id, limit=6)
-            except Exception as error:
+                evidence_results, stage["rag"] = rag_job.result(timeout=RAG_BUDGET_S)
+            except Exception as error:  # noqa: BLE001 - optional enrichment: the reply says no outside evidence was found
                 from logging_util import logger
-                logger.error(component="RAG", operation="hybrid_search", error=error, user_id=user_id,
-                             context={"query_length": len(query)}, fallback_action="using_empty_evidence")
-                evidence_results = []
-        timings["rag_ms"] = round((perf_counter() - t0) * 1000, 1)
-        evidence_context = build_evidence_context(evidence_results)
+                logger.warning(component="RAG", operation="hybrid_search_budget", error=error, user_id=user_id, fallback_action="using_empty_evidence")
+                evidence_results, stage["rag"] = [], RAG_BUDGET_S * 1000
+        timings["rag_ms"] = stage["rag"]
+        # The model gets the same three sources the screen shows, each trimmed: more only slows the answer.
+        evidence_context = build_evidence_context(shown_evidence(evidence_results), max_chars=1200)
         try:  # audit trail only for now: the model still receives the same context blocks
             package_audit_meta = package_audit(build_package(
                 plan=plan_task(user_message, has_health_topic=bool(query)), safety=safety_payload(safety),
@@ -854,35 +965,41 @@ def chat(
             from logging_util import logger
             logger.warning(component="CHAT", operation="evidence_package", error=error, fallback_action="no_audit_trail")
 
-        recent_block = conversation_block(history)
+        recent_block = conversation_block(state.history)
         conversation_context = "\n\n".join(filter(None, [
             ("RECENT CONVERSATION (oldest first):\n" + recent_block) if recent_block else "",
             state_block(turn.facts, turn.history_facts),
         ]))
+        style = style_job.result()[0] or ""
+        # What the person said about themselves is saved while the model thinks (the model only PROPOSES more events afterwards).
+        rule_job = submit_io(settled, persist_chat_events, supabase, user_id, user_message_id, state.rule_events, persist=persist_events, fresh=state.fresh) if state.rule_events else None
         t0 = perf_counter()
         ai_result = ask_bubbles(
             user_message,
             memory_context=memory_context,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if (style := style_block_for(supabase, user_id)) else ""),
+            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if style else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else ""),
             conversation_context=conversation_context,
         )
-        timings["ai_ms"] = round((perf_counter() - t0) * 1000, 1)
+        stage["ai"] = _ms(t0)
+        timings["ai_ms"] = stage["ai"]
+        post_started = perf_counter()
         if is_degraded(ai_result):
             ai_events = []
         else:
             ai_events = ai_result.health_events
             sentiment = ai_result.sentiment
 
-        # The model only PROPOSES events; the backend keeps those the user really asserted about themselves.
         t0 = perf_counter()
-        reconciled = reconcile_ai_events(ai_events, turn, rule_events, user_message_id)
-        persisted = persist_events(supabase, user_id, user_message_id, rule_events + reconciled)
-        timings["events_ms"] = round((perf_counter() - t0) * 1000, 1)
+        reconciled = reconcile_ai_events(ai_events, turn, state.rule_events, user_message_id)
+        proposed_saved = persist_chat_events(supabase, user_id, user_message_id, reconciled, persist=persist_events, fresh=state.fresh)
+        rule_saved = (rule_job.result()[0] or []) if rule_job is not None else []
+        persisted = rule_saved + proposed_saved
+        timings["events_ms"] = _ms(t0)
         if is_degraded(ai_result):
             response_text = ai_failed_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         else:
-            response_text = normalize_response(ai_result.response)
+            response_text = strip_attribution(normalize_response(ai_result.response))
             # Output guard: a medicine amount or schedule never reaches the user, whatever the model wrote (the no-dosing rule).
             response_text, _dose_removed = scrub_doses(response_text)
             _issues = lint(response_text, user_message=user_message, has_evidence=bool(evidence_results)) + (["dose_removed"] if _dose_removed else [])
@@ -890,6 +1007,8 @@ def chat(
                 from logging_util import logger
                 logger.warning(component="CHAT", operation="reply_lint", error=None, user_id=user_id, context={"issues": _issues},
                                fallback_action="reply_sent")
+            if safety.state == "URGENT" and not re.search(r"today|doctor|clinician|urgent[- ]care|emergency", response_text, re.I):
+                response_text += "\n\nPlease speak to a clinician or an urgent-care service today."   # a soft tone can never drop the call to action
             note = contradiction_note(turn.conflicts)
             if note:
                 response_text += "\n\n" + note
@@ -901,14 +1020,14 @@ def chat(
     evidence_ids = [row.get("chunk_id") for row in evidence_results if row.get("chunk_id")]
     metadata = stored_metadata(kind=kind, user_message_id=user_message_id, safety=safety_dict, events=persisted,
                                evidence_ids=evidence_ids, conflicts=turn.conflicts, trace=semantic_trace(turn), package=package_audit_meta)
-    if consent_required:
+    if state.consent_required:
         metadata["consent_required"] = True   # so the card survives a replay and a reload
     bubbles_message_id = _persist_chat_message(
-        user_id=user_id, conversation_id=conversation_id, role="bubbles", content=response_text, metadata=metadata,
+        user_id=user_id, conversation_id=state.conversation_id, role="bubbles", content=response_text, metadata=metadata,
     )
     if turn.route == "correction":
-        outcome = apply_correction(supabase, user_id=user_id, conversation_id=conversation_id, correction=turn.correction,
-                                   correction_message_id=bubbles_message_id, history=history)
+        outcome = apply_correction(supabase, user_id=user_id, conversation_id=state.conversation_id, correction=turn.correction,
+                                   correction_message_id=bubbles_message_id, history=state.history)
         rejected_ids, kept_ids = [], []
         try:
             rows = (supabase.table("extracted_health_events").select("id,extraction_status")
@@ -923,16 +1042,15 @@ def chat(
             "retracted_event_ids": rejected_ids, "kept_event_ids": kept_ids,
         }
         safety_dict = safety_payload(safety, correction=correction_payload if correction_payload["retracted_message_id"] else None)
-    _touch_conversation(conversation_id, user_id)
-
-    from logging_util import logger
-    logger.info(component="CHAT", operation="turn", user_id=user_id, context={
-        "route": turn.route, "state": safety.state, "events": len(persisted), "timings_ms": timings,
-    })  # no symptom concepts here: a log line tied to a user id must not say what they reported
+    defer(_after_turn, state.conversation_id, user_id, turn.route, safety.state, len(persisted), timings)
+    try:
+        ops_telemetry.note(stage_ctx_ms=stage["ctx"], stage_rag_ms=stage["rag"], stage_ai_ms=stage["ai"], stage_post_ms=_ms(post_started))
+    except Exception:  # noqa: BLE001 - telemetry never interrupts a reply
+        pass
 
     payload = {
         "response": response_text,
-        "memory_saved": memory_saved,
+        "memory_saved": state.memory_saved,
         "sentiment": sentiment,
         "kind": kind,
         "safety": safety_dict,
@@ -941,9 +1059,10 @@ def chat(
         "conflicts": turn.conflicts[:5],
         "message_id": bubbles_message_id,
         "user_message_id": user_message_id,
-        "consent_required": consent_required,
-        "conversation_id": conversation_id,
-        "user_id": user.id,
+        "consent_required": state.consent_required,
+        "consent_ask": consent_ask["ask"] if state.consent_required else False,
+        "conversation_id": state.conversation_id,
+        "user_id": state.user.id,
         "evidence": [
             {
                 "chunk_id": row.get("chunk_id"),
@@ -964,6 +1083,73 @@ def chat(
     return payload
 
 
+@app.post("/chat")
+def chat(
+    request: ChatRequest,
+    background: BackgroundTasks,
+    authorization: str | None = Header(default=None)
+):
+    user = get_authenticated_user(authorization)
+    user_id = _chat_gate(user, request)
+    state = _chat_prepare(user, user_id, request)
+    return _chat_respond(state, background.add_task)
+
+
+def _sse(event: str, data: Any) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False, default=str)}\n\n"
+
+
+_SENTENCE_PIECE = re.compile(r"[^.!?\n]*[.!?]*\s*")
+
+
+def _delta_chunks(text: str) -> list[str]:
+    """The finished (already scrubbed and checked) reply cut after each sentence, so that joining the pieces gives the reply back exactly."""
+    return [piece for piece in _SENTENCE_PIECE.findall(text or "") if piece]
+
+
+@app.post("/chat/stream")
+def chat_stream(request: ChatRequest, authorization: str | None = Header(default=None)):
+    """POST /chat as server-sent events: ``meta`` the moment the safety gate is known, ``delta`` pieces of the finished reply, ``done`` (the
+    same JSON /chat returns) or ``error``. Sign-in, rate limit and the gate run before the stream opens, so their errors are ordinary
+    HTTP errors. Text is streamed only after the whole reply passed the dose scrubber and the other output checks: no raw model output
+    is ever sent. Deterministic routes (emergency, daily log, consent card...) send ``meta`` and ``done`` only."""
+    user = get_authenticated_user(authorization)
+    user_id = _chat_gate(user, request)
+    state = _chat_prepare(user, user_id, request)
+    ctx = contextvars.copy_context()
+    result: dict[str, Any] = {}
+    finished = threading.Event()
+
+    def work() -> None:
+        try:
+            result["payload"] = _chat_respond(state, lambda fn, *args: chat_concurrency.submit_io(fn, *args))
+        except HTTPException as error:
+            result["error"] = {"status": error.status_code, "detail": error.detail}
+        except Exception as error:  # noqa: BLE001
+            from logging_util import logger
+            logger.error(component="CHAT", operation="stream_reply", error=error, user_id=user_id, fallback_action="error_event")
+            result["error"] = {"status": 500, "detail": "Something went wrong. Please try again."}
+        finally:
+            finished.set()
+
+    def events():
+        threading.Thread(target=ctx.run, args=(work,), name="chat-stream", daemon=True).start()   # started first: a person who closes the tab still gets the reply saved
+        yield _sse("meta", state.meta())
+        while not finished.wait(timeout=10):
+            yield ": ping\n\n"   # keeps proxies from closing a quiet connection while the model thinks
+        if "error" in result:
+            yield _sse("error", result["error"])
+            return
+        payload = result["payload"]
+        if not state.deterministic and state.early is None:
+            for piece in _delta_chunks(payload["response"]):
+                yield _sse("delta", {"text": piece})
+        yield _sse("done", payload)
+
+    return StreamingResponse(events(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no", "Connection": "keep-alive"})
+
+
 # --------------------------------------------------
 # PERSONAL MEMORY / PROFILE DIAGNOSTICS
 # --------------------------------------------------
@@ -974,30 +1160,33 @@ def memory_diagnostics_api(authorization: str | None = Header(default=None)):
     return {"status":"success","memory":memory_diagnostics(str(user.id))}
 
 @app.get("/chat/history")
-def chat_history_api(authorization: str | None = Header(default=None), limit: int = Query(10, ge=1, le=50)):
+def chat_history_api(authorization: str | None = Header(default=None), limit: int = Query(10, ge=1, le=50),
+                     before: str | None = Query(None, max_length=40)):
+    """Recent conversations, newest first. ``before`` (an ISO time, the oldest ``updated_at`` already shown) pages to older ones."""
     user = get_authenticated_user(authorization)
     user_id = str(user.id)
+    if before:
+        try:
+            datetime.fromisoformat(before.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="before must be an ISO date and time")
     try:
         # Get conversations with message count
-        conversations = (supabase.table("chat_conversations")
-                        .select("id,title,created_at,updated_at")
-                        .eq("user_id", user_id)
-                        .order("updated_at", desc=True)
-                        .limit(limit)
-                        .execute().data or [])
+        query = (supabase.table("chat_conversations")
+                 .select("id,title,created_at,updated_at")
+                 .eq("user_id", user_id))
+        if before:
+            query = query.lt("updated_at", before)
+        conversations = query.order("updated_at", desc=True).limit(limit + 1).execute().data or []
+        has_more = len(conversations) > limit
+        conversations = conversations[:limit]
 
-        # Message count for each conversation, asked at the same time: one after another this was up to 50 round trips
-        # to the database before the chat screen could show anything.
-        def _count(conv: dict) -> int:
-            return (supabase.table("chat_messages")
-                    .select("id", count="exact", head=True)
-                    .eq("conversation_id", conv["id"])
-                    .execute().count or 0)
-        with ThreadPoolExecutor(max_workers=8, thread_name_prefix="history-count") as pool:
-            for conv, msg_count in zip(conversations, pool.map(_count, conversations)):
-                conv["message_count"] = msg_count
+        # One round trip for every count (chat_counts.py); it was one query per conversation, up to 50.
+        counts = message_counts(supabase, user_id, [c["id"] for c in conversations])
+        for conv in conversations:
+            conv["message_count"] = counts.get(str(conv["id"]), 0)
 
-        return {"conversations": conversations}
+        return {"conversations": conversations, "has_more": has_more}
     except Exception as e:
         from logging_util import logger
         logger.error(
@@ -1009,26 +1198,39 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
             fallback_action="returning_empty_list",
         )
         # `degraded` lets the UI say "history is unavailable" instead of pretending the user has no conversations
-        return {"conversations": [], "degraded": True}
+        return {"conversations": [], "has_more": False, "degraded": True}
 
 @app.get("/chat/conversations/{conversation_id}/messages")
 def chat_conversation_messages_api(
     conversation_id: str,
     authorization: str | None = Header(default=None),
     limit: int = Query(100, ge=1, le=200),
+    before: str | None = Query(None, max_length=40),
 ):
-    """Owner-scoped read of one conversation's latest messages, oldest first."""
+    """Owner-scoped read of one conversation's latest messages, oldest first. `before` (an ISO time) pages to older ones."""
     user = get_authenticated_user(authorization)
     user_id = str(user.id)
     # Same ownership gate as /chat: 400 for a malformed id, 404 for anyone else's conversation.
     _ensure_conversation(user_id, conversation_id, "")
-    rows = (supabase.table("chat_messages")
-            .select("id,role,content,created_at,metadata")
-            .eq("conversation_id", conversation_id)
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .limit(limit)
-            .execute().data or [])
+    return _conversation_messages(user_id, conversation_id, limit, before)
+
+
+def _conversation_messages(user_id: str, conversation_id: str, limit: int, before: str | None = None) -> dict:
+    query = (supabase.table("chat_messages")
+             .select("id,role,content,created_at,metadata")
+             .eq("conversation_id", conversation_id)
+             .eq("user_id", user_id))
+    if before:
+        try:
+            datetime.fromisoformat(before.replace("Z", "+00:00"))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="before must be an ISO date and time")
+        query = query.lt("created_at", before)
+    rows = query.order("created_at", desc=True).limit(limit + 1).execute().data or []
+    has_more = len(rows) > limit
+    rows = rows[:limit]
+    overlay_event_status(supabase, user_id, [r["metadata"]["health_events"] for r in rows
+                                             if isinstance(r.get("metadata"), dict) and isinstance(r["metadata"].get("health_events"), list)])
     def _message(row: dict) -> dict:
         meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
         safety = meta.get("safety") if isinstance(meta.get("safety"), dict) else {}
@@ -1051,6 +1253,8 @@ def chat_conversation_messages_api(
             out["kind"] = meta.get("kind")
         if isinstance(meta.get("health_events"), list):
             out["health_events"] = meta["health_events"]
+            if isinstance(meta.get("health_events_more"), int):
+                out["health_events_more"] = meta["health_events_more"]   # cards beyond the stored cap: the UI says "N more"
         if meta.get("consent_required") is True:
             out["consent_required"] = True
         return out
@@ -1059,7 +1263,31 @@ def chat_conversation_messages_api(
         "status": "success",
         "conversation_id": conversation_id,
         "messages": [_message(row) for row in reversed(rows)],
+        "has_more": has_more,
     }
+
+
+@app.get("/chat/latest")
+def chat_latest_api(authorization: str | None = Header(default=None), limit: int = Query(100, ge=1, le=200)):
+    """The conversation with the newest message, with its latest messages: what Talk opens on. One owner-scoped read of the newest message first."""
+    user = get_authenticated_user(authorization)
+    user_id = str(user.id)
+    try:
+        newest = (supabase.table("chat_messages").select("conversation_id").eq("user_id", user_id)
+                  .order("created_at", desc=True).limit(1).execute().data or [])
+        if not newest:
+            return {"status": "success", "conversation": None, "messages": [], "has_more": False}
+        conversation_id = str(newest[0]["conversation_id"])
+        conv = (supabase.table("chat_conversations").select("id,title,created_at,updated_at")
+                .eq("id", conversation_id).eq("user_id", user_id).limit(1).execute().data or [])
+    except Exception as error:  # noqa: BLE001
+        from logging_util import logger
+        logger.error(component="CHAT", operation="chat_latest", error=error, user_id=user_id, fallback_action="degraded")
+        return {"status": "success", "conversation": None, "messages": [], "has_more": False, "degraded": True}
+    payload = _conversation_messages(user_id, conversation_id, limit)
+    payload["conversation"] = conv[0] if conv else {"id": conversation_id, "title": None}
+    payload.pop("conversation_id", None)
+    return payload
 
 @app.get("/profile")
 def profile_api(authorization: str | None = Header(default=None)):
@@ -1100,8 +1328,10 @@ def intelligence_all(authorization: str | None = Header(default=None), days: int
 
 @app.post("/sharing/plan")
 def sharing_plan(request: dict, authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
-    return build_share_plan(request.get("scopes") or [], request.get("consent") or {})
+    user = get_authenticated_user(authorization)
+    # The answer is the stored record, never a dict the browser sends.
+    on = consent_module.is_granted(supabase, str(user.id), "partner_sharing")
+    return build_share_plan(request.get("scopes") or [], {scope: on for scope in SHARE_SCOPES})
 
 @app.get("/production/readiness")
 def production_readiness(authorization: str | None = Header(default=None)):
@@ -1235,6 +1465,9 @@ def pattern_analysis(
     }
 
 
+app.include_router(build_insights_router(get_authenticated_user, supabase))   # GET /insights/{id}; after /insights/weekly so that path wins
+
+
 # --------------------------------------------------
 # RAG SEARCH
 # --------------------------------------------------
@@ -1267,88 +1500,6 @@ def rag_search(
 # --------------------------------------------------
 # HEALTH EVENT CONFIRMATION
 # --------------------------------------------------
-
-class HealthEventConfirmationRequest(BaseModel):
-    confirmed: bool
-
-
-@app.patch("/health-events/{event_id}/confirmation")
-def confirm_health_event(
-    event_id: str,
-    request: HealthEventConfirmationRequest,
-    authorization: str | None = Header(default=None),
-):
-    user = get_authenticated_user(authorization)
-    try:
-        event_id = str(UUID(event_id))   # ids are UUIDs: anything else cannot exist, so it is "not found" and never reaches the database
-    except ValueError:
-        raise HTTPException(status_code=404, detail="That item was not found.")
-    if request.confirmed:
-        # A rejected/retracted/superseded event (e.g. withdrawn by a correction) must not come back to life.
-        current = (supabase.table("extracted_health_events").select("id, extraction_status")
-                   .eq("id", event_id).eq("user_id", str(user.id)).limit(1).execute().data or [])
-        if current and (current[0].get("extraction_status") or "pending") in DEAD_STATUSES:
-            raise HTTPException(status_code=409, detail="This item was withdrawn and can no longer be saved.")
-    try:
-        result = (
-            supabase.table("extracted_health_events")
-            .update({
-                "user_confirmed": request.confirmed,
-                "extraction_status": "confirmed" if request.confirmed else "rejected",
-            })
-            .eq("id", event_id)
-            .eq("user_id", str(user.id))
-            .select("id, message_id, event_type, extracted_data, confidence, user_confirmed, extraction_status")
-            .execute()
-        )
-    except Exception as error:
-        from logging_util import logger
-        logger.error(
-            component="HEALTH_EVENT",
-            operation="confirm_health_event",
-            error=error,
-            user_id=str(user.id),
-            context={"event_id": event_id, "confirmed": request.confirmed},
-            fallback_action="raising_http_exception",
-        )
-        raise HTTPException(status_code=500, detail="Unable to update health event") from error
-    if not result.data:
-        raise HTTPException(status_code=404, detail="Health event not found")
-
-    event = result.data[0]
-    projection = None
-    if request.confirmed:
-        try:
-            projection = project_confirmed_event(
-                db=supabase,
-                user_id=str(user.id),
-                event_id=str(event["id"]),
-                event_type=str(event["event_type"]),
-                extracted_data=event.get("extracted_data") or {},
-                confidence=float(event.get("confidence") or 0),
-                message_id=event.get("message_id"),
-            )
-        except Exception as error:
-            if is_permission_denied(error):
-                # The canonical tables are not writable yet (database permissions not applied). The confirmation is
-                # stored on the event itself, and every analytics reader uses that table, so nothing is lost; say
-                # plainly that the canonical copy is pending instead of failing the user's click.
-                return {"status": "success", "event": event,
-                        "projection": {"status": "compat", "domain_table": None, "reason": "database_permission_denied"}}
-            # Keep the staging confirmation intact, but surface that canonical
-            # projection needs retry rather than silently claiming it succeeded.
-            from logging_util import logger
-            logger.error(
-                component="HEALTH_EVENT",
-                operation="project_confirmed_event",
-                error=error,
-                user_id=str(user.id),
-                context={"event_id": str(event["id"]), "event_type": str(event["event_type"])},
-                fallback_action="raising_http_exception",
-            )
-            raise HTTPException(status_code=500, detail="Event confirmed but canonical projection failed") from error
-
-    return {"status": "success", "event": event, "projection": projection}
 
 # --------------------------------------------------
 # MEMORY PROMOTION
@@ -1864,8 +2015,10 @@ def privacy_redact(request: RedactionRequest, authorization: str | None = Header
 
 @app.post("/privacy/consent/check")
 def privacy_consent(request: ConsentRequest, authorization: str | None = Header(default=None)):
-    get_authenticated_user(authorization)
-    return {"status":"success","policy":consent_policy(request.consent,request.purpose)}
+    user = get_authenticated_user(authorization)
+    purpose = consent_module.canonical(request.purpose)
+    # The answer is the stored record, never the dict the browser sends (request.consent is ignored).
+    return {"status":"success","policy":consent_policy({purpose: consent_module.is_granted(supabase, str(user.id), purpose)}, purpose)}
 
 @app.get("/privacy/security-baseline")
 def privacy_security_baseline(authorization: str | None = Header(default=None)):

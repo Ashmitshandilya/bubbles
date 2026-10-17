@@ -8,7 +8,7 @@ import { COMPAT_FIX_FILE, MESSAGES, databaseSummary } from "../lib/connection";
 import type { PartnerSharingStatus } from "../lib/partner-sharing";
 import { VeilSwitch } from "../../components/PrivacyVeil";
 import { KeepSignedInRow, TwoStepCard } from "../../components/settings/SignInSecurity";
-import { AiConsentRow } from "../../components/settings/AiConsentRow";
+import { CrashReportsRow } from "../../components/settings/CrashReportsRow";
 import { NotificationSettingsCard } from "../../components/wellness/NotificationSettingsCard";
 import { YourDataCard } from "../../components/wellness/YourDataCard";
 import { partnerSummary } from "./summary";
@@ -86,6 +86,7 @@ function Settings() {
             <span className="min-w-0 break-words text-body font-bold text-ink-soft">{user?.email || "Email unknown"}</span>
           </li>
           <LinkRow href="/profile" label="Your details and memory" />
+          <LinkRow href="/dashboard?tour=1" label="Replay tour" />
           {/* The Android app signs in with email + password only (no email links). */}
           <LinkRow href="/password" label="Password" />
           {partner.status === "loading" ? (
@@ -109,10 +110,10 @@ function Settings() {
 
       <Group id="privacy" title="Privacy and data">
         <ul className="m-0 list-none divide-y-2 divide-line overflow-hidden p-0">
+          <LinkRow href="/privacy-choices" label="Privacy choices" />
           <LinkRow href="/privacy" label="Privacy notice" />
           <LinkRow href="/terms" label="Terms of use" />
         </ul>
-        <AiConsentRow />
         <YourDataCard />
       </Group>
 
@@ -158,6 +159,7 @@ function Settings() {
                 <VeilSwitch labelledBy="veil-label" describedBy="veil-hint" />
               </dd>
             </div>
+            <CrashReportsRow rowClass={ROW} />
           </dl>
 
           {(apiStatus === "offline" || (apiStatus === "online" && (databaseStatus === "permission_denied" || databaseStatus === "unreachable"))) && (

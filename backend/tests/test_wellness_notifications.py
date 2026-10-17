@@ -246,6 +246,10 @@ def test_email_channel_only_when_user_enabled_and_body_is_generic(db, monkeypatc
     assert N.create_notification(db, U1, "water", dedupe_key="1", now=utc(12), settings=s, email="a@example.com", mailer=FakeSMTP)
     assert FakeSMTP.sent == []
     s["channels"]["email"] = True
+    assert N.create_notification(db, U1, "water", dedupe_key="2a", now=utc(12, 30), settings=s, email="a@example.com", mailer=FakeSMTP)
+    assert FakeSMTP.sent == []                                            # the switch alone is not a yes (consent: email_reminders)
+    from fake_db import grant_consent
+    grant_consent(db, U1, "email_reminders")
     n = N.create_notification(db, U1, "water", dedupe_key="2", now=utc(13), settings=s, email="a@example.com", mailer=FakeSMTP)
     assert n and len(FakeSMTP.sent) == 1 and FakeSMTP.sent[0].get_content().strip() == n["body"]
     FakeSMTP.fail = True
@@ -253,9 +257,6 @@ def test_email_channel_only_when_user_enabled_and_body_is_generic(db, monkeypatc
 
 
 def test_push_channel_is_off_until_firebase_is_configured(monkeypatch):
-    monkeypatch.delenv("FCM_SERVICE_ACCOUNT_B64", raising=False)
-    monkeypatch.delenv("FCM_SERVICE_ACCOUNT_JSON", raising=False)
-    import push_fcm
-    push_fcm._account.cache_clear()
+    monkeypatch.delenv("FIREBASE_SERVICE_ACCOUNT_JSON", raising=False)
     assert N.channel_status()["push"]["available"] is False
     assert N.default_settings()["channels"]["push"] is False

@@ -44,7 +44,7 @@ export function Journal() {
   }
 
   return (
-    <Panel id="journal" title="Journal" kicker="Private, text only">
+    <Panel bare id="journal" title="Journal">
       {safety && <SafetyCard response={safety} onClose={() => setSafety(null)} />}
       <div className="flex flex-col gap-2">
         <label htmlFor="journal-text" className="text-body font-extrabold">

@@ -141,6 +141,15 @@ Chat persistence is backend-owned. The browser sends the optional conversation I
 
 `ops_telemetry.py` records metadata-only events (api, ai_attempt, ai_reply, error, audit) with a per-request id; `record()` drops any field not on its kind's allow-list and never raises, and a daemon thread writes them to `bubbles_ops_events` (memory-only until that migration is applied). Never add message text, prompts, replies, user ids, raw paths or error messages to an event. `ttl_cache.py` holds the server caches (sign-in 30 s, consent 5 min, profile-sync flag 1 h); any new cache must be user-scoped or hold no user data, and must define its invalidation. Admin-editable settings are only those in `admin_settings._spec()`.
 
+### Phone notifications and Firebase
+
+`push_fcm.py` sends phone reminders to the Android app through Firebase Cloud Messaging (HTTP v1 with `google-auth`; no
+`firebase-admin`). It is dormant until `FIREBASE_SERVICE_ACCOUNT_JSON` is set; it then starts a background sweep that creates due
+reminders for people with a phone registered. It sends only with the "On this phone" switch on **and** a consent-log yes for
+`push_notifications`, and only `notifications.sanitise` text. Device tokens are signed `push_device` documents (one owner per
+phone). Crashlytics is native-only and opt-in per phone (`BubblesFirebasePlugin.java`). Never add Firebase/Google Analytics. See
+`docs/FIREBASE.md`.
+
 ### Health data and reasoning
 
 The event pipeline is split across focused modules:

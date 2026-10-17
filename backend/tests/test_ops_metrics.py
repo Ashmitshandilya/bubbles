@@ -148,6 +148,8 @@ def test_flush_writes_one_batch_and_prune_keeps_audit_longer(monkeypatch):
     assert ops_telemetry.flush_once() == 3 and ("insert", 3) in calls and ops_telemetry.status["mode"] == "stored"
     ops_telemetry.prune_once(now=T0)
     deletes = [c for c in calls if c[0] == "delete"]
-    assert ("delete", "neq", ("kind", "audit")) in deletes and ("delete", "eq", ("kind", "audit")) in deletes
+    assert ("delete", "in_", ("kind", ["api", "ai_attempt", "ai_reply", "error", "client"])) in deletes
+    assert ("delete", "eq", ("kind", "funnel")) in deletes and ("delete", "eq", ("kind", "audit")) in deletes
     cutoffs = sorted(c[2][1] for c in deletes if c[1] == "lt")
-    assert cutoffs == [(T0 - timedelta(days=365)).isoformat(), (T0 - timedelta(days=ops_telemetry.retention_days)).isoformat()]
+    assert cutoffs == sorted([(T0 - timedelta(days=365)).isoformat(), (T0 - timedelta(days=ops_telemetry.FUNNEL_RETENTION_DAYS)).isoformat(),
+                              (T0 - timedelta(days=ops_telemetry.retention_days)).isoformat()])

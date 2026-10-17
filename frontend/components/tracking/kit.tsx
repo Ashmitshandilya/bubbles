@@ -682,9 +682,9 @@ export function History({ title = "History", status, error, onRetry, entries, fr
 const HISTORY_FIRST = 7;
 
 /** A titled card that opens on tap: the detail of a tracker page stays one tap away instead of stacking up. */
-export function Fold({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+export function Fold({ title, hint, children, onOpen }: { title: string; hint?: string; children: ReactNode; onOpen?: () => void }) {
   return (
-    <details className="group rounded-[24px] border border-line bg-surface shadow-sm">
+    <details className="group rounded-[24px] border border-line bg-surface shadow-sm" onToggle={onOpen ? (e) => e.currentTarget.open && onOpen() : undefined}>
       <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
         <span className="font-display text-lg font-semibold text-default">{title}</span>
         <span className="flex items-center gap-2 text-body-sm font-extrabold text-muted">

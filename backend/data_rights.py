@@ -37,15 +37,6 @@ def delete_mirrors(db: Any, uid: str) -> int:
     return removed
 
 
-def delete_phone_tokens(db: Any, uid: str) -> None:
-    """Phone push tokens (device_tokens) are part of the person's data. A missing table (migration not applied) is not an error."""
-    import push_devices
-    try:
-        push_devices.delete_all(db, uid)
-    except push_devices.PushUnavailable:
-        pass
-
-
 def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     router = APIRouter()
 
@@ -68,7 +59,6 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             raise HTTPException(status_code=422, detail="Add confirm=true to delete all of your Fitness, Cycle and plan data. This cannot be undone.")
         before = await run_in_threadpool(doc_store.delete_everything, db, uid)
         mirrors = await run_in_threadpool(delete_mirrors, db, uid)
-        await run_in_threadpool(delete_phone_tokens, db, uid)
         return {"status": "success", "deleted": before, "analytics_copies_removed": mirrors,
                 "note": ("Your tracker entries (sleep, weight, symptoms and so on) are separate and were not deleted. "
                          "If Bubbles recently paused a plan for your safety, that short safety hold stays in place so a strict plan cannot restart straight away.")}
