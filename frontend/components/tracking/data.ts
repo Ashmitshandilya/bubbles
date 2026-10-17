@@ -302,5 +302,25 @@ export function useTracker(endpoint: string, days: number, refetchAfterSave = fa
     [fetchBubbles, endpoint],
   );
 
-  return { entries, summary, status, error, retry, save, remove, freshId };
+  /** Change one entry. Resolves null on success (the row shows the saved values) or an error message; the old values stay until the server agrees. */
+  const update = useCallback(
+    async (id: string, body: Record<string, string | number>): Promise<string | null> => {
+      try {
+        const response = await fetchBubbles(`${endpoint}/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(body) });
+        if (!response.ok) return saveFailureMessage(await responseFailure(response));
+        const payload: { entry?: Entry; status?: string; message?: string } | null = await response.json().catch(() => null);
+        // The safety engine answered instead of saving (crisis or urgent wording in a note): show its words, nothing was changed.
+        if (payload?.status === "safety" && payload.message) return payload.message;
+        const saved = payload?.entry?.id ? adaptTrackerEntry(slug, readEntries<Entry>([payload.entry])[0]) : undefined;
+        if (saved) setEntries((list) => list.map((e) => (e.id === id ? saved : e)));
+        else setReloadKey((k) => k + 1);
+        return null;
+      } catch (error) {
+        return saveFailureMessage(classifyFailure(failureFromError(error)));
+      }
+    },
+    [fetchBubbles, endpoint, slug],
+  );
+
+  return { entries, summary, status, error, retry, save, remove, update, freshId };
 }
