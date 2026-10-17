@@ -17,11 +17,13 @@ from starlette.concurrency import run_in_threadpool
 
 import association_loader as AL
 import clinical_constants as K
+import consent
 import doc_store
 import hydration_engine as H
 import med_schedule as M
 import mind_checkins as Mind
 import notifications as N
+import push_fcm
 import sleep_engine as S
 import wellness_common as W
 from health_logs import DOMAINS, list_domain, save_domain
@@ -387,7 +389,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         screens = doc_store.list_docs(db, uid, "mind_screen", limit=20)
         return ok(window_days=days, entries=[{**e, "activities": Mind.parse_activities(e.get("notes"))} for e in entries[:60]],
                   average_mood=round(sum(vals) / len(vals), 1) if vals else None, days_logged=len(by_day),
-                  today=by_day.get(local.date().isoformat()), faces=Mind.FACES, activities=list(K.MIND_ACTIVITIES),
+                  today=by_day.get(local.date().isoformat()), faces=Mind.FACES, support=Mind.SUPPORT_COPY, activities=list(K.MIND_ACTIVITIES),
                   screen=Mind.screen_due(screens, local.date()), exercises=[{"id": e["id"], "name": e["name"], "kind": e["kind"]} for e in Mind.EXERCISES],
                   note="Mood tracking is for your own insight and doesn't replace support from a professional.")
 
@@ -407,6 +409,11 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             y = year or local.year
             return ok(**Mind.year_pixels(sync_pixels(uid, y, off), y))
         return await run(work)
+
+    @router.get("/wellness/mind/topics")
+    async def mind_topics_copy(authorization: str | None = Header(default=None)):
+        await auth(authorization)
+        return ok(topics=Mind.TOPIC_COPY)
 
     @router.get("/wellness/mind/screen")
     async def mind_screen_questions(kind: str = Query(default="phq2", max_length=10), authorization: str | None = Header(default=None)):
@@ -540,12 +547,48 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
 
     def settings_put(uid: str, body: dict) -> dict:
         s = N.normalize_settings(body, N.load_settings(db, uid))
+        for channel, purpose in (("email", "email_reminders"),):   # the phone switch is its own in-context yes, logged below
+            s["channels"][channel] = s["channels"][channel] and consent.is_granted(db, uid, purpose)   # the switch follows Privacy choices
         N.save_settings(db, uid, s)
+        import consent_ledger
+        consent_ledger.record_if_changed(db, uid, "email_reminders", bool((s.get("channels") or {}).get("email")), "settings")
+        consent_ledger.record_if_changed(db, uid, "push_notifications", bool((s.get("channels") or {}).get("push")), "settings")
         return ok(settings=s, channels=N.channel_status())
 
     @router.put("/notifications/settings")
     async def notifications_settings_put(request: Request, authorization: str | None = Header(default=None)):
         uid, _ = await auth(authorization)
         return await run(settings_put, uid, await body_of(request))
+
+    # Phone notifications (Android app, Firebase Cloud Messaging): register or forget this phone, and send one test.
+    def device_add(uid: str, body: dict) -> dict:
+        try:
+            result = push_fcm.register_device(db, uid, body.get("token"), body.get("platform", "android"))
+        except ValueError as exc:
+            raise InputError("token must be this phone's notification token" if str(exc) == "token" else "platform must be android")
+        return ok(**result, available=push_fcm.configured())
+
+    @router.post("/notifications/devices")
+    async def notifications_device_add(request: Request, authorization: str | None = Header(default=None)):
+        uid, _ = await auth(authorization)
+        return await run(device_add, uid, await body_of(request))
+
+    @router.post("/notifications/devices/remove")
+    async def notifications_device_remove(request: Request, authorization: str | None = Header(default=None)):
+        uid, _ = await auth(authorization)
+        body = await body_of(request)
+        return await run(lambda: ok(removed=push_fcm.remove_device(db, uid, body.get("token"))))
+
+    def push_test(uid: str) -> dict:
+        try:
+            result = push_fcm.send_test(db, uid)
+        except PermissionError:
+            raise HTTPException(status_code=409, detail="Turn on phone reminders and save first.")
+        return ok(**result)
+
+    @router.post("/notifications/push/test")
+    async def notifications_push_test(authorization: str | None = Header(default=None)):
+        uid, _ = await auth(authorization)
+        return await run(push_test, uid)
 
     return router

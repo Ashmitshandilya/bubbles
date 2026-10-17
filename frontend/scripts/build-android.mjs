@@ -9,8 +9,14 @@
 // 4. Copies the APK to public/android/bubbles.apk and rewrites public/android/latest.json (the /android page).
 //
 // `--no-publish` builds and verifies the signed APK but leaves public/android untouched (for device testing).
+// `--distribute` also sends the verified APK to testers through Firebase App Distribution (docs/FIREBASE.md); combine it with
+// `--no-publish` to try a build with testers before it goes on the website.
 //
-// Overrides: BUBBLES_ANDROID_API_URL (default: the live backend), JAVA_HOME, ANDROID_HOME, BUBBLES_SIGNING_PROPERTIES.
+// Firebase (phone reminders, crash reports) is built in only when android/app/google-services.json exists; it must be the file
+// for in.heybubbles.app. Without it the APK is built exactly as before.
+//
+// Overrides: BUBBLES_ANDROID_API_URL (default: the live backend), JAVA_HOME, ANDROID_HOME, BUBBLES_SIGNING_PROPERTIES,
+// BUBBLES_TESTER_GROUPS (App Distribution group aliases, comma separated, default "testers"), BUBBLES_RELEASE_NOTES.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -25,6 +31,7 @@ const manifestPath = join(root, "public", "android", "latest.json");
 const builtApk = join(androidDir, "app", "build", "outputs", "apk", "release", "app-release.apk");
 
 const publish = !process.argv.includes("--no-publish");
+const distribute = process.argv.includes("--distribute");
 const API_URL = (process.env.BUBBLES_ANDROID_API_URL || "https://bubbles-dk3v.onrender.com").replace(/\/$/, "");
 const SITE_URL = "https://heybubbles.in";
 const APP_ID = "in.heybubbles.app";
@@ -76,6 +83,22 @@ const tool = (name) => join(buildToolsDir, buildTools, process.platform === "win
 writeFileSync(join(androidDir, "local.properties"), `sdk.dir=${androidHome.replaceAll("\\", "/")}\n`);
 const toolEnv = { ...process.env, JAVA_HOME: javaHome, ANDROID_HOME: androidHome };
 
+// ---- Firebase (docs/FIREBASE.md) ---------------------------------------------------------------------------------
+const servicesPath = join(androidDir, "app", "google-services.json");
+let firebaseAppId = null;
+if (existsSync(servicesPath)) {
+  const servicesText = readFileSync(servicesPath, "utf8");
+  if (/"private_key"|BEGIN PRIVATE KEY/.test(servicesText)) fail("android/app/google-services.json is a service-account key. That is a server secret: put it on the server (FIREBASE_SERVICE_ACCOUNT_JSON) and download the Android config file instead.");
+  const services = JSON.parse(servicesText);
+  const client = (services.client || []).find((c) => c.client_info?.android_client_info?.package_name === APP_ID);
+  if (!client) fail(`android/app/google-services.json has no Android app for ${APP_ID}. Add an Android app with that package name in the Firebase console and download its file.`);
+  firebaseAppId = client.client_info.mobilesdk_app_id;
+  console.log(`Firebase: project ${services.project_info?.project_id} (phone reminders and crash reports built in)`);
+} else {
+  console.log("Firebase: off (no android/app/google-services.json; phone reminders and crash reports are not built in)");
+}
+if (distribute && !firebaseAppId) fail("--distribute needs android/app/google-services.json (Firebase App Distribution sends to that Firebase app).");
+
 // ---- production configuration ------------------------------------------------------------------------------------
 const env = { ...readEnv(root, [".env.production.local", ".env.local", ".env.production", ".env"]), ...process.env };
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -113,13 +136,14 @@ rmSync(join(outDir, "android"), { recursive: true, force: true });
 
 // ---- 2. bundle checks ------------------------------------------------------------------------------------------
 const backendEnv = readEnv(join(root, "..", "backend"), [".env"]);
-const secrets = Object.entries(backendEnv).filter(([key, value]) => /KEY|SECRET|TOKEN|PASSWORD/i.test(key) && value.length >= 16);
+const secrets = Object.entries(backendEnv).filter(([key, value]) => /KEY|SECRET|TOKEN|PASSWORD|SERVICE_ACCOUNT|CREDENTIAL/i.test(key) && value.length >= 16);
 let sawApi = false;
 for (const file of walk(outDir)) {
   if (!/\.(html|js|txt|json|css)$/.test(file)) continue;
   const text = readFileSync(file, "utf8");
   if (text.includes(API_URL)) sawApi = true;
   if (/sb_secret_[A-Za-z0-9_-]{8,}/.test(text)) fail(`A Supabase secret key is in ${file}.`);
+  if (/BEGIN PRIVATE KEY/.test(text)) fail(`A private key (a service-account key?) is in ${file}.`);
   for (const [key, value] of secrets) if (text.includes(value)) fail(`The backend secret ${key} is in ${file}.`);
 }
 if (!sawApi) fail(`The export does not reference ${API_URL}; NEXT_PUBLIC_API_URL was not applied.`);
@@ -145,6 +169,15 @@ const minSdk = Number(badging.match(/minSdkVersion:'(\d+)'/)?.[1]);
 const targetSdk = Number(badging.match(/targetSdkVersion:'(\d+)'/)?.[1]);
 if (packageName !== APP_ID) fail(`Package is ${packageName}, expected ${APP_ID}.`);
 if (/android:debuggable/.test(badging) || /application-debuggable/.test(badging)) fail("The release APK is debuggable.");
+
+// ---- testers (optional) ----------------------------------------------------------------------------------------
+if (distribute) {
+  // Needs `npx firebase-tools login` once on this PC, or GOOGLE_APPLICATION_CREDENTIALS pointing at a key allowed to distribute.
+  const groups = (process.env.BUBBLES_TESTER_GROUPS || "testers").replace(/[^A-Za-z0-9_,-]/g, "");
+  const notes = (process.env.BUBBLES_RELEASE_NOTES || `Bubbles ${versionName} (${versionCode})`).replace(/["\\\r\n]/g, " ");
+  run("npx", ["--yes", "firebase-tools@15", "appdistribution:distribute", `"${builtApk}"`, "--app", firebaseAppId, "--groups", groups, "--release-notes", `"${notes}"`], { cwd: root });
+  console.log(`\n✔ Sent ${versionName} (${versionCode}) to App Distribution testers (${groups}).`);
+}
 
 if (!publish) {
   console.log(`

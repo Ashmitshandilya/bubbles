@@ -1,0 +1,148 @@
+// The Android app's side of Firebase (docs/FIREBASE.md): phone reminders (Cloud Messaging) and crash reports (Crashlytics).
+// App-only: import it with import() behind isNativeApp, like components/NativeBridge.tsx, so the website never loads Capacitor.
+// Everything resolves to "off" on an app built without google-services.json, and on older APKs without the BubblesFirebase plugin.
+
+import type { PluginListenerHandle } from "@capacitor/core";
+import type { PhoneProblem } from "../app/lib/phone-reminders";
+
+/** The app's own plugin (android/.../BubblesFirebasePlugin.java). */
+type BubblesFirebase = {
+  status(): Promise<{ configured?: boolean; crashReports?: boolean }>;
+  setCrashReports(options: { enabled: boolean }): Promise<{ crashReports?: boolean }>;
+};
+export type FirebaseStatus = { configured: boolean; crashReports: boolean };
+type ApiFetch = (path: string, options?: RequestInit) => Promise<Response>;
+export type PhoneResult = { ok: true } | { ok: false; problem: PhoneProblem };
+
+const CHANNEL = "reminders";             // the channel the server names in every message (backend/push_fcm.py)
+const SAVED_TOKEN = "bubbles.phoneToken"; // app-private storage: the token this phone gave the server, so it can be taken back
+const refreshed = new Set<string>();
+
+let plugin: Promise<BubblesFirebase> | null = null;
+function firebase(): Promise<BubblesFirebase> {
+  plugin ??= import("@capacitor/core").then(({ registerPlugin }) => registerPlugin<BubblesFirebase>("BubblesFirebase"));
+  return plugin;
+}
+
+function savedToken(): string | null {
+  try {
+    return window.localStorage.getItem(SAVED_TOKEN);
+  } catch {
+    return null;
+  }
+}
+
+function saveToken(token: string | null) {
+  try {
+    if (token) window.localStorage.setItem(SAVED_TOKEN, token);
+    else window.localStorage.removeItem(SAVED_TOKEN);
+  } catch {
+    // storage can be unavailable; the server still drops a token FCM reports as gone
+  }
+}
+
+export async function firebaseStatus(): Promise<FirebaseStatus> {
+  try {
+    const status = await (await firebase()).status();
+    return { configured: status.configured === true, crashReports: status.crashReports === true };
+  } catch {
+    return { configured: false, crashReports: false };
+  }
+}
+
+/** Turns crash reports on or off for this phone and resolves to the new state. Rejects when Firebase isn't in the build. */
+export async function setCrashReports(enabled: boolean): Promise<boolean> {
+  const result = await (await firebase()).setCrashReports({ enabled });
+  return result.crashReports === true;
+}
+
+/** This phone's notification token. `ask` shows Android's permission prompt (only from a tap on the switch). */
+async function phoneToken(ask: boolean): Promise<{ ok: true; token: string } | { ok: false; problem: PhoneProblem }> {
+  if (!(await firebaseStatus()).configured) return { ok: false, problem: "unavailable" };
+  const { PushNotifications } = await import("@capacitor/push-notifications");
+  const handles: PluginListenerHandle[] = [];
+  try {
+    let permission = await PushNotifications.checkPermissions();
+    if (permission.receive !== "granted" && ask) permission = await PushNotifications.requestPermissions();
+    if (permission.receive !== "granted") return { ok: false, problem: "denied" };
+    // Private on the lock screen; the text is plain anyway (the server only sends fixed templates).
+    await PushNotifications.createChannel({ id: CHANNEL, name: "Reminders", description: "Plain reminders from Bubbles", importance: 3, visibility: 0 }).catch(() => undefined);
+    const token = await new Promise<string>((resolve, reject) => {
+      const timer = window.setTimeout(() => reject(new Error("timeout")), 20_000);
+      void Promise.all([
+        PushNotifications.addListener("registration", ({ value }) => {
+          window.clearTimeout(timer);
+          resolve(value);
+        }),
+        PushNotifications.addListener("registrationError", () => {
+          window.clearTimeout(timer);
+          reject(new Error("registration"));
+        }),
+      ])
+        .then((listeners) => {
+          handles.push(...listeners);
+          return PushNotifications.register();
+        })
+        .catch(reject);
+    });
+    return { ok: true, token };
+  } catch {
+    return { ok: false, problem: "failed" };
+  } finally {
+    handles.forEach((handle) => void handle.remove());
+  }
+}
+
+/** Gets this phone's token and gives it to the server for the signed-in person. */
+export async function connectPhone(api: ApiFetch, ask: boolean): Promise<PhoneResult> {
+  const result = await phoneToken(ask);
+  if (!result.ok) return result;
+  try {
+    const response = await api("/notifications/devices", { method: "POST", body: JSON.stringify({ token: result.token, platform: "android" }) });
+    if (!response.ok) return { ok: false, problem: "failed" };
+  } catch {
+    return { ok: false, problem: "failed" };
+  }
+  saveToken(result.token);
+  return { ok: true };
+}
+
+/** Takes the token back from the server (when it can) and deletes it on the phone, so nothing more can arrive. Never throws. */
+export async function disconnectPhone(api?: ApiFetch): Promise<void> {
+  const token = savedToken();
+  if (api && token) {
+    await api("/notifications/devices/remove", { method: "POST", body: JSON.stringify({ token }) }).catch(() => undefined);
+  }
+  saveToken(null);
+  if (!(await firebaseStatus()).configured) return;
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    await PushNotifications.unregister();   // deletes the token: the server drops it on its next send
+  } catch {
+    // nothing to remove
+  }
+}
+
+/**
+ * After sign-in: if this person turned phone reminders on, reconnect this phone without asking again (the token can change,
+ * and a new sign-in on a shared phone takes the phone over). Once per person per app run. Never throws.
+ */
+export async function refreshPhone(uid: string, api: ApiFetch): Promise<void> {
+  if (refreshed.has(uid)) return;
+  refreshed.add(uid);
+  try {
+    if (!(await firebaseStatus()).configured) return;
+    const response = await api("/notifications/settings");
+    if (!response.ok) return;
+    const body = (await response.json()) as { settings?: { channels?: { push?: boolean } }; channels?: { push?: { available?: boolean } } };
+    if (body.settings?.channels?.push === true && body.channels?.push?.available === true) await connectPhone(api, false);
+  } catch {
+    refreshed.delete(uid);
+  }
+}
+
+/** Sign-out: delete the token on the phone, so the next person to sign in here never gets this person's reminders. */
+export async function forgetPhoneOnSignOut(): Promise<void> {
+  refreshed.clear();
+  await disconnectPhone();
+}

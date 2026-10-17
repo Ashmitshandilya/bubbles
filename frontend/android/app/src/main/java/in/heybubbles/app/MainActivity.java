@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         // App-local plugins must be registered before the bridge starts.
         registerPlugin(PrintPlugin.class);
         registerPlugin(HapticsPlugin.class);
+        registerPlugin(BubblesFirebasePlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

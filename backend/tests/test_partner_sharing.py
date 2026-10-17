@@ -41,6 +41,9 @@ def env():
 
     app.include_router(ps.build_router(get_user, db))
     app.include_router(cycle_api.build_router(get_user, db))
+    from fake_db import grant_consent
+    for person in (A, B, C):   # sharing needs the owner's yes (tests/test_consent_purposes.py covers the no)
+        grant_consent(db, person, "partner_sharing")
     return TestClient(app, raise_server_exceptions=False), db
 
 

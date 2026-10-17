@@ -26,10 +26,13 @@ export const INPUT =
 
 /* ── Layout ─────────────────────────────────────────────────────────── */
 
-export function Panel({ title, kicker, action, children, className = "", id }: {
+export function Panel({ title, kicker, action, children, className = "", id, bare = false }: {
   title: string; kicker?: string; action?: ReactNode; children: ReactNode; className?: string; id?: string;
+  /** Content only: for a Panel that sits inside a Fold, where the Fold row already names it. */
+  bare?: boolean;
 }) {
   const headingId = useId();
+  if (bare) return <section id={id} aria-label={title} className={`flex flex-col gap-4 ${className}`}>{children}</section>;
   return (
     <section id={id} aria-labelledby={headingId} className={`${CARD} scroll-mt-24 p-5 sm:p-6 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">

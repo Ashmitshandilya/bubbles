@@ -99,3 +99,6 @@ app/src/main/assets/public
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json
 app/src/main/res/xml/config.xml
+
+# Firebase project file (docs/FIREBASE.md): downloaded from the Firebase console onto the build PC, never committed
+app/google-services.json

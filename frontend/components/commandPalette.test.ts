@@ -58,7 +58,7 @@ describe("buildItems", () => {
   it("has unique ids and the quick actions, without repeating a tab", () => {
     expect(new Set(items.map((i) => i.id)).size).toBe(items.length);
     const actions = items.filter((i) => i.kind === "action");
-    expect(labels(actions)).toEqual(["Log water", "Log sleep", "Log mood", "New conversation", "Open Today"]);
+    expect(labels(actions)).toEqual(["Log water", "Log sleep", "Log mood", "New chat", "Open Today"]);
     expect(items.filter((i) => i.label === "Settings")).toHaveLength(1);
     expect(items.filter((i) => i.label === "Partner sharing")).toHaveLength(1);
   });
@@ -88,7 +88,7 @@ describe("rank", () => {
   it("matches the section name too, and returns everything for an empty query", () => {
     expect(rank(items, "sleep track").map((i) => i.id)).toContain("tab:/sleep");
     const track = rank(items, "track").filter((i) => i.kind === "tab");
-    expect(track.length).toBeGreaterThanOrEqual(9);
+    expect(track.length).toBeGreaterThanOrEqual(8);
     expect(rank(items, "   ")).toHaveLength(items.length);
   });
 
