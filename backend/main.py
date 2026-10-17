@@ -53,9 +53,9 @@ from chat_concurrency import settled, submit, submit_io
 import chat_concurrency
 from chat_counts import message_counts
 from schema_status import build_router as build_schema_router
-from onboarding_api import build_router as build_onboarding_router, style_block_for
+from onboarding_api import build_router as build_onboarding_router
 import consent as consent_module
-from consent import chat_prompt, consent_needed_reply, has_ai_consent, persist_chat_events
+from consent import chat_prompt, has_ai_consent, persist_chat_events
 from mind_chat import loneliness_no_consent_reply, mind_support_block
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
