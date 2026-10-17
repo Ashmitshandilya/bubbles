@@ -47,6 +47,7 @@ from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
 from wellness_api import build_router as build_wellness_router
 from insights_api import build_router as build_insights_router
+from push_api import build_router as build_push_router
 from chat_feedback import build_router as build_chat_feedback_router
 from consent_api import build_router as build_consent_router
 import chat_cache
@@ -567,6 +568,7 @@ app.include_router(build_fitness_router(get_authenticated_user, supabase))
 app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 # Sleep, hydration, medications, mind check-ins and notifications.
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
+app.include_router(build_push_router(supabase))   # POST /internal/push/run (cron secret, not a user route)
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_consent_router(get_authenticated_user, supabase))
 app.include_router(build_client_telemetry_router())   # POST /telemetry/client: a fixed problem code, nothing else

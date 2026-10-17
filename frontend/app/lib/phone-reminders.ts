@@ -30,3 +30,11 @@ export function pushTestMessage(result: PushTestResult): string {
   if (result.reason === "no_devices" || (result.removed ?? 0) > 0) return "This phone isn't connected. Turn phone reminders off and on again.";
   return "Couldn't send the test right now. Your reminders still show in Bubbles.";
 }
+
+/** Where a tap on a reminder goes. Only the reminder kind travels in the message, never anything about the person. */
+export function routeForReminder(kind: unknown): string {
+  if (kind === "water") return "/hydration";
+  if (kind === "med") return "/medications";
+  if (kind === "winddown") return "/sleep";
+  return "/notifications";
+}
