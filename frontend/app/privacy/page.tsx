@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         <ul>
           <li>Your account details: email address and the name you give.</li>
           <li>What you log or tell Bubbles: sleep, mood, cycle, symptoms, food, activity, drinks, weight, vitals, medicines, lab results, visits and your chat messages.</li>
-          <li>Technical data needed to run and protect the service: your IP address for security and rate limits, and request logs that are designed not to contain your message text.</li>
+          <li>Technical data needed to run and protect the service: your IP address for security and rate limits, and request logs that are designed not to contain your message text. For operations monitoring, the person who runs Bubbles can see for a few minutes which account made a request and how long it took, never what you wrote.</li>
           <li>In the Android app, only if you turn them on: a notification address for your phone (for phone reminders) and crash reports (see below).</li>
         </ul>
       </section>

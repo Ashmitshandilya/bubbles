@@ -21,7 +21,10 @@ Environment (names are `BUBBLES_*`; old `COCO_*` names are still mapped by `env_
 | `BUBBLES_FRONTEND_ORIGINS` | `https://heybubbles.in,https://www.heybubbles.in` (also the built-in default) |
 | `BUBBLES_DOC_SIGNING_KEY` | **Do not change it** once users have saved plans (signatures would stop verifying). If you used `COCO_DOC_SIGNING_KEY` or relied on the fallback to the service key, keep the same value. |
 | `ALLOW_PAID_AI`, `ALLOW_KEYLESS_AI`, `ALLOW_KEYLESS_HEALTH_DATA` | Keep `false` (the $0 AI policy). |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-3-flash-preview`), `GEMINI_TIMEOUT_S` (default 9) | Gemini answers chat first. **Allowlist asymmetry:** the Groq, NVIDIA and Mistral models are checked against `FREE_MODEL_ALLOWLIST` in `ai_provider.py`; the Gemini model is not, so use a free-tier key and a model you verified as free. |
 | `GROQ_*` / `NVIDIA_*` / `MISTRAL_*` | Only providers you verified as free. |
+| `AI_REPLY_BUDGET_S` (50), `AI_REQUEST_TIMEOUT` (18), `AI_MAX_OUTPUT_TOKENS` (900) | One chat reply waits at most the budget for models in total; one call at most the request timeout. Leave the output cap generous: a cut-off reply is invalid JSON. |
+| `CHAT_RAG_BUDGET_S` (2), `CHAT_CONTEXT_BUDGET_S` (8), `RAG_EMBED_TIMEOUT_S` (3) | How long a chat turn waits for the evidence lookup, the person's own context and the meaning-search call before answering without them. |
 | `BUBBLES_CLINICALLY_REVIEWED` | Leave `false` until a clinician signs `docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md`. |
 | `BUBBLES_ENABLE_RXNAV` | Leave unset (drug names are not sent to an outside service). |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Optional. Turns on phone reminders for the Android app (Firebase Cloud Messaging). Secret: the service-account key file, pasted whole. See `docs/FIREBASE.md`. `PUSH_SWEEP_SECONDS` (default 300) and `BUBBLES_PUSH_SWEEP=0` tune or stop the background check. |

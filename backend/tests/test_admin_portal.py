@@ -392,7 +392,7 @@ def test_the_admin_views_answer_for_an_admin(admin_env):
     c, h = admin_env.client, bearer(admin_env.tokens.admin)
     send(admin_env, "I have been feeling really tired this week and I do not know why")
     me = c.get("/admin/me", headers=h).json()
-    assert me["admin"] is True and me["chain"][0]["provider"] == "Gemini" and me["live_refresh_seconds"] == 5
+    assert me["admin"] is True and me["chain"][0]["provider"] == "Gemini" and me["live_refresh_seconds"] == 3
     for path in ("/admin/overview?range=15m", "/admin/ai?range=24h", "/admin/api", "/admin/audit", "/admin/settings", "/admin/events/live"):
         res = c.get(path, headers=h)
         assert res.status_code == 200 and res.json()["status"] == "success", path
@@ -442,3 +442,20 @@ def test_nobody_configured_means_no_sign_in_call_at_all(admin_env, monkeypatch):
     before = len(admin_env.verify_calls)
     assert admin_env.client.get("/admin/me", headers=bearer(admin_env.tokens.admin)).status_code == 404
     assert len(admin_env.verify_calls) == before
+
+
+def test_every_event_field_and_kind_is_documented_in_the_admin_readme():
+    from pathlib import Path
+    readme = (Path(__file__).resolve().parents[2] / "docs" / "admin" / "README.md").read_text(encoding="utf-8")
+    for kind, fields in ops_telemetry.FIELDS.items():
+        if kind in {"safety_level", "ai_called"}:   # value lists for the chat note, not event kinds
+            continue
+        assert f"`{kind}`" in readme, kind
+        for field in fields:
+            assert field in readme, (kind, field)
+
+
+def test_stage_numbers_are_on_the_api_allow_list_as_numbers_only():
+    stages = {f"stage_{name}_ms" for name in ops_telemetry.STAGES}
+    assert stages <= ops_telemetry.FIELDS["api"] and stages == set(ops_telemetry.NOTE_NUMBERS)
+    assert not stages & set(ops_telemetry.NOTE_VALUES)   # no value list: a stage field can only ever hold a number

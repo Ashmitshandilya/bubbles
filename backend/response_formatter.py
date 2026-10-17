@@ -6,12 +6,7 @@ def normalize_response(text:str)->str:
     s=str(text or "").strip()
     s=re.sub(r"\n{3,}","\n\n",s)
     if not s: return "I’m here with you. Tell me what you’d like help with."
-    # Preserve intentional markdown while nudging legacy one-paragraph answers into a readable shape.
-    if "\n" not in s:
-        parts=re.split(r"(?<=[.!?])\s+(?=[A-Z])",s)
-        if len(parts)>=5:
-            return "\n\n".join([" ".join(parts[:2]), "\n".join(f"• {p}" for p in parts[2:])])
-    return s
+    return s   # a friendly paragraph stays a paragraph: the style block asks the model for the shape, nothing is bullet-ized afterwards
 
 def response_style_instruction()->str:
     return """BUBBLES RESPONSE STYLE (this is the only voice and format rule; follow it):

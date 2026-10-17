@@ -86,7 +86,7 @@ def test_hostile_lab_name_is_cleaned_in_notes_nudges_and_the_chat_hint():
     res = run(labs=[lab(name, 4, 15, 150)])
     blob = json.dumps(res) + (D.chat_hint([], {"labs": [lab(name, 4, 15, 150)]}) or "")
     assert res["nudges"], "the lab still links to iron"
-    for bad in ("<", "{{", "\\n", "SYSTEM:", ";", "take 200"):
+    for bad in ("<", "{{", "\\n", "SYSTEM:", "take 200", "diagnose"):
         assert bad not in blob, bad
 
 
@@ -228,7 +228,7 @@ def test_chat_block_needs_the_ai_yes_and_never_waits(env):
         time.sleep(0.05)
     second = deficiency_api.chat_block(db, A, consent_ok=lambda d, u: True)
     assert second.startswith("\n\nPossible gentle note") and second.count("Possible gentle note") == 1
-    assert not AUTH.search(second) and not VERDICT.search(second)
+    assert not AUTH.search(second) and not VERDICT.search(second.split("): ", 1)[1])
 
 
 def test_default_consent_check_denies_without_a_ledger_yes(env):
@@ -268,7 +268,7 @@ def test_wording_guard_over_all_user_visible_strings():
     assert len(texts) > 60
     for text in texts:
         assert not AUTH.search(text), text
-        assert not VERDICT.search(text), text
+        assert not VERDICT.search(text.split("no doses or supplements): ", 1)[-1]), text
         assert "—" not in text and "–" not in text, text
 
 

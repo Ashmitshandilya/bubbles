@@ -148,12 +148,10 @@ def validate_projection_row(table: str, row: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("weight_logs.weight_kg must be positive")
     return row
 
-def project_confirmed_event(*, db: Any, user_id: str, event_id: str, event_type: str, extracted_data: dict[str, Any], confidence: float, message_id: str | None = None) -> dict[str, Any]:
+def _plan(*, user_id: str, event_id: str, event_type: str, extracted_data: dict[str, Any], confidence: float, message_id: str | None) -> tuple[dict[str, Any], str | None, dict[str, Any] | None, bool]:
+    """What confirming one event writes: (ledger row, domain table, validated domain row, positive). Pure; raises ValueError on a bad row."""
     raw = dict(extracted_data or {})  # the ledger keeps everything, including _prov
     data = clean_data(raw)  # domain rows are built from clinical values only, never `_prov` metadata
-    existing = db.table("health_events").select("id").eq("user_id", user_id).eq("source_extracted_event_id", event_id).limit(1).execute()
-    if existing.data:
-        return {"status": "already_projected", "health_event_id": existing.data[0].get("id")}
 
     prov = provenance({"extracted_data": raw})
     positive = (
@@ -237,6 +235,14 @@ def project_confirmed_event(*, db: Any, user_id: str, event_id: str, event_type:
         "source_extracted_event_id": event_id,
         "source_message_id": message_id,
     }
+    return ledger_payload, table, row, positive
+
+
+def project_confirmed_event(*, db: Any, user_id: str, event_id: str, event_type: str, extracted_data: dict[str, Any], confidence: float, message_id: str | None = None) -> dict[str, Any]:
+    existing = db.table("health_events").select("id").eq("user_id", user_id).eq("source_extracted_event_id", event_id).limit(1).execute()
+    if existing.data:
+        return {"status": "already_projected", "health_event_id": existing.data[0].get("id")}
+    ledger_payload, table, row, positive = _plan(user_id=user_id, event_id=event_id, event_type=event_type, extracted_data=extracted_data, confidence=confidence, message_id=message_id)
     # postgrest insert builders have no .single(); read the first returned row.
     ledger = db.table("health_events").insert(ledger_payload).select("id").execute()
     health_event_id = ledger.data[0].get("id") if ledger.data else None
@@ -246,3 +252,71 @@ def project_confirmed_event(*, db: Any, user_id: str, event_id: str, event_type:
     if row and table:
         db.table(table).insert(row).execute()
     return {"status": "projected", "health_event_id": health_event_id, "domain_table": table if row else None}
+
+
+def project_confirmed_events(*, db: Any, user_id: str, events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Batch variant of project_confirmed_event for the batch confirmation route: ONE read of the ledger rows that already exist, ONE list insert
+    into the ledger and one list insert per domain table, instead of about five calls per event. Returns ``{event_id: result}``; a bad event gets
+    ``{"status": "error", ...}`` and never stops the others. If a list insert fails, those events are retried one by one (so one bad row cannot
+    block the rest); a database permission error is raised to the caller (it means "compat mode")."""
+    from db_access import is_permission_denied
+
+    ids = [str(e["id"]) for e in events if e.get("id")]
+    done = {str(r.get("source_extracted_event_id")): r.get("id") for r in
+            (db.table("health_events").select("id,source_extracted_event_id").eq("user_id", user_id).in_("source_extracted_event_id", ids).execute().data or [])}
+    results: dict[str, dict[str, Any]] = {i: {"status": "already_projected", "health_event_id": done[i]} for i in ids if i in done}
+    planned: list[tuple[str, dict[str, Any], str | None, dict[str, Any] | None, bool]] = []
+    for e in events:
+        eid = str(e.get("id") or "")
+        if not eid or eid in results:
+            continue
+        try:
+            ledger, table, row, positive = _plan(user_id=user_id, event_id=eid, event_type=str(e["event_type"]), extracted_data=e.get("extracted_data") or {},
+                                                 confidence=float(e.get("confidence") or 0), message_id=e.get("message_id"))
+            planned.append((eid, ledger, table, row, positive))
+        except (ValueError, KeyError, TypeError) as error:
+            results[eid] = {"status": "error", "reason": type(error).__name__}
+
+    def one_by_one(items) -> None:
+        for eid, _l, _t, _r, _p in items:
+            event = next(e for e in events if str(e.get("id")) == eid)
+            try:
+                results[eid] = project_confirmed_event(db=db, user_id=user_id, event_id=eid, event_type=str(event["event_type"]), extracted_data=event.get("extracted_data") or {},
+                                                       confidence=float(event.get("confidence") or 0), message_id=event.get("message_id"))
+            except Exception as error:  # noqa: BLE001
+                if is_permission_denied(error):
+                    raise
+                results[eid] = {"status": "error", "reason": type(error).__name__}
+
+    if not planned:
+        return results
+    try:
+        saved = db.table("health_events").insert([p[1] for p in planned]).select("id,source_extracted_event_id").execute().data or []
+        ledger_ids = {str(r.get("source_extracted_event_id")): r.get("id") for r in saved}
+        if len(saved) != len(planned):
+            raise RuntimeError("ledger batch insert returned an unexpected row count")
+    except Exception as error:  # noqa: BLE001
+        if is_permission_denied(error):
+            raise
+        one_by_one(planned)
+        return results
+    by_table: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for eid, _ledger, table, row, positive in planned:
+        results[eid] = ({"status": "ledger_only_non_positive", "health_event_id": ledger_ids.get(eid), "domain_table": None} if not positive else
+                        {"status": "projected", "health_event_id": ledger_ids.get(eid), "domain_table": table if row else None})
+        if positive and row and table:
+            by_table.setdefault(table, []).append((eid, row))
+    for table, items in by_table.items():
+        try:
+            db.table(table).insert([row for _eid, row in items]).execute()
+        except Exception as error:  # noqa: BLE001
+            if is_permission_denied(error):
+                raise
+            for eid, row in items:
+                try:
+                    db.table(table).insert(row).execute()
+                except Exception as row_error:  # noqa: BLE001
+                    if is_permission_denied(row_error):
+                        raise
+                    results[eid] = {"status": "error", "reason": type(row_error).__name__, "health_event_id": ledger_ids.get(eid)}
+    return results

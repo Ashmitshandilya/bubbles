@@ -5,6 +5,7 @@
 
 export const TABS = [
   { id: "overview", label: "Overview" },
+  { id: "overall", label: "Overall" },
   { id: "ai", label: "AI providers" },
   { id: "live", label: "Live" },
   { id: "api", label: "API routes" },
@@ -23,21 +24,39 @@ export const RANGES = [
 ] as const;
 export type RangeId = (typeof RANGES)[number]["id"];
 
+/** The Overall page counts from durable daily totals, so it adds "all time" and drops the very short ranges. */
+export const OVERALL_RANGES = [
+  { id: "1h", label: "1 h" },
+  { id: "24h", label: "24 h" },
+  { id: "7d", label: "7 days" },
+  { id: "30d", label: "30 days" },
+  { id: "all", label: "All time" },
+] as const;
+export type OverallRangeId = (typeof OVERALL_RANGES)[number]["id"];
+export type ViewRange = RangeId | OverallRangeId;
+
+/** The range a tab can really ask for: Overall has no 15 min or 6 h, every other tab has no "all". */
+export function rangeFor(tab: TabId, range: ViewRange): ViewRange {
+  if (tab === "overall") return OVERALL_RANGES.some((r) => r.id === range) ? range : range === "15m" ? "1h" : "24h";
+  return range === "all" ? "30d" : range;
+}
+const defaultRange = (tab: TabId): ViewRange => (tab === "overall" ? "all" : "1h");
+
 export const NONE = "None yet";
 
 /** Tab, range and open request from the address bar (unknown values fall back to the defaults). */
-export function parseView(search: string): { tab: TabId; range: RangeId; request: string | null } {
+export function parseView(search: string): { tab: TabId; range: ViewRange; request: string | null } {
   const q = new URLSearchParams(search);
   const tab = TABS.find((t) => t.id === q.get("tab"))?.id ?? "overview";
-  const range = RANGES.find((r) => r.id === q.get("range"))?.id ?? "1h";
+  const asked = [...RANGES, ...OVERALL_RANGES].find((r) => r.id === q.get("range"))?.id;
   const request = q.get("request");
-  return { tab, range, request: request && /^[0-9a-f]{8,12}$/.test(request) ? request : null };
+  return { tab, range: asked ? rangeFor(tab, asked) : defaultRange(tab), request: request && /^[0-9a-f]{8,12}$/.test(request) ? request : null };
 }
 
-export function viewSearch(view: { tab: TabId; range: RangeId; request: string | null }): string {
+export function viewSearch(view: { tab: TabId; range: ViewRange; request: string | null }): string {
   const q = new URLSearchParams();
   if (view.tab !== "overview") q.set("tab", view.tab);
-  if (view.range !== "1h") q.set("range", view.range);
+  if (view.range !== defaultRange(view.tab)) q.set("range", view.range);
   if (view.request) q.set("request", view.request);
   const s = q.toString();
   return s ? `?${s}` : "";
@@ -151,7 +170,9 @@ export type OpsEvent = {
   seq?: number;
   id?: number;
   at: string;
-  kind: "api" | "ai_attempt" | "ai_reply" | "error" | "audit";
+  kind: "api" | "ai_attempt" | "ai_reply" | "error" | "audit" | "funnel" | "client";
+  feature?: string;   // live api rows: the product area of the route
+  uid?: string;   // only on live rows for api and ai_attempt, from the in-memory ring
   request_id: string | null;
   data: Record<string, unknown>;
 };
@@ -165,6 +186,8 @@ export function kindLabel(kind: OpsEvent["kind"]): { word: string; tone: PillTon
     case "ai_attempt": return { word: "AI try", tone: "sky" };
     case "ai_reply": return { word: "AI reply", tone: "mint" };
     case "error": return { word: "Error", tone: "urgent" };
+    case "funnel": return { word: "Step", tone: "mint" };
+    case "client": return { word: "App crash", tone: "urgent" };
     default: return { word: "Admin", tone: "grape" };
   }
 }
@@ -192,6 +215,8 @@ export function eventSentence(e: OpsEvent): string {
       const where = d.component && words(str(d.component)) !== words(str(d.category)) ? ` in ${words(str(d.component))}` : "";
       return `${humanize(str(d.category))} error${where}${d.route ? ` on ${str(d.route)}` : ""}`;
     }
+    case "funnel": return `Setup step: ${words(str(d.step))}`;
+    case "client": return `${humanize(str(d.code))} on ${str(d.surface) || "web"}`;
     case "audit":
       if (d.action === "admin_denied") return `Someone was refused the admin portal (${words(str(d.target))})`;
       if (d.action === "setting_changed") return settingSentence(str(d.target), d.old, d.new);
