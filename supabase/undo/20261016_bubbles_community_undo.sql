@@ -8,4 +8,12 @@ drop table if exists public.community_posts;
 drop table if exists public.community_moderation_log;
 drop table if exists public.community_blocks;
 drop table if exists public.community_bans;
+
+do $$
+begin
+  if to_regclass('public.bubbles_schema_migrations') is not null then
+    delete from public.bubbles_schema_migrations where name = '20261016_bubbles_community';
+  end if;
+end $$;
+
 commit;
