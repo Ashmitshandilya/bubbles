@@ -26,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Callable
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 
 from concurrent.futures import ThreadPoolExecutor
@@ -33,6 +34,7 @@ from concurrent.futures import ThreadPoolExecutor
 from db_access import is_permission_denied
 from event_filters import DEAD_STATUSES, parse_moment, provenance
 from ttl_cache import TTLCache
+from safety_gate import safety_gate
 
 LBS_PER_KG = 2.2046226218
 MAX_TEXT = 2000
@@ -387,9 +389,13 @@ def _ev_hydration(r: dict) -> dict:
                    "drink_type": r.get("drink_type"), "date": _day(r["logged_at"]), "notes": r.get("notes")})
 
 
+_MOOD_EXTRA = re.compile(r"(Stress|Anxiety) (\d+(?:\.\d+)?)/10")
+
+
 def _ev_mood(r: dict) -> dict:
     score = r["intensity"]
-    return _clean({"name": "mood", "score": score, "mood_score": score, "severity": score,
+    extra = {f"{k.lower()}_score": float(v) for k, v in _MOOD_EXTRA.findall(str(r.get("notes") or ""))}   # _mood_row folds them into the note
+    return _clean({"name": "mood", "score": score, "mood_score": score, "severity": score, **extra,
                    "date": _day(r["logged_at"]), "notes": r.get("notes")})
 
 
@@ -653,6 +659,16 @@ def save_domain(db: Any, slug: str, domain: dict, uid: str, body: dict) -> dict:
     return {"status": "success", "entry": _to_entry(domain, saved.data[0]), "store": "primary"}
 
 
+#: Free-text fields a person types into any tracker. A symptom name is the thing being logged ("chest pain"), so only crisis wording
+#: stops it; the note-like fields stop on any urgent wording too, like every wellness route.
+NOTE_FIELDS = ("notes", "description", "reason", "findings")
+
+
+def _screen_free_text(body: dict) -> dict | None:
+    return (safety_gate(*(body.get(k) for k in NOTE_FIELDS))
+            or safety_gate(body.get("symptom"), crisis_only=True))
+
+
 def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     router = APIRouter()
 
@@ -728,6 +744,10 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             raise HTTPException(status_code=422, detail="Request body must be valid JSON")
         if not isinstance(body, dict):
             raise HTTPException(status_code=422, detail="Request body must be a JSON object")
+        # Free text is screened before anything is stored (crisis wording must never be saved without a reply). A hit stores nothing.
+        blocked = await run_in_threadpool(_screen_free_text, body)
+        if blocked:
+            return JSONResponse(blocked)
         return await run_in_threadpool(_save, slug, domain, uid, body)
 
     @router.get("/intelligence/recent-queries")

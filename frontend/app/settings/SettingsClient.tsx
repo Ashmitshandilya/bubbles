@@ -8,6 +8,7 @@ import { COMPAT_FIX_FILE, MESSAGES, databaseSummary } from "../lib/connection";
 import type { PartnerSharingStatus } from "../lib/partner-sharing";
 import { VeilSwitch } from "../../components/PrivacyVeil";
 import { KeepSignedInRow, TwoStepCard } from "../../components/settings/SignInSecurity";
+import { CrashReportsRow } from "../../components/settings/CrashReportsRow";
 import { NotificationSettingsCard } from "../../components/wellness/NotificationSettingsCard";
 import { YourDataCard } from "../../components/wellness/YourDataCard";
 import { partnerSummary } from "./summary";
@@ -157,6 +158,7 @@ function Settings() {
                 <VeilSwitch labelledBy="veil-label" describedBy="veil-hint" />
               </dd>
             </div>
+            <CrashReportsRow rowClass={ROW} />
           </dl>
 
           {(apiStatus === "offline" || (apiStatus === "online" && (databaseStatus === "permission_denied" || databaseStatus === "unreachable"))) && (

@@ -12,7 +12,7 @@ import type { Exercise } from "../../app/lib/wellness-types";
 export function Calm() {
   const [data, reload] = useWellnessQuery<{ exercises: Exercise[]; note: string }>("/wellness/mind/exercises", { tz: false });
   return (
-    <Panel id="calm" title="Calm space" kicker="Breathing and grounding">
+    <Panel bare id="calm" title="Calm space">
       <QueryView query={data} onRetry={reload} what="the calm exercises">
         {(d) => (
           <>

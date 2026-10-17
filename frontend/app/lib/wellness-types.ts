@@ -245,6 +245,7 @@ export interface MindOverview {
   activities: string[];
   screen: { due: boolean; last: string | null; every_days: number };
   exercises: { id: string; name: string; kind: string }[];
+  support: Record<"loneliness" | "panic" | "apart", { title: string; text: string; steps: string[] }>;
   note: string;
 }
 
@@ -264,7 +265,7 @@ export interface Pixels {
 }
 
 export interface ScreenQuestions {
-  kind: "phq2" | "gad2";
+  kind: "phq2" | "gad2" | "loneliness" | "anxiety";
   intro: string;
   questions: string[];
   options: { value: number; label: string }[];
@@ -272,7 +273,7 @@ export interface ScreenQuestions {
 }
 
 export interface ScreenResult {
-  kind: "phq2" | "gad2";
+  kind: "phq2" | "gad2" | "loneliness" | "anxiety";
   score: number;
   max_score: number;
   suggest_talking_to_someone: boolean;
