@@ -45,8 +45,14 @@ def validate(manifest: dict[str, Any]) -> list[str]:
     problems: list[str] = []
     seen_ids: set[str] = set()
     seen_urls: set[str] = set()
-    for e in manifest.get("entries", []):
-        eid = e.get("id", "?")
+    entries = manifest.get("entries") if isinstance(manifest, dict) else None
+    if not isinstance(entries, list) or not entries:
+        return ["manifest has no entries"]
+    for e in entries:
+        if not isinstance(e, dict):
+            problems.append(f"entry is not an object: {str(e)[:40]!r}")
+            continue
+        eid = e.get("id") or "?"
         if eid in seen_ids:
             problems.append(f"{eid}: duplicate id")
         seen_ids.add(eid)
@@ -55,26 +61,29 @@ def validate(manifest: dict[str, Any]) -> list[str]:
         seen_urls.add(e.get("source_url"))
         try:
             validate_source(e["source_name"], e["source_url"])
-        except (ValueError, KeyError) as exc:
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
             problems.append(f"{eid}: {exc}")
         for key in ("title", "document_type", "evidence_level", "fetch"):
             if not e.get(key):
                 problems.append(f"{eid}: missing {key}")
         if e.get("fetch") not in ("auto", "manual"):
             problems.append(f"{eid}: fetch must be auto or manual")
-        tags = e.get("topic_tags") or []
+        tags = e.get("topic_tags") if isinstance(e.get("topic_tags"), list) else []
+        if not tags:
+            problems.append(f"{eid}: topic_tags must be a non-empty list")
         if BATCH_TAG not in tags:
             problems.append(f"{eid}: missing {BATCH_TAG}")
         for t in tags:
-            if not _TAG.match(t):
+            if not isinstance(t, str) or not _TAG.match(t):
                 problems.append(f"{eid}: odd tag {t!r}")
+                continue
             if t.startswith("link:") and t[5:] not in rag_links.LINK_DOCS:
                 problems.append(f"{eid}: unknown link tag {t}")
             if t.startswith("policy:") and t[7:] not in rag.POLICY_NOTES:
                 problems.append(f"{eid}: unknown policy {t}")
-        if not any(t.startswith("nutrient:") for t in tags):
+        if not any(t.startswith("nutrient:") for t in map(str, tags)):
             problems.append(f"{eid}: no nutrient: tag")
-        if not any(str(e["title"]).startswith(p) for p in sum(rag_links.LINK_DOCS.values(), [])) and any(t.startswith("link:") for t in tags):
+        if not any(str(e.get("title")).startswith(p) for p in sum(rag_links.LINK_DOCS.values(), [])) and any(str(t).startswith("link:") for t in tags):
             problems.append(f"{eid}: title does not start with any LINK_DOCS prefix, so rag_links.py --apply would not tag it by title")
     return problems
 

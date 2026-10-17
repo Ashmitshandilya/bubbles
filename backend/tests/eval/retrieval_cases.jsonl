@@ -106,3 +106,26 @@
 {"id": "N41", "query": "can I stop my thyroid tablet when I feel fine", "expect_title_regex": "levothyroxine|thyroxine|underactive|thyroid"}
 {"id": "N42", "query": "omeprazole long term side effects", "expect_title_regex": "omeprazole|proton pump"}
 {"id": "N43", "query": "missed a pill of the contraceptive pill", "expect_title_regex": "contracept|pill"}
+{"id": "D101", "query": "what does a ferritin test show", "expect_title_regex": "ferritin"}
+{"id": "D102", "query": "low iron tiredness hair fall which blood test", "expect_title_regex": "ferritin|iron tests|haemoglobin"}
+{"id": "D103", "query": "haemoglobin test why is it done", "expect_title_regex": "haemoglobin"}
+{"id": "D104", "query": "complete blood count what is measured", "expect_title_regex": "complete blood count|cbc"}
+{"id": "D105", "query": "vitamin B12 test vegetarian tingling", "expect_title_regex": "vitamin b"}
+{"id": "D106", "query": "folate test when is it done", "expect_title_regex": "vitamin b|folate"}
+{"id": "D107", "query": "homocysteine blood test", "expect_title_regex": "homocysteine"}
+{"id": "D108", "query": "vitamin D test low sun exposure", "expect_title_regex": "vitamin d"}
+{"id": "D109", "query": "magnesium blood test cramps", "expect_title_regex": "magnesium"}
+{"id": "D110", "query": "TSH test thyroid periods", "expect_title_regex": "tsh|thyroid"}
+{"id": "D111", "query": "T4 thyroxine test", "expect_title_regex": "thyroxine|t4"}
+{"id": "D112", "query": "HbA1c test what does it measure", "expect_title_regex": "hba1c|a1c"}
+{"id": "D113", "query": "fasting insulin test", "expect_title_regex": "insulin"}
+{"id": "D114", "query": "cortisol test stress hormone", "expect_title_regex": "cortisol"}
+{"id": "D115", "query": "testosterone test pcos facial hair", "expect_title_regex": "testosterone|pcos"}
+{"id": "D116", "query": "estrogen level test irregular periods", "expect_title_regex": "estrogen"}
+{"id": "D117", "query": "prolactin test why", "expect_title_regex": "prolactin"}
+{"id": "D118", "query": "pcos signs what it can affect", "expect_title_regex": "pcos"}
+{"id": "D119", "query": "underactive thyroid tiredness cold weight gain", "expect_title_regex": "hypothyroidism|underactive thyroid"}
+{"id": "D120", "query": "prediabetes insulin resistance meaning", "expect_title_regex": "prediabetes"}
+{"id": "D121", "query": "iron fact sheet vegetarian ragi dal", "expect_title_regex": "iron"}
+{"id": "D122", "query": "zinc fact sheet hair immunity", "expect_title_regex": "zinc"}
+{"id": "D123", "query": "iodine thyroid iodised salt", "expect_title_regex": "iodine"}

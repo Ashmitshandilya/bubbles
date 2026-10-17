@@ -230,8 +230,11 @@ def signals_from_rows(events: Iterable[dict] = (), profile: dict | None = None, 
     Missing keys are simply gaps. Onboarding answers are read defensively: any key may be absent or have a different shape.
     """
     import organ_map_engine as OM   # pure module; imported late so deficiency_map has no import-time dependencies
-    p = profile or {}
+    p = profile if isinstance(profile, dict) else {}
     today = today or date.today()
+    p = {**p, "labs": [x for x in p["labs"] if isinstance(x, dict)] if isinstance(p.get("labs"), (list, tuple)) else [],
+         "meds": [m for m in p["meds"] if m] if isinstance(p.get("meds"), (list, tuple)) else [],
+         "conditions": [c for c in p["conditions"] if c] if isinstance(p.get("conditions"), (list, tuple)) else []}
     answers = p.get("answers") if isinstance(p.get("answers"), dict) else {}
     conditions = [str(c) for c in (p.get("conditions") or []) if c]
     obs = OM.observations([e for e in events or () if isinstance(e, dict)], labs=p.get("labs") or (),
@@ -299,20 +302,43 @@ def entry_for_lab(label: str) -> str | None:
 
 
 def _g(n: Any) -> str:
-    try:
-        f = float(n)
-    except (TypeError, ValueError):
-        return str(n)
+    f = _finite(n)
+    if f is None:
+        return "?"
     return f"{f:g}" if f == int(f) else f"{f:.2f}".rstrip("0").rstrip(".")
 
 
+def _finite(n: Any) -> float | None:
+    """A real, finite, non-negative, not absurd number, else None (a lab value or range end can never be negative or 1e9+)."""
+    if isinstance(n, bool) or not isinstance(n, (int, float)):
+        return None
+    return float(n) if n == n and 0 <= n < 1e9 else None
+
+
+_SAFE = re.compile(r"[^A-Za-z0-9 ()%/.,+\-]")
+
+
+def clean_text(text: Any, limit: int = 40) -> str:
+    """Free text that came from the person (test name, unit) before it goes into a sentence or the chat context: letters, digits
+    and a few marks only, one line, short. Instruction-like text cannot survive as a sentence."""
+    return " ".join(_SAFE.sub("", re.sub(r"\s+", " ", str(text or ""))).split())[:limit]
+
+
+def _plain(text: Any, limit: int = 40) -> str:
+    """The text itself when it is already short and plain, else "" (never a trimmed-down remnant of something odd)."""
+    t = " ".join(str(text or "").split())
+    return t if 0 < len(t) <= limit and not _SAFE.search(t) else ""
+
+
 def lab_status(lab: dict) -> str:
-    """below | above | within | no_range | no_number, against the range the person entered."""
-    v = lab.get("value")
-    if isinstance(v, bool) or not isinstance(v, (int, float)):
+    """below | above | within | no_range | no_number, against the range the person entered.
+    A value that is not a sane number is no_number; a missing, half-empty, negative or reversed range is no_range."""
+    v = _finite(lab.get("value"))
+    if v is None:
         return "no_number"
-    lo, hi = (lab.get("ref") or (None, None))[:2]
-    if lo is None or hi is None:
+    pair = lab.get("ref")
+    lo, hi = (_finite(pair[0]), _finite(pair[1])) if isinstance(pair, (list, tuple)) and len(pair) >= 2 else (None, None)
+    if lo is None or hi is None or lo > hi:
         return "no_range"
     return "below" if v < lo else "above" if v > hi else "within"
 
@@ -323,7 +349,8 @@ def lab_note(lab: dict) -> dict[str, Any] | None:
     if not eid:
         return None
     status = lab_status(lab)
-    label, unit = str(lab.get("label")), (f" {lab['unit']}" if lab.get("unit") else "")
+    label = _plain(lab.get("label")) or f"{ENTRIES[eid]['name']} result"
+    unit = f" {_plain(lab.get('unit'), 15)}" if _plain(lab.get("unit"), 15) else ""
     lo, hi = (lab.get("ref") or (None, None))[:2]
     value = f"{_g(lab.get('value'))}{unit}"
     text = {
@@ -425,7 +452,7 @@ def _nudge(eid: str, s: dict) -> dict | None:
         note = lab_note(outside)
         d = outside["date"]
         out = {"id": eid, "name": e["name"], "kind": "lab", "level": "medium",
-               "headline": f"Your {outside['label']} is {lab_status(outside)} the range you entered",
+               "headline": f"Your {note['label']} is {lab_status(outside)} the range you entered",
                "reasons": [note["text"]] + lines[:1], "gaps": gaps, "ask": "Worth going over it with a doctor."}
         out["date"] = d.isoformat()
     else:
@@ -445,7 +472,7 @@ def _nudge(eid: str, s: dict) -> dict | None:
             else:
                 gaps.append(f"No recent {e['markers']} result is logged yet.")
     if outside is None and fresh and all(lab_status(l) == "no_range" for l in fresh):
-        gaps.append(f"Your {fresh[0]['label']} has no range entered, so Bubbles cannot compare it.")
+        gaps.append(f"Your {_plain(fresh[0]['label']) or 'result'} has no range entered, so Bubbles cannot compare it.")
     if not s.get("diet") and any(r.startswith("diet_") for r in e["risks"]) and out["kind"] == "signs":
         gaps.append("Bubbles does not know how you usually eat.")
     risk_ids = {r for r, _ in risks}
