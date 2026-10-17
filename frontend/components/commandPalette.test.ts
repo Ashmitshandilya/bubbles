@@ -58,7 +58,7 @@ describe("buildItems", () => {
   it("has unique ids and the quick actions, without repeating a tab", () => {
     expect(new Set(items.map((i) => i.id)).size).toBe(items.length);
     const actions = items.filter((i) => i.kind === "action");
-    expect(labels(actions)).toEqual(["Log water", "Log sleep", "Log mood", "New chat", "Open Today"]);
+    expect(labels(actions)).toEqual(["Log water", "Log sleep", "Log mood", "New chat", "Open Today", "Privacy choices"]);
     expect(items.filter((i) => i.label === "Settings")).toHaveLength(1);
     expect(items.filter((i) => i.label === "Partner sharing")).toHaveLength(1);
   });

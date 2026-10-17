@@ -98,6 +98,7 @@ export const SECTIONS: readonly Section[] = [
     id: "mind", label: "Mind", icon: "mood", href: "/mind", match: ["/mind", "/mood"],
     tabs: [{ label: "Mind", href: "/mind" }, { label: "Mood log", href: "/mood" }],
   },
+  { id: "community", label: "Community", icon: "companion", href: "/community", match: ["/community"] },
   {
     id: "cycle", label: "Cycle", icon: "cycle", href: "/cycle", match: ["/cycle", "/partner"],
     tabs: [{ label: "Cycle", href: "/cycle" }, { label: "Partner sharing", href: "/partner" }],
