@@ -6,7 +6,6 @@ All responses follow the pattern: {"status": "success", "<data_key>": <data>}
 
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
-from datetime import datetime
 
 
 # ============================================================================

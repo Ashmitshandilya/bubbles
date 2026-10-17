@@ -6,7 +6,7 @@ association engine has something true to find. Nothing here is real data.
 from __future__ import annotations
 
 import random
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 

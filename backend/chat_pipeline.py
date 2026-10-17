@@ -20,7 +20,7 @@ import hashlib
 import re
 import threading
 import time
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
@@ -30,7 +30,7 @@ from conversation_correction import (
 )
 from event_dates import find_dates, stated_date, user_today
 from daily_log_parser import DailyLog, _estimate_nutrition, parse_daily_log, summarize_log
-from event_filters import DEAD_STATUSES, clean_data
+from event_filters import clean_data
 from health_event_pipeline import prepare_db_row
 from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state, split_sentences
 from safety_engine import (

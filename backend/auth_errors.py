@@ -1,5 +1,4 @@
 from fastapi import HTTPException
-from typing import Dict, Any
 def unauthorized_response(message: str) -> HTTPException:
     """Return a 401 Unauthorized JSONResponse helper.
 

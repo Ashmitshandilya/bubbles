@@ -5,7 +5,6 @@ This module deliberately reports signals and associations, not diagnoses or medi
 It consumes the existing extracted_health_events stream so the 20-table baseline is preserved.
 """
 from __future__ import annotations
-from collections import Counter
 from datetime import datetime, timezone, timedelta
 from statistics import mean, pstdev
 from typing import Any

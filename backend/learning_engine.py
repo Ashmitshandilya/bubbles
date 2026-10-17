@@ -4,7 +4,6 @@ Builds evidence-backed pattern records and memory candidates without writing
 directly to the database. Persistence remains under explicit application flows.
 """
 from __future__ import annotations
-from collections import defaultdict
 from datetime import datetime, timezone
 from pattern_engine import analyze, normalize_events
 

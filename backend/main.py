@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
-from uuid import UUID, uuid4
+from uuid import UUID
 from typing import Any
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Header, Query
@@ -22,12 +22,9 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from auth_errors import (
     unauthorized_response,
-    forbidden_response,
-    auth_error_response,
     invalid_auth_header_response,
     missing_auth_header_response,
     invalid_token_response,
-    invalid_scope_response,
 )
 from auth_assurance import requires_second_step, token_aal, token_exp
 from ttl_cache import TTLCache
@@ -35,13 +32,11 @@ from admin_api import build_admin_router
 import admin_settings
 import ops_telemetry
 from request_guard import BodyLimitMiddleware, admin_ids, install_access_log_redaction, require_admin
-from memory_retrieval import get_relevant_memories, format_memory_context
 from supabase_client import supabase
-from bubbles_ai import BubblesAIResponse, ask_bubbles, is_degraded
+from bubbles_ai import ask_bubbles, is_degraded
 from memory_promotion import promote_health_event
 from rag import hybrid_search, build_evidence_context
 from evidence_package import build_package, package_audit, plan_task
-from health_event_pipeline import prepare_db_row
 from health_logs import build_router as build_health_logs_router
 from fitness_api import build_router as build_fitness_router
 from data_rights import build_router as build_data_rights_router
@@ -68,7 +63,7 @@ from community_api import build_router as build_community_router
 import deficiency_api
 import association_loader
 from context_engine import build_user_context, format_user_context
-from safety_engine import assess_safety, safety_instruction, urgent_fallback_response
+from safety_engine import safety_instruction, urgent_fallback_response
 from chat_pipeline import (
     overlay_event_status,
     RateLimiter, ai_failed_reply, analyze_turn, build_rule_events, conversation_block, deterministic_reply,
@@ -95,10 +90,10 @@ from longitudinal_health_analysis import analyze as analyze_longitudinal
 from medical_records_intelligence import summarize as summarize_medical_records, extract_questions as medical_questions
 from doctor_timeline import build_timeline, prepare_visit
 from advanced_escalation import evaluate as evaluate_escalation
-from ai_orchestrator import route as route_ai, build_budget, sanitize_for_model
-from privacy_security import redact, consent_policy, minimize_payload, security_headers, threat_check
+from ai_orchestrator import route as route_ai, build_budget
+from privacy_security import redact, consent_policy, security_headers, threat_check
 from organ_intelligence import build_body_system_intelligence
-from evidence_intelligence import build_grounding_packet, rank_evidence, register_source
+from evidence_intelligence import build_grounding_packet
 from intervention_engine import select_interventions
 from interoperability import export_bundle
 from evaluation_governance import evaluate_case, release_gate, model_audit
@@ -120,7 +115,6 @@ from medication_intelligence import medication_overview
 from preventive_health import preventive_snapshot
 from sharing_architecture import SCOPES as SHARE_SCOPES, build_share_plan
 from provider_integration import to_fhir_resource
-from advanced_agent import plan_agent
 from knowledge_learning import knowledge_health
 from production_hardening import readiness_report
 from model_governance import model_contract
@@ -129,17 +123,12 @@ from schemas import (
     # Base
     SuccessResponse,
     # Health Events
-    ExtractedEvent,
-    ExtractEventsResponse,
-    ExtractedEventsListResponse,
-    # Weekly Insights
     WeeklyInsightsData,
     WeeklyInsightsResponse,
     # Nutrition
     NutritionSummaryData,
     NutritionIntelligenceResponse,
     # Cycle
-    CycleData,
     CycleIntelligenceData,
     CycleIntelligenceResponse,
     # Intelligence Overview
@@ -157,28 +146,10 @@ from schemas import (
     IntelligenceBriefData,
     IntelligenceBriefResponse,
     # Chat
-    AIResponseData,
-    AIResponse,
-    ChatMessage,
-    ChatConversation,
-    ChatHistoryResponse,
-    # AI Telemetry
-    ProviderTelemetry,
     AITelemetryData,
     AITelemetryResponse,
     # Memory
-    MemoryItem,
-    MemoryListResponse,
-    MemoryPromoteResponse,
-    MemoryDemoteResponse,
-    # RAG
-    RAGSearchResult,
-    RAGSearchResponse,
-    # System
     HealthCheckResponse,
-    VersionResponse,
-    # Error
-    ErrorResponse,
 )
 
 # The interactive API docs and the machine-readable schema list every route and field: useful while developing, a map for attackers once live.
@@ -1632,7 +1603,7 @@ def rl_feedback(
 # --------------------------------------------------
 # NUTRITION + MENSTRUAL INTELLIGENCE
 # --------------------------------------------------
-from nutrition_intelligence import analyze as analyze_nutrition, analyze_flat as analyze_nutrition_flat
+from nutrition_intelligence import analyze_flat as analyze_nutrition_flat
 from cycle_intelligence import analyze as _analyze_cycle_raw
 
 
