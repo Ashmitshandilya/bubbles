@@ -116,9 +116,9 @@ fun LoginScreen(api: Api) {
             Modifier.padding(top = 20.dp), style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
         )
-        if (BuildConfig.DEBUG) {
+        if (BuildConfig.DEMO) {
             Text(
-                "Use demo data (debug build)",
+                "Use demo data (test build)",
                 Modifier.padding(top = 16.dp).clickable(role = Role.Button) { api.useDemo() }.padding(8.dp),
                 style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary,
             )

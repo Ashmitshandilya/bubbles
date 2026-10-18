@@ -49,9 +49,9 @@ class Api(private val session: Session) {
         keep(res)
     }
 
-    /** Debug builds only: the local preview server accepts the token "preview". */
+    /** Test builds only (debug and qa): the local preview server accepts the token "preview". */
     fun useDemo() {
-        check(BuildConfig.DEBUG)
+        check(BuildConfig.DEMO)
         session.save("preview", null)
     }
 

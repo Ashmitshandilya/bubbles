@@ -1,8 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+// Release signing lives OUTSIDE the repository (never commit keystores or passwords). Same file and same key as the wrapper
+// app, so this app updates it in place: storeFile, storePassword, keyAlias, keyPassword.
+val signingProps = Properties().apply {
+    val f = file(System.getenv("BUBBLES_SIGNING_PROPERTIES") ?: "${System.getProperty("user.home")}/.bubbles-signing/keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -21,9 +30,32 @@ android {
         buildConfigField("String", "SUPABASE_KEY", "\"${providers.gradleProperty("BUBBLES_SUPABASE_KEY").getOrElse("")}\"")
     }
 
+    signingConfigs {
+        create("release") {
+            if (signingProps.getProperty("storeFile") != null) {
+                storeFile = file(signingProps.getProperty("storeFile"))
+                storePassword = signingProps.getProperty("storePassword")
+                keyAlias = signingProps.getProperty("keyAlias")
+                keyPassword = signingProps.getProperty("keyPassword")
+            }
+        }
+    }
     buildTypes {
-        debug { applicationIdSuffix = ".debug"; versionNameSuffix = "-debug" }
-        release { isMinifyEnabled = true; isShrinkResources = true; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") }
+        debug { applicationIdSuffix = ".debug"; versionNameSuffix = "-debug"; buildConfigField("boolean", "DEMO", "true") }
+        // The release code (minified by R8) with demo sign-in and the debug key, to test what users will really run.
+        create("qa") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".qa"; versionNameSuffix = "-qa"
+            buildConfigField("boolean", "DEMO", "true")
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
+        release {
+            isMinifyEnabled = true; isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("boolean", "DEMO", "false")
+            if (signingProps.getProperty("storeFile") != null) signingConfig = signingConfigs.getByName("release")
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
