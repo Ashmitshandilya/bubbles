@@ -37,9 +37,17 @@ class Repo(private val api: Api) {
     /** Which sections this person should see; null until known. */
     val sections: StateFlow<Set<String>?> = _sections
 
-    suspend fun loadSections() { runCatching { api.visibleSections() }.onSuccess { _sections.value = it } }
+    private val _communityOpen = MutableStateFlow(false)
 
-    fun clear() { _entries.value = emptyMap(); _loading.value = true; _sections.value = null }
+    /** True once the server says Community is on and this person may read it (it is off until the owner sets it up). */
+    val communityOpen: StateFlow<Boolean> = _communityOpen
+
+    suspend fun loadSections() {
+        runCatching { api.visibleSections() }.onSuccess { _sections.value = it }
+        runCatching { api.communityStatus() }.onSuccess { _communityOpen.value = it.enabled && it.canRead }
+    }
+
+    fun clear() { _entries.value = emptyMap(); _loading.value = true; _sections.value = null; _communityOpen.value = false }
 
     companion object { const val WINDOW_DAYS = 30 }
 }

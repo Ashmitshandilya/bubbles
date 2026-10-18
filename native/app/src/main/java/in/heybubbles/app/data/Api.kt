@@ -219,6 +219,30 @@ class Api(private val session: Session) {
         }
     }
 
+    suspend fun communityStatus(): CommunityStatus = json.decodeFromString(get("/community/status"))
+
+    suspend fun communityPosts(topic: String?, mine: Boolean, cursor: String?): FeedResponse {
+        val q = buildList {
+            if (topic != null) add("topic=$topic")
+            if (mine) add("mine=true")
+            if (cursor != null) add("cursor=" + java.net.URLEncoder.encode(cursor, "UTF-8"))
+        }.joinToString("&")
+        return json.decodeFromString(get("/community/posts" + if (q.isEmpty()) "" else "?$q"))
+    }
+
+    suspend fun communityComments(postId: String): List<CommunityPost> = json.decodeFromString<CommentsResponse>(get("/community/posts/$postId/comments")).comments
+
+    suspend fun createPost(topic: String, body: String, anonymous: Boolean): PostResult =
+        json.decodeFromString(send("POST", "/community/posts", json.encodeToString(PostBody.serializer(), PostBody(topic, body, anonymous))))
+
+    suspend fun createComment(postId: String, body: String, anonymous: Boolean): PostResult =
+        json.decodeFromString(send("POST", "/community/posts/$postId/comments", json.encodeToString(CommentBody.serializer(), CommentBody(body, anonymous))))
+
+    suspend fun react(target: String, kind: String) { send("POST", "/community/reactions", json.encodeToString(ReactBody.serializer(), ReactBody(target, kind))) }
+    suspend fun report(target: String, reason: String) { send("POST", "/community/reports", json.encodeToString(ReportBody.serializer(), ReportBody(target, reason))) }
+    suspend fun block(target: String) { send("POST", "/community/blocks", json.encodeToString(TargetBody.serializer(), TargetBody(target))) }
+    suspend fun deleteCommunityItem(kind: String, id: String) { send("DELETE", "/community/$kind/$id", "{}") }
+
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))
