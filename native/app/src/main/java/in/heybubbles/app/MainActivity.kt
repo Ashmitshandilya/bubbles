@@ -14,6 +14,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val app = application as BubblesApp
+        `in`.heybubbles.app.push.Push.launchKind.value = intent?.getStringExtra("kind")
         setContent { BubblesTheme { AppRoot(app.api, app.session, app.repo) } }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        `in`.heybubbles.app.push.Push.launchKind.value = intent.getStringExtra("kind")
     }
 }

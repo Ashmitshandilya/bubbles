@@ -18,5 +18,6 @@ class BubblesApp : Application() {
         session = Session(this)
         api = Api(session)
         repo = Repo(api)
+        `in`.heybubbles.app.push.Push.ensureChannel(this)
     }
 }

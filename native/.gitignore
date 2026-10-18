@@ -3,3 +3,4 @@ build/
 local.properties
 *.jks
 keystore.properties
+google-services.json

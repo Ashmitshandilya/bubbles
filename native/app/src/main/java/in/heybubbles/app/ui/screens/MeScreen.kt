@@ -2,6 +2,7 @@ package `in`.heybubbles.app.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,30 +13,43 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import `in`.heybubbles.app.BuildConfig
 import `in`.heybubbles.app.data.Api
+import `in`.heybubbles.app.data.Session
+import `in`.heybubbles.app.push.Push
 import `in`.heybubbles.app.ui.components.BubbleCard
-import `in`.heybubbles.app.ui.components.Eyebrow
 import `in`.heybubbles.app.ui.components.ScreenTitle
 
 @Composable
-fun MeScreen(api: Api) {
-    var choices by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    androidx.activity.compose.BackHandler(enabled = choices) { choices = false }
-    if (choices) { ChoicesScreen(api, onBack = { choices = false }); return }
+fun MeScreen(api: Api, session: Session) {
+    var page by rememberSaveable { mutableStateOf<String?>(null) }
+    BackHandler(enabled = page != null) { page = null }
+    when (page) {
+        "choices" -> { ChoicesScreen(api, onBack = { page = null }); return }
+        "reminders" -> { RemindersScreen(api, session, onBack = { page = null }); return }
+    }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     fun open(url: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         ScreenTitle("Me", "Your space")
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row("Your choices", "What Bubbles may do with your data, and Delete my data") { choices = true }
+            Row("Reminders", "Gentle nudges on this phone") { page = "reminders" }
+            Row("Your choices", "What Bubbles may do with your data, and Delete my data") { page = "choices" }
             Row("Privacy policy", "How your health data is handled") { open("https://heybubbles.in/privacy") }
             Row("Terms", "The rules of using Bubbles") { open("https://heybubbles.in/terms") }
-            Row("Sign out", "You can sign back in any time") { api.signOut() }
+            Row("Sign out", "You can sign back in any time") {
+                // Take this phone off the server's list first, so the next person on a shared phone gets nothing of yours.
+                scope.launch { Push.disconnect(context.applicationContext, api, session); api.signOut() }
+            }
             Text(
                 "Bubbles ${BuildConfig.VERSION_NAME}",
                 Modifier.padding(top = 8.dp, start = 4.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,

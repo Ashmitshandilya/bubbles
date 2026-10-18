@@ -173,6 +173,52 @@ class Api(private val session: Session) {
         return VisitPrep(list("questions"), list("bring"))
     }
 
+    suspend fun notificationSettings(): ReminderSettings {
+        val o = json.parseToJsonElement(get("/notifications/settings")).jsonObject
+        val st = o["settings"] as? JsonObject
+        val ch = o["channels"] as? JsonObject
+        fun flag(obj: JsonObject?, k: String) = (obj?.get(k) as? JsonPrimitive)?.booleanOrNull == true
+        val types = st?.get("types") as? JsonObject
+        val quiet = st?.get("quiet_hours") as? JsonObject
+        return ReminderSettings(
+            push = flag(st?.get("channels") as? JsonObject, "push"),
+            pushAvailable = flag(ch?.get("push") as? JsonObject, "available"),
+            water = flag(types, "water"), med = flag(types, "med"), winddown = flag(types, "winddown"),
+            quiet = if (flag(quiet, "enabled")) "${(quiet?.get("start") as? JsonPrimitive)?.contentOrNull}–${(quiet?.get("end") as? JsonPrimitive)?.contentOrNull}" else null,
+        )
+    }
+
+    /** A partial update: only the keys given change. The server records the push yes or no in the consent ledger. */
+    suspend fun saveReminderSettings(push: Boolean? = null, types: Map<String, Boolean> = emptyMap()) {
+        val body = JsonObject(buildMap {
+            if (push != null) put("channels", JsonObject(mapOf("push" to JsonPrimitive(push))))
+            if (types.isNotEmpty()) put("types", JsonObject(types.mapValues { JsonPrimitive(it.value) }))
+        })
+        send("PUT", "/notifications/settings", json.encodeToString(JsonObject.serializer(), body))
+    }
+
+    suspend fun registerDevice(token: String) {
+        send("POST", "/notifications/devices", json.encodeToString(JsonObject.serializer(), JsonObject(mapOf("token" to JsonPrimitive(token), "platform" to JsonPrimitive("android")))))
+    }
+
+    suspend fun removeDevice(token: String) {
+        send("POST", "/notifications/devices/remove", json.encodeToString(JsonObject.serializer(), JsonObject(mapOf("token" to JsonPrimitive(token)))))
+    }
+
+    /** Sends one test reminder and returns a plain sentence for the person. */
+    suspend fun pushTest(): String {
+        val o = json.parseToJsonElement(send("POST", "/notifications/push/test", "{}")).jsonObject
+        val sent = (o["sent"] as? JsonPrimitive)?.intOrNull ?: 0
+        val removed = (o["removed"] as? JsonPrimitive)?.intOrNull ?: 0
+        val reason = (o["reason"] as? JsonPrimitive)?.contentOrNull
+        return when {
+            reason == "wait" -> "A test was just sent. Try again in a minute."
+            sent > 0 -> "Test sent. It can take a few seconds to arrive."
+            reason == "no_devices" || removed > 0 -> "This phone isn't connected. Turn phone reminders off and on again."
+            else -> "Couldn't send the test right now. Your reminders still show in Bubbles."
+        }
+    }
+
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))

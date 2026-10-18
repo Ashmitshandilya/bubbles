@@ -25,6 +25,11 @@ class Session(context: Context) {
     val access: String? get() = prefs.getString("access", null)
     val refresh: String? get() = prefs.getString("refresh", null)
 
+    /** The notification token this phone gave the server, so it can be taken back. Cleared with everything else on sign-out. */
+    var pushToken: String?
+        get() = prefs.getString("push_token", null)
+        set(v) { prefs.edit().apply { if (v == null) remove("push_token") else putString("push_token", v) }.apply() }
+
     fun save(access: String, refresh: String?) {
         prefs.edit().putString("access", access).putString("refresh", refresh).apply()
         _signedIn.value = true

@@ -66,7 +66,7 @@ fun AppRoot(api: Api, session: Session, repo: Repo) {
     androidx.compose.runtime.CompositionLocalProvider(LocalEpoch provides epoch) {
         BubblesBackground {
             Crossfade(signedIn, label = "auth") { yes ->
-                if (!yes) LoginScreen(api) else Gate(api, repo)
+                if (!yes) LoginScreen(api) else Gate(api, repo, session)
             }
         }
     }
@@ -77,7 +77,7 @@ val LocalEpoch = androidx.compose.runtime.compositionLocalOf { 0 }
 
 /** After sign-in: finished setup goes to the app, an unfinished one to first-run setup (the same rule as the website). */
 @Composable
-private fun Gate(api: Api, repo: Repo) {
+private fun Gate(api: Api, repo: Repo, session: Session) {
     var done by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Boolean?>(null) }
     var failed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     var attempt by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
@@ -86,7 +86,7 @@ private fun Gate(api: Api, repo: Repo) {
         try { done = api.onboardingState().complete } catch (_: Exception) { failed = true }
     }
     when {
-        done == true -> Home(api, repo)
+        done == true -> Home(api, repo, session)
         done == false -> OnboardingScreen(api, onFinished = { done = true }, onSignOut = { api.signOut() })
         failed -> Column(Modifier.fillMaxSize().statusBarsPadding().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Can't reach Bubbles. Check your connection.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
@@ -97,11 +97,26 @@ private fun Gate(api: Api, repo: Repo) {
 }
 
 @Composable
-private fun Home(api: Api, repo: Repo) {
+private fun Home(api: Api, repo: Repo, session: Session) {
     var tab by rememberSaveable { mutableStateOf(Tab.Today) }
     var startSlug by rememberSaveable { mutableStateOf<String?>(null) }
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     androidx.compose.runtime.LaunchedEffect(Unit) { repo.loadSections() }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    // A phone that was connected keeps its token fresh (it can change), without asking again.
+    androidx.compose.runtime.LaunchedEffect(Unit) { `in`.heybubbles.app.push.Push.refresh(context.applicationContext, api, session) }
+    // A tapped reminder opens the matching place. Only the kind travels in the message, never anything about the person.
+    val kind by `in`.heybubbles.app.push.Push.launchKind.collectAsState()
+    androidx.compose.runtime.LaunchedEffect(kind) {
+        when (kind) {
+            null -> return@LaunchedEffect
+            "water" -> { startSlug = "hydration"; tab = Tab.Track }
+            "winddown" -> { startSlug = "sleep"; tab = Tab.Track }
+            "med" -> { section = "care"; tab = Tab.Today }
+            else -> tab = Tab.Today
+        }
+        `in`.heybubbles.app.push.Push.launchKind.value = null
+    }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Box(Modifier.weight(1f)) {
@@ -114,7 +129,7 @@ private fun Home(api: Api, repo: Repo) {
                     Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track }, onOpenSection = { section = it })
                     Tab.Talk -> TalkScreen(api)
                     Tab.Track -> TrackScreen(api, repo, startSlug, onStartUsed = { startSlug = null })
-                    Tab.Me -> MeScreen(api)
+                    Tab.Me -> MeScreen(api, session)
                     }
                 }
             }

@@ -75,3 +75,12 @@ import kotlinx.serialization.json.JsonElement
 @Serializable data class WeeklyResponse(val insights: WeeklyBody = WeeklyBody())
 
 class VisitPrep(val questions: List<String>, val bring: List<String>)
+
+class ReminderSettings(
+    val push: Boolean,
+    val pushAvailable: Boolean,
+    val water: Boolean,
+    val med: Boolean,
+    val winddown: Boolean,
+    val quiet: String?,
+)
