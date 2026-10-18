@@ -14,6 +14,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val app = application as BubblesApp
-        setContent { BubblesTheme { AppRoot(app.api, app.session) } }
+        setContent { BubblesTheme { AppRoot(app.api, app.session, app.repo) } }
     }
 }

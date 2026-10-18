@@ -40,3 +40,16 @@ import kotlinx.serialization.json.JsonElement
 )
 
 @Serializable data class DailyResponse(val companion: DailyCompanion = DailyCompanion())
+
+@Serializable data class Association(
+    val id: String = "",
+    val text: String = "",
+    val strength: String = "",
+    val limitations: List<String> = emptyList(),
+)
+
+@Serializable data class AssociationsResponse(
+    val insights: List<Association> = emptyList(),
+    val gaps: List<JsonElement> = emptyList(),
+    val notices: List<JsonElement> = emptyList(),
+)

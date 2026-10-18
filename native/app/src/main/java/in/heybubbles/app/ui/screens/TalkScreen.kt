@@ -129,7 +129,7 @@ class TalkViewModel(private val api: Api) : ViewModel() {
 
 @Composable
 fun TalkScreen(api: Api) {
-    val vm = viewModel<TalkViewModel> { TalkViewModel(api) }
+    val vm = viewModel<TalkViewModel>(key = "talk${`in`.heybubbles.app.ui.LocalEpoch.current}") { TalkViewModel(api) }
     val s by vm.state.collectAsState()
     val list = rememberLazyListState()
     val haptic = LocalHapticFeedback.current

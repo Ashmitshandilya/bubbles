@@ -18,6 +18,10 @@ class Session(context: Context) {
     private val _signedIn = MutableStateFlow(prefs.getString("access", null) != null)
     val signedIn: StateFlow<Boolean> = _signedIn
 
+    /** Bumps on every sign-out, so screens keyed to it start fresh for the next person. */
+    var epoch: Int = 0
+        private set
+
     val access: String? get() = prefs.getString("access", null)
     val refresh: String? get() = prefs.getString("refresh", null)
 
@@ -28,6 +32,7 @@ class Session(context: Context) {
 
     fun clear() {
         prefs.edit().clear().apply()
+        epoch++
         _signedIn.value = false
     }
 }

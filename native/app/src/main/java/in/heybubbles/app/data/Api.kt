@@ -106,7 +106,24 @@ class Api(private val session: Session) {
     suspend fun chat(message: String, messageId: String, conversationId: String?): ChatReply =
         json.decodeFromString(send("POST", "/chat", json.encodeToString(ChatBody.serializer(), ChatBody(message, messageId, conversationId))))
 
+    /** GET /health/<slug>?days=N, newest first. */
+    suspend fun entries(slug: String, days: Int): List<Entry> {
+        val root = json.parseToJsonElement(get("/health/$slug?days=$days")).jsonObject
+        val rows = root["entries"] as? kotlinx.serialization.json.JsonArray ?: return emptyList()
+        return rows.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            val id = (o["id"] as? JsonPrimitive)?.content ?: return@mapNotNull null
+            Entry(id, (o["date"] as? JsonPrimitive)?.content.orEmpty(), o)
+        }.sortedByDescending { it.date }
+    }
+
+    /** POST /health/<slug>. No date is sent, so the server stamps "now". */
+    suspend fun saveEntry(slug: String, body: JsonObject) { send("POST", "/health/$slug", json.encodeToString(JsonObject.serializer(), body)) }
+
+    suspend fun deleteEntry(slug: String, id: String) { send("DELETE", "/health/$slug/$id", "{}") }
+
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
+    suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))
     suspend fun setConsent(purpose: String, granted: Boolean) {
         send("PUT", "/consents/$purpose", json.encodeToString(ConsentBody.serializer(), ConsentBody(granted)))

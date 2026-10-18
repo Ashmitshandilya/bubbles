@@ -18,3 +18,12 @@ val ChatBubbleIcon: ImageVector = materialIcon(name = "ChatBubble") {
         close()
     }
 }
+
+/** Three rising bars: the Track tab. */
+val TrackIcon: ImageVector = materialIcon(name = "Track") {
+    materialPath {
+        moveTo(5f, 13f); lineTo(8.5f, 13f); lineTo(8.5f, 20f); lineTo(5f, 20f); close()
+        moveTo(10.25f, 8f); lineTo(13.75f, 8f); lineTo(13.75f, 20f); lineTo(10.25f, 20f); close()
+        moveTo(15.5f, 4f); lineTo(19f, 4f); lineTo(19f, 20f); lineTo(15.5f, 20f); close()
+    }
+}

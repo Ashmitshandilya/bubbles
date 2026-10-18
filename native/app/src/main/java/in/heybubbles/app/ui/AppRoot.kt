@@ -36,41 +36,53 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.shadow
 import `in`.heybubbles.app.data.Api
+import `in`.heybubbles.app.data.Repo
 import `in`.heybubbles.app.data.Session
 import `in`.heybubbles.app.ui.components.BubblesBackground
 import `in`.heybubbles.app.ui.screens.LoginScreen
 import `in`.heybubbles.app.ui.screens.MeScreen
 import `in`.heybubbles.app.ui.screens.TalkScreen
 import `in`.heybubbles.app.ui.screens.TodayScreen
+import `in`.heybubbles.app.ui.screens.TrackScreen
 import `in`.heybubbles.app.ui.theme.Bubbles
 import `in`.heybubbles.app.ui.theme.LocalDark
 
 private enum class Tab(val label: String, val icon: ImageVector) {
     Today("Today", Icons.Rounded.Home),
     Talk("Talk", ChatBubbleIcon),
+    Track("Track", TrackIcon),
     Me("Me", Icons.Rounded.Person),
 }
 
 @Composable
-fun AppRoot(api: Api, session: Session) {
+fun AppRoot(api: Api, session: Session, repo: Repo) {
     val signedIn by session.signedIn.collectAsState()
-    BubblesBackground {
-        Crossfade(signedIn, label = "auth") { yes ->
-            if (!yes) LoginScreen(api) else Home(api)
+    val epoch = session.epoch
+    androidx.compose.runtime.LaunchedEffect(signedIn) { if (!signedIn) repo.clear() }
+    androidx.compose.runtime.CompositionLocalProvider(LocalEpoch provides epoch) {
+        BubblesBackground {
+            Crossfade(signedIn, label = "auth") { yes ->
+                if (!yes) LoginScreen(api) else Home(api, repo)
+            }
         }
     }
 }
 
+/** Changes on every sign-out; screens use it as a view-model key so one person's data is never shown to the next. */
+val LocalEpoch = androidx.compose.runtime.compositionLocalOf { 0 }
+
 @Composable
-private fun Home(api: Api) {
-    var tab by rememberSaveable { mutableStateOf(Tab.Talk) }
+private fun Home(api: Api, repo: Repo) {
+    var tab by rememberSaveable { mutableStateOf(Tab.Today) }
+    var startSlug by rememberSaveable { mutableStateOf<String?>(null) }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Box(Modifier.weight(1f)) {
                 // Screens are kept alive when you switch (state is held in each screen's own view model), only one is shown.
                 when (tab) {
-                    Tab.Today -> TodayScreen(api, onTalk = { tab = Tab.Talk })
+                    Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track })
                     Tab.Talk -> TalkScreen(api)
+                    Tab.Track -> TrackScreen(api, repo, startSlug, onStartUsed = { startSlug = null })
                     Tab.Me -> MeScreen(api)
                 }
             }
