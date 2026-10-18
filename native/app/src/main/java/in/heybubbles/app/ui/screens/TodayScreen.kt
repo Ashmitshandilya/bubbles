@@ -165,7 +165,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
                     tint = if (t.big != null) t.spec.tint else MaterialTheme.colorScheme.surface, onClick = { onOpenTracker(t.spec.slug) },
                 ) {
                     Column(Modifier.padding(14.dp)) {
-                        Eyebrow(t.spec.title, color = t.spec.ink)
+                        Eyebrow(t.spec.title, color = if (t.big != null) t.spec.ink else MaterialTheme.colorScheme.onSurfaceVariant)
                         if (t.big != null) {
                             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 4.dp)) {
                                 Text(t.big, style = MaterialTheme.typography.headlineSmall, color = t.spec.ink)
@@ -205,7 +205,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
 
         if (s.patterns.isNotEmpty()) {
             Spacer(Modifier.height(20.dp))
-            Eyebrow("Patterns in your logs", Modifier.padding(horizontal = 24.dp), color = Bubbles.GrapeDeep)
+            Eyebrow("Patterns in your logs", Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.secondary)
             Column(Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 s.patterns.forEach { p -> PatternCard(p) }
             }

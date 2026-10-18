@@ -49,6 +49,9 @@ val LocalDark = staticCompositionLocalOf { false }
 @Composable
 fun BubblesTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(LocalDark provides dark) {
-        MaterialTheme(colorScheme = if (dark) Dark else Light, typography = BubblesTypography, shapes = BubblesShapes, content = content)
+        MaterialTheme(colorScheme = if (dark) Dark else Light, typography = BubblesTypography, shapes = BubblesShapes) {
+            // Text outside a Material surface would default to black, which vanishes on the dark ground: every screen starts from the theme's text colour.
+            androidx.compose.material3.Surface(color = androidx.compose.ui.graphics.Color.Transparent, contentColor = MaterialTheme.colorScheme.onBackground, content = content)
+        }
     }
 }

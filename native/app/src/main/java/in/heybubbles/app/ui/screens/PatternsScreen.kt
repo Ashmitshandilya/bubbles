@@ -101,7 +101,7 @@ fun PatternsScreen(api: Api, onBack: () -> Unit) {
             }
             if (s.loading) Text("Looking through your logs…", style = MaterialTheme.typography.bodyLarge)
             if (s.links.isNotEmpty()) {
-                Eyebrow("Links between your logs", color = Bubbles.GrapeDeep)
+                Eyebrow("Links between your logs", color = MaterialTheme.colorScheme.secondary)
                 s.links.forEach { p ->
                     BubbleCard(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -115,7 +115,7 @@ fun PatternsScreen(api: Api, onBack: () -> Unit) {
                 }
             }
             if (s.week.isNotEmpty()) {
-                Eyebrow("This week", Modifier.padding(top = 6.dp), color = Bubbles.PinkDeep)
+                Eyebrow("This week", Modifier.padding(top = 6.dp), color = MaterialTheme.colorScheme.primary)
                 s.week.forEach { w ->
                     BubbleCard(Modifier.fillMaxWidth(), tint = Bubbles.TintPink) {
                         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
