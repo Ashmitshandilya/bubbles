@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Bubbles" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bubbles_blush</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+    <style name="Theme.Bubbles.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/bubbles_blush</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Bubbles</item>
+    </style>
+</resources>

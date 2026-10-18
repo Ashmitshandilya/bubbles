@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Debug builds only: lets the emulator reach the local preview server (http://10.0.2.2:8001). -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>

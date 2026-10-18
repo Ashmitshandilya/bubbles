@@ -1,0 +1,42 @@
+package `in`.heybubbles.app.data
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+
+@Serializable data class Safety(val level: String = "GREEN")
+
+@Serializable data class ChatReply(
+    val response: String = "",
+    val kind: String = "reply",
+    val safety: Safety = Safety(),
+    @SerialName("message_id") val messageId: String? = null,
+    @SerialName("conversation_id") val conversationId: String? = null,
+    @SerialName("consent_ask") val consentAsk: Boolean = false,
+)
+
+@Serializable data class StoredMessage(
+    val id: String,
+    val role: String,
+    val content: String,
+    @SerialName("created_at") val createdAt: String = "",
+    @SerialName("safety_level") val safetyLevel: String? = null,
+)
+
+@Serializable data class ConversationRef(val id: String = "")
+
+@Serializable data class LatestChat(
+    val messages: List<StoredMessage> = emptyList(),
+    @SerialName("has_more") val hasMore: Boolean = false,
+    val conversation: ConversationRef? = null,
+)
+
+@Serializable data class DailyCompanion(
+    val headline: String = "",
+    @SerialName("safety_note") val safetyNote: String = "",
+    val disclaimer: String = "",
+    val focus: List<JsonElement> = emptyList(),
+    @SerialName("data_gaps") val dataGaps: List<JsonElement> = emptyList(),
+)
+
+@Serializable data class DailyResponse(val companion: DailyCompanion = DailyCompanion())
