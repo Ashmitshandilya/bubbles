@@ -11,6 +11,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -22,13 +24,15 @@ import `in`.heybubbles.app.ui.components.ScreenTitle
 
 @Composable
 fun MeScreen(api: Api) {
+    var choices by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = choices) { choices = false }
+    if (choices) { ChoicesScreen(api, onBack = { choices = false }); return }
     val context = LocalContext.current
     fun open(url: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         ScreenTitle("Me", "Your space")
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // Privacy choices and Delete my data live on the website until their native screens ship; they are real, not placeholders.
-            Row("Your privacy choices", "See and change what Bubbles may do with your data") { open("https://heybubbles.in/privacy-choices") }
+            Row("Your choices", "What Bubbles may do with your data, and Delete my data") { choices = true }
             Row("Privacy policy", "How your health data is handled") { open("https://heybubbles.in/privacy") }
             Row("Terms", "The rules of using Bubbles") { open("https://heybubbles.in/terms") }
             Row("Sign out", "You can sign back in any time") { api.signOut() }

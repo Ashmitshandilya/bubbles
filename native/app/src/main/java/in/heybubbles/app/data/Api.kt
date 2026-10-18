@@ -31,7 +31,8 @@ fun Throwable.friendly(): String = when {
 @Serializable private data class Credentials(val email: String, val password: String)
 @Serializable private data class RefreshBody(val refresh_token: String)
 @Serializable private data class ChatBody(val message: String, val message_id: String, val conversation_id: String? = null)
-@Serializable private data class ConsentBody(val granted: Boolean, val source: String = "app")
+@Serializable private data class ConsentBody(val granted: Boolean, val source: String = "settings", val text_hash: String? = null)
+@Serializable private data class ChatConsentBody(val ai_chat: Boolean, val source: String = "chat_card")
 
 /** One client for the existing FastAPI. The server owns safety, consent and memory; this only carries requests. */
 class Api(private val session: Session) {
@@ -125,7 +126,18 @@ class Api(private val session: Session) {
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))
-    suspend fun setConsent(purpose: String, granted: Boolean) {
-        send("PUT", "/consents/$purpose", json.encodeToString(ConsentBody.serializer(), ConsentBody(granted)))
+    suspend fun setConsent(purpose: String, granted: Boolean, textHash: String? = null, source: String = "settings") {
+        send("PUT", "/consents/$purpose", json.encodeToString(ConsentBody.serializer(), ConsentBody(granted, source, textHash)))
     }
+
+    /** The answer to the "use an outside AI?" card in chat. A yes goes through the same endpoint the website uses, which records the wording the person was shown. */
+    suspend fun answerChatConsent(yes: Boolean) {
+        if (yes) send("PUT", "/me/consent", json.encodeToString(ChatConsentBody.serializer(), ChatConsentBody(true)))
+        else setConsent("ai_chat_processing", false, null, "chat_card")
+    }
+
+    suspend fun consents(): List<Purpose> = json.decodeFromString<ConsentsResponse>(get("/consents")).purposes
+
+    /** Deletes Fitness, Cycle, plan and Community data. Tracker entries are separate (the server says so in its reply). */
+    suspend fun deleteMyData() { send("DELETE", "/me/whole-health/data?confirm=true", "{}") }
 }

@@ -115,11 +115,10 @@ class TalkViewModel(private val api: Api) : ViewModel() {
     /** "Yes" to the outside-AI ask: record it with the server, then ask the same question again. */
     fun answerConsent(yes: Boolean) {
         _state.update { s -> s.copy(msgs = s.msgs.map { if (it.consentAsk) it.copy(consentAsk = false) else it }) }
-        if (!yes) return
         viewModelScope.launch {
             try {
-                api.setConsent("ai_chat_processing", true)
-                lastUserText?.let { send(it, again = true) }
+                api.answerChatConsent(yes)
+                if (yes) lastUserText?.let { send(it, again = true) }
             } catch (e: Exception) {
                 _state.update { it.copy(notice = e.friendly()) }
             }

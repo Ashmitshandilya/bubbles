@@ -53,3 +53,14 @@ import kotlinx.serialization.json.JsonElement
     val gaps: List<JsonElement> = emptyList(),
     val notices: List<JsonElement> = emptyList(),
 )
+
+@Serializable data class Purpose(
+    val id: String,
+    val title: String = "",
+    val description: String = "",
+    @SerialName("text_hash") val textHash: String? = null,
+    val available: Boolean = true,
+    val granted: Boolean = false,
+)
+
+@Serializable data class ConsentsResponse(val purposes: List<Purpose> = emptyList())
