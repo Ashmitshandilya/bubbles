@@ -51,3 +51,12 @@ server (`backend/preview_server.py`, token `preview`), TalkBack pass, and a run 
 ## Decisions still open
 - Bottom bar contents (above is the proposal). Font files: bundle Fredoka and Nunito (OFL) in the app.
 - Whether the Play build keeps the wrapper's APK download page or hides it once the native app is live.
+
+## Status (2026-10-18)
+Done and tested on the emulator: sign-in, first-run setup (server bank, consent step, 18+ gate), Today, Talk, Track, Cycle, Patterns,
+Care, Community, phone reminders, Your choices and Delete my data, light and dark themes, release signing (same key as the
+wrapper), minified build (R8), 22 unit tests, CI (`.github/workflows/native.yml`).
+
+Not built: Fitness (opens on the website on purpose: its body setup has eating-disorder screening and calorie floors that must be
+ported with every safeguard), Partner sharing, the 3D body map (Filament), offline logging with sync, the first-run tour, in-app
+account deletion (needed for Google Play), Play Store listing. Device testing on a real phone is still to do.

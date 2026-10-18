@@ -194,6 +194,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
             if (sections?.contains("cycle") == true) add(Triple("cycle", "Cycle" to "Where you are in it", Bubbles.TintPink to Bubbles.PinkDeep))
             add(Triple("patterns", "Patterns" to "What your logs say", Bubbles.TintGrape to Bubbles.GrapeDeep))
             if (sections?.contains("care") == true) add(Triple("care", "Care" to "Get ready for a visit", Bubbles.TintMint to Bubbles.MintDeep))
+            if (sections?.contains("fitness") == true) add(Triple("fitness", "Fitness" to "Plans and food log, on the website", Bubbles.TintSky to Bubbles.SkyDeep))
             if (communityOpen) add(Triple("community", "Community" to "Ask or share, kindly", Bubbles.TintSun to Bubbles.SunDeep))
         }
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

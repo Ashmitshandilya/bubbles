@@ -14,6 +14,19 @@ Entry template:
 - Where: files or folders
 - Notes: trade-offs, rejected options, follow-ups
 ```
+
+### 2026-10-18 · Native Android app in Kotlin + Compose replaces the wrapper (PR #52)
+- What:  `native/` is a real Android app (same applicationId and release key as the Capacitor wrapper, so it updates it in place). It is
+  a client of the existing API: no new endpoints, no new tables, no health logic copied. Built: sign-in, first-run setup from the server's
+  question bank, Today, Talk, Track (8 trackers), Cycle, Patterns, Care, Community, phone reminders, Your choices. Fitness opens on the
+  website; offline logging, Partner sharing, the 3D body map and in-app account deletion are not built.
+- Why:   the owner wanted an app that feels like an app (not a website in a wrapper) and a Play Store release later.
+- Rules: missing data is a gap; consent changes go through the server first; no Firebase Analytics; tokens in encrypted storage and excluded
+  from backup; sign-out removes the phone from the reminder list. A new person must be able to finish setup on the phone (the gate follows
+  `GET /onboarding/state`).
+- Where: `native/` (see `native/README.md` and `native/PLAN.md`), `.github/workflows/native.yml`.
+- Do not publish it over the wrapper until Fitness has a native home or the gap is accepted, and Google Play needs in-app account deletion.
+
 ### 2026-10-17 · Caching, organ map reads in parallel, load test
 - What: /organs/map reads its five sources in parallel; backend/loadtest (httpx, AI stubbed, localhost only) shows ~94 req/s on one process with 0 errors at 50 users and p95 847 ms; FirstRunTour loads on demand; /models/* cached for a week; fixed a startup crash in main._warm_database_probe (duplicate local import of threading).
 - Why: speed; numbers and method in docs/LOAD_TEST.md.

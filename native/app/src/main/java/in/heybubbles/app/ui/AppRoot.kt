@@ -105,6 +105,13 @@ private fun Home(api: Api, repo: Repo, session: Session) {
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     androidx.compose.runtime.LaunchedEffect(Unit) { repo.loadSections() }
     val context = androidx.compose.ui.platform.LocalContext.current
+    // Fitness (body setup with its safety screening, calorie floors, plans) lives on the website until it can be ported with every safeguard.
+    androidx.compose.runtime.LaunchedEffect(section) {
+        if (section == "fitness") {
+            runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://heybubbles.in/fitness"))) }
+            section = null
+        }
+    }
     // A phone that was connected keeps its token fresh (it can change), without asking again.
     androidx.compose.runtime.LaunchedEffect(Unit) { `in`.heybubbles.app.push.Push.refresh(context.applicationContext, api, session) }
     // A tapped reminder opens the matching place. Only the kind travels in the message, never anything about the person.
