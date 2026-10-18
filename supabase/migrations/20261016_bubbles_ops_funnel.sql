@@ -25,6 +25,8 @@ begin
   loop
     execute format('alter table public.bubbles_ops_events drop constraint %I', c.conname);
   end loop;
+  -- Postgres prints the check as "kind = ANY (ARRAY[...])", which the pattern above can miss: drop it by name too.
+  alter table public.bubbles_ops_events drop constraint if exists bubbles_ops_events_kind_check;
   alter table public.bubbles_ops_events
     add constraint bubbles_ops_events_kind_check
     check (kind in ('api', 'ai_attempt', 'ai_reply', 'error', 'audit', 'funnel', 'client'));
