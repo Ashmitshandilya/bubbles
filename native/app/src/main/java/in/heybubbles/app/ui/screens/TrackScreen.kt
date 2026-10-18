@@ -28,6 +28,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -74,6 +75,7 @@ import `in`.heybubbles.app.ui.components.BubbleGradient
 import `in`.heybubbles.app.ui.components.Eyebrow
 import `in`.heybubbles.app.ui.components.Pill
 import `in`.heybubbles.app.ui.components.ScreenTitle
+import `in`.heybubbles.app.ui.components.Skeleton
 import `in`.heybubbles.app.ui.components.Sparkline
 import java.time.LocalDate
 import java.util.Locale
@@ -172,8 +174,10 @@ fun TrackScreen(api: Api, repo: Repo, startSlug: String?, onStartUsed: () -> Uni
     else Detail(spec, s, vm, onBack = { open = null })
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Overview(s: TrackState, onOpen: (TrackerSpec) -> Unit, onRetry: () -> Unit) {
+    PullToRefreshBox(isRefreshing = s.loading && s.entries.isNotEmpty(), onRefresh = onRetry) {
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 8.dp)) {
         ScreenTitle("Track", "What's your day like?")
         if (s.error != null) {
@@ -185,11 +189,12 @@ private fun Overview(s: TrackState, onOpen: (TrackerSpec) -> Unit, onRetry: () -
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Trackers.all.chunked(2).forEach { row ->
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    row.forEach { spec -> TrackerCard(spec, s.entries[spec.slug], s.loading && s.entries[spec.slug] == null, Modifier.weight(1f)) { onOpen(spec) } }
+                    row.forEach { spec -> if (s.loading && s.entries[spec.slug] == null) Skeleton(Modifier.weight(1f).height(150.dp)) else TrackerCard(spec, s.entries[spec.slug], false, Modifier.weight(1f)) { onOpen(spec) } }
                     if (row.size == 1) Spacer(Modifier.weight(1f))
                 }
             }
         }
+    }
     }
 }
 

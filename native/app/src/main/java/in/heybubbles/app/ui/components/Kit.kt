@@ -1,5 +1,6 @@
 package `in`.heybubbles.app.ui.components
 
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -16,7 +17,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme as M3
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -97,4 +100,16 @@ fun Pill(text: String, tint: Color, ink: Color, modifier: Modifier = Modifier, o
     Box(m.background(tint, RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 8.dp), contentAlignment = Alignment.Center) {
         Text(text, style = MaterialTheme.typography.labelMedium, color = ink)
     }
+}
+
+/** A placeholder block that breathes while content loads: calmer than a spinner, and it keeps the layout from jumping. */
+@Composable
+fun Skeleton(modifier: Modifier = Modifier, shape: Shape = MaterialTheme.shapes.large) {
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "skeleton")
+    val a by t.animateFloat(
+        0.35f, 0.8f,
+        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(900), androidx.compose.animation.core.RepeatMode.Reverse),
+        label = "alpha",
+    )
+    Box(modifier.background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = a), shape))
 }

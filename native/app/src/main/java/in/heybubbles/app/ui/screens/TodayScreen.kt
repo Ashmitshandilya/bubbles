@@ -12,7 +12,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -46,6 +48,7 @@ import `in`.heybubbles.app.ui.components.Dot
 import `in`.heybubbles.app.ui.components.Eyebrow
 import `in`.heybubbles.app.ui.components.Pill
 import `in`.heybubbles.app.ui.components.ScreenTitle
+import `in`.heybubbles.app.ui.components.Skeleton
 import `in`.heybubbles.app.ui.theme.Bubbles
 import java.time.LocalDate
 import java.util.Calendar
@@ -65,6 +68,12 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
     init {
         load()
         viewModelScope.launch { if (repo.entries.value.isEmpty()) repo.loadAll() }
+    }
+
+    /** Pull to refresh: today's check-in, the patterns and every tracker. */
+    fun refresh() {
+        load()
+        viewModelScope.launch { repo.loadAll() }
     }
 
     fun load() {
@@ -118,6 +127,7 @@ private fun tiles(entries: Map<String, List<Entry>>): List<Tile> {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String) -> Unit, onOpenSection: (String) -> Unit) {
     val vm = viewModel<TodayViewModel>(key = "today${`in`.heybubbles.app.ui.LocalEpoch.current}") { TodayViewModel(api, repo) }
@@ -125,6 +135,8 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
     val entries by repo.entries.collectAsState()
     val sections by repo.sections.collectAsState()
 
+    val refreshing by repo.loading.collectAsState()
+    PullToRefreshBox(isRefreshing = refreshing && entries.isNotEmpty(), onRefresh = { vm.refresh() }) {
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         ScreenTitle("Today", greeting())
 
@@ -147,7 +159,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
 
         Spacer(Modifier.height(16.dp))
         Row(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            tiles(entries).forEach { t ->
+            if (entries.isEmpty() && refreshing) repeat(3) { Skeleton(Modifier.weight(1f).height(96.dp)) } else tiles(entries).forEach { t ->
                 BubbleCard(
                     Modifier.weight(1f).semantics { contentDescription = "${t.spec.title}: ${t.big?.let { it + " " + t.unit + ", " } ?: ""}${t.caption}. Opens details." },
                     tint = if (t.big != null) t.spec.tint else MaterialTheme.colorScheme.surface, onClick = { onOpenTracker(t.spec.slug) },
@@ -216,7 +228,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
                 Modifier.padding(horizontal = 24.dp, vertical = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
+    }    }
 }
 
 @Composable

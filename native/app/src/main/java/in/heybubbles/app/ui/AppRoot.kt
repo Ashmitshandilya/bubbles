@@ -1,6 +1,7 @@
 package `in`.heybubbles.app.ui
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -121,6 +122,11 @@ private fun Home(api: Api, repo: Repo, session: Session) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Box(Modifier.weight(1f)) {
                 // Screens are kept alive when you switch (state is held in each screen's own view model), only one is shown.
+                androidx.compose.animation.AnimatedContent(
+                    targetState = section ?: tab.name,
+                    transitionSpec = { (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(220)) + androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(260)) { it / 24 }) togetherWith androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(120)) },
+                    label = "screen",
+                ) { _ ->
                 when {
                     section == "cycle" -> CycleScreen(api, onBack = { section = null })
                     section == "patterns" -> PatternsScreen(api, onBack = { section = null })
@@ -131,6 +137,7 @@ private fun Home(api: Api, repo: Repo, session: Session) {
                     Tab.Track -> TrackScreen(api, repo, startSlug, onStartUsed = { startSlug = null })
                     Tab.Me -> MeScreen(api, session)
                     }
+                }
                 }
             }
             // Room for the floating bar below the content.
