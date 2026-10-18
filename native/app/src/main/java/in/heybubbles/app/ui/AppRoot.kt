@@ -41,6 +41,7 @@ import `in`.heybubbles.app.data.Session
 import `in`.heybubbles.app.ui.components.BubblesBackground
 import `in`.heybubbles.app.ui.screens.LoginScreen
 import `in`.heybubbles.app.ui.screens.MeScreen
+import `in`.heybubbles.app.ui.screens.OnboardingScreen
 import `in`.heybubbles.app.ui.screens.TalkScreen
 import `in`.heybubbles.app.ui.screens.TodayScreen
 import `in`.heybubbles.app.ui.screens.TrackScreen
@@ -62,7 +63,7 @@ fun AppRoot(api: Api, session: Session, repo: Repo) {
     androidx.compose.runtime.CompositionLocalProvider(LocalEpoch provides epoch) {
         BubblesBackground {
             Crossfade(signedIn, label = "auth") { yes ->
-                if (!yes) LoginScreen(api) else Home(api, repo)
+                if (!yes) LoginScreen(api) else Gate(api, repo)
             }
         }
     }
@@ -70,6 +71,27 @@ fun AppRoot(api: Api, session: Session, repo: Repo) {
 
 /** Changes on every sign-out; screens use it as a view-model key so one person's data is never shown to the next. */
 val LocalEpoch = androidx.compose.runtime.compositionLocalOf { 0 }
+
+/** After sign-in: finished setup goes to the app, an unfinished one to first-run setup (the same rule as the website). */
+@Composable
+private fun Gate(api: Api, repo: Repo) {
+    var done by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Boolean?>(null) }
+    var failed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var attempt by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0) }
+    androidx.compose.runtime.LaunchedEffect(attempt) {
+        failed = false
+        try { done = api.onboardingState().complete } catch (_: Exception) { failed = true }
+    }
+    when {
+        done == true -> Home(api, repo)
+        done == false -> OnboardingScreen(api, onFinished = { done = true }, onSignOut = { api.signOut() })
+        failed -> Column(Modifier.fillMaxSize().statusBarsPadding().padding(32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Can't reach Bubbles. Check your connection.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
+            `in`.heybubbles.app.ui.components.Pill("Try again", MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, Modifier.padding(top = 16.dp)) { attempt++ }
+        }
+        else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Getting your day ready…", style = MaterialTheme.typography.titleLarge) }
+    }
+}
 
 @Composable
 private fun Home(api: Api, repo: Repo) {

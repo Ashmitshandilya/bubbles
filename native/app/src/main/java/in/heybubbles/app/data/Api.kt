@@ -7,7 +7,9 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
@@ -122,6 +124,29 @@ class Api(private val session: Session) {
     suspend fun saveEntry(slug: String, body: JsonObject) { send("POST", "/health/$slug", json.encodeToString(JsonObject.serializer(), body)) }
 
     suspend fun deleteEntry(slug: String, id: String) { send("DELETE", "/health/$slug/$id", "{}") }
+
+    suspend fun onboardingBank(): Bank = parseBank(json.parseToJsonElement(get("/onboarding/questions")).jsonObject)
+
+    suspend fun onboardingState(): OnboardingState {
+        val o = json.parseToJsonElement(get("/onboarding/state")).jsonObject
+        return OnboardingState(
+            complete = (o["complete"] as? JsonPrimitive)?.booleanOrNull == true,
+            under18 = (o["under_18"] as? JsonPrimitive)?.booleanOrNull == true,
+            answers = (o["answers"] as? JsonObject) ?: JsonObject(emptyMap()),
+            step = (o["step"] as? JsonPrimitive)?.intOrNull ?: 0,
+        )
+    }
+
+    suspend fun saveAnswers(patch: Map<String, kotlinx.serialization.json.JsonElement>, step: Int) {
+        val body = JsonObject(mapOf("answers" to JsonObject(patch), "step" to JsonPrimitive(step)))
+        send("PUT", "/onboarding/answers", json.encodeToString(JsonObject.serializer(), body))
+    }
+
+    /** Finishes setup and returns the plain lines describing what Bubbles set up from the answers. */
+    suspend fun completeOnboarding(): List<String> {
+        val o = json.parseToJsonElement(send("POST", "/onboarding/complete", "{}")).jsonObject
+        return (o["applied"] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { ((it as? JsonObject)?.get("label") as? JsonPrimitive)?.contentOrNull }
+    }
 
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
