@@ -162,6 +162,17 @@ class Api(private val session: Session) {
         return (sections["visible"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }?.toSet()
     }
 
+    /** POST /doctor/prepare: the questions to ask and what to bring, from the last six months of logs. */
+    suspend fun visitPrep(concern: String?): VisitPrep {
+        val body = JsonObject(buildMap {
+            put("days", JsonPrimitive(180))
+            if (!concern.isNullOrBlank()) put("concern", JsonPrimitive(concern.trim()))
+        })
+        val visit = json.parseToJsonElement(send("POST", "/doctor/prepare", json.encodeToString(JsonObject.serializer(), body))).jsonObject["visit"] as? JsonObject
+        fun list(k: String) = (visit?.get(k) as? kotlinx.serialization.json.JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty()
+        return VisitPrep(list("questions"), list("bring"))
+    }
+
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))

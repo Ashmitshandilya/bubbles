@@ -222,7 +222,7 @@ private fun TrackerCard(spec: TrackerSpec, entries: List<Entry>?, loading: Boole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Detail(spec: TrackerSpec, s: TrackState, vm: TrackViewModel, onBack: () -> Unit) {
+internal fun Detail(spec: TrackerSpec, s: TrackState, vm: TrackViewModel, onBack: () -> Unit, eyebrow: String = "Track") {
     val entries = s.entries[spec.slug].orEmpty()
     val series = daily(spec, entries)
     var sheet by rememberSaveable { mutableStateOf(false) }
@@ -236,9 +236,9 @@ private fun Detail(spec: TrackerSpec, s: TrackState, vm: TrackViewModel, onBack:
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
         }
-        ScreenTitle("Track", spec.title)
+        ScreenTitle(eyebrow, spec.title)
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            BubbleCard(Modifier.fillMaxWidth(), tint = spec.tint, shape = MaterialTheme.shapes.extraLarge) {
+            if (spec.value != null) BubbleCard(Modifier.fillMaxWidth(), tint = spec.tint, shape = MaterialTheme.shapes.extraLarge) {
                 Column(Modifier.padding(20.dp)) {
                     Eyebrow("Last 14 days", color = spec.ink)
                     if (series.size >= 2) {

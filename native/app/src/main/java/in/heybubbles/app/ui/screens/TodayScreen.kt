@@ -177,9 +177,18 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
         // Explore: the server decides which sections this person sees (Cycle is hidden for some profiles). Until it answers, Cycle stays hidden.
         Spacer(Modifier.height(20.dp))
         Eyebrow("Explore", Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (sections?.contains("cycle") == true) ExploreCard("Cycle", "Where you are in it", Bubbles.TintPink, Bubbles.PinkDeep, Modifier.weight(1f)) { onOpenSection("cycle") }
-            ExploreCard("Patterns", "What your logs say", Bubbles.TintGrape, Bubbles.GrapeDeep, Modifier.weight(1f)) { onOpenSection("patterns") }
+        val explore = buildList {
+            if (sections?.contains("cycle") == true) add(Triple("cycle", "Cycle" to "Where you are in it", Bubbles.TintPink to Bubbles.PinkDeep))
+            add(Triple("patterns", "Patterns" to "What your logs say", Bubbles.TintGrape to Bubbles.GrapeDeep))
+            if (sections?.contains("care") == true) add(Triple("care", "Care" to "Get ready for a visit", Bubbles.TintMint to Bubbles.MintDeep))
+        }
+        Column(Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            explore.chunked(2).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { (id, text, colors) -> ExploreCard(text.first, text.second, colors.first, colors.second, Modifier.weight(1f)) { onOpenSection(id) } }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
         }
 
         if (s.patterns.isNotEmpty()) {

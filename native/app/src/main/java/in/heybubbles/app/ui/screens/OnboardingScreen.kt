@@ -78,6 +78,7 @@ import `in`.heybubbles.app.data.friendly
 import `in`.heybubbles.app.ui.components.BubbleCard
 import `in`.heybubbles.app.ui.components.BubbleGradient
 import `in`.heybubbles.app.ui.components.Eyebrow
+import `in`.heybubbles.app.ui.components.Mascot
 import `in`.heybubbles.app.ui.components.Pill
 import `in`.heybubbles.app.ui.theme.Bubbles
 import java.time.Instant
@@ -285,7 +286,7 @@ private fun Centered(content: @Composable () -> Unit) {
 @Composable
 private fun Done(lines: List<String>, onFinished: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Box(Modifier.size(80.dp).background(BubbleGradient, CircleShape), contentAlignment = Alignment.Center) { Text("✓", style = MaterialTheme.typography.headlineLarge, color = Color.White) }
+        Mascot(150.dp, title = "Bubbles the unicorn")
         Text("You're all set", Modifier.padding(top = 20.dp), style = MaterialTheme.typography.headlineMedium)
         lines.forEach { Text(it, Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center) }
         Box(
@@ -322,6 +323,7 @@ private fun androidx.compose.foundation.layout.ColumnScope.Asking(s: OnbState, v
         when (screen.kind) {
             ScreenKind.Choices -> ChoicesStep(s, vm)
             ScreenKind.ExtrasIntro -> {
+                Box(Modifier.fillMaxWidth().padding(top = 12.dp), contentAlignment = Alignment.Center) { Mascot(160.dp, title = "Bubbles the unicorn") }
                 Text("A little more?", style = MaterialTheme.typography.headlineMedium)
                 Text("The next few questions make Bubbles fit you better. Every one is optional, and you can stop any time.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

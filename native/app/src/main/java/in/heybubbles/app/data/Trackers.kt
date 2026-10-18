@@ -133,7 +133,71 @@ object Trackers {
         ),
     )
 
-    fun bySlug(slug: String) = all.first { it.slug == slug }
+    /** Medical records: the same entries and forms as trackers, but a list rather than a trend (no chart). */
+    val records: List<TrackerSpec> = listOf(
+        TrackerSpec(
+            "medications", "Medicines", "Add a medicine", Bubbles.TintMint, Bubbles.MintDeep,
+            listOf(
+                Field("name", "Name", Kind.Text, required = true),
+                Field("dosage", "Dose", Kind.Text, hint = "500 mg, twice a day"),
+                Field("reason", "What it's for", Kind.Text),
+                Field("notes", "Notes", Kind.Text),
+            ),
+            line = { e -> join(e.text("name"), e.text("dosage"), e.text("reason")) },
+        ),
+        TrackerSpec(
+            "conditions", "Conditions", "Add a condition", Bubbles.TintSky, Bubbles.SkyDeep,
+            listOf(
+                Field("condition_name", "Condition", Kind.Text, required = true),
+                Field("status", "Status", Kind.Choice(listOf("active", "managed", "past"))),
+                Field("notes", "Notes", Kind.Text),
+            ),
+            line = { e -> join(e.text("condition_name"), e.text("status")) },
+        ),
+        TrackerSpec(
+            "allergies", "Allergies", "Add an allergy", Bubbles.TintPeach, Bubbles.PeachDeep,
+            listOf(
+                Field("allergen", "Allergic to", Kind.Text, required = true),
+                Field("reaction_type", "Reaction", Kind.Text, hint = "Rash, swelling"),
+                Field("severity", "How severe", Kind.Choice(listOf("mild", "moderate", "severe"))),
+                Field("notes", "Notes", Kind.Text),
+            ),
+            line = { e -> join(e.text("allergen"), e.text("reaction_type"), e.text("severity")) },
+        ),
+        TrackerSpec(
+            "labs", "Lab results", "Add a lab result", Bubbles.TintGrape, Bubbles.GrapeDeep,
+            listOf(
+                Field("test_name", "Test", Kind.Text, required = true),
+                Field("value", "Result", Kind.Text),
+                Field("unit", "Unit", Kind.Text, hint = "ng/mL"),
+                Field("reference_range", "Range on the report", Kind.Text, hint = "15-150"),
+                Field("notes", "Notes", Kind.Text),
+            ),
+            line = { e -> join(e.text("test_name"), join(e.text("value"), e.text("unit")).ifBlank { null }, e.text("reference_range")?.let { "range $it" }) },
+        ),
+        TrackerSpec(
+            "reports", "Reports", "Add a report", Bubbles.TintSun, Bubbles.SunDeep,
+            listOf(
+                Field("title", "Title", Kind.Text, required = true),
+                Field("report_type", "Type", Kind.Text, hint = "Ultrasound, blood test"),
+                Field("findings", "What it says", Kind.Text),
+                Field("notes", "Notes", Kind.Text),
+            ),
+            line = { e -> join(e.text("title"), e.text("report_type")) },
+        ),
+        TrackerSpec(
+            "visits", "Visits", "Log a visit", Bubbles.TintPink, Bubbles.PinkDeep,
+            listOf(
+                Field("doctor_name", "Doctor", Kind.Text),
+                Field("specialty", "Speciality", Kind.Text),
+                Field("reason", "Reason", Kind.Text, required = true),
+                Field("notes", "Notes", Kind.Text),
+            ),
+            line = { e -> join(e.text("doctor_name"), e.text("specialty"), e.text("reason")) },
+        ),
+    )
+
+    fun bySlug(slug: String) = (all + records).first { it.slug == slug }
 }
 
 private val dayFmt = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ENGLISH)

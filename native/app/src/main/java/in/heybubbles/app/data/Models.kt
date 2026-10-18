@@ -73,3 +73,5 @@ import kotlinx.serialization.json.JsonElement
 )
 @Serializable data class WeeklyBody(val insights: List<WeeklyItem> = emptyList())
 @Serializable data class WeeklyResponse(val insights: WeeklyBody = WeeklyBody())
+
+class VisitPrep(val questions: List<String>, val bring: List<String>)

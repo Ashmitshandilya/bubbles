@@ -21,7 +21,7 @@ class Repo(private val api: Api) {
     /** Loads every tracker; returns true if at least one answered. A tracker that fails keeps what it had. */
     suspend fun loadAll(days: Int = WINDOW_DAYS): Boolean = coroutineScope {
         _loading.value = true
-        val results = Trackers.all.map { spec -> async { spec.slug to runCatching { api.entries(spec.slug, days) }.getOrNull() } }.awaitAll()
+        val results = (Trackers.all + Trackers.records).map { spec -> async { spec.slug to runCatching { api.entries(spec.slug, days) }.getOrNull() } }.awaitAll()
         val ok = results.filter { it.second != null }
         _entries.update { it + ok.associate { (slug, list) -> slug to list!! } }
         _loading.value = false

@@ -39,6 +39,7 @@ import `in`.heybubbles.app.data.Api
 import `in`.heybubbles.app.data.Repo
 import `in`.heybubbles.app.data.Session
 import `in`.heybubbles.app.ui.components.BubblesBackground
+import `in`.heybubbles.app.ui.screens.CareScreen
 import `in`.heybubbles.app.ui.screens.CycleScreen
 import `in`.heybubbles.app.ui.screens.LoginScreen
 import `in`.heybubbles.app.ui.screens.PatternsScreen
@@ -108,6 +109,7 @@ private fun Home(api: Api, repo: Repo) {
                 when {
                     section == "cycle" -> CycleScreen(api, onBack = { section = null })
                     section == "patterns" -> PatternsScreen(api, onBack = { section = null })
+                    section == "care" -> CareScreen(api, repo, onBack = { section = null })
                     else -> when (tab) {
                     Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track }, onOpenSection = { section = it })
                     Tab.Talk -> TalkScreen(api)

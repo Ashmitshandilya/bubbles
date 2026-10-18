@@ -60,6 +60,7 @@ import `in`.heybubbles.app.data.Api
 import `in`.heybubbles.app.data.friendly
 import `in`.heybubbles.app.ui.ChatBubbleIcon
 import `in`.heybubbles.app.ui.components.BubbleGradient
+import `in`.heybubbles.app.ui.components.Mascot
 import `in`.heybubbles.app.ui.components.Pill
 import `in`.heybubbles.app.ui.components.ScreenTitle
 import `in`.heybubbles.app.ui.theme.Bubbles
@@ -241,9 +242,7 @@ private fun Typing() {
 @Composable
 private fun EmptyTalk(onPick: (String) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Box(Modifier.size(72.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
-            Icon(ChatBubbleIcon, null, Modifier.size(34.dp), tint = MaterialTheme.colorScheme.primary)
-        }
+        Mascot(96.dp, title = "Bubbles the unicorn")
         Text("Start with whatever's on your mind", Modifier.padding(top = 16.dp), style = MaterialTheme.typography.titleLarge)
         Text("Log in plain words, in English, Hinglish or Hindi.", Modifier.padding(top = 4.dp, bottom = 16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         listOf("Slept 7 hours", "2 rotis, dal and curd", "Cramps since morning", "Drank 2 glasses of water").forEach {

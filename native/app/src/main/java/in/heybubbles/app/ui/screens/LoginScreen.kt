@@ -48,6 +48,7 @@ import `in`.heybubbles.app.data.Api
 import `in`.heybubbles.app.data.friendly
 import `in`.heybubbles.app.ui.components.BubbleGradient
 import `in`.heybubbles.app.ui.components.Eyebrow
+import `in`.heybubbles.app.ui.components.Mascot
 import `in`.heybubbles.app.ui.theme.Bubbles
 
 @Composable
@@ -74,10 +75,8 @@ fun LoginScreen(api: Api) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(24.dp))
-        // The brand mark: one big bubble with a highlight, the same shape the chat is made of.
-        Box(Modifier.size(88.dp).background(BubbleGradient, CircleShape), contentAlignment = Alignment.TopStart) {
-            Box(Modifier.padding(start = 20.dp, top = 16.dp).size(22.dp).background(Bubbles.White.copy(alpha = 0.55f), CircleShape))
-        }
+        // The brand character, not a placeholder shape.
+        Mascot(120.dp, title = "Bubbles the unicorn")
         Spacer(Modifier.height(20.dp))
         Eyebrow("Welcome")
         Text("Hey, I'm Bubbles", style = MaterialTheme.typography.headlineLarge, textAlign = TextAlign.Center)
