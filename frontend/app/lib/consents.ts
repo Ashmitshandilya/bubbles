@@ -112,6 +112,11 @@ export function changeBody(purpose: ConsentPurpose, granted: boolean, source: "s
   return JSON.stringify(granted ? { granted: true, source, text_hash: purpose.textHash } : { granted: false, source });
 }
 
+/** Whether saving `wanted` adds something to the ledger. A "not now" on a fresh account is a decision too (granted=false); only a repeat is skipped. */
+export function needsDecision(purpose: ConsentPurpose, wanted: boolean): boolean {
+  return wanted ? !purpose.granted : purpose.granted || purpose.decision !== "declined";
+}
+
 /** What the "outside AI" question in chat shows: the Yes / No card, a quiet line after a No, or nothing once it is on. */
 export function aiCardView(purpose: ConsentPurpose | null | undefined): "ask" | "declined" | "granted" {
   if (!purpose) return "ask";

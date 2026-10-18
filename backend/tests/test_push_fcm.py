@@ -133,6 +133,7 @@ def test_needs_both_the_switch_and_the_consent(db, fcm):
     N.save_settings(db, U1, N.normalize_settings({"channels": {"push": False}, "quiet_hours": {"enabled": False}}))
     assert N.create_notification(db, U1, "med", now=utc(13)) and fcm.calls == []            # consent, switch off
     N.save_settings(db, U1, N.normalize_settings({"channels": {"push": True}, "quiet_hours": {"enabled": False}}))
+    P.register_device(db, U1, TOK_A)                                                          # turning the switch off forgot the phone
     assert N.create_notification(db, U1, "winddown", now=utc(14))
     assert len(fcm.calls) == 1
     consent_ledger.set_purpose(db, U1, "push_notifications", False)                           # withdrawing stops it at once
@@ -146,7 +147,7 @@ def test_the_message_is_generic_and_private(db, fcm):
     url, payload, headers = fcm.calls[0]
     assert url == "https://fcm.googleapis.com/v1/projects/bubbles-test/messages:send" and headers["Authorization"] == "Bearer oauth-token"
     msg = payload["message"]
-    assert (msg["notification"]["title"], msg["notification"]["body"]) == N.TEMPLATES["med"]
+    assert (msg["notification"]["title"], msg["notification"]["body"]) == ("Bubbles", "You have a reminder in Bubbles.")   # not even "Medicine check-in" on a lock screen
     assert msg["data"] == {"kind": "med"} and msg["token"] == TOK_A
     assert msg["android"]["notification"]["visibility"] == "PRIVATE" and msg["android"]["ttl"] == "3600s"
     text = json.dumps({k: v for k, v in msg.items() if k != "token"})
@@ -210,9 +211,9 @@ def test_sweep_sends_due_reminders_only_to_people_who_said_yes(db, fcm):
     P.register_device(db, U1, TOK_A)
     P.register_device(db, U2, TOK_B)                                     # U2 never said yes in the consent log
     assert P.users_with_devices(db) == [U1, U2]
-    assert P.sweep(db, utc(12, 10)) == {"checked": 1, "created": 1}
+    assert P.sweep(db, utc(12, 10)) == {"checked": 1, "created": 1, "revoked": 1, "errors": 0, "partial": False}   # U2 has no yes: phone forgotten
     assert [c[1]["message"]["token"] for c in fcm.calls] == [TOK_A]
-    assert P.sweep(db, utc(12, 15)) == {"checked": 1, "created": 0}      # same slot: no repeat
+    assert P.sweep(db, utc(12, 15)) == {"checked": 1, "created": 0, "revoked": 0, "errors": 0, "partial": False}      # same slot: no repeat
     assert len(fcm.calls) == 1
 
 
@@ -253,10 +254,12 @@ def test_routes_register_test_and_forget(db, client, fcm):
     bad = client.post("/notifications/devices", json={"token": "x"}, headers=h)
     assert bad.status_code == 422 and isinstance(bad.json()["detail"], str)
     assert client.post("/notifications/devices", json={"token": TOK_A, "platform": "ios"}, headers=h).status_code == 422
+    assert client.post("/notifications/devices", json={"token": TOK_A}, headers=h).status_code == 422   # no yes on record: nothing stored
+    assert P.list_devices(db, U1) == []
+    client.put("/notifications/settings", json={"channels": {"push": True}, "quiet_hours": {"enabled": False}}, headers=h)
     ok = client.post("/notifications/devices", json={"token": TOK_A}, headers=h).json()
     assert ok == {"status": "success", "registered": True, "devices": 1, "available": True}
-    assert client.post("/notifications/push/test", headers=h).status_code == 409                 # not switched on yet
-    saved = client.put("/notifications/settings", json={"channels": {"push": True}, "quiet_hours": {"enabled": False}}, headers=h).json()
+    saved = client.get("/notifications/settings", headers=h).json()
     assert saved["settings"]["channels"]["push"] is True and saved["channels"]["push"]["available"] is True
     assert consent_ledger.is_granted(db, U1, "push_notifications") is True                       # the switch is logged as the yes
     assert client.post("/notifications/push/test", headers=h).json()["sent"] == 1

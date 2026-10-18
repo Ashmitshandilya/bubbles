@@ -21,14 +21,32 @@ describe("createApiCache", () => {
     expect(await (await cache.fetch("u1", "/profile", "GET", api.run)).json()).toEqual({ n: 2 });
   });
 
-  it("never caches /health, chat, consent or the admin portal", async () => {
+  it("never caches the /health probe, chat, consent or the admin portal", async () => {
     const cache = createApiCache();
-    for (const path of ["/health", "/chat/history", "/chat", "/me/consent", "/consents", "/consents/history", "/admin/overview?range=1h", "/admin/events/live?after=3", "/admin"]) {
+    for (const path of ["/health", "/health?x=1", "/chat/history", "/chat", "/me/consent", "/consents", "/consents/history", "/admin/overview?range=1h", "/admin/events/live?after=3", "/admin"]) {
       const api = counter();
       await cache.fetch("u1", path, "GET", api.run);
       await cache.fetch("u1", path, "GET", api.run);
       expect(api.calls()).toBe(2);
     }
+  });
+
+  it("caches /health/<tracker> reads (short TTL) and a write empties them", async () => {
+    let t = 0;
+    const cache = createApiCache(20_000, () => t);
+    const api = counter();
+    const path = "/health/sleep?days=30";
+    await cache.fetch("u1", path, "GET", api.run);
+    await cache.fetch("u1", path, "GET", api.run);
+    await cache.fetch("u1", "/health/summary", "GET", api.run);
+    await cache.fetch("u1", "/health/summary", "GET", api.run);
+    expect(api.calls()).toBe(2);
+    await cache.fetch("u1", "/health/sleep", "POST", counter().run);
+    await cache.fetch("u1", path, "GET", api.run);
+    expect(api.calls()).toBe(3);
+    t = 20_001;
+    await cache.fetch("u1", path, "GET", api.run);
+    expect(api.calls()).toBe(4);
   });
 
   it("does not cache errors or non-2xx answers", async () => {

@@ -39,17 +39,17 @@ def test_usage_summary_counts_the_chat_mix_the_rates_and_the_funnel():
         ev("ai_reply", 3, "c" * 8, outcome="degraded", attempts=4, total_ms=9000.0),
         ev("ai_attempt", 1, "a" * 8, provider="Gemini", model="gemini-3-flash-preview", position=1, outcome="success", latency_ms=800.0, input_tokens=1000, output_tokens=200),
         ev("ai_attempt", 2, "b" * 8, provider="Gemini", model="gemini-3-flash-preview", position=1, outcome="timeout", latency_ms=9000.0),
-        ev("funnel", 1, step="about"), ev("funnel", 2, step="about"), ev("funnel", 3, step="goals"), ev("funnel", 4, step="completed"),
+        ev("funnel", 1, step="core"), ev("funnel", 2, step="core"), ev("funnel", 3, step="extras"), ev("funnel", 4, step="completed"),
         ev("client", 1, code="chunk_load_failed"), ev("client", 2, code="chunk_load_failed"),
     ]
     u = M.usage_summary(events)
     assert u["safety_by_day"] == {"2026-10-13": {"GREEN": 3, "AMBER": 1, "RED": 1}}
     assert u["route_mix"] == {"ai": 2, "emergency": 1, "consent_needed": 1, "daily_log": 1}
-    assert u["ai_share"] == {"ai": 2, "deterministic": 3, "rate": 0.4}
+    assert u["ai_share"] == {"ai": 2, "deterministic": 2, "rate": 0.4, "deterministic_rate": 0.4}      # consent_needed is its own part (ops_metrics.chat_split)
     assert u["consent_needed"] == {"count": 1, "rate": 0.2}
     assert u["reliability"] == {"fallback_rate": 0.5, "degraded_rate": 0.333, "timeout_rate": 0.5}
     assert u["feature_usage"]["/health/sleep"] == 2 and u["feature_usage"]["/chat"] == 4          # the failed call is not "usage"
-    assert [(f["step"], f["count"]) for f in u["funnel"] if f["count"]] == [("about", 2), ("goals", 1), ("completed", 1)]
+    assert [(f["step"], f["count"]) for f in u["funnel"] if f["count"]] == [("core", 2), ("extras", 1), ("completed", 1)]
     assert u["client_problems"] == {"chunk_load_failed": 2}
     json.dumps(u)
 
@@ -68,14 +68,14 @@ def test_cost_is_worked_out_when_read_free_tier_is_zero_and_unknown_says_unknown
 
 
 def test_funnel_and_client_events_only_take_fixed_names():
-    ops_telemetry.funnel("about")
+    ops_telemetry.funnel("core")
     ops_telemetry.funnel("my name is Riya")
     ops_telemetry.funnel("")
     ops_telemetry.client("render_error")
     ops_telemetry.client("TypeError: x is undefined at /body?organ=heart")
-    ops_telemetry.record("funnel", step="goals", answer="I have diabetes", user_id="u1")
+    ops_telemetry.record("funnel", step="extras", answer="I have diabetes", user_id="u1")
     recorded = [(e["kind"], e["data"]) for e in ops_telemetry.recent(0, 100)]
-    assert recorded == [("funnel", {"step": "about"}), ("client", {"code": "render_error"}), ("funnel", {"step": "goals"})]
+    assert recorded == [("funnel", {"step": "core"}), ("client", {"code": "render_error"}), ("funnel", {"step": "extras"})]
 
 
 def test_every_onboarding_step_has_a_funnel_name():
@@ -101,10 +101,10 @@ def test_before_the_migration_the_new_kinds_stay_in_memory_and_the_old_ones_stil
     monkeypatch.setattr(ops_telemetry, "_ensure_flusher", lambda: None)
     monkeypatch.setattr(ops_telemetry, "_db", lambda: type("DB", (), {"table": lambda self, name: Table()})())
     ops_telemetry.record("error", category="rag", component="RAG", error_class="Timeout")
-    ops_telemetry.funnel("about")
+    ops_telemetry.funnel("core")
     assert ops_telemetry.flush_once() == 1
     assert calls == [["funnel"], ["error"]] and ops_telemetry.status["new_kinds"] == "not_allowed"
-    ops_telemetry.funnel("goals")
+    ops_telemetry.funnel("extras")
     assert not [e for e in ops_telemetry._queue if e["kind"] == "funnel"]                        # no longer queued
     assert [e["kind"] for e in ops_telemetry.recent(0, 10)][-1] == "funnel"                      # still visible live
 

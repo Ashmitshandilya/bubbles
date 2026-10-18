@@ -289,6 +289,9 @@ def _after_change(db: Any, uid: str, purpose: str, granted: bool) -> None:
         if purpose == "partner_sharing" and not granted:
             import partner_sharing
             partner_sharing.stop_all(db, uid)
+        elif purpose == "community_visibility" and not granted:
+            import community_api
+            community_api.hold_all(db, uid)   # what they wrote stops showing to others; re-granting does not bring it back on its own
         elif purpose == "email_reminders":
             _mirror_channel(db, uid, "email", granted)
         elif purpose == "push_notifications":

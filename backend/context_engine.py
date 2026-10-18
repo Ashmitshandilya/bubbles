@@ -27,20 +27,6 @@ def _select_rows(table: str, columns: str, user_id: str, limit: int = 20, order_
     return list(query.limit(limit).execute().data or [])
 
 
-def _safe_table_select(table: str, columns: str, user_id: str, limit: int = 20, order_by: str | None = "created_at") -> list[dict[str, Any]]:
-    try:
-        return _select_rows(table, columns, user_id, limit, order_by)
-    except Exception as error:
-        from logging_util import logger
-        logger.warning(
-            component="CONTEXT_ENGINE",
-            message=f"table_select failed: {error}",
-            user_id=user_id,
-            context={"table": table, "columns": columns, "limit": limit, "fallback_action": "returning_empty_list"},
-        )
-        return []
-
-
 def _compact_event(event: dict[str, Any]) -> dict[str, Any]:
     return {
         "id": event.get("id"),

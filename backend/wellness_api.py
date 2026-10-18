@@ -410,11 +410,6 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             return ok(**Mind.year_pixels(sync_pixels(uid, y, off), y))
         return await run(work)
 
-    @router.get("/wellness/mind/topics")
-    async def mind_topics_copy(authorization: str | None = Header(default=None)):
-        await auth(authorization)
-        return ok(topics=Mind.TOPIC_COPY)
-
     @router.get("/wellness/mind/screen")
     async def mind_screen_questions(kind: str = Query(default="phq2", max_length=10), authorization: str | None = Header(default=None)):
         await auth(authorization)
@@ -562,6 +557,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
 
     # Phone notifications (Android app, Firebase Cloud Messaging): register or forget this phone, and send one test.
     def device_add(uid: str, body: dict) -> dict:
+        if not push_fcm.wanted(db, uid, N.load_settings(db, uid)):   # no yes on record: no token is stored
+            raise HTTPException(status_code=422, detail="Turn on phone reminders first, then Bubbles can connect this phone.")
         try:
             result = push_fcm.register_device(db, uid, body.get("token"), body.get("platform", "android"))
         except ValueError as exc:

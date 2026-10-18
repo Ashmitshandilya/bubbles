@@ -8,7 +8,7 @@ import { BTN_SECONDARY } from "../../components/hub/HubKit";
 import { responseFailure } from "../../lib/api";
 import { clock, humanize, ms, num, words, type OpsEvent, kindLabel, eventSentence, mergeLive } from "./format";
 import { Empty, Panel, Pill, useAdmin } from "./kit";
-import { NO_FILTERS, chainOffsets, filterChoices, filterRows, groupLive, isError, stageWords, type LiveFilters, type LiveRow } from "./live";
+import { NO_FILTERS, chainOffsets, filterChoices, filterRows, groupLive, isError, positionWords, stageWords, type LiveFilters, type LiveRow } from "./live";
 
 type LiveView = {
   events: OpsEvent[]; next_cursor: number; process_started_at: string; restarted: boolean; gap: boolean; refresh_seconds: number;
@@ -82,6 +82,7 @@ function Detail({ row, onClose }: { row: LiveRow; onClose: () => void }) {
             ) : "None"}
           </dd>
           <dt className="text-muted">Answered by</dt><dd className="m-0">{row.provider ? `${row.provider} ${row.model ?? ""}` : "No AI used"}</dd>
+          <dt className="text-muted">Fallback position</dt><dd className="m-0">{positionWords(row) ?? "None"}</dd>
           <dt className="text-muted">Stages</dt><dd className="m-0">{stageWords(row.stages, ms) ?? "Not measured for this request"}</dd>
         </dl>
         <h3 className="m-0 mb-2 text-body font-extrabold">Steps in this request</h3>
@@ -129,9 +130,10 @@ function Card({ row, onOpen }: { row: LiveRow; onOpen: () => void }) {
       </div>
       <p className="m-0 mt-1 break-all font-extrabold">{routeLabel(row)}</p>
       <p className="m-0 mt-1 text-muted">
-        {[row.latencyMs !== null ? ms(row.latencyMs) : null, row.provider ? `${row.provider} ${row.model ?? ""}` : null, row.fallback ? `try ${row.tries}` : null,
-          row.safety, row.error ? humanize(row.error) : null].filter(Boolean).join(", ")}
+        {[row.latencyMs !== null ? ms(row.latencyMs) : null, row.provider ? `${row.provider} ${row.model ?? ""}` : null,
+          positionWords(row) ? `position ${positionWords(row)}` : null, row.safety, row.error ? humanize(row.error) : null].filter(Boolean).join(", ")}
       </p>
+      {stageWords(row.stages, ms) && <p className="m-0 mt-1 text-muted">Stages: {stageWords(row.stages, ms)}</p>}
       <div className="mt-2"><CopyUid uid={row.uid} /></div>
       <button type="button" onClick={onOpen} aria-label={`Details for ${routeLabel(row)} at ${clock(row.at)}`}
         className="mt-1 min-h-[44px] text-chip font-extrabold text-bubbles-pink-ink">Details</button>
@@ -242,12 +244,12 @@ export function LivePanel() {
         <Empty>{filtered && all.length ? "No rows match these filters." : `Waiting for the next request. New events appear within ${every} seconds.`}</Empty>
       ) : (
         <>
-          <div className="relative hidden overflow-x-auto lg:block">
+          <div className="hidden overflow-x-auto lg:block">
             <table className="w-full border-collapse">
               <caption className="sr-only">Newest requests first</caption>
               <thead>
                 <tr>
-                  {["Time", "User id", "Route", "Kind", "Provider", "Model", "Try", "Safety", "Status", "Latency", "Stages", "Error", ""].map((h) => (
+                  {["Time", "User id", "Route", "Kind", "Provider", "Model", "Fallback position", "Safety", "Status", "Latency", "Stages", "Error", ""].map((h) => (
                     <th key={h || "open"} scope="col" className={TH}>{h || <span className="sr-only">Details</span>}</th>
                   ))}
                 </tr>
@@ -261,7 +263,7 @@ export function LivePanel() {
                     <td className={TD}>{r.routeKind ? words(r.routeKind) : words(r.kind)}</td>
                     <td className={TD}>{r.provider ?? "None"}</td>
                     <td className={TD}>{r.model ?? "None"}</td>
-                    <td className={TD}>{r.tries ? (r.fallback ? `${r.tries}, fallback` : r.tries) : "None"}</td>
+                    <td className={TD}>{positionWords(r) ?? "None"}</td>
                     <td className={TD}>{r.safety ?? "None"}</td>
                     <td className={TD}>{r.status !== null ? <Pill tone={statusTone(r)}>{r.status}</Pill> : "None"}</td>
                     <td className={`${TD} tabular-nums`}>{ms(r.latencyMs)}</td>

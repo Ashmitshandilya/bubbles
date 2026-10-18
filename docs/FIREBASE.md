@@ -53,17 +53,25 @@ installing the new one.
 ## How phone reminders flow
 
 0. In the app, right after setup, a one-time full-screen step shows a sample reminder and asks to turn them on (and, in a separate box, crash reports). Android's own prompt only follows "Turn on reminders".
-1. In the app, Settings → Reminders → **On this phone** asks Android for notification permission (Android 13+), gets the FCM
-   token and sends it to `POST /notifications/devices`. **Save** stores the switch and logs the consent.
+1. In the app, Settings → Reminders → **On this phone** asks Android for notification permission (Android 13+; never at launch,
+   only from that tap) and gets the FCM token, but sends nothing yet. **Save** stores the switch and logs the consent
+   (`push_notifications`); only then does the app hand the token to `POST /notifications/devices`, which answers 422 while
+   there is no yes on record. A refused permission, a lost connection or a failed save leaves nothing stored and says so.
 2. The server keeps the token as a signed document (`push_device`, no schema change), at most 5 phones per person.
-3. Every `PUSH_SWEEP_SECONDS` the server creates the reminders that are due for people with a phone registered (the same
-   rules as in the app: types, quiet hours, daily limit, no repeats) and sends each one through FCM HTTP v1. On Render's free
-   plan the API is kept awake by `.github/workflows/keep-awake.yml`; if it sleeps anyway, reminders resume when it wakes and
+3. The reminders that are due (the same rules as in the app: types, quiet hours, daily limit, no repeats) are created and sent
+   through FCM HTTP v1 by `POST /internal/push/run`, called every ~10 minutes by `.github/workflows/keep-awake.yml` with the
+   header `X-Cron-Secret` (`BUBBLES_CRON_SECRET`; `NOTIFY_CRON_SECRET` is accepted as the older name). A missing, wrong or
+   unset secret, or any other method, gets the same 404 as an unknown path. The run is bounded (200 people, 90 s per run),
+   idempotent (each reminder slot has one deterministic id, so a late or repeated run never sends twice) and also refreshes
+   the admin rollups. The reminder windows are wide on purpose because GitHub's schedule is best effort and often 5-15 minutes
+   late: wind-down 45 minutes, water 90 minutes. The in-process sweep (`PUSH_SWEEP_SECONDS`) still runs while the API is awake.
    FCM drops anything more than an hour old.
-4. A token FCM reports as gone is deleted. Turning the switch off, signing out or *Delete all my data* removes the phone.
+4. A token FCM reports as gone is deleted. Turning the switch off, withdrawing the yes in Privacy choices, signing out (the app
+   tells the server first, then deletes the token on the phone) or *Delete all my data* removes the phone. Tapping a reminder
+   opens its screen (water, medicines, sleep), or the notification list.
 5. **Send a test to this phone** (once a minute at most) checks the whole path.
 
-Reminders created by the background check are not emailed (the check has no email address); email reminders still go out
+Medicine reminders show only "Bubbles / You have a reminder in Bubbles." on the phone (the in-app copy says more); reminders created by the background check are not emailed (the check has no email address); email reminders still go out
 when someone opens the app.
 
 ## Versions

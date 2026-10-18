@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { PRIVACY_NOTICE_VERSION } from "./privacy-notice-version";
-import { aiCardView, changeBody, historyLine, readHistory, readOverview, readPurpose, withPurpose } from "./consents";
+import { aiCardView, changeBody, historyLine, needsDecision, readHistory, readOverview, readPurpose, withPurpose } from "./consents";
 
 const purpose = (over: Record<string, unknown> = {}) => ({
   id: "partner_sharing", title: "Share summaries with one person", description: "d", text_version: "2026-10a", text_hash: "abc123", available: true,
@@ -52,6 +52,21 @@ describe("changes", () => {
     const next = readPurpose(purpose({ granted: true, decision: "granted" }));
     expect(withPurpose(list, next).map((x) => x.granted)).toEqual([true, false]);
     expect(withPurpose(list, null)).toBe(list);
+  });
+});
+
+describe("onboarding choices", () => {
+  const fresh = readPurpose(purpose())!;
+  it("records a 'not now' on a fresh account, once", () => {
+    expect(needsDecision(fresh, false)).toBe(true);
+    expect(needsDecision(readPurpose(purpose({ decision: "declined" }))!, false)).toBe(false);
+  });
+  it("records a yes, and a withdrawal of an earlier yes, but not a repeat", () => {
+    const on = readPurpose(purpose({ granted: true, decision: "granted" }))!;
+    expect(needsDecision(fresh, true)).toBe(true);
+    expect(needsDecision(on, true)).toBe(false);
+    expect(needsDecision(on, false)).toBe(true);
+    expect(needsDecision(readPurpose(purpose({ decision: "declined" }))!, true)).toBe(true);
   });
 });
 

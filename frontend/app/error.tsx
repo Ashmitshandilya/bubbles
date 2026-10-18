@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
+import { codeForError, reportClientProblem } from "../lib/client-report";
 import { BTN_PRIMARY, BTN_SECONDARY } from "../components/hub/HubKit";
 
 /** A page crashed while rendering. Keep the message kind and offer a way out; the details stay out of sight. */
-export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => reportClientProblem(codeForError(error)), [error]);   // a fixed code only, never the message
   return (
     <main className="flex min-h-dvh items-center justify-center bg-blush px-4 py-10 text-ink">
       <div role="alert" className="w-full max-w-md rounded-3xl border border-line bg-surface p-6 text-center sm:p-8">

@@ -7,7 +7,6 @@ variety, and can swap a meal or produce a grocery list. Everything is an ESTIMAT
 from __future__ import annotations
 
 import hashlib
-from typing import Any
 
 import food_db
 from food_data import FOODS

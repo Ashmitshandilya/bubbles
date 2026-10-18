@@ -29,13 +29,25 @@ LINK_DOCS: dict[str, list[str]] = {
     "cycle-mood": ["Mood changes before and during periods are common", "Common physical and emotional PMS symptoms"],
     "cycle-sleep": ["Sleep is often worse in the late luteal", "Women's sleep is affected"],
     "sleep-weight": ["Adults need 7", "Sleep apnoea: repeated breathing pauses"],
-    "stress-weight": ["Chronic stress can increase appetite"],
+    "stress-weight": ["Chronic stress can increase appetite", "Cortisol test"],
     "cycle-stress": ["Acute stress can delay ovulation and the period", "Common reasons periods become irregular or stop"],
     "fatigue-sleep": ["Fatigue: definition and common causes"],
     "cycle-fatigue": ["Fatigue: definition and common causes", "Iron deficiency anaemia: overview", "Heavy periods: overview"],
     "fatigue-labs": ["Fatigue: definition and common causes", "Iron deficiency anaemia: overview", "Underactive thyroid (hypothyroidism): causes, treatment and self-care"],
     "labs-weight": ["Underactive thyroid (hypothyroidism): causes, treatment and self-care"],
     "cycle-labs": ["Heavy periods: overview", "Iron deficiency anaemia: overview", "Underactive thyroid (hypothyroidism): causes, treatment and self-care"],
+    # nutrients, blood markers and hormones (documents added by rag_nutrient_ingest.py; see nutrient_manifest.json)
+    "fatigue-nutrient": ["Fatigue: definition and common causes", "Iron deficiency anaemia: overview", "Ferritin blood test", "Iron tests",
+                         "Vitamin B tests", "Vitamin D test", "Magnesium blood test", "Complete blood count (CBC)",
+                         "Iron: a plain fact sheet", "Vitamin B12: a plain fact sheet", "Vitamin D: a plain fact sheet", "Folate: a plain fact sheet",
+                         "Magnesium: a plain fact sheet"],
+    "hair-iron": ["Iron deficiency anaemia: overview", "Ferritin blood test", "Iron tests", "Haemoglobin test", "Iron: a plain fact sheet", "Zinc: a plain fact sheet"],
+    "mood-vitamind": ["Vitamin D test", "Vitamin D: a plain fact sheet", "Low mood, sadness and depression: causes, treatment and self-care"],
+    "b12-diet": ["Vitamin B tests", "Homocysteine test", "Vitamin B12: a plain fact sheet"],
+    "cycle-thyroid": ["Thyroxine (T4) test", "Triiodothyronine (T3) tests", "Iodine: a plain fact sheet", "Underactive thyroid (hypothyroidism): causes, treatment and self-care", "TSH (thyroid stimulating hormone) test",
+                      "Hypothyroidism (underactive thyroid)", "Hyperthyroidism (overactive thyroid)", "Common reasons periods become irregular or stop"],
+    "cycle-hormones": ["Testosterone test", "Estrogen test", "Progesterone test", "Prolactin test", "FSH (follicle stimulating hormone) test",
+                       "PCOS (polycystic ovary syndrome)", "Common reasons periods become irregular or stop"],
 }
 LINK_QUERY = {
     "mood-sleep": "sleep and mood link", "activity-mood": "exercise and mood", "activity-sleep": "exercise and sleep",
@@ -44,6 +56,8 @@ LINK_QUERY = {
     "sleep-weight": "sleep and weight", "stress-weight": "stress and weight appetite", "cycle-stress": "stress and periods",
     "fatigue-sleep": "tiredness and sleep", "cycle-fatigue": "heavy periods tiredness iron",
     "fatigue-labs": "tiredness anaemia thyroid", "labs-weight": "underactive thyroid weight gain", "cycle-labs": "periods anaemia thyroid",
+    "fatigue-nutrient": "tiredness vitamin or mineral deficiency blood test", "hair-iron": "hair fall iron ferritin",
+    "mood-vitamind": "vitamin D and mood", "b12-diet": "vitamin B12 vegetarian vegan diet", "cycle-thyroid": "thyroid and periods", "cycle-hormones": "hormones and periods pcos",
 }
 SERIES_DOMAIN = {"sleep_hours": "sleep", "sleep_quality": "sleep", "mood": "mood", "activity_minutes": "activity", "hydration_ml": "hydration",
                  "symptom_severity": "symptom", "calories": "food", "resting_hr": "heart", "luteal": "cycle"}

@@ -22,7 +22,7 @@ import doc_store
 from health_logs import DOMAINS, list_domain
 from safety_engine import CRISIS_LINES
 from safety_gate import safety_gate  # noqa: F401 - re-exported: wellness_api and the tests call Mind.safety_gate
-from wellness_common import InputError, choice, local_date_of, number, parse_date, text
+from wellness_common import InputError, choice, local_date_of, number, text
 
 SCREENS = {"phq2": {"questions": K.PHQ2_QUESTIONS, "positive_at": K.PHQ2_POSITIVE_AT, "topic": "low mood"},
            "gad2": {"questions": K.GAD2_QUESTIONS, "positive_at": K.GAD2_POSITIVE_AT, "topic": "worry"},
@@ -68,10 +68,6 @@ SUPPORT_COPY = {
               "text": "Missing someone you love is a sign of how much they matter. Being apart can feel heavy, and small rituals make it easier.",
               "steps": ["Pick a regular time to talk, so you have something to look forward to.", "Send a voice note or a photo of your day.", "Keep one small thing of theirs close, and do one kind thing for yourself today."]},
 }
-
-#: Same copy under the name the /wellness/mind/topics route serves.
-TOPIC_COPY = SUPPORT_COPY
-
 
 # --- safety gate ---------------------------------------------------------------------------------------------------------
 

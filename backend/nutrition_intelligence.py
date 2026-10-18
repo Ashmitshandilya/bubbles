@@ -5,7 +5,6 @@ This module intentionally reports logged data and associations; it does not diag
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timezone
 from typing import Any
 
 

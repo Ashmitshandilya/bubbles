@@ -21,7 +21,7 @@ caller decides whether to ask a clarifying question.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Iterable
 
 import hinglish_terms as _hi
@@ -1375,7 +1375,7 @@ def _same_sentence_ellipsis(s: str, facts: list[Fact]) -> list[Fact]:
     return out
 
 
-def analyze(text: str, *, recorded_at: str | None = None, extra_terms: Iterable[str] = ()) -> list[Fact]:
+def analyze(text: str, *, extra_terms: Iterable[str] = ()) -> list[Fact]:
     """All facts mentioned in `text`, in order. Pure and deterministic.
 
     `extra_terms` are additional free-text names (e.g. an AI-proposed event name) to classify with the same
@@ -1398,13 +1398,6 @@ def analyze(text: str, *, recorded_at: str | None = None, extra_terms: Iterable[
 # --------------------------------------------------------------------------
 # Helpers for callers
 # --------------------------------------------------------------------------
-
-def facts_by_concept(facts: Iterable[Fact]) -> dict[str, list[Fact]]:
-    out: dict[str, list[Fact]] = {}
-    for f in facts:
-        out.setdefault(f.concept, []).append(f)
-    return out
-
 
 def net_state(facts: Iterable[Fact]) -> dict[str, dict[str, Any]]:
     """One entry per concept for the *user themselves* (latest report wins, conflicts flagged)."""

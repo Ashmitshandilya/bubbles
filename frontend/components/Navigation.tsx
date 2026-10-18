@@ -20,6 +20,7 @@ const ICON_PATHS: Record<string, string> = {
   health: "M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z",
   activity: "M3 12h4l3-8 4 16 3-8h4",
   companion: "M20 15a3 3 0 0 1-3 3H8l-4 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z",
+  people: "M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-1.5a4 4 0 0 0-3-3.9M15.5 4.2a3.5 3.5 0 0 1 0 6.6",
   care: "M9 3h6v4h4v6h-4v4H9v-4H5V7h4z",
   cycle: "M20 11a8 8 0 1 0-1.5 5.5M20 4v7h-7",
   symptoms: "M12 4 2.5 20h19L12 4zM12 10v4M12 17.3v.1",
@@ -101,6 +102,7 @@ export const SECTIONS: readonly Section[] = [
     id: "mind", label: "Mind", icon: "mood", href: "/mind", match: ["/mind", "/mood"],
     tabs: [{ label: "Mind", href: "/mind" }, { label: "Mood log", href: "/mood" }],
   },
+  { id: "community", label: "Community", icon: "people", href: "/community", match: ["/community"] },
   {
     id: "cycle", label: "Cycle", icon: "cycle", href: "/cycle", match: ["/cycle", "/partner"],
     tabs: [{ label: "Cycle", href: "/cycle" }, { label: "Partner sharing", href: "/partner" }],

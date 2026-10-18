@@ -1,5 +1,4 @@
 """Advanced cycle analytics using explicitly logged cycle events."""
-from datetime import date
 from statistics import mean,pstdev
 from cycle_intelligence import _data,_date,is_cycle_start
 from event_filters import counts_as_observation

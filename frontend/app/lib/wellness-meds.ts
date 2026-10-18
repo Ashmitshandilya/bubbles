@@ -5,7 +5,6 @@ import type { DoseStatus, MedKind, Schedule } from "./wellness-types";
 import { isClock } from "./wellness-format";
 
 export const WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-export const WEEKDAY_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
 
 export const KIND_OPTIONS: { value: MedKind; label: string; hint: string }[] = [
   { value: "regular", label: "Regular", hint: "Taken at set times, every day or on chosen days." },

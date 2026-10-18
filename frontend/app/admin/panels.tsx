@@ -8,13 +8,15 @@ import {
   sampleNote, shortId, type Health, type OpsEvent, type RangeId,
 } from "./format";
 import { Empty, LoadState, Panel, Pill, Refreshing, Stat, useAdmin, useAdminQuery, type ChainStep, type Persistence } from "./kit";
+import { STAGES, STAGE_LABELS, type Stage } from "./live";
 
 /* ── Response shapes (backend/admin_api.py) ──────────────── */
 
 type Lat = { avg: number | null; p50: number | null; p95: number | null; p99: number | null };
+type StageMs = Record<Stage, { n: number; p50: number | null; p95: number | null }>;
 type AiSummary = {
   chat_turns: number; ai_called: number; answered_without_ai: number; safety_gated: number; replies: number; answered: number; degraded: number;
-  fallback_used: number; attempts: number; failed_attempts: number; timeouts: number; success_rate: number | null; reply_ms: Lat;
+  fallback_used: number; attempts: number; failed_attempts: number; timeouts: number; success_rate: number | null; reply_ms: Lat; stage_ms: StageMs;
 };
 type ApiSummary = { requests: number; per_minute: number; client_errors: number; server_errors: number; error_rate: number | null; latency_ms: Lat };
 type Answering = { provider: string; model: string; share: number | null; n: number; last_reply_at: string } | null;
@@ -40,6 +42,14 @@ type Flow = { steps: { provider: string; reached: number; answered: number; move
 type AiView = Meta & {
   summary: AiSummary; providers: ProviderRow[]; chain: ChainStep[]; flow: Flow;
   highlights: { most_answers: Highlight; most_failing: Highlight; slowest: Highlight; most_reliable: Highlight; min_sample: number };
+};
+/** GET /admin/usage, the parts the AI tab shows: how chat messages were answered (one definition, ops_metrics.chat_split). */
+type UsageView = Meta & {
+  usage: {
+    route_mix: Record<string, number>;
+    ai_share: { ai: number; deterministic: number; rate: number | null; deterministic_rate: number | null };
+    consent_needed: { count: number; rate: number | null };
+  };
 };
 type RouteRow = {
   method: string; route: string; requests: number; success_rate: number | null; client_errors: number; server_errors: number; latency_ms: Lat;
@@ -249,6 +259,66 @@ export function OverviewPanel({ range }: { range: RangeId }) {
 
 /* ── AI providers ────────────────────────────────────────── */
 
+function StageTable({ stages }: { stages: StageMs | undefined }) {
+  const rows = STAGES.map((s) => ({ s, ...(stages?.[s] ?? { n: 0, p50: null, p95: null }) }));
+  if (rows.every((r) => r.n === 0)) return <Empty>No chat messages with timings in this range.</Empty>;
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[22rem] border-collapse text-body-sm">
+          <caption className="sr-only">How long each part of a chat reply takes</caption>
+          <thead><tr><th className={TH}>Part of a reply</th><th className={TH}>Messages</th><th className={TH}>p50</th><th className={TH}>p95</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.s}>
+                <td className={`${TD} font-extrabold`}>{STAGE_LABELS[r.s]}</td>
+                <td className={TD}>{num(r.n)}</td>
+                <td className={TD}>{r.n >= 5 ? ms(r.p50) : r.n ? <Few n={r.n} min={5} /> : NONE}</td>
+                <td className={TD}>{r.n >= 20 ? ms(r.p95) : r.n ? <Few n={r.n} min={20} /> : NONE}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="m-0 mt-3 text-body-sm text-muted">A part a message did not need (no model, no lookup) is left out, not counted as zero. Reading data and looking up sources run side by side, so the parts can add up to more than the whole reply.</p>
+    </>
+  );
+}
+
+function AnsweredPanel({ range }: { range: RangeId }) {
+  const [usage, reload] = useAdminQuery<UsageView>(`/admin/usage?range=${range}`);
+  return (
+    <Panel title="How chat messages were answered" id="answered-title" action={usage.status === "ready" ? <Sampled meta={usage.data} /> : null}>
+      <LoadState state={usage} title="Couldn't load how chats were answered" retry={reload} rows={2}>
+        {({ usage: u }) => {
+          const total = Object.values(u.route_mix).reduce((a, n) => a + n, 0);
+          if (total === 0) return <Empty>No chat messages in this range.</Empty>;
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 divide-line sm:grid-cols-3">
+                <Stat label="Answered by AI" value={pct(u.ai_share.rate)} note={`${num(u.ai_share.ai)} of ${num(total)} messages`} />
+                <Stat label="Answered by Bubbles itself" value={pct(u.ai_share.deterministic_rate)} note={`${num(u.ai_share.deterministic)} messages, no AI used`} />
+                <Stat label="Waited for a yes to AI" value={pct(u.consent_needed.rate)} note={`${num(u.consent_needed.count)} messages`} />
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[22rem] border-collapse text-body-sm">
+                  <caption className="sr-only">Chat messages by kind of reply</caption>
+                  <thead><tr><th className={TH}>Kind of reply</th><th className={TH}>Messages</th><th className={TH}>Share</th></tr></thead>
+                  <tbody>
+                    {Object.entries(u.route_mix).sort((a, b) => b[1] - a[1]).map(([kind, n]) => (
+                      <tr key={kind}><td className={`${TD} font-extrabold`}>{humanize(kind)}</td><td className={TD}>{num(n)}</td><td className={TD}>{pct(n / total)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        }}
+      </LoadState>
+    </Panel>
+  );
+}
+
 export function AiPanel({ range }: { range: RangeId }) {
   const [ai, reload] = useAdminQuery<AiView>(`/admin/ai?range=${range}`, 30);
   return (
@@ -300,6 +370,8 @@ export function AiPanel({ range }: { range: RangeId }) {
               </div>
             )}
           </Panel>
+          <Panel title="Where a chat reply spends its time" id="stages-title"><StageTable stages={a.summary.stage_ms} /></Panel>
+          <AnsweredPanel range={range} />
           <Panel title="Who answers, in order" id="ai-chain-title"><ChainView chain={a.chain} flow={a.flow} /></Panel>
           <Panel title="Comparisons" id="ai-highlights-title"><Highlights h={a.highlights} /></Panel>
         </>

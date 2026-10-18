@@ -1,8 +1,11 @@
 "use client";
 
 // Replaces the root layout when it fails, so it brings its own <html> and plain inline styles (no app CSS is loaded).
+import { useEffect } from "react";
+import { codeForError, reportClientProblem } from "../lib/client-report";
 
-export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => reportClientProblem(codeForError(error)), [error]);   // a fixed code only, never the message
   return (
     <html lang="en">
       <body style={{ margin: 0, minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FFF6FA", color: "#2B1A3F", fontFamily: "system-ui, sans-serif", padding: 16 }}>

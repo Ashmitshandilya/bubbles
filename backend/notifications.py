@@ -18,6 +18,7 @@ Docs: ``notification`` / key = id, ``notification_settings`` / key = ``me``.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import smtplib
@@ -152,7 +153,12 @@ def load_settings(db: Any, uid: str) -> dict[str, Any]:
 
 
 def save_settings(db: Any, uid: str, settings: dict) -> dict:
+    was_on = bool(load_settings(db, uid)["channels"].get("push"))
     doc_store.put(db, uid, "notification_settings", "me", settings)
+    if was_on and not settings["channels"].get("push"):   # withdrawing the phone choice (here or in Privacy choices) revokes every token
+        import push_fcm
+
+        push_fcm.remove_all_devices(db, uid)
     return settings
 
 
@@ -199,6 +205,21 @@ def _recent(db: Any, uid: str, limit: int = 200) -> list[dict]:
     return doc_store.list_docs(db, uid, "notification", limit=limit)
 
 
+def _claim(db: Any, uid: str, nid: str, mine: Any) -> bool:
+    """True when this run's row is the earliest one for this notification id. Two overlapping scheduler runs can both pass the
+    read-then-write duplicate check; the later row is removed here, so exactly one run goes on to send."""
+    try:
+        rows = (db.table(doc_store.TABLE).select("id,created_at").eq("user_id", uid).eq("event_type", doc_store.EVENT_TYPE)
+                .eq("title", f"notification:{nid}").limit(10).execute().data or [])
+        first = min(rows, key=lambda r: (str(r.get("created_at") or ""), str(r.get("id"))), default=None)
+        if first is None or mine is None or str(first.get("id")) == str(mine):
+            return True
+        db.table(doc_store.TABLE).delete().eq("id", mine).eq("user_id", uid).execute()
+        return False
+    except Exception:  # noqa: BLE001 - if the check itself fails, prefer a rare duplicate over a lost reminder
+        return True
+
+
 def create_notification(db: Any, uid: str, kind: str, *, title: str | None = None, body: str | None = None, dedupe_key: str | None = None,
                         now: datetime | None = None, settings: dict | None = None, email: str | None = None,
                         mailer: Callable[..., Any] | None = None) -> dict | None:
@@ -221,10 +242,15 @@ def create_notification(db: Any, uid: str, kind: str, *, title: str | None = Non
     if sum(1 for p in existing if p.get("local_date") == today) >= settings["daily_cap"]:
         return None
     t, b = sanitise(kind, title, body)
-    nid = uuid.uuid4().hex[:16]
+    # A notification with a de-duplication key has a deterministic id (user + kind + slot), so two overlapping runs aim at the same document.
+    nid = hashlib.sha256(f"{uid}|{dedupe_key}".encode()).hexdigest()[:16] if dedupe_key else uuid.uuid4().hex[:16]
     payload = {"id": nid, "kind": kind, "title": t, "body": b, "created_at": now.astimezone(timezone.utc).isoformat(),
                "local_date": today, "read": False, "dedupe_key": dedupe_key}
-    doc_store.put(db, uid, "notification", nid, payload, when=payload["created_at"])
+    if dedupe_key and doc_store.get(db, uid, "notification", nid) is not None:
+        return None
+    saved = doc_store.put(db, uid, "notification", nid, payload, when=payload["created_at"])
+    if dedupe_key and not _claim(db, uid, nid, (saved or {}).get("id")):
+        return None   # an overlapping run wrote the same slot first: it sends, this one does not
     if settings["channels"].get("email") and consent.is_granted(db, uid, "email_reminders"):   # the switch alone is not a yes
         send_email(email, t, b, smtp_factory=mailer)   # fail-soft; the in-app copy above already exists
     if settings["channels"].get("push"):
@@ -253,6 +279,12 @@ def mark_read(db: Any, uid: str, ids: list[str] | None = None, all_: bool = Fals
 
 
 # --- due reminders ---------------------------------------------------------------------------------------------------------
+
+# The scheduler (a GitHub cron every 10 minutes) is best effort and often 5 to 15 minutes late, so the windows around a reminder are
+# wider than "exactly now". The per-slot de-duplication key keeps a wide window from sending twice.
+WINDDOWN_WINDOW_MIN = 45   # from the wind-down time until this long after it
+WATER_WINDOW_MIN = 90      # a needed water slot is still "due" this long after it (the app's own view keeps 60)
+
 
 def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str | None = None,
                  mailer: Callable[..., Any] | None = None) -> list[dict]:
@@ -283,7 +315,7 @@ def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str |
         details = S.load_details(db, uid, 30)
         beds = [details[k]["bedtime"] for k in sorted(details, reverse=True)[:14] if details[k].get("bedtime")]
         wd = parse_hhmm(S.winddown(goal["hours"], bedtime=goal.get("bedtime"), wake=goal.get("wake_time"), recent_bedtimes=beds)["winddown"])
-        if 0 <= (now_min - wd) % 1440 < 30:
+        if 0 <= (now_min - wd) % 1440 < WINDDOWN_WINDOW_MIN:
             emit("winddown", f"winddown:{day}")
     if settings["types"].get("water", True):
         profile = W.load_profile(db, uid)
@@ -294,7 +326,7 @@ def generate_due(db: Any, uid: str, now: datetime | None = None, *, email: str |
             totals = H.day_totals(H.load_entries(db, uid, 2), day, settings["tz_offset_minutes"])
             q = settings["quiet_hours"]
             wake, sleep = (parse_hhmm(q["end"]), parse_hhmm(q["start"])) if q.get("enabled") else (7 * 60, 22 * 60)
-            slot = H.reminder_plan(goal["goal_ml"], totals["effective_ml"], now_min, wake, sleep)["due_now"]
+            slot = H.reminder_plan(goal["goal_ml"], totals["effective_ml"], now_min, wake, sleep, due_window_min=WATER_WINDOW_MIN)["due_now"]
             if slot:
                 emit("water", f"water:{day}:{slot}")
     return made

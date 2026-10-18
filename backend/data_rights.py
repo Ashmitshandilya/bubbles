@@ -49,7 +49,13 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         by_kind: dict[str, int] = {}
         for d in docs:
             by_kind[d["kind"]] = by_kind.get(d["kind"], 0) + 1
+        try:
+            import community_api
+            community: dict | None = community_api.export_mine(db, uid)   # your own posts and comments only
+        except Exception:  # noqa: BLE001 - said out loud below, never silently left out
+            community = None
         return {"status": "success", "exported_at": datetime.now(timezone.utc).isoformat(), "count": len(docs), "truncated": truncated, "kinds": by_kind, "documents": docs,
+                "community": community, "community_included": community is not None,
                 "note": "Your tracker entries (sleep, weight, symptoms and so on) are separate and can be exported from their own pages."}
 
     @router.delete("/me/whole-health/data")
@@ -57,8 +63,14 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         uid = str((await run_in_threadpool(get_user, authorization)).id)
         if not confirm:
             raise HTTPException(status_code=422, detail="Add confirm=true to delete all of your Fitness, Cycle and plan data. This cannot be undone.")
-        before = await run_in_threadpool(doc_store.delete_everything, db, uid)
+        incomplete = None
+        try:
+            before = await run_in_threadpool(doc_store.delete_everything, db, uid)
+        except doc_store.IncompleteDelete as e:   # everything else is gone; do not say "success"
+            before, incomplete = e.removed, e
         mirrors = await run_in_threadpool(delete_mirrors, db, uid)
+        if incomplete:
+            raise HTTPException(status_code=503, detail="Most of your data was deleted, but some of your community posts could not be removed yet. Please try again in a minute.")
         return {"status": "success", "deleted": before, "analytics_copies_removed": mirrors,
                 "note": ("Your tracker entries (sleep, weight, symptoms and so on) are separate and were not deleted. "
                          "If Bubbles recently paused a plan for your safety, that short safety hold stays in place so a strict plan cannot restart straight away.")}

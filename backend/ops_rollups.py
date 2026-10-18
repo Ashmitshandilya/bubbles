@@ -11,6 +11,7 @@ double count an hour. Runs are triggered lazily when the Overall page is read an
 """
 from __future__ import annotations
 
+import math
 import threading
 import time
 from collections import Counter, defaultdict
@@ -18,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
 import ops_telemetry
+from ops_metrics import CHAT_ROUTES
 
 TABLE = "ops_rollups_daily"
 STATE_DAY, STATE_DIM, STATE_KEY = "1970-01-01", "_state", "events_through"
@@ -38,6 +40,11 @@ def bucket(ms: float) -> str:
     return next((str(e) for e in EDGES if ms <= e), "inf")
 
 
+def _num(v: Any) -> bool:
+    """A real, finite, non-negative number (not a bool, NaN or infinity): the only thing a latency or token field may hold."""
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v >= 0
+
+
 def _s(value: Any) -> str:
     return str(value if value not in (None, "") else "unknown").replace("|", "/")[:60]
 
@@ -46,22 +53,25 @@ def count_events(events: Iterable[dict[str, Any]]) -> Counter:
     """Counters keyed ``(day, dimension, key)`` for a batch of events. Pure; the same function feeds raw ranges and rollups."""
     c: Counter = Counter()
     for e in events:
-        day, d, kind = str(e.get("at", ""))[:10], e.get("data") or {}, e.get("kind")
-        if len(day) != 10:
+        if not isinstance(e, dict):
             continue
+        day, d, kind = str(e.get("at", ""))[:10], e.get("data"), e.get("kind")
+        if len(day) != 10 or not isinstance(d, dict):
+            continue   # a malformed row is skipped, never counted and never fatal
         if kind == "api":
             route = f"{_s(d.get('method'))} {_s(d.get('route'))}"
-            status = int(d.get("status") or 0)
+            status = d.get("status")
+            status = status if isinstance(status, int) and not isinstance(status, bool) and 100 <= status <= 599 else 0
             c[day, "req", "total"] += 1
             c[day, "route", route] += 1
             c[day, "status", f"{status // 100}xx"] += 1
             if status >= 500:
                 c[day, "route5xx", route] += 1
-            if isinstance(d.get("latency_ms"), (int, float)):
+            if _num(d.get("latency_ms")):
                 c[day, "hist.api", bucket(d["latency_ms"])] += 1
-            if d.get("route") == "/chat" and d.get("method") == "POST":
+            if d.get("route") in CHAT_ROUTES and d.get("method") == "POST":   # streamed chats count like plain ones
                 c[day, "chat", "total"] += 1
-                if isinstance(d.get("latency_ms"), (int, float)):
+                if _num(d.get("latency_ms")):
                     c[day, "hist.chat", bucket(d["latency_ms"])] += 1
                 for field in ("route_kind", "safety_level"):
                     if d.get(field):
@@ -69,28 +79,28 @@ def count_events(events: Iterable[dict[str, Any]]) -> Counter:
                 if d.get("ai_called") is not None:
                     c[day, "ai_called", "true" if d["ai_called"] else "false"] += 1
                 for stage in ops_telemetry.STAGE_FIELDS:
-                    if isinstance(d.get(stage), (int, float)):
+                    if _num(d.get(stage)):
                         c[day, f"hist.stage.{stage[6:-3]}", bucket(d[stage])] += 1
         elif kind == "ai_attempt":
             who = f"{_s(d.get('provider'))}|{_s(d.get('model'))}"
             c[day, "attempt", f"{who}|{_s(d.get('outcome'))}"] += 1
-            if isinstance(d.get("latency_ms"), (int, float)):
+            if _num(d.get("latency_ms")):
                 c[day, "hist.attempt", f"{who}|{bucket(d['latency_ms'])}"] += 1
             for src, dim in (("input_tokens", "tokens_in"), ("output_tokens", "tokens_out")):
-                if isinstance(d.get(src), (int, float)) and d[src] > 0:
+                if _num(d.get(src)) and d[src] > 0:
                     c[day, dim, who] += int(d[src])
         elif kind == "ai_reply":
             c[day, "reply", f"{_s(d.get('provider'))}|{_s(d.get('model'))}|{_s(d.get('outcome'))}"] += 1
             if d.get("outcome") == "answered":
                 c[day, "fallback", "used" if d.get("fallback_used") else "not_used"] += 1
-            if isinstance(d.get("total_ms"), (int, float)):
+            if _num(d.get("total_ms")):
                 c[day, "hist.reply", bucket(d["total_ms"])] += 1
         elif kind == "error":
             c[day, "error", _s(d.get("category"))] += 1
         elif kind == "funnel":
             c[day, "funnel", _s(d.get("step"))] += 1
         elif kind == "client":
-            c[day, "client", f"{_s(d.get('code'))}|{_s(d.get('surface'))}"] += 1
+            c[day, "client", _s(d.get('code'))] += 1
     return c
 
 

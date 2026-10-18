@@ -4,7 +4,7 @@
 // In-app always works. Email is offered only when the server can send it. "On this phone" (Firebase Cloud Messaging) is offered
 // only in the Android app, built with Firebase, talking to a server that has it (docs/FIREBASE.md); browser push is not offered.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BTN_PRIMARY, BTN_SECONDARY } from "../hub/HubKit";
 import { Stepper } from "../tracking/kit";
@@ -46,7 +46,7 @@ export function NotificationSettingsCard() {
   );
 }
 
-function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: () => void }) {
+export function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: () => void }) {
   const send = useWellnessSend();
   const detected = tzOffsetMinutes();
   const saved = data.settings;
@@ -61,6 +61,7 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
   const firebaseInBuild = useFirebaseInBuild();
   const phone = phoneRow(isNativeApp, firebaseInBuild, data.channels.push.available);
   const [connecting, setConnecting] = useState(false);
+  const phoneToken = useRef<string | null>(null);   // this phone's token, held until the yes is saved
   const [testing, setTesting] = useState(false);
 
   const patch = (p: Partial<NotificationSettings>) => {
@@ -71,12 +72,15 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
   async function togglePhone(on: boolean) {
     setError("");
     setSaid("");
+    phoneToken.current = null;
     if (!on) return patch({ channels: { ...draft.channels, push: false } });
     setConnecting(true);
-    // The tap is what lets Android show its notification prompt; the phone is connected now, the switch is saved below.
-    const result = await import("../../lib/firebase-native").then((m) => m.connectPhone(fetchBubbles, true)).catch(() => ({ ok: false as const, problem: "failed" as const }));
+    // The tap is what lets Android show its notification prompt. Nothing is sent to the server yet: the yes is saved with the
+    // settings (that is the consent record), and only then is this phone's token handed over.
+    const result = await import("../../lib/firebase-native").then((m) => m.phoneToken(true)).catch(() => ({ ok: false as const, problem: "failed" as const }));
     setConnecting(false);
     if (!result.ok) return setError(phoneProblemMessage(result.problem));
+    phoneToken.current = result.token;
     patch({ channels: { ...draft.channels, push: true } });
   }
 
@@ -107,6 +111,16 @@ function Form({ data, onSaved }: { data: NotificationSettingsResponse; onSaved: 
     const result = await send("/notifications/settings", "PUT", body, { tz: false });
     setBusy(false);
     if (!result.ok) return setError(`${result.message} Your changes are still here.`);
+    if (phoneToken.current && body.channels.push) {
+      const token = phoneToken.current;
+      phoneToken.current = null;
+      const linked = await import("../../lib/firebase-native").then((m) => m.registerPhone(fetchBubbles, token)).catch(() => ({ ok: false as const }));
+      if (!linked.ok) {
+        setError(phoneProblemMessage("failed"));
+        onSaved();
+        return;
+      }
+    }
     if (phone === "ready" && saved.channels.push && !body.channels.push) {
       await import("../../lib/firebase-native").then((m) => m.disconnectPhone(fetchBubbles)).catch(() => undefined);
     }

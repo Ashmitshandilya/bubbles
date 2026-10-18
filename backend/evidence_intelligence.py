@@ -39,6 +39,3 @@ def build_grounding_packet(question: str, evidence: list[dict[str, Any]]) -> dic
 def source_quality(source_type: str) -> float:
     return {"guideline":1.0,"systematic_review":0.95,"meta_analysis":0.95,"primary_study":0.85,"government":0.9,"clinical_reference":0.9,"educational":0.65,"unknown":0.4}.get(str(source_type).lower(),0.4)
 
-
-def register_source(source_id: str, title: str, source_type: str, url: str|None=None) -> dict[str,Any]:
-    return asdict(EvidenceItem(source_id=source_id,title=title,source_type=source_type,authority=source_quality(source_type),url=url))

@@ -11,7 +11,9 @@ import pytest
 import ops_metrics
 import ops_rollups
 import consent
+import doc_store
 import ops_snapshots
+import push_fcm
 import ops_telemetry
 from fake_db import FakeDB, Query, Result, _get
 from test_admin_portal import ADMIN, admin_env, bearer  # noqa: F401  (fixture and helpers)
@@ -75,7 +77,7 @@ def stored_scenario(db):
         ev("ai_attempt", 0, "a0000001", provider="Gemini", model="g", position=1, outcome="success", latency_ms=650.0,
            input_tokens=1000, output_tokens=100),
         ev("ai_reply", 0, "a0000001", provider="Gemini", model="g", outcome="answered", attempts=1, fallback_used=False, total_ms=700.0),
-        ev("funnel", 4, None, step="about"),
+        ev("funnel", 4, None, step="core"),
         ev("funnel", 5, None, step="completed"),
         ev("client", 6, None, code="render_error"),
         ev("error", 3, "a0000004", category="database", component="API", route="/health/{slug}"),
@@ -111,8 +113,15 @@ def test_uid_is_in_the_live_endpoint_only_and_never_stored_or_in_other_readers(a
     assert USER not in json.dumps(ops_telemetry.memory_events(datetime.now(timezone.utc) - timedelta(hours=1)))
     # nothing the flusher would write holds it either
     wrote = []
-    sink = type("Sink", (), {"insert": lambda self, rows: wrote.extend(rows) or self, "execute": lambda self: None})()
-    monkeypatch.setattr(ops_telemetry, "_db", lambda: type("DB", (), {"table": lambda self, name: sink})())
+    class _T:
+        def insert(self, rows):
+            wrote.extend(rows)
+            return self
+
+        def execute(self):
+            return None
+
+    monkeypatch.setattr(ops_telemetry, "_db", lambda: type("D", (), {"table": staticmethod(lambda name: _T())})())
     ops_telemetry.flush_once()
     assert wrote and USER not in json.dumps(wrote)
 
@@ -167,6 +176,29 @@ def test_stage_timings_are_numeric_only_and_noted_on_the_api_event():
     assert set(ops_telemetry.STAGE_FIELDS) <= ops_telemetry.FIELDS["api"]
 
 
+def test_funnel_and_client_events_take_fixed_words_only():
+    ops_telemetry.funnel("completed")
+    ops_telemetry.funnel("my back hurts")
+    ops_telemetry.client("render_error")
+    ops_telemetry.client("boom: chest pain")
+    ops_telemetry.record("funnel", step="core", note="free text")
+    got = [(e["kind"], e["data"]) for e in ops_telemetry.recent(0, 50)]
+    assert got == [("funnel", {"step": "completed"}), ("client", {"code": "render_error"}), ("funnel", {"step": "core"})]
+
+
+# ---- counters ----------------------------------------------------------------------------------------------------------------
+
+def test_count_events_and_percentiles_from_buckets():
+    events = [ev("api", i, f"r{i:07d}", method="POST", route="/chat", status=200, latency_ms=float(ms), route_kind="ai", ai_called=True,
+                 safety_level="GREEN") for i, ms in enumerate([90, 100, 110, 4000])]
+    c = ops_rollups.count_events(events)
+    t = ops_rollups.totals(c)
+    assert t["req"]["total"] == 4 and t["chat"]["total"] == 4 and t["safety"]["GREEN"] == 4 and t["route_kind"]["ai"] == 4
+    assert ops_rollups.percentile(t["hist.chat"], 50) == 100.0 and ops_rollups.percentile(t["hist.chat"], 95) == 4800.0
+    assert ops_rollups.percentile({}, 50) is None
+    assert ops_rollups.bucket(999999) == "inf"
+
+
 def test_overall_view_counts_rates_stages_funnel_and_cost(opsdb):
     stored_scenario(opsdb)
     rows = [{"at": e["at"], "kind": e["kind"], "request_id": e["request_id"], "data": e["data"]} for e in opsdb.tables["bubbles_ops_events"]]
@@ -176,13 +208,12 @@ def test_overall_view_counts_rates_stages_funnel_and_cost(opsdb):
     assert (ai["answered"], ai["degraded"], ai["fallback_used"]) == (1, 0, 0)
     assert ai["ai_share"] == round(1 / 3, 3) and ai["consent_needed"] == 1 and ai["consent_needed_rate"] == round(1 / 3, 3)
     assert ai["deterministic_share"] == round(1 / 3, 3)
-    assert view["providers"][0]["cost"] == {"usd": 0.0, "basis": "free tier"} and view["providers"][0]["tokens_in"] == 1000
+    assert view["providers"][0]["cost"]["cost_usd"] == 0.0 and view["providers"][0]["cost"]["label"] == "free tier" and view["providers"][0]["tokens_in"] == 1000
     assert {s["stage"]: s["n"] for s in view["stages"]} == {"pre": 1, "ctx": 0, "rag": 0, "ai": 1, "post": 0}
     assert view["safety"]["totals"] == {"GREEN": 2, "RED": 1} and view["safety"]["per_day"][0]["RED"] == 1
-    funnel = {f["step"]: f["count"] for f in view["funnel"]}
-    assert (funnel["about"], funnel["goals"], funnel["completed"]) == (1, 0, 1) and view["client_crashes"] == {"render_error": 1}
+    assert [f["count"] for f in view["funnel"]][:4] == [1, 0, 0, 1] and view["client_crashes"] == {"render_error": 1}
     assert {f["feature"] for f in view["features"]} >= {"Chat", "Trackers"}
-    assert ops_metrics.cost("SomethingNew", "unknown", 1, 1) == {"usd": None, "basis": "unknown"}
+    assert ops_metrics.model_cost("SomethingNew", "unknown", 1, 1)["cost_usd"] is None
 
 
 # ---- rollups -----------------------------------------------------------------------------------------------------------------
@@ -255,6 +286,12 @@ def test_snapshots_are_integers_only_and_hide_the_table_when_missing(opsdb):
     assert (rates["ai_chat_processing"]["granted"], rates["ai_chat_processing"]["declined"], rates["ai_chat_processing"]["rate"]) == (1, 1, 0.5)
     assert "product_usage_metrics" not in rates   # not offered yet, so no rate to show
     assert ops_snapshots.community(opsdb) == {"visible": 1, "held": 1, "removed": 0}
+    assert ops_snapshots.push(opsdb) == {"active_devices": 0}   # the real source is the signed push_device documents, so "none yet" is 0
+    for uid, token in (("u1", "t" * 40), ("u1", "s" * 40), ("u2", "r" * 40)):
+        push_fcm.register_device(opsdb, uid, token)
+    opsdb.tables["health_events"].append({"user_id": "u3", "event_type": doc_store.EVENT_TYPE, "title": "push_device:x",
+                                          "data": {"kind": "push_device", "key": "x", "payload": {"token": "q" * 40}, "version": 1, "sig": "forged"}})
+    assert ops_snapshots.push(opsdb) == {"active_devices": 3}   # three real phones; the forged row does not count
     assert "u1" not in json.dumps([u, ops_snapshots.consent_rates(opsdb)])
     opsdb.failures["consent_events"] = Exception("PGRST205")
     assert ops_snapshots.consent_rates(opsdb) is None
@@ -277,7 +314,7 @@ def test_overall_endpoint_returns_counts_for_every_range(admin_env, opsdb):
 
 def test_migrations_are_idempotent_locked_down_and_have_undo_files():
     root = Path(__file__).resolve().parents[2] / "supabase"
-    for name in ("20261016_bubbles_ops_rollups",):
+    for name in ("20261016_bubbles_ops_rollups", "20261016_bubbles_ops_funnel"):
         sql = (root / "migrations" / f"{name}.sql").read_text(encoding="utf-8").lower()
         undo = (root / "undo" / f"{name}_undo.sql").read_text(encoding="utf-8").lower()
         assert "begin;" in sql and "commit;" in sql and "begin;" in undo and "commit;" in undo
@@ -286,31 +323,3 @@ def test_migrations_are_idempotent_locked_down_and_have_undo_files():
     rollups = (root / "migrations" / "20261016_bubbles_ops_rollups.sql").read_text(encoding="utf-8").lower()
     assert "create table if not exists public.ops_rollups_daily" in rollups
     assert "enable row level security" in rollups and "grant select, insert, update on table public.ops_rollups_daily to service_role" in rollups
-
-
-def test_push_counts_registered_phone_documents():
-    seen = []
-
-    class Q:
-        def select(self, *a, **k):
-            return self
-
-        def eq(self, column, value):
-            seen.append((column, value))
-            return self
-
-        def limit(self, n):
-            return self
-
-        def execute(self):
-            return type("R", (), {"count": 2})()
-
-    db = type("DB", (), {"table": lambda self, name: seen.append(("table", name)) or Q()})()
-    assert ops_snapshots.push(db) == {"active_devices": 2}
-    assert ("table", "health_events") in seen and ("data->>kind", "push_device") in seen
-
-    class Broken:
-        def table(self, name):
-            raise RuntimeError("PGRST205")
-
-    assert ops_snapshots.push(Broken()) is None

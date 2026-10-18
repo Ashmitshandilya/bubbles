@@ -163,17 +163,49 @@ def get_many(db: Any, uid: str, kind: str, keys: list[str]) -> dict[str, dict]:
     return {key: by_title[title] for key, title in wanted.items() if title in by_title}
 
 
+class IncompleteDelete(RuntimeError):
+    """Everything else was removed, but some community tables could not be emptied even after one retry. Holds table names only."""
+
+    def __init__(self, removed: int, failed: list[str]):
+        super().__init__("delete incomplete")
+        self.removed, self.failed = removed, failed
+
+
+def _forget_community(db: Any, uid: str) -> list[str]:
+    """Empty the person's community tables, retrying once. Returns the tables still failing ([] = done or not created yet)."""
+    failed: list[str] = []
+    for attempt in (1, 2):
+        try:
+            import community_api
+            failed = community_api.forget(db, uid)[1]   # posts, comments, reactions, reports and blocks
+        except Exception:  # noqa: BLE001
+            failed = ["community"]
+        if not failed:
+            break
+        try:
+            from logging_util import logger
+            logger.warning(component="DOC_STORE", operation="delete_everything", message=f"community delete failed ({', '.join(failed)}), attempt {attempt}",
+                           fallback_action="retry" if attempt == 1 else "reported")   # table names only, never a user id
+        except Exception:  # noqa: BLE001
+            pass
+    return failed
+
+
 def delete_everything(db: Any, uid: str, keep: tuple[str, ...] = SAFETY_HOLD_KINDS) -> int:
     """Remove every Whole-Health OS document for the user except the safety holds in ``keep`` and the consent trail. Returns how many
-    were removed. Rows go in chunked deletes (one request per DELETE_CHUNK rows, not one per row)."""
+    were removed. Rows go in chunked deletes (one request per DELETE_CHUNK rows, not one per row). The community tables are wiped too; if
+    they still fail after one retry everything else is deleted and then IncompleteDelete is raised, so success is never claimed."""
     import consent   # the remembered answer must not outlive the deleted document, even if a delete fails
     keep = tuple(keep) + TRAIL_KINDS
     try:
+        failed = _forget_community(db, uid)
         consent.on_data_deleted(db, uid)   # withdraws what was granted and unlinks the ledger rows from the person
         rows = (db.table(TABLE).select("id,title").eq("user_id", uid).eq("event_type", EVENT_TYPE).limit(20000).execute().data or [])
         ids = [r["id"] for r in rows if str(r.get("title") or "").split(":", 1)[0] not in keep]
         for i in range(0, len(ids), DELETE_CHUNK):
             db.table(TABLE).delete().eq("user_id", uid).eq("event_type", EVENT_TYPE).in_("id", ids[i:i + DELETE_CHUNK]).execute()
+        if failed:
+            raise IncompleteDelete(len(ids), failed)
         return len(ids)
     finally:
         consent.forget(uid)

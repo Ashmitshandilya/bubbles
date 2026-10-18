@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, timezone
 
 import ops_metrics as M
+import ops_rollups
 import ops_telemetry
 
 T0 = datetime(2026, 10, 13, 8, 0, tzinfo=timezone.utc)
@@ -153,3 +154,45 @@ def test_flush_writes_one_batch_and_prune_keeps_audit_longer(monkeypatch):
     cutoffs = sorted(c[2][1] for c in deletes if c[1] == "lt")
     assert cutoffs == sorted([(T0 - timedelta(days=365)).isoformat(), (T0 - timedelta(days=ops_telemetry.FUNNEL_RETENTION_DAYS)).isoformat(),
                               (T0 - timedelta(days=ops_telemetry.retention_days)).isoformat()])
+
+
+def _chat(seconds, route="/chat", **data):
+    return ev("api", seconds, **{"method": "POST", "route": route, "status": 200, "latency_ms": 100.0, **data})
+
+
+def test_a_stage_a_turn_skipped_is_not_a_zero_in_the_percentiles():
+    ran = _chat(1, route_kind="ai", ai_called=True, stage_pre_ms=40.0, stage_ctx_ms=300.0, stage_rag_ms=200.0, stage_ai_ms=900.0, stage_post_ms=60.0)
+    skipped = _chat(2, route_kind="daily_log", ai_called=False, stage_pre_ms=20.0, stage_post_ms=30.0)      # no ctx, rag or ai key at all
+    stages = M.stage_latency([ran["data"], skipped["data"]])
+    assert {k: v["n"] for k, v in stages.items()} == {"pre": 2, "ctx": 1, "rag": 1, "ai": 1, "post": 2}
+    assert stages["ai"]["p50"] == 900.0 and stages["ctx"]["p95"] == 300.0          # a 0 from the skipped turn would have dragged these down
+    counted = ops_rollups.totals(ops_rollups.count_events([ran, skipped]))
+    assert {s: sum(counted[f"hist.stage.{s}"].values()) for s in ("pre", "ctx", "rag", "ai", "post")} == {"pre": 2, "ctx": 1, "rag": 1, "ai": 1, "post": 2}
+
+
+def test_streamed_chats_are_counted_like_plain_ones_in_the_daily_counters():
+    events = [_chat(1, route_kind="ai", ai_called=True, safety_level="GREEN", stage_ai_ms=500.0),
+              _chat(2, route="/chat/stream", route_kind="ai", ai_called=True, safety_level="AMBER", stage_ai_ms=700.0, latency_ms=1200.0),
+              _chat(3, route="/chat/stream", route_kind="emergency", ai_called=False, safety_level="RED")]
+    t = ops_rollups.totals(ops_rollups.count_events(events))
+    assert t["chat"]["total"] == 3 and t["req"]["total"] == 3
+    assert dict(t["route_kind"]) == {"ai": 2, "emergency": 1} and dict(t["safety"]) == {"GREEN": 1, "AMBER": 1, "RED": 1}
+    assert sum(t["hist.stage.ai"].values()) == 2 and sum(t["hist.chat"].values()) == 3
+    assert t["route"]["POST /chat/stream"] == 2
+
+
+def test_one_definition_of_deterministic_share_for_overall_and_usage():
+    """ai + deterministic + consent_needed are separate and add up to the turns with a known kind, on every page."""
+    kinds = ["ai", "ai", "emergency", "daily_log", "consent_needed", "small_talk"]
+    split = M.chat_split({k: kinds.count(k) for k in set(kinds)})
+    assert (split["turns"], split["ai"], split["deterministic"], split["consent_needed"]) == (6, 2, 3, 1)
+    assert split["ai_share"] == round(2 / 6, 3) and split["deterministic_share"] == 0.5 and split["consent_needed_rate"] == round(1 / 6, 3)
+    assert M.chat_split({}) == {"turns": 0, "ai": 0, "deterministic": 0, "consent_needed": 0,
+                                "ai_share": None, "deterministic_share": None, "consent_needed_rate": None}
+    events = [_chat(i, route="/chat/stream" if i % 2 else "/chat", route_kind=k, ai_called=k == "ai", safety_level="GREEN") for i, k in enumerate(kinds)]
+    events.append(_chat(9, status=500))                                                  # a failed call with no kind is in neither figure
+    overall = M.overall_view(ops_rollups.count_events(events), ["pre"], ())["ai"]
+    usage = M.usage_summary(events)
+    assert overall["deterministic_share"] == usage["ai_share"]["deterministic_rate"] == 0.5
+    assert overall["ai_share"] == usage["ai_share"]["rate"] and overall["consent_needed_rate"] == usage["consent_needed"]["rate"]
+    assert usage["ai_share"]["deterministic"] == 3 and usage["consent_needed"]["count"] == overall["consent_needed"] == 1

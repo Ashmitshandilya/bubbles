@@ -3,7 +3,6 @@
 The reference table now lives in food_data.py / food_db.py; this module keeps the original small API and result shape.
 """
 import food_db
-from food_data import FOODS
 
 
 def _legacy(food, confidence="reference"):

@@ -6,7 +6,6 @@ Every output is clamped by clinical_constants, whatever the input, and carries t
 from __future__ import annotations
 
 import os
-from datetime import date
 from typing import Any
 
 import clinical_constants as K
