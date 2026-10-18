@@ -18,6 +18,19 @@ const LABELS: Record<string, string> = {
 /** Writes that are about settings or plumbing, not the person's record. They never move the "last updated" card. */
 const NOT_RECORD = ["/health", "/consents", "/me/consent", "/admin", "/onboarding", "/chat/feedback", "/experience"];
 
+/**
+ * Requests that use POST only to carry a question, and change nothing. They must never count as a change: a screen refetches when
+ * a change is announced, and these are exactly the requests screens make when they load. (Before this list, opening Today or Patterns
+ * announced "your data changed" on every load, which reloaded every screen, which announced it again: hundreds of requests a minute,
+ * pages stuck on "Loading", and the server's rate limit answering 429.)
+ */
+const READ_BY_POST = [
+  "/intelligence", "/insights", "/patterns", "/companion", "/doctor", "/medical", "/rag", "/evidence", "/evaluation", "/multimodal",
+  "/agent", "/interop", "/interoperability", "/interventions", "/knowledge", "/safety", "/ai", "/privacy", "/personalization", "/production",
+  "/fitness/workouts/screen", "/fitness/transform/screen", "/fitness/transform/preview", "/fitness/diet/swap-options", "/fitness/meal/parse",
+  "/fitness/foods/search",
+];
+
 function pathOnly(path: string): string {
   return path.split("?")[0].replace(/\/+$/, "");
 }
@@ -34,6 +47,7 @@ export function describeWrite(path: string, method: string | undefined): string 
   if ((method || "GET").toUpperCase() === "GET") return null;
   const p = pathOnly(path);
   if (isHealthProbe(p)) return null;
+  if (READ_BY_POST.some((prefix) => p === prefix || p.startsWith(`${prefix}/`))) return null;
   if (p === "/onboarding/complete" || p === "/profile/body") return "Profile";   // setup and body figures change names, height, weight, goals
   const tracker = /^\/health\/([a-z-]+)/.exec(p)?.[1];
   if (tracker && tracker !== "summary") return LABELS[tracker] ?? tracker.charAt(0).toUpperCase() + tracker.slice(1);
@@ -43,8 +57,11 @@ export function describeWrite(path: string, method: string | undefined): string 
   if (p.startsWith("/profile")) return "Profile";
   if (p.startsWith("/cycle")) return "Cycle";
   if (p.startsWith("/fitness")) return "Fitness";
-  if (p.startsWith("/medical") || p.startsWith("/doctor")) return "Care";
-  return "Your record";
+  if (p.startsWith("/import")) return "Imported records";
+  if (p.startsWith("/me/whole-health")) return "Your record";   // Delete my data: every open screen should show it gone
+  // Anything not listed above is NOT a change to the record. This is the safe default: a screen that reloads when it sees "a change"
+  // would otherwise reload itself forever on every POST that only reads (Today's brief, Patterns, the doctor summary).
+  return null;
 }
 
 /** "just now", "5 minutes ago", "2 hours ago", "yesterday", or a short date. */
