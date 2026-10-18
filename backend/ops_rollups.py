@@ -19,6 +19,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Iterable
 
 import ops_telemetry
+from ops_metrics import CHAT_ROUTES
 
 TABLE = "ops_rollups_daily"
 STATE_DAY, STATE_DIM, STATE_KEY = "1970-01-01", "_state", "events_through"
@@ -68,7 +69,7 @@ def count_events(events: Iterable[dict[str, Any]]) -> Counter:
                 c[day, "route5xx", route] += 1
             if _num(d.get("latency_ms")):
                 c[day, "hist.api", bucket(d["latency_ms"])] += 1
-            if d.get("route") == "/chat" and d.get("method") == "POST":
+            if d.get("route") in CHAT_ROUTES and d.get("method") == "POST":   # streamed chats count like plain ones
                 c[day, "chat", "total"] += 1
                 if _num(d.get("latency_ms")):
                     c[day, "hist.chat", bucket(d["latency_ms"])] += 1

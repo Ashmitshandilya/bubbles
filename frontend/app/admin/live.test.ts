@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NO_FILTERS, chainOffsets, filterChoices, filterRows, groupLive, isError, stageWords, toCsv } from "./live";
+import { NO_FILTERS, chainOffsets, filterChoices, filterRows, groupLive, isError, positionWords, stageWords, toCsv } from "./live";
 import type { OpsEvent } from "./format";
 
 const ev = (seq: number, kind: OpsEvent["kind"], data: Record<string, unknown>, extra: Partial<OpsEvent> = {}): OpsEvent =>
@@ -15,9 +15,24 @@ const chat = [
 describe("live rows", () => {
   it("joins one request into one row with provider, uid, stages and fallback", () => {
     const [row] = groupLive(chat);
-    expect(row).toMatchObject({ uid: "11111111-aaaa", route: "/chat", status: 200, provider: "Gemini", model: "g", tries: 2, fallback: true });
+    expect(row).toMatchObject({ uid: "11111111-aaaa", route: "/chat", status: 200, provider: "Gemini", model: "g", position: 2, fallback: true });
     expect(row.stages).toEqual({ pre: 12, ai: 700 });
     expect(isError(row)).toBe(true);
+  });
+
+  it("shows the answering attempt's chain position, not how many tries there were", () => {
+    const retried = [
+      ev(1, "ai_attempt", { provider: "Gemini", model: "g", position: 1, outcome: "timeout" }, { request_id: "rt" }),
+      ev(2, "ai_attempt", { provider: "Gemini", model: "g", position: 1, outcome: "success" }, { request_id: "rt" }),
+      ev(3, "api", { method: "POST", route: "/chat", status: 200 }, { request_id: "rt" }),
+    ];
+    const [row] = groupLive(retried);
+    expect(row).toMatchObject({ position: 1, fallback: false });   // two tries, but still the first provider: not a fallback
+    expect(positionWords(row)).toBe("1");
+    expect(positionWords(groupLive(chat)[0])).toBe("2, fallback");
+    const none = groupLive([ev(1, "ai_attempt", { provider: "Gemini", position: 1, outcome: "error" }, { request_id: "rn" }), ev(2, "ai_reply", { outcome: "degraded" }, { request_id: "rn" })])[0];
+    expect(none.position).toBeNull();
+    expect(positionWords(none)).toBeNull();
   });
 
   it("returns nothing for nothing, and newest request first", () => {

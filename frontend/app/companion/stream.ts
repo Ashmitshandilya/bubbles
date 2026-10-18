@@ -8,6 +8,7 @@
  * through the dose scrubber), done (the same JSON /chat returns), error.
  */
 import { CHAT_TIMEOUT_MS } from "../lib/chat-flow";
+import { reportClientProblem } from "../../lib/client-report";
 
 export type Fetcher = (path: string, init?: RequestInit, limits?: { timeoutMs?: number; retries?: number }) => Promise<Response>;
 
@@ -232,6 +233,7 @@ export async function requestChat(call: ChatCall): Promise<{ payload: unknown; v
   if (!streamUnavailable) {
     const payload = await viaStream(call);
     if (payload !== null && typeof payload === "object") return { payload, via: "stream" };
+    reportClientProblem("stream_fallback");   // a counter tick on the server, nothing more
   }
   return { payload: await viaChat(call), via: "chat" };
 }

@@ -11,7 +11,9 @@ import pytest
 import ops_metrics
 import ops_rollups
 import consent
+import doc_store
 import ops_snapshots
+import push_fcm
 import ops_telemetry
 from fake_db import FakeDB, Query, Result, _get
 from test_admin_portal import ADMIN, admin_env, bearer  # noqa: F401  (fixture and helpers)
@@ -284,7 +286,12 @@ def test_snapshots_are_integers_only_and_hide_the_table_when_missing(opsdb):
     assert (rates["ai_chat_processing"]["granted"], rates["ai_chat_processing"]["declined"], rates["ai_chat_processing"]["rate"]) == (1, 1, 0.5)
     assert "product_usage_metrics" not in rates   # not offered yet, so no rate to show
     assert ops_snapshots.community(opsdb) == {"visible": 1, "held": 1, "removed": 0}
-    assert ops_snapshots.push(opsdb) is None or ops_snapshots.push(opsdb) == {"active_devices": 0}
+    assert ops_snapshots.push(opsdb) == {"active_devices": 0}   # the real source is the signed push_device documents, so "none yet" is 0
+    for uid, token in (("u1", "t" * 40), ("u1", "s" * 40), ("u2", "r" * 40)):
+        push_fcm.register_device(opsdb, uid, token)
+    opsdb.tables["health_events"].append({"user_id": "u3", "event_type": doc_store.EVENT_TYPE, "title": "push_device:x",
+                                          "data": {"kind": "push_device", "key": "x", "payload": {"token": "q" * 40}, "version": 1, "sig": "forged"}})
+    assert ops_snapshots.push(opsdb) == {"active_devices": 3}   # three real phones; the forged row does not count
     assert "u1" not in json.dumps([u, ops_snapshots.consent_rates(opsdb)])
     opsdb.failures["consent_events"] = Exception("PGRST205")
     assert ops_snapshots.consent_rates(opsdb) is None

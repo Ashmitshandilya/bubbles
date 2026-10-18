@@ -20,6 +20,7 @@ import {
 } from "../../components/hub/HubKit";
 import type { Entry } from "../../components/tracking/data";
 import { readEntries } from "../lib/api-adapters";
+import { noteForLab, readLabNotes, type LabNote } from "../lib/nutrients";
 import { formatWhen } from "../lib/dates";
 import {
   QUESTION_MAX,
@@ -157,6 +158,9 @@ function DoctorPrep() {
   const [medsQuery, reloadMeds] = useBubblesQuery<EntriesResponse>("/health/medications?days=730");
   const [conditionsQuery, reloadConditions] = useBubblesQuery<EntriesResponse>("/health/conditions?days=730");
   const [allergiesQuery, reloadAllergies] = useBubblesQuery<EntriesResponse>("/health/allergies?days=730");
+  // Plain notes on logged results (an extra: if it does not load, the badges alone stay).
+  const [nutrientQuery] = useBubblesQuery<unknown>("/nutrients/nudges");
+  const labNotes = nutrientQuery.status === "ready" ? readLabNotes(nutrientQuery.data) : [];
   const [showAll, setShowAll] = useState(false);
   const [copyStatus, setCopyStatus] = useState("");
   const [skipped, setSkipped] = useState<ReadonlySet<string>>(new Set());
@@ -473,7 +477,7 @@ function DoctorPrep() {
         <Fold title="Records on file">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {RECORD_SECTIONS.map((section) => (
-              <RecordCard key={section.kind} section={section} entries={lists[section.kind]} query={queries[section.kind][0]} onRetry={queries[section.kind][1]} />
+              <RecordCard key={section.kind} section={section} entries={lists[section.kind]} query={queries[section.kind][0]} onRetry={queries[section.kind][1]} labNotes={labNotes} />
             ))}
           </div>
           {medicalQuery.status === "error" && labEntries === null && reportEntries === null && (
@@ -539,16 +543,30 @@ function VisitTile({ label, value, loading, failed, onRetry, gap }: { label: str
   );
 }
 
+/** The server's plain note under a lab row's badge. A result inside its range needs no second sentence; a missing range stays a gap. */
+function LabNoteLine({ note, fallbackGap }: { note: LabNote | null; fallbackGap: boolean }) {
+  if (!note) return fallbackGap ? <p className="mt-1 text-chip text-muted">No range entered, so nothing to compare.</p> : null;
+  if (note.status === "within") return null;
+  return (
+    <p data-private className="mt-1 text-chip text-muted">
+      {note.text}
+      {note.ask ? ` ${note.ask}` : ""}
+    </p>
+  );
+}
+
 function RecordCard({
   section,
   entries,
   query,
   onRetry,
+  labNotes,
 }: {
   section: (typeof RECORD_SECTIONS)[number];
   entries: Entry[] | null;
   query: Query<EntriesResponse>;
   onRetry: () => void;
+  labNotes: readonly LabNote[];
 }) {
   const rows = entries ? recordRows(section.kind, entries) : [];
   const shown = rows.slice(0, 4);
@@ -586,7 +604,7 @@ function RecordCard({
                     <span className="text-chip text-muted">Range entered: {row.range.range}</span>
                   </p>
                 )}
-                {row.range && row.range.status === "none" && <p className="mt-1 text-chip text-muted">No range entered, so nothing to compare.</p>}
+                <LabNoteLine note={section.kind === "labs" ? noteForLab(labNotes, row.title, row.date) : null} fallbackGap={row.range?.status === "none"} />
               </li>
             ))}
           </ul>

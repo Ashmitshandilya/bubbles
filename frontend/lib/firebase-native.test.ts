@@ -39,7 +39,7 @@ vi.mock("@capacitor/push-notifications", () => ({
   },
 }));
 
-import { connectPhone, disconnectPhone, forgetPhoneOnSignOut, onReminderTap, phoneToken, refreshPhone, registerPhone } from "./firebase-native";
+import { connectPhone, disconnectPhone, forgetPhoneOnSignOut, onReminderTap, phoneToken, refreshPhone, registerPhone, turnOnPhoneReminders } from "./firebase-native";
 
 const ok = () => Promise.resolve(new Response("{}", { status: 200 }));
 
@@ -154,5 +154,40 @@ describe("tapping a reminder", () => {
     state.configured = false;
     await onReminderTap(vi.fn());
     expect(state.listeners.size).toBe(0);
+  });
+});
+
+describe("turning phone reminders on from the first-run card", () => {
+  /** A server that, like the real one, refuses a token until the switch (and the consent yes) is saved. */
+  function server() {
+    const calls: string[] = [];
+    let on = false;
+    const api = async (path: string, init?: RequestInit) => {
+      calls.push(path + (init?.body ? ` ${init.body}` : ""));
+      if (path === "/notifications/settings") on = JSON.parse(String(init?.body)).channels.push;
+      if (path === "/notifications/devices" && !on) return new Response("{}", { status: 422 });
+      return new Response("{}", { status: 200 });
+    };
+    return { api, calls };
+  }
+
+  it("saves the switch first, then asks Android, then registers, so a fresh account works", async () => {
+    state.permission = "granted";
+    const { api, calls } = server();
+    expect(await turnOnPhoneReminders(api)).toEqual({ ok: true });
+    expect(calls).toEqual(['/notifications/settings {"channels":{"push":true}}', '/notifications/devices {"token":"tok-1","platform":"android"}']);
+  });
+
+  it("puts the switch back when Android's prompt is refused", async () => {
+    const { api, calls } = server();
+    expect(await turnOnPhoneReminders(api)).toEqual({ ok: false, problem: "denied" });
+    expect(calls).toEqual(['/notifications/settings {"channels":{"push":true}}', '/notifications/settings {"channels":{"push":false}}']);
+  });
+
+  it("changes nothing on a build without Firebase", async () => {
+    state.configured = false;
+    const { api, calls } = server();
+    expect(await turnOnPhoneReminders(api)).toEqual({ ok: false, problem: "unavailable" });
+    expect(calls).toEqual([]);
   });
 });

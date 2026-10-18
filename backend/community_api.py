@@ -4,7 +4,8 @@ Every read and write goes through here (the tables have no client access). No re
 name for that one thread (``Quiet Otter 4821``), made with an HMAC of (author, thread) under COMMUNITY_ALIAS_SECRET. Without a long
 secret the feature stays OFF; there is no default. Only an admin can resolve a name back to a person, and each resolution is logged.
 
-Gate for writing: signed in, 18+ (date of birth from the setup), consent ``community_visibility``, not banned. Reading: signed in and 18+.
+Gate for writing: signed in, 18+ (date of birth from the setup), consent ``community_visibility``, not banned. Reading, reporting and
+blocking: signed in and 18+ (reporting also needs not banned); none of them needs the posting consent.
 Text is checked by community_moderation (deterministic, no AI) before anyone else can see it. Removed text is never stored.
 Crisis wording is never shamed: the author gets a calm support message and the post waits (hidden from the feed) for a person to look.
 """
@@ -110,7 +111,7 @@ def _safe(fn: Callable) -> Callable:
         except Exception as exc:  # noqa: BLE001 - a missing table or a database hiccup must not leak details
             try:
                 from logging_util import logger
-                logger.warning(component="COMMUNITY", operation=fn.__name__, error=exc, fallback_action="503")
+                logger.warning(component="COMMUNITY", operation=fn.__name__, message=type(exc).__name__, fallback_action="503")   # the class name only
             except Exception:  # noqa: BLE001
                 pass
             raise _err(503, "community_unavailable", "Community is not available right now. Please try again later.") from exc
@@ -139,11 +140,14 @@ def _table(kind: str) -> str:
     return "community_posts" if kind == "post" else "community_comments"
 
 
-def _log(db: Any, target: str, action: str, reason: str | None, actor: str) -> None:
+def _log(db: Any, target: str, action: str, reason: str | None, actor: str, actor_id: str | None = None, strict: bool = False) -> None:
+    """Add a row to the moderation trail. Best effort by default (it never blocks a person); strict=True lets a failure through."""
     try:
-        db.table("community_moderation_log").insert({"target": target, "action": action, "reason_code": reason, "actor": actor, "created_at": _now().isoformat()}).execute()
-    except Exception:  # noqa: BLE001 - the trail is best effort; it never blocks a person
-        pass
+        db.table("community_moderation_log").insert({"target": target, "action": action, "reason_code": reason, "actor": actor, "actor_id": actor_id,
+                                                      "created_at": _now().isoformat()}).execute()
+    except Exception:  # noqa: BLE001
+        if strict:
+            raise
 
 
 def _cursor_in(raw: str | None) -> str | None:
@@ -219,10 +223,18 @@ def _reaction_map(db: Any, field: str, ids: list[str], uid: str) -> dict[str, di
     return out
 
 
-def forget(db: Any, uid: str) -> dict[str, int]:
+def _missing(exc: Exception) -> bool:
+    """True when the error only means the table is not created yet (migration not applied): there is nothing to remove or list there."""
+    text = f"{getattr(exc, 'code', '')} {exc}".lower()
+    return any(s in text for s in ("42p01", "pgrst205", "does not exist", "could not find the table", "schema cache"))
+
+
+def forget(db: Any, uid: str) -> tuple[dict[str, int], list[str]]:
     """Delete-my-data: remove the person's posts (their comments and reactions go with them), comments, reactions, reports and blocks.
-    The moderation trail keeps codes only (no text, no person). Returns counts."""
+    The moderation trail keeps codes only (no text, no person). Returns (counts, failed): ``failed`` names the tables that errored for
+    any reason other than "not created yet", so the caller can retry or say so instead of claiming success."""
     counts: dict[str, int] = {}
+    failed: list[str] = []
     for table, col in (("community_reactions", "user_id"), ("community_reports", "reporter_id"), ("community_blocks", "user_id"),
                        ("community_comments", "author_id"), ("community_posts", "author_id")):
         try:
@@ -232,9 +244,30 @@ def forget(db: Any, uid: str) -> dict[str, int]:
                     db.table("community_comments").delete().eq("post_id", pid).execute()
                     db.table("community_reactions").delete().eq("post_id", pid).execute()
             counts[table] = len(db.table(table).delete().eq(col, uid).execute().data or [])
-        except Exception:  # noqa: BLE001 - table not created yet, nothing to remove
+        except Exception as exc:  # noqa: BLE001
             counts[table] = 0
-    return counts
+            if not _missing(exc):
+                failed.append(table)
+    return counts, failed
+
+
+def export_mine(db: Any, uid: str) -> dict[str, list[dict]]:
+    """The person's own posts and comments for the data export: text, topic (posts), status and date. Nothing about anyone else, no ids,
+    no aliases. Deleted stubs are left out. A table that is not created yet gives an empty list; any other error is raised."""
+    out: dict[str, list[dict]] = {"posts": [], "comments": []}
+    for key, table in (("posts", "community_posts"), ("comments", "community_comments")):
+        try:
+            rows = db.table(table).select("*").eq("author_id", uid).order("created_at", desc=True).limit(5000).execute().data or []
+        except Exception as exc:  # noqa: BLE001
+            if _missing(exc):
+                continue
+            raise
+        for r in rows:
+            if r.get("reason_code") == "deleted":
+                continue
+            item = {"body": r["body"], "status": r["status"], "created_at": r["created_at"]}
+            out[key].append({"topic": r.get("topic"), **item} if key == "posts" else item)
+    return out
 
 
 def hold_all(db: Any, uid: str) -> None:
@@ -290,12 +323,16 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         if not _adult(db, uid):
             raise _err(403, "adults_only", "Community is for people 18 and over.")
 
-    def require_writer(uid: str) -> None:
+    def require_reporter(uid: str) -> None:
+        """Reporting needs no posting consent: anyone who may read here can flag something, unless their account is switched off."""
         require_reader(uid)
-        if not consent.is_granted(db, uid, "community_visibility"):
-            raise _err(403, "consent_needed", "Turn on \"Show my posts in the community\" to post here.")
         if _banned(db, uid):
             raise _err(403, "not_allowed", "You can read here, but posting is switched off for your account.")
+
+    def require_writer(uid: str) -> None:
+        require_reporter(uid)
+        if not consent.is_granted(db, uid, "community_visibility"):
+            raise _err(403, "consent_needed", "Turn on \"Show my posts in the community\" to post here.")
 
     def over_limit(table: str, uid: str, limit: int) -> bool:
         since = (_now() - timedelta(hours=1)).isoformat()
@@ -489,7 +526,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     @_safe
     def report(body: ReportIn, authorization: str | None = Header(default=None)):
         uid = uid_of(authorization)
-        require_writer(uid)
+        require_reporter(uid)
         if body.reason not in REASONS:
             raise _err(422, "bad_reason", "Pick a reason.")
         kind, tid = _target(body.target)
@@ -526,6 +563,13 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             db.table("community_blocks").insert({"user_id": uid, "blocked_alias_key": key, "created_at": _now().isoformat()}).execute()
         return {"status": "success"}
 
+    @router.get("/community/blocks")
+    @_safe
+    def blocked_count(authorization: str | None = Header(default=None)):
+        uid = uid_of(authorization)
+        require_reader(uid)
+        return {"count": len(_blocked_keys(db, uid))}   # only a number: the list holds one-way keys, never names
+
     @router.delete("/community/blocks")
     @_safe
     def unblock_all(authorization: str | None = Header(default=None)):
@@ -535,22 +579,34 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     @router.delete("/community/me")
     @_safe
     def delete_my_community_data(authorization: str | None = Header(default=None)):
-        return {"status": "success", "deleted": forget(db, uid_of(authorization))}
+        counts, failed = forget(db, uid_of(authorization))
+        if failed:
+            raise HTTPException(status_code=503, detail={"code": "delete_incomplete", "failed": failed,
+                                                         "message": "Some of your community data could not be removed yet. Please try again in a minute."})
+        return {"status": "success", "deleted": counts}
 
     # ---- admin (the middleware answers every non-admin with the same 404 before routing; _admin is the second lock) ----------
 
     from admin_api import _admin
 
     def hidden_items() -> list[dict]:
+        """Held items, plus visible items with an open report (reported but still under the auto-hide threshold). Approve clears the reports."""
+        by_target: dict[str, list[dict]] = {}
+        for x in db.table("community_reports").select("target,reason").limit(5000).execute().data or []:
+            by_target.setdefault(x["target"], []).append(x)
         items: list[dict] = []
         for kind in ("post", "comment"):
-            for r in db.table(_table(kind)).select("*").eq("status", "held").limit(300).execute().data or []:
-                target = f"{kind}:{r['id']}"
-                reports = db.table("community_reports").select("reason").eq("target", target).limit(200).execute().data or []
-                items.append({"target": target, "kind": kind, "alias": r["alias"], "topic": r.get("topic"), "body": r["body"], "created_at": r["created_at"],
-                              "reason_code": r.get("reason_code"), "crisis": bool(r.get("crisis")), "reports": len(reports),
+            rows = db.table(_table(kind)).select("*").eq("status", "held").limit(300).execute().data or []
+            ids = {r["id"] for r in rows}
+            for tid in [t.split(":", 1)[1] for t in by_target if t.startswith(kind + ":")]:
+                if tid not in ids:   # a reported item that is still shown
+                    rows += [r for r in db.table(_table(kind)).select("*").eq("id", tid).eq("status", "visible").limit(1).execute().data or []]
+            for r in rows:
+                reports = by_target.get(f"{kind}:{r['id']}", [])
+                items.append({"target": f"{kind}:{r['id']}", "kind": kind, "alias": r["alias"], "topic": r.get("topic"), "body": r["body"], "created_at": r["created_at"],
+                              "status": r["status"], "reason_code": r.get("reason_code"), "crisis": bool(r.get("crisis")), "reports": len(reports),
                               "report_reasons": sorted({x["reason"] for x in reports})})
-        items.sort(key=lambda i: (not i["crisis"], i["created_at"]))
+        items.sort(key=lambda i: (not i["crisis"], i["status"] != "held", -i["reports"], i["created_at"]))
         return items
 
     @router.get("/admin/community/status", include_in_schema=False)
@@ -578,7 +634,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     @router.post("/admin/community/decide", include_in_schema=False)
     @_safe
     def admin_decide(body: DecideIn, request: Request):
-        _admin(request)
+        admin_id = _admin(request)
         if body.action not in ("approve", "remove", "ban"):
             raise _err(422, "bad_action", "approve, remove or ban.")
         kind, tid = _target(body.target)
@@ -597,18 +653,18 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                     db.table("community_bans").insert({"user_id": row["author_id"], "reason_code": "admin", "created_at": _now().isoformat()}).execute()
                 for t in ("community_posts", "community_comments"):   # everything else they wrote waits for a look
                     db.table(t).update({"status": "held", "reason_code": "admin"}).eq("author_id", row["author_id"]).eq("status", "visible").execute()
-        _log(db, target, body.action, "admin" if body.action != "approve" else None, "admin")
+        _log(db, target, body.action, "admin" if body.action != "approve" else None, "admin", admin_id)
         return {"status": "success"}
 
     @router.post("/admin/community/resolve", include_in_schema=False)
     @_safe
     def admin_resolve(body: TargetIn, request: Request):
-        _admin(request)
+        admin_id = _admin(request)
         kind, tid = _target(body.target)
         row = (db.table(_table(kind)).select("author_id,alias").eq("id", tid).limit(1).execute().data or [None])[0]
         if not row:
             raise _err(404, "not_found", "Not found.")
-        _log(db, f"{kind}:{tid}", "alias_resolved", None, "admin")   # logged BEFORE the answer leaves
+        _log(db, f"{kind}:{tid}", "alias_resolved", None, "admin", admin_id, strict=True)   # logged BEFORE the answer leaves; if it cannot be, nobody is revealed (503)
         return {"target": f"{kind}:{tid}", "alias": row["alias"], "user_id": row["author_id"]}
 
     return router

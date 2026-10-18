@@ -66,8 +66,10 @@ create table if not exists public.community_moderation_log (
   action       text not null check (char_length(action) <= 40),
   reason_code  text check (reason_code is null or char_length(reason_code) <= 40),
   actor        text not null check (actor in ('bot', 'admin', 'user')),
+  actor_id     uuid references auth.users(id) on delete set null,   -- which admin acted (alias lookups are audited by person); null for the bot
   created_at   timestamptz not null default now()
 );
+alter table public.community_moderation_log add column if not exists actor_id uuid references auth.users(id) on delete set null;   -- re-run safe
 
 -- blocked_alias_key is a one-way keyed hash of the blocked person, never their id or alias.
 create table if not exists public.community_blocks (

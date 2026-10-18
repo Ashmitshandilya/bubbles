@@ -16,24 +16,23 @@ type Provider = {
   cost: { label: string; cost_usd: number | null };
 };
 type Rate = { eligible: number; returned: number; rate: number | null };
+// Only what this page shows. The API also sends more (status classes, raw AI counts, persistence): it is left out here on purpose.
 type Overall = {
-  generated_at: string; source: string; capped: boolean; range: string;
+  capped: boolean;
   totals: { requests: number; chats: number; server_errors: number; onboarding_completed: number };
   latency: { api: Pair; chat: Pair; reply: Pair };
   ai: {
-    replies: number; answered: number; degraded: number; degraded_rate: number | null; fallback_used: number; fallback_rate: number | null;
-    attempts: number; timeouts: number; timeout_rate: number | null; ai_share: number | null; deterministic_share: number | null;
-    consent_needed: number; consent_needed_rate: number | null;
+    degraded_rate: number | null; fallback_rate: number | null; timeout_rate: number | null;
+    ai_share: number | null; deterministic_share: number | null; consent_needed_rate: number | null;
   };
   providers: Provider[];
   stages: { stage: string; n: number; p50_ms: number | null; p95_ms: number | null }[];
   route_mix: { route_kind: string; count: number; share: number | null }[];
-  safety: { totals: Record<string, number>; per_day: { day: string; GREEN: number; AMBER: number; RED: number }[] };
+  safety: { per_day: { day: string; GREEN: number; AMBER: number; RED: number }[] };
   features: { feature: string; requests: number }[];
-  routes: { route: string; requests: number; errors_5xx: number; feature: string }[];
+  routes: { route: string; requests: number; errors_5xx: number }[];
   funnel: { step: string; count: number; of_first: number | null }[];
   errors: Record<string, number>;
-  status_classes: Record<string, number>;
   client_crashes: Record<string, number>;
   users: {
     dau: number | null; wau: number | null; mau: number | null; capped: boolean; signups: Record<string, number> | null;
@@ -42,8 +41,7 @@ type Overall = {
   consent: { purpose: string; title: string; granted: number; declined: number; decided: number; rate: number | null }[] | null;
   community: { visible: number; held: number; removed: number } | null;
   push: { active_devices: number } | null;
-  rollups: { mode: string; through: string | null; last_run?: string };
-  persistence: { mode: string };
+  rollups: { mode: string; through: string | null };
 };
 type Schema = { registered: boolean; applied: string[]; missing: { name: string; why: string }[] };
 
@@ -194,9 +192,14 @@ export function OverallPanel({ range }: { range: string }) {
                 empty="No consent choices recorded yet (or the consent table is not applied)." />
             </div>
 
-            <Table title="Safety levels per day" id="safety" range={range} headers={["Day", "Green", "Amber", "Red"]}
-              rows={days.map((d) => [d.day, d.GREEN, d.AMBER, d.RED])} empty="No chat messages in this range."
-              show={(r) => [r[0], num(r[1] as number), num(r[2] as number), num(r[3] as number)]} />
+            <div className="grid gap-5 lg:grid-cols-2">
+              <Table title="How chat messages were answered" id="route-mix" range={range} headers={["Kind of reply", "Messages", "Share"]}
+                rows={o.route_mix.map((m) => [humanize(m.route_kind), m.count, m.share])}
+                show={(r) => [r[0], num(r[1] as number), pct(r[2] as number | null)]} empty="No chat messages in this range." />
+              <Table title="Safety levels per day" id="safety" range={range} headers={["Day", "Green", "Amber", "Red"]}
+                rows={days.map((d) => [d.day, d.GREEN, d.AMBER, d.RED])} empty="No chat messages in this range."
+                show={(r) => [r[0], num(r[1] as number), num(r[2] as number), num(r[3] as number)]} />
+            </div>
 
             <div className="grid gap-5 lg:grid-cols-2">
               <Table title="Routes and errors" id="routes" range={range} headers={["Route", "Requests", "Server errors"]}

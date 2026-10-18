@@ -7,6 +7,12 @@ import type { OpsEvent } from "./format";
 export const STAGES = ["pre", "ctx", "rag", "ai", "post"] as const;
 export type Stage = (typeof STAGES)[number];
 
+/** Plain names for the five parts of a chat reply (backend/ops_telemetry.py STAGES). */
+export const STAGE_LABELS: Record<Stage, string> = {
+  pre: "Understanding the message", ctx: "Reading the person's own data", rag: "Looking up reading sources",
+  ai: "Waiting for the model", post: "Checking and saving the reply",
+};
+
 export type LiveRow = {
   key: string;
   at: string;
@@ -22,7 +28,7 @@ export type LiveRow = {
   latencyMs: number | null;
   provider: string | null;
   model: string | null;
-  tries: number;
+  position: number | null;   // where in the provider order the attempt that answered sat (1 = first choice); null when no model answered
   fallback: boolean;
   stages: Partial<Record<Stage, number>>;
   error: string | null;
@@ -49,7 +55,9 @@ export function groupLive(events: OpsEvent[]): LiveRow[] {
     const api = chain.find((e) => e.kind === "api");
     const reply = chain.find((e) => e.kind === "ai_reply");
     const attempts = chain.filter((e) => e.kind === "ai_attempt");
-    const winner = attempts.find((e) => e.data.outcome === "success") ?? attempts[attempts.length - 1];
+    const answering = attempts.find((e) => e.data.outcome === "success");
+    const winner = answering ?? attempts[attempts.length - 1];
+    const position = num(answering?.data.position);
     const failure = chain.find((e) => e.kind === "error") ?? attempts.slice().reverse().find((e) => e.data.outcome !== "success" && e.data.error_category);
     const lead = api ?? chain[chain.length - 1];
     const stages: LiveRow["stages"] = {};
@@ -75,8 +83,8 @@ export function groupLive(events: OpsEvent[]): LiveRow[] {
       latencyMs: num(api?.data.latency_ms),
       provider: text(reply?.data.provider) ?? text(winner?.data.provider),
       model: text(reply?.data.model) ?? text(winner?.data.model),
-      tries: attempts.length,
-      fallback: reply?.data.fallback_used === true || attempts.length > 1,
+      position,
+      fallback: reply?.data.fallback_used === true || (position !== null && position > 1),
       stages,
       error,
       kind: lead.kind,
@@ -105,6 +113,12 @@ export function filterRows(rows: LiveRow[], f: LiveFilters): LiveRow[] {
 export function filterChoices(rows: LiveRow[]): { features: string[]; providers: string[] } {
   const uniq = (xs: (string | null)[]) => [...new Set(xs.filter((x): x is string => !!x))].sort();
   return { features: uniq(rows.map((r) => r.feature ?? r.route)), providers: uniq(rows.map((r) => r.provider)) };
+}
+
+/** "1", or "2, fallback" when a later provider had to answer; null when no model answered. */
+export function positionWords(row: Pick<LiveRow, "position" | "fallback">): string | null {
+  if (row.position === null) return null;
+  return row.fallback ? `${row.position}, fallback` : String(row.position);
 }
 
 /** "pre 40 ms, ctx 120 ms ..." for the stages that were measured; null when none were. */

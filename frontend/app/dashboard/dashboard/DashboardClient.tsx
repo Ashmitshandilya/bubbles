@@ -17,6 +17,8 @@ import {
   tileFromCycle, tileFromSignal, type HeroState, type Tile,
 } from "./TodaySections";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
+import { NutrientNudges } from "./NutrientNudges";
+import { readNudges, type Nudge } from "../../lib/nutrients";
 import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
 import { LastUpdatedCard } from "./LastUpdatedCard";
 import { pickLastUpdate } from "../../lib/data-sync";
@@ -67,6 +69,7 @@ export function DashboardClient() {
   const [brief, setBrief] = useState<Loadable<IntelligenceBrief>>(LOADING);
   const [weekly, setWeekly] = useState<Loadable<WeeklyInsights>>(LOADING);
   const [livingMap, setLivingMap] = useState<Loadable<LivingMapData>>(LOADING);
+  const [nudges, setNudges] = useState<Nudge[]>([]);
   const [water, setWater] = useState<WaterState>("idle");
   const [serverLastUpdate, setServerLastUpdate] = useState<string | null>(null);
   const seenVersion = useRef(dataVersion);
@@ -110,6 +113,10 @@ export function DashboardClient() {
     settle(get<{ brief: IntelligenceBrief }>("/intelligence/brief", post(14)).then((r) => r.brief), setBrief);
     settle(get<{ insights: WeeklyInsights }>("/insights/weekly").then((r) => r.insights), setWeekly);
     settle(get<{ map: LivingMapData }>("/intelligence/living-map?days=14").then((r) => r.map), setLivingMap);
+    get<unknown>("/nutrients/nudges").then(
+      (r) => { if (alive) setNudges(readNudges(r)); },
+      () => { /* an extra: the row simply stays out of Today */ },
+    );
     get<{ summary?: { last_update?: string } }>("/health/summary").then(
       (r) => { if (alive) setServerLastUpdate(r.summary?.last_update ?? null); },
       () => { /* the card falls back to what this browser saw */ },
@@ -263,6 +270,11 @@ export function DashboardClient() {
                 onRetry={reload}
               />
             </MoreFold>
+            {nudges.length > 0 && (
+              <MoreFold title="Blood test ideas" hint={String(nudges.length)}>
+                <NutrientNudges items={nudges} />
+              </MoreFold>
+            )}
             <MoreFold title="Your week">
               <WeekRecapCard state={weekly.status} recap={weekly.status === "ready" ? buildWeekRecap(weekly.data) : null} onRetry={reload} />
             </MoreFold>

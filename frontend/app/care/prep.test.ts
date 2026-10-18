@@ -63,6 +63,7 @@ describe("recordRows", () => {
     expect(lab.title).toBe("Ferritin");
     expect(lab.meta).toContain("8 ng/mL");
     expect(lab.range?.status).toBe("below");
+    expect(lab.date).toBe("2026-09-01");
     expect(recordRows("allergies", [entry("x", "", { allergen: "Penicillin" })])[0].range).toBeUndefined();
   });
 });

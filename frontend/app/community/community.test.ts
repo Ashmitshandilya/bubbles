@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendPage, applyReaction, closedMessage, postingHint, topicLabel, type CommunityPost, type CommunityStatus } from "./community";
+import { appendPage, applyReaction, blockedLine, closedMessage, postingHint, topicLabel, type CommunityPost, type CommunityStatus } from "./community";
 
 const post = (id: string, over: Partial<CommunityPost> = {}): CommunityPost => ({
   id, alias: "Quiet Otter 4821", anonymous: true, body: "hi", created_at: "2026-10-01T00:00:00Z", mine: false,
@@ -20,6 +20,16 @@ describe("community helpers", () => {
     expect(closedMessage(status({ can_read: false, reason: "off" }))).toMatch(/not open/);
     expect(postingHint(status({ can_post: false, reason: "consent_needed" }))).toMatch(/Privacy choices/);
     expect(postingHint(status({}))).toBeNull();
+  });
+  it("always gives a reason when posting is shut", () => {
+    expect(postingHint(status({ can_post: false, reason: "not_allowed" }))).toMatch(/paused/);
+    expect(postingHint(status({ can_post: false, reason: null }))).toMatch(/not available/);
+    expect(postingHint(status({ can_post: false, reason: "off" }))).toBeTruthy();
+  });
+  it("says how many people are blocked", () => {
+    expect(blockedLine(0)).toMatch(/not blocked/);
+    expect(blockedLine(1)).toBe("You have blocked 1 person.");
+    expect(blockedLine(3)).toBe("You have blocked 3 people.");
   });
   it("appends a page without duplicates", () => {
     expect(appendPage([post("a"), post("b")], [post("b"), post("c")]).map((p) => p.id)).toEqual(["a", "b", "c"]);

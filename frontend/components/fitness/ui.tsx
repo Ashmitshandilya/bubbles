@@ -1,11 +1,9 @@
 "use client";
 
-// Shared Fitness building blocks: page shell + sub-navigation, send helper, rings, bars, notices, sheet, form bits.
+// Shared Fitness building blocks: page shell, send helper, rings, bars, notices, sheet, form bits.
 // Everything is keyboard operable, has 44px targets, respects reduced motion and never relies on colour alone.
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useApi } from "../Providers";
 import { CARD, HubPage, PILL, type Tone, TONE, useBubblesQuery } from "../hub/HubKit";
 import { classifyFailure, failureFromError } from "../../app/lib/connection";
@@ -39,41 +37,6 @@ export function useSend() {
 }
 
 /* ── Page shell ─────────────────────────────────────────────────────── */
-
-const SECTIONS = [
-  { href: "/fitness", label: "Overview" },
-  { href: "/fitness/diet", label: "Diet" },
-  { href: "/fitness/workouts", label: "Workouts" },
-  { href: "/fitness/calories", label: "Calories" },
-  { href: "/fitness/transform", label: "Transform" },
-  { href: "/fitness/progress", label: "Progress" },
-];
-
-export function SubNav() {
-  const pathname = usePathname() ?? "";
-  return (
-    <nav aria-label="Fitness sections" className="mb-6">
-      <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-        {SECTIONS.map((s) => {
-          const active = s.href === "/fitness" ? pathname === "/fitness" : pathname === s.href || pathname.startsWith(`${s.href}/`);
-          return (
-            <li key={s.href}>
-              <Link
-                href={s.href}
-                aria-current={active ? "page" : undefined}
-                className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full border px-4 text-body-sm font-extrabold no-underline ${
-                  active ? "border-bubbles-grape bg-tint-grape text-bubbles-grape-deep" : "border-line bg-surface text-muted hover:border-line-strong hover:text-ink"
-                }`}
-              >
-                {s.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
-}
 
 export function FitnessPage({ title, children }: { title: string; children: ReactNode; subnav?: boolean }) {
   return (

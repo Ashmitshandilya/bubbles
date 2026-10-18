@@ -11,7 +11,7 @@ Two outputs, both built from the same signals dict:
 
 `signals_from_rows()` shapes stored rows (tracker events, labs, onboarding answers) into the signals dict. Every field of the dict is
 optional; leaving one out can only remove a nudge, never invent one. The rules, thresholds and sentence templates are written out in
-docs/drafts/l7-clinical.md for clinician sign-off.
+section 16 of docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md for clinician sign-off.
 """
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ LAB_FRESH_DAYS = 365    # an older result is treated as "no recent result"
 LAB_RECENT_OK_DAYS = 90  # a result this recent that sits inside the entered range silences the sign-based nudge
 HEAVY_PERIOD_DAYS = 2   # heavy-flow days in the last 90 that count as a "heavy periods" risk factor
 MAX_NUDGES = 3
+SHORT_SLEEP_HOURS = 5   # a day with less than this much logged sleep counts as a "poor sleep" day (sleep tracker)
 CHAT_MIN_SIGNS = 3      # a low-sureness nudge reaches the chat context only with this many distinct signs
 
 # ----------------------------------------------------------------------------------------------------------------------------
@@ -81,8 +82,6 @@ RISK_TEXT = {
     "postpartum": "You said you recently had a baby.",
     "metformin": "Your medicines list includes metformin.",
     "acid_reducer": "Your medicines list includes an acid reducer.",
-    "low_sun": "You said you get little sun.",
-    "alcohol_often": "You said you drink alcohol most weeks.",
     "diabetes_known": "You listed diabetes as a condition.",
     "screening_gap": "Your last sugar and blood pressure check was a while ago, or never.",
 }
@@ -119,7 +118,7 @@ ENTRIES: dict[str, dict[str, Any]] = {
     "folate": dict(
         name="Folate", nudge=True, marker_rx=r"folate|folic|vitamin b ?9|\bb9\b",
         markers="folate", signs=["tired", "mouth", "low_mood", "pale", "brain_fog"],
-        risks=["pregnancy", "alcohol_often"],
+        risks=["pregnancy"],
         foods=["dal", "green leafy vegetables", "chana and rajma", "sprouts", "oranges"],
         more_likely=["pregnancy or planning one", "regular alcohol", "very few greens or pulses"],
         touches=["energy", "mood", "blood", "mouth"], organs=["brain", "stomach_intestines"],
@@ -128,7 +127,7 @@ ENTRIES: dict[str, dict[str, Any]] = {
     "vitamin_d": dict(
         name="Vitamin D", nudge=True, marker_rx=r"vitamin d|25.?(?:oh|hydroxy)|cholecalciferol|\bvit\.? ?d\b",
         markers="vitamin D", signs=["tired", "bone", "cramps", "low_mood", "infections", "hair"],
-        risks=["low_sun", "diet_vegan", "pregnancy"],
+        risks=["diet_vegan", "pregnancy"],
         foods=["morning sunlight on bare skin", "eggs", "fatty fish", "fortified milk"],
         more_likely=["little time in the sun", "covered clothing or mostly indoors", "pregnancy", "older age"],
         touches=["bones", "muscles", "mood", "immunity", "energy"], organs=["skeleton_muscles", "brain"],
@@ -137,7 +136,7 @@ ENTRIES: dict[str, dict[str, Any]] = {
     "magnesium": dict(
         name="Magnesium", nudge=True, marker_rx=r"magnesium",
         markers="magnesium", signs=["cramps", "poor_sleep", "tired", "palpitations", "constipation"],
-        risks=["alcohol_often", "acid_reducer", "diabetes_known"],
+        risks=["acid_reducer", "diabetes_known"],
         foods=["nuts and seeds", "ragi and whole grains", "green leafy vegetables", "dal"],
         more_likely=["regular alcohol", "long-term acid reducers", "diabetes"],
         touches=["muscles", "sleep", "energy", "heart rhythm"], organs=["skeleton_muscles", "heart"],
@@ -243,6 +242,7 @@ def signals_from_rows(events: Iterable[dict] = (), profile: dict | None = None, 
     sign_days: dict[str, set[date]] = {}
     heavy: set[date] = set()
     saw_cycle = False
+    slept: dict[date, float] = {}
     labs: list[dict] = []
     for o in obs:
         kind, d = o.get("kind"), o.get("date")
@@ -263,15 +263,16 @@ def signals_from_rows(events: Iterable[dict] = (), profile: dict | None = None, 
             for key, s in SIGNS.items():
                 if s["rx"].search(text) or (s["concepts"] & concepts):
                     sign_days.setdefault(key, set()).add(d)
-        elif kind == "sleep" and since <= d <= today and isinstance(o.get("value"), (int, float)) and o["value"] < 5:
-            pass   # short sleep is not a deficiency sign on its own; the sleep log feeds patterns elsewhere
+        elif kind == "sleep" and since <= d <= today and isinstance(o.get("value"), (int, float)):
+            slept[d] = slept.get(d, 0.0) + o["value"]   # a nap and the night add up: only a short day in total counts
+    for d, hours in slept.items():
+        if hours < SHORT_SLEEP_HOURS:
+            sign_days.setdefault("poor_sleep", set()).add(d)
     standing: set[str] = set()
     if str(answers.get("periods") or "").lower() == "irregular":
         standing.add("irregular_period")
     diet = str(_first(answers, "diet_style", "diet") or "").lower() or None
     meds = [str(m) for m in (p.get("meds") or []) if m]
-    sun = str(_first(answers, "sun_exposure", "sun") or "").lower()
-    alc = str(answers.get("alcohol_freq") or "").lower()
     test = str(_first(answers, "recent_blood_test", "blood_test_recent", "last_blood_test", "blood_test") or "").lower()
     return {
         "today": today, "sign_days": sign_days, "standing_signs": standing,
@@ -281,8 +282,6 @@ def signals_from_rows(events: Iterable[dict] = (), profile: dict | None = None, 
                       or _answers_flag(answers, "pregnancy_plans", "trying")) if answers else None,
         "postpartum": _answers_flag(answers, "periods_reason", "recently_gave_birth") if answers else None,
         "meds": meds, "conditions": conditions,
-        "low_sun": True if sun in ("low", "little", "rarely", "indoors", "mostly_indoors", "none") else (False if sun else None),
-        "alcohol_often": (alc in ("two_three_week", "four_plus_week")) if alc else None,
         "screening_gap": (str(answers.get("bp_sugar_check") or "").lower() == "longer_or_never") if answers.get("bp_sugar_check") else None,
         "blood_test_recent": "yes" if test in ("yes", "within_year", "recent", "last_year", "within_6_months", "within_3_months") else ("no" if test else None),
         "labs": sorted(labs, key=lambda x: x["date"], reverse=True),
@@ -396,8 +395,6 @@ def _risk_hits(eid: str, s: dict) -> list[tuple[str, str]]:
         "postpartum": bool(s.get("postpartum")),
         "metformin": bool(_METFORMIN.search(meds)),
         "acid_reducer": bool(_ACID_REDUCER.search(meds)),
-        "low_sun": bool(s.get("low_sun")),
-        "alcohol_often": bool(s.get("alcohol_often")),
         "diabetes_known": bool(_DIABETES.search(cond)),
         "screening_gap": bool(s.get("screening_gap")),
     }

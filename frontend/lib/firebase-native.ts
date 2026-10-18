@@ -191,14 +191,21 @@ export function markPhoneOffered() {
   }
 }
 
-/** "Turn on" on the first-run card: Android's prompt, connect this phone, switch phone reminders on (the server logs the consent). */
+/**
+ * "Turn on" on the first-run card. The in-app switch (and with it the server's consent yes) is saved first, because the server
+ * refuses a phone's token until that yes exists; then Android's prompt, then the token. If either later step fails, the switch is put back.
+ */
 export async function turnOnPhoneReminders(api: ApiFetch): Promise<PhoneResult> {
+  if (!(await firebaseStatus()).configured) return { ok: false, problem: "unavailable" };
+  const setSwitch = async (push: boolean): Promise<boolean> => {
+    try {
+      return (await api("/notifications/settings", { method: "PUT", body: JSON.stringify({ channels: { push } }) })).ok;
+    } catch {
+      return false;
+    }
+  };
+  if (!(await setSwitch(true))) return { ok: false, problem: "failed" };
   const connected = await connectPhone(api, true);
-  if (!connected.ok) return connected;
-  try {
-    const response = await api("/notifications/settings", { method: "PUT", body: JSON.stringify({ channels: { push: true } }) });
-    return response.ok ? { ok: true } : { ok: false, problem: "failed" };
-  } catch {
-    return { ok: false, problem: "failed" };
-  }
+  if (!connected.ok) await setSwitch(false);
+  return connected;
 }

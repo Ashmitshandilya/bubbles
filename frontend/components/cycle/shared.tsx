@@ -95,6 +95,3 @@ export function PanelSkeleton({ rows = 2 }: { rows?: number }) {
 export function PanelError({ title = "This didn't load", message, onRetry }: { title?: string; message: string; onRetry: () => void }) {
   return <ErrorCard title={title} message={message} onRetry={onRetry} />;
 }
-
-export const FIELD_LABEL = "block text-body-sm font-extrabold text-ink";
-export const SR_ONLY = "sr-only";

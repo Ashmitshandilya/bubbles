@@ -25,12 +25,18 @@ export function closedMessage(status: CommunityStatus): string | null {
   return "The community is not open yet. Check back soon.";
 }
 
-/** Reading is open without consent; posting needs a yes in Privacy choices. */
+/** Reading, reporting and blocking are open without consent; posting needs a yes in Privacy choices. Whenever posting is shut, say why. */
 export function postingHint(status: CommunityStatus): string | null {
   if (status.can_post) return null;
   if (status.reason === "consent_needed") return "To post, turn on sharing in Privacy choices.";
   if (status.reason === "not_allowed") return "Posting is paused for your account.";
-  return null;
+  return "Posting is not available right now.";
+}
+
+/** The one line above the unblock button in My posts (the server only knows how many, never who). */
+export function blockedLine(count: number): string {
+  if (count <= 0) return "You have not blocked anyone.";
+  return count === 1 ? "You have blocked 1 person." : `You have blocked ${count} people.`;
 }
 
 /** Add a fetched page after the current list without duplicating a post that moved between pages. */

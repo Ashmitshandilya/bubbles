@@ -482,6 +482,22 @@ def test_three_distinct_reporters_hide_a_post_two_do_not(env):
     assert q["reports"] == 3 and q["reason_codes" if False else "reason_code"] == "reports"
 
 
+def test_an_adult_reader_can_report_and_block_without_the_posting_consent_but_not_post_or_react(env):
+    env.adult("eve")                                                                   # 18+, never opted in to post
+    pid = env.new_post("ann").json()["post"]["id"]
+    assert env.post("eve", "/community/reports", {"target": f"post:{pid}", "reason": "spam"}).status_code == 200
+    assert env.post("eve", "/community/blocks", {"target": f"post:{pid}"}).status_code == 200
+    assert env.get("eve", "/community/blocks").json() == {"count": 1}
+    assert env.get("eve", "/community/posts").json()["posts"] == []
+    assert codes(env.new_post("eve")) == "consent_needed"
+    assert codes(env.post("eve", "/community/reactions", {"target": f"post:{pid}", "kind": "helpful"})) == "consent_needed"
+    assert codes(env.post("eve", f"/community/posts/{pid}/comments", {"body": "Hello there from me."})) == "consent_needed"
+    env.adult("fay", born="2015-01-01")                                               # under 18 still cannot
+    assert codes(env.post("fay", "/community/reports", {"target": f"post:{pid}", "reason": "spam"})) == "adults_only"
+    assert env.client.delete("/community/blocks", headers=env.h("eve")).status_code == 200
+    assert env.get("eve", "/community/blocks").json() == {"count": 0}
+
+
 def test_report_rules_own_post_bad_reason_bad_target_and_mass_reporting(env):
     pid = env.new_post("ann").json()["post"]["id"]
     assert codes(env.post("ann", "/community/reports", {"target": f"post:{pid}", "reason": "spam"})) == "own_post"
@@ -537,10 +553,34 @@ def test_admin_resolution_returns_the_person_and_is_logged_first(env):
     r = env.client.post("/admin/community/resolve", headers=env.h("admin"), json={"target": f"post:{pid}"})
     assert r.status_code == 200 and r.json()["user_id"] == IDS["ann"]
     log = env.db.rows("community_moderation_log", action="alias_resolved")
-    assert len(log) == 1 and log[0]["actor"] == "admin" and log[0]["target"] == f"post:{pid}"
+    assert len(log) == 1 and log[0]["actor"] == "admin" and log[0]["target"] == f"post:{pid}" and log[0]["actor_id"] == ADMIN   # which admin looked
     assert env.client.post("/admin/community/resolve", headers=env.h("admin"), json={"target": f"post:{uuid.uuid4()}"}).status_code == 404
     assert env.client.post("/admin/community/resolve", headers=env.h("admin"), json={"target": "x"}).status_code == 422
     assert len(env.db.rows("community_moderation_log", action="alias_resolved")) == 1
+
+
+def test_alias_lookup_fails_closed_when_the_audit_row_cannot_be_written(env):
+    pid = env.new_post("ann").json()["post"]["id"]
+    env.db.failures["community_moderation_log"] = RuntimeError("log table down")
+    r = env.client.post("/admin/community/resolve", headers=env.h("admin"), json={"target": f"post:{pid}"})
+    assert r.status_code == 503 and IDS["ann"] not in r.text and "user_id" not in r.text
+    del env.db.failures["community_moderation_log"]
+    assert env.client.post("/admin/community/resolve", headers=env.h("admin"), json={"target": f"post:{pid}"}).json()["user_id"] == IDS["ann"]
+
+
+def test_the_queue_also_lists_visible_items_with_an_open_report_and_approve_clears_it(env):
+    env.member("eve")
+    reported = env.new_post("ann").json()["post"]["id"]
+    quiet = env.new_post("ben", body=GOOD + " ben").json()["post"]["id"]
+    held = env.new_post("cat", body="You definitely have thyroid disease, trust me on this one.").json()["post"]["id"]
+    env.post("dan", "/community/reports", {"target": f"post:{reported}", "reason": "unkind"})
+    items = env.client.get("/admin/community/queue", headers=env.h("admin")).json()["items"]
+    assert [i["target"] for i in items] == [f"post:{held}", f"post:{reported}"]            # held first, then reported-but-shown; the quiet one is absent
+    assert items[1]["status"] == "visible" and items[1]["reports"] == 1 and items[1]["report_reasons"] == ["unkind"]
+    assert f"post:{quiet}" not in {i["target"] for i in items}
+    assert len(env.get("eve", "/community/posts").json()["posts"]) == 2                  # still on the feed (below the auto-hide threshold)
+    env.client.post("/admin/community/decide", headers=env.h("admin"), json={"target": f"post:{reported}", "action": "approve"})
+    assert [i["target"] for i in env.client.get("/admin/community/queue", headers=env.h("admin")).json()["items"]] == [f"post:{held}"]
 
 
 def test_admin_approve_remove_and_ban(env):
@@ -591,7 +631,49 @@ def test_the_main_delete_my_data_path_also_wipes_community(env):
     assert env.db.rows("community_posts") == []
 
 
+TABLES = ("community_reactions", "community_reports", "community_blocks", "community_comments", "community_posts")
+
+
 def test_delete_my_data_never_breaks_when_the_tables_do_not_exist(env):
-    for t in ("community_posts", "community_comments", "community_reactions", "community_reports", "community_blocks"):
-        env.db.failures[t] = RuntimeError("missing")
-    assert ca.forget(env.db, IDS["ann"]) == {t: 0 for t in ("community_reactions", "community_reports", "community_blocks", "community_comments", "community_posts")}
+    for t in TABLES:
+        env.db.failures[t] = RuntimeError('relation "public.community_posts" does not exist')
+    assert ca.forget(env.db, IDS["ann"]) == ({t: 0 for t in TABLES}, [])                 # not created yet is not a failure
+    assert env.client.delete("/community/me", headers=env.h("ann")).status_code == 200
+    doc_store.delete_everything(env.db, IDS["ann"])                                   # no IncompleteDelete either
+
+
+def test_forget_names_the_tables_that_really_failed(env):
+    env.db.failures["community_reports"] = RuntimeError("connection reset")
+    env.db.failures["community_blocks"] = RuntimeError("relation does not exist")
+    counts, failed = ca.forget(env.db, IDS["ann"])
+    assert failed == ["community_reports"] and counts["community_blocks"] == 0
+    res = env.client.delete("/community/me", headers=env.h("ann"))
+    assert res.status_code == 503 and res.json()["detail"]["code"] == "delete_incomplete" and res.json()["detail"]["failed"] == ["community_reports"]
+
+
+def test_delete_everything_retries_once_then_reports_instead_of_claiming_success(env, monkeypatch, capsys):
+    doc_store.put(env.db, IDS["ann"], "profile", "me", {"height_cm": 170})
+    real, calls = ca.forget, []
+
+    def flaky(db, uid):
+        calls.append(1)
+        return ({}, ["community_posts"]) if len(calls) == 1 else real(db, uid)
+
+    monkeypatch.setattr(ca, "forget", flaky)
+    assert doc_store.delete_everything(env.db, IDS["ann"]) >= 1 and len(calls) == 2    # the retry worked: a normal result
+    calls.clear()
+    monkeypatch.setattr(ca, "forget", lambda db, uid: (calls.append(1) or {}, ["community_posts"]))
+    doc_store.put(env.db, IDS["ann"], "profile", "me", {"height_cm": 170})
+    with pytest.raises(doc_store.IncompleteDelete) as e:
+        doc_store.delete_everything(env.db, IDS["ann"])
+    assert e.value.failed == ["community_posts"] and e.value.removed >= 1 and len(calls) == 2
+    assert doc_store.get(env.db, IDS["ann"], "profile", "me") is None                 # the rest was still deleted
+    err = capsys.readouterr().err
+    assert "WARNING" in err and "community_posts" in err and IDS["ann"] not in err    # a warning, with no person in it
+
+
+def test_a_failing_database_is_logged_by_class_name_only(env, capsys):
+    env.db.failures["community_posts"] = RuntimeError("secret body text 9876543210")
+    assert env.get("ann", "/community/posts").status_code == 503
+    err = capsys.readouterr().err
+    assert "RuntimeError" in err and "secret body" not in err and "9876543210" not in err

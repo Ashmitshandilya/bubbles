@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 MIN_SAMPLE = 10
+CHAT_ROUTES = frozenset({"/chat", "/chat/stream"})   # the plain call and the streamed one: every chat figure counts both
 
 
 def percentile(values: list[float], p: float) -> float | None:
@@ -37,7 +38,7 @@ def _of(events: Iterable[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
 def ai_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
     replies = _of(events, "ai_reply")
     attempts = _of(events, "ai_attempt")
-    chats = [e["data"] for e in _of(events, "api") if e["data"].get("route") in {"/chat", "/chat/stream"}]
+    chats = [e["data"] for e in _of(events, "api") if e["data"].get("route") in CHAT_ROUTES]
     answered = [r for r in replies if r["data"].get("outcome") == "answered"]
     totals = [r["data"].get("total_ms") for r in replies if r["data"].get("total_ms") is not None]
     return {
@@ -218,6 +219,19 @@ def headline(*, database: str, persistence_mode: str, all_paused: bool, ai_now: 
     return {"status": "fail" if fail else "warn" if warn else "ok", "reasons": fail + warn}
 
 
+def chat_split(kinds: Mapping[str, int]) -> dict[str, Any]:
+    """THE definition of how chat turns were answered; the Overall page and /admin/usage both call it. ``kinds`` counts turns by route_kind.
+
+    ai = a model was asked. consent_needed = the turn waited for the person's yes (Bubbles' own text, no model). deterministic = every
+    other turn Bubbles answered itself (safety, daily log, fitness, small talk, correction, empty). The three never overlap and add up to
+    the turns whose kind is known; every share is of that total."""
+    turns = sum(kinds.values())
+    ai, consent = kinds.get("ai", 0), kinds.get("consent_needed", 0)
+    deterministic = turns - ai - consent
+    return {"turns": turns, "ai": ai, "deterministic": deterministic, "consent_needed": consent,
+            "ai_share": _rate(ai, turns), "deterministic_share": _rate(deterministic, turns), "consent_needed_rate": _rate(consent, turns)}
+
+
 # ---------------------------------------------------------------- Overall page (counters from ops_rollups.count_events)
 
 # Cost is computed here, at read time, never stored. Every provider in the chat chain is on a free tier ($0 AI policy), so the
@@ -247,10 +261,8 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
     pair = lambda p: (r.percentile(p, 50), r.percentile(p, 95))  # noqa: E731
     requests, chats = t["req"]["total"], t["chat"]["total"]
     kinds = t["route_kind"]
-    kinds_known = sum(kinds.values())
-    mix = [{"route_kind": k, "count": n, "share": _rate(n, kinds_known)} for k, n in kinds.most_common()]
-    ai_n = kinds.get("ai", 0)
-    consent_n = kinds.get("consent_needed", 0)
+    split = chat_split(kinds)
+    mix = [{"route_kind": k, "count": n, "share": _rate(n, split["turns"])} for k, n in kinds.most_common()]
 
     providers: dict[tuple[str, str], dict[str, Any]] = {}
     for key, n in t["attempt"].items():
@@ -312,8 +324,8 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
                "degraded_rate": _rate(degraded, answered + degraded), "fallback_used": used, "fallback_rate": _rate(used, answered),
                "attempts": attempts, "timeouts": sum(row["timeouts"] for row in rows),
                "timeout_rate": _rate(sum(row["timeouts"] for row in rows), attempts),
-               "ai_share": _rate(ai_n, kinds_known), "deterministic_share": _rate(kinds_known - ai_n - consent_n, kinds_known),
-               "consent_needed": consent_n, "consent_needed_rate": _rate(consent_n, kinds_known)},
+               "ai_share": split["ai_share"], "deterministic_share": split["deterministic_share"],
+               "consent_needed": split["consent_needed"], "consent_needed_rate": split["consent_needed_rate"]},
         "providers": rows,
         "stages": stages,
         "route_mix": mix,
@@ -329,7 +341,6 @@ def overall_view(counters: Any, stage_names: Iterable[str], funnel_steps: Iterab
 
 # ---------------------------------------------------------------- usage and cost (aggregates only: counts, rates, no user ids)
 
-CHAT_ROUTES = frozenset({"/chat", "/chat/stream"})
 FUNNEL_ORDER = ("core", "extras", "later", "completed", "under_18")
 FREE_TIER = "free tier"
 
@@ -374,7 +385,7 @@ def usage_summary(events: list[dict[str, Any]], *, paid_allowed: bool = False) -
         if level in {"GREEN", "AMBER", "RED"}:
             by_day[str(e.get("at", ""))[:10]][level] += 1
     kinds = Counter(e["data"].get("route_kind") for e in chats if e["data"].get("route_kind"))
-    ai_known = [e["data"] for e in chats if e["data"].get("ai_called") is not None]
+    split = chat_split(kinds)
     replies = _of(events, "ai_reply")
     answered = [r for r in replies if r["data"].get("outcome") == "answered"]
     attempts = _of(events, "ai_attempt")
@@ -382,9 +393,8 @@ def usage_summary(events: list[dict[str, Any]], *, paid_allowed: bool = False) -
     return {
         "safety_by_day": {day: {lvl: counts.get(lvl, 0) for lvl in ("GREEN", "AMBER", "RED")} for day, counts in sorted(by_day.items())},
         "route_mix": dict(kinds.most_common()),
-        "ai_share": {"ai": sum(1 for d in ai_known if d["ai_called"]), "deterministic": sum(1 for d in ai_known if not d["ai_called"]),
-                     "rate": _rate(sum(1 for d in ai_known if d["ai_called"]), len(ai_known))},
-        "consent_needed": {"count": kinds.get("consent_needed", 0), "rate": _rate(kinds.get("consent_needed", 0), len(chats))},
+        "ai_share": {"ai": split["ai"], "deterministic": split["deterministic"], "rate": split["ai_share"], "deterministic_rate": split["deterministic_share"]},
+        "consent_needed": {"count": split["consent_needed"], "rate": split["consent_needed_rate"]},
         "reliability": {
             "fallback_rate": _rate(sum(1 for r in answered if r["data"].get("fallback_used")), len(answered)),
             "degraded_rate": _rate(sum(1 for r in replies if r["data"].get("outcome") == "degraded"), len(replies)),

@@ -85,7 +85,3 @@ def build_budget(input_tokens: int, output_tokens: int, provider: str = "configu
         "model": model,
         "pricing_status": "known" if price_for(provider, model) else "unknown",
     }
-
-
-def sanitize_for_model(text: str, max_chars: int = 12000) -> str:
-    return str(text or "")[:max_chars]

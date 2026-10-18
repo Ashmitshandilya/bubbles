@@ -129,6 +129,8 @@ export interface RecordRow {
   title: string;
   meta: string;
   range?: { status: RangeStatus; range: string | null };
+  /** Labs only: the day the result was logged, to match the server's note for it. */
+  date?: string;
 }
 
 const join = (...parts: string[]) => parts.filter(Boolean).join(" · ");
@@ -146,7 +148,7 @@ export function recordRows(kind: RecordKind, entries: readonly Entry[]): RecordR
         return { id: e.id, title: text(e, "allergen") || "Unnamed allergen", meta: join(text(e, "reaction_type"), text(e, "severity")) };
       case "labs": {
         const value = text(e, "value");
-        return { id: e.id, title: text(e, "test_name") || "Lab result", meta: join(value ? `${value}${text(e, "unit") ? ` ${text(e, "unit")}` : ""}` : "No value", whenText(e.date)), range: labRangeStatus(e) };
+        return { id: e.id, title: text(e, "test_name") || "Lab result", meta: join(value ? `${value}${text(e, "unit") ? ` ${text(e, "unit")}` : ""}` : "No value", whenText(e.date)), range: labRangeStatus(e), date: e.date };
       }
       case "reports":
         return { id: e.id, title: text(e, "title") || "Report", meta: join(text(e, "report_type"), whenText(e.date)) };

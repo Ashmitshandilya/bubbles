@@ -194,10 +194,6 @@ def recurring_patterns(events: Iterable[dict[str, Any]], *, min_occurrences: int
     return sorted(patterns, key=lambda p: (-p["occurrence_count"], p["subject"]))
 
 
-def _same_window(a: dict[str, Any], b: dict[str, Any], days: int) -> bool:
-    return abs((a["created_at"] - b["created_at"]).total_seconds()) <= days * 86400
-
-
 def temporal_correlations(
     events: Iterable[dict[str, Any]],
     *,

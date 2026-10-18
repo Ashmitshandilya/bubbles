@@ -307,3 +307,31 @@ def test_a_chat_from_an_hour_ago_is_all_still_now():
     block = state_block([], history_user_facts(history, now))
     assert "chest pain" in block.lower() and "Reported now or recently" in block
 
+
+def test_a_turn_that_skips_a_stage_leaves_it_out_instead_of_recording_zero(env):
+    ops_telemetry.reset_for_tests()
+    assert send(env, "Slept 7 hours, drank 1.5 L of water and walked 5,000 steps.").status_code == 200   # no model, no context read, no evidence
+    chat = [e for e in _events(env) if e["kind"] == "api" and e["data"].get("route") == "/chat"][-1]["data"]
+    assert env.ai_calls == []
+    assert {k for k in chat if k.startswith("stage_")} == {"stage_pre_ms", "stage_post_ms"}
+    ops_telemetry.reset_for_tests()
+    env.main.evidence_query = lambda facts, message: ""
+    assert send(env, "hello there, how are you today my friend").status_code == 200   # a model turn with nothing worth an evidence lookup
+    chat = [e for e in _events(env) if e["kind"] == "api" and e["data"].get("route") == "/chat"][-1]["data"]
+    assert {k for k in chat if k.startswith("stage_")} == {"stage_pre_ms", "stage_ctx_ms", "stage_ai_ms", "stage_post_ms"}
+
+
+def test_the_stream_event_is_written_at_the_end_with_every_stage_and_counted_once(env):
+    ops_telemetry.reset_for_tests()
+    events = _sse(_stream(env, AI_MESSAGE))
+    assert events[-1][0] == "done"
+    mine = [e for e in _events(env) if e["kind"] == "api" and e["data"].get("route") == "/chat/stream"]
+    assert len(mine) == 1                                              # the middleware no longer writes a second, early one
+    data = mine[0]["data"]
+    assert data["status"] == 200 and data["route_kind"] == "ai" and data["ai_called"] is True
+    assert {k for k in data if k.startswith("stage_")} == {"stage_pre_ms", "stage_ctx_ms", "stage_rag_ms", "stage_ai_ms", "stage_post_ms"}
+    assert data["latency_ms"] >= data["stage_pre_ms"] and set(data) <= ops_telemetry.FIELDS["api"]
+    ops_telemetry.reset_for_tests()
+    _sse(_stream(env, "I have crushing chest pain and cannot breathe"))
+    det = [e for e in _events(env) if e["kind"] == "api" and e["data"].get("route") == "/chat/stream"]
+    assert len(det) == 1 and det[0]["data"]["route_kind"] == "emergency" and "stage_ai_ms" not in det[0]["data"] and "stage_ctx_ms" not in det[0]["data"]

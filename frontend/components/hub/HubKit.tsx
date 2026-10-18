@@ -287,10 +287,3 @@ export function humanize(value: string): string {
   const s = value.replaceAll("_", " ").trim();
   return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
-
-export function formatDate(iso: string | null | undefined, withYear = false): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
-}

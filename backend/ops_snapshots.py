@@ -117,5 +117,12 @@ def community(db: Any) -> dict[str, int] | None:
 
 
 def push(db: Any) -> dict[str, int] | None:
-    active = _count(db, "device_tokens", revoked=False)
-    return None if active is None else {"active_devices": active}
+    """Phones registered for reminders: signed ``push_device`` documents (a forged row does not count). A count, nothing else."""
+    import doc_store
+    import push_fcm
+
+    try:
+        rows, _ = _pages(lambda: db.table(doc_store.TABLE).select("user_id,data").eq("event_type", doc_store.EVENT_TYPE).eq("data->>kind", push_fcm.DEVICE_KIND))
+    except Exception:  # noqa: BLE001
+        return None
+    return {"active_devices": sum(1 for r in rows if doc_store.row_is_valid(r))}

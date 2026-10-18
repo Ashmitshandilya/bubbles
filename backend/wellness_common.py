@@ -116,11 +116,6 @@ def local_date_of(iso: Any, offset_min: int = 0) -> str | None:
     return local_now(parsed, offset_min).date().isoformat()
 
 
-def days_back(day: date, n: int) -> list[str]:
-    """The n calendar days ending at ``day`` (inclusive), oldest first."""
-    return [(day - timedelta(days=i)).isoformat() for i in range(n - 1, -1, -1)]
-
-
 # --- loaders (the only database access in this file) ----------------------------------------------------------------------
 
 def load_profile(db: Any, uid: str) -> dict[str, Any]:

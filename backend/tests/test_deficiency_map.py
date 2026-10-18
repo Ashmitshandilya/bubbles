@@ -137,9 +137,9 @@ def test_b12_tingling_with_vegan_diet_and_metformin():
     assert not any("milder" in r for r in n["reasons"]) and len(n["reasons"]) <= 5
 
 
-def test_vitamin_d_needs_signs_even_with_little_sun():
-    assert run(answers={"sun_exposure": "little"}) == {"nudges": [], "lab_notes": []}
-    res = run(symptom("bone pain") + symptom("feeling tired"), answers={"sun_exposure": "little"})
+def test_vitamin_d_needs_signs_even_with_a_vegan_diet():
+    assert run(answers={"diet_style": "vegan"}) == {"nudges": [], "lab_notes": []}
+    res = run(symptom("bone pain") + symptom("feeling tired"), answers={"diet_style": "vegan"})
     assert "vitamin_d" in ids(res)
 
 
@@ -168,7 +168,7 @@ def test_nudge_false_entries_never_nudge_from_signs():
 def test_at_most_three_nudges_and_strongest_first():
     events = (symptom("hair fall") + symptom("feeling tired") + symptom("tingling") + symptom("bone pain") + symptom("weight gain")
               + symptom("always cold") + symptom("mouth ulcer") + heavy())
-    res = run(events, answers={"diet_style": "vegan", "sun_exposure": "low", "periods": "irregular"})
+    res = run(events, answers={"diet_style": "vegan", "periods": "irregular"})
     assert len(res["nudges"]) == D.MAX_NUDGES
     assert [n["level"] for n in res["nudges"]] == sorted((n["level"] for n in res["nudges"]), key=lambda l: l != "medium")
 
@@ -263,3 +263,128 @@ def test_no_authority_names_no_doses_no_em_dashes_in_any_user_text():
 
 def test_result_is_json_serialisable():
     json.dumps(run(symptom("hair fall") + heavy(), labs=[lab("Ferritin", 6, "15-150")], **SEED))
+
+
+# ---- the remaining sign-based nudges (folate, magnesium, zinc, sex_hormones) --------------------------------------------
+
+def every(events=(), monkeypatch=None, **profile) -> dict[str, dict]:
+    """All nudges, not just the top three, keyed by entry id."""
+    monkeypatch.setattr(D, "MAX_NUDGES", 99)
+    return {n["id"]: n for n in run(events, **profile)["nudges"]}
+
+
+def test_folate_needs_a_specific_sign_and_a_second_reason(monkeypatch):
+    got = every(symptom("mouth ulcer") + symptom("feeling tired"), monkeypatch, answers={"periods_reason": "pregnant"})
+    n = got["folate"]
+    assert n["level"] == "medium" and n["headline"] == "Folate might be worth a blood test"
+    assert "You said you are pregnant, breastfeeding, recently had a baby or are planning a pregnancy." in n["reasons"]
+    assert n["gaps"][0] == "No recent folate result is logged yet."
+    assert every(symptom("feeling tired") + symptom("low mood"), monkeypatch, answers={"periods_reason": "pregnant"})["folate"]["level"] == "low"
+    assert "folate" not in every([], monkeypatch, answers={"periods_reason": "pregnant"})
+
+
+def test_magnesium_with_cramps_poor_sleep_and_an_acid_reducer(monkeypatch):
+    got = every(symptom("muscle cramps") + symptom("can't sleep"), monkeypatch, meds=["Pantoprazole 40"])
+    n = got["magnesium"]
+    assert n["level"] == "medium"
+    assert "Your medicines list includes an acid reducer." in n["reasons"]
+    assert any("Acid reducers can lower magnesium" in t for t in n["interacts"])
+    assert "magnesium" not in every(symptom("muscle cramps"), monkeypatch)   # one sign alone, no reason: nothing
+
+
+def test_zinc_needs_two_signs_or_one_sign_with_a_reason(monkeypatch):
+    assert every(symptom("hair fall") + symptom("slow healing cut"), monkeypatch)["zinc"]["level"] == "low"
+    n = every(symptom("hair fall") + symptom("slow healing cut"), monkeypatch, answers={"diet_style": "jain"})["zinc"]
+    assert n["level"] == "medium" and "You said you eat vegetarian or Jain food." in n["reasons"]
+    assert n["gaps"] == ["No recent zinc result is logged yet."]
+    assert "zinc" not in every(symptom("hair fall"), monkeypatch)
+
+
+def test_sex_hormones_from_an_irregular_cycle_and_skin_signs(monkeypatch):
+    n = every(symptom("acne") + symptom("chin hair"), monkeypatch, answers={"periods": "irregular"})["sex_hormones"]
+    assert n["level"] == "low" and n["ask"] == "Hormone blood tests could tell. It is worth asking a doctor which ones fit."
+    assert "You said your periods are irregular." in n["reasons"]
+    assert n["gaps"] == ["No recent hormone result is logged yet."]
+    assert "sex_hormones" not in every(symptom("acne"), monkeypatch)
+    assert "sex_hormones" not in every(monkeypatch=monkeypatch, answers={"periods": "irregular"})
+
+
+def test_a_recent_in_range_result_silences_these_nudges_without_calling_it_fine(monkeypatch):
+    events = symptom("mouth ulcer") + symptom("feeling tired")
+    folate = [lab("Folate", 12, "3-17", "ng/mL")]
+    assert "folate" not in every(events, monkeypatch, answers={"periods_reason": "pregnant"}, labs=folate)
+    res = run(events, answers={"periods_reason": "pregnant"}, labs=folate)
+    assert next(n for n in res["lab_notes"] if n["entry"] == "folate")["status"] == "within"
+    assert not re.search(r"\b(fine|healthy|normal|all clear)\b", json.dumps(res), re.I)
+
+
+# ---- risk rules: every one fires from answers the onboarding bank really offers -----------------------------------------
+
+def _bank_ok(answers: dict) -> None:
+    import onboarding
+    for key, value in answers.items():
+        assert key in onboarding.BY_ID, f"{key} is not a question the bank asks"
+        assert value in {o["id"] for o in onboarding.BY_ID[key].get("options", [])}, f"{value} is not an option of {key}"
+
+
+RISK_CASES = [   # risk id, entry that lists it, events, profile
+    ("diet_veg", "iron", [], {"answers": {"diet_style": "vegetarian"}}),
+    ("diet_vegan", "b12", [], {"answers": {"diet_style": "vegan"}}),
+    ("diet_veg_egg", "b12", [], {"answers": {"diet_style": "eggetarian"}}),
+    ("heavy_periods", "iron", heavy(), {}),
+    ("pregnancy", "iron", [], {"answers": {"periods_reason": "pregnant"}}),
+    ("postpartum", "thyroid", [], {"answers": {"periods_reason": "recently_gave_birth"}}),
+    ("metformin", "b12", [], {"meds": ["Glycomet 500"]}),
+    ("acid_reducer", "b12", [], {"meds": ["Pan-D"]}),
+    ("diabetes_known", "magnesium", [], {"conditions": ["Diabetes"]}),
+    ("screening_gap", "blood_sugar", [], {"answers": {"bp_sugar_check": "longer_or_never"}}),
+]
+
+
+def test_every_risk_rule_is_covered_by_a_case_below():
+    assert {c[0] for c in RISK_CASES} == set(D.RISK_TEXT)
+
+
+@pytest.mark.parametrize("risk,entry,events,profile", RISK_CASES, ids=[c[0] for c in RISK_CASES])
+def test_each_risk_rule_fires_and_says_why(risk, entry, events, profile):
+    _bank_ok(profile.get("answers", {}))
+    assert risk in D.ENTRIES[entry]["risks"]
+    s = D.signals_from_rows(events, profile, today=TODAY)
+    hits = dict(D._risk_hits(entry, s))
+    assert hits[risk] == D.RISK_TEXT[risk].format(n=s["heavy_period_days"] or 0)
+
+
+def test_no_risk_fires_without_its_answer():
+    profile = {"answers": {"diet_style": "non-vegetarian", "periods_reason": "menopause"}, "meds": ["Paracetamol"], "conditions": ["Asthma"]}
+    s = D.signals_from_rows([], profile, today=TODAY)
+    for eid in D.ENTRIES:
+        assert D._risk_hits(eid, s) == []
+
+
+def test_answers_the_bank_never_asks_are_ignored():
+    for dead in ("low_sun", "alcohol_often"):
+        assert dead not in D.RISK_TEXT and all(dead not in e["risks"] for e in D.ENTRIES.values())
+    res = run(symptom("bone pain") + symptom("feeling tired"), answers={"sun_exposure": "little", "alcohol_freq": "four_plus_week"})
+    assert not any("sun" in r or "alcohol" in r for n in res["nudges"] for r in n["reasons"])
+
+
+# ---- sleep tracker days ----------------------------------------------------------------------------------------------
+
+def slept(hours: float, ago: int) -> dict:
+    return ev("sleep", {"name": "sleep", "hours": hours, "duration_hours": hours}, ago)
+
+
+def test_short_sleep_days_from_the_sleep_tracker_count_as_poor_sleep_days(monkeypatch):
+    s = D.signals_from_rows([slept(4, 1), slept(3.5, 3), slept(7, 5)], {}, today=TODAY)
+    assert s["sign_days"]["poor_sleep"] == {TODAY - timedelta(days=1), TODAY - timedelta(days=3)}
+    n = every(symptom("muscle cramps") + [slept(4, 1), slept(4.5, 3)], monkeypatch)["magnesium"]
+    assert "You logged poor sleep on 2 of the last 30 days." in n["reasons"]
+
+
+def test_a_nap_does_not_make_a_short_sleep_day():
+    s = D.signals_from_rows([slept(7, 2), slept(1, 2), slept(3.5, 4), slept(1, 4)], {}, today=TODAY)
+    assert s["sign_days"]["poor_sleep"] == {TODAY - timedelta(days=4)}   # 7 h + a 1 h nap is not short; 3.5 h + 1 h is
+
+
+def test_sleep_alone_never_starts_a_nudge():
+    assert run([slept(3, d) for d in (1, 2, 3, 4)]) == {"nudges": [], "lab_notes": []}

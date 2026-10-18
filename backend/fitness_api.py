@@ -281,10 +281,6 @@ def _chat_entries_from(rows: list[dict], day: str) -> list[dict]:
     return out
 
 
-def _chat_food_entries(db: Any, uid: str, day: str) -> list[dict]:
-    return _chat_entries_from(_chat_food_rows(db, uid), day)
-
-
 def _all_entries(db: Any, uid: str, day: str, chat_rows: list[dict] | None = None) -> list[dict]:
     """Food-log entries plus meals mentioned in chat (for totals and budgets). Pass ``chat_rows`` to avoid re-querying across many days."""
     return _food_entries(db, uid, day) + _chat_entries_from(chat_rows if chat_rows is not None else _chat_food_rows(db, uid), day)

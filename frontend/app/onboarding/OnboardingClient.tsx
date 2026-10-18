@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import { resetExperience, useApi, useAuth } from "../../components/Providers";
 import { DateField, Stepper, TextArea, TextField } from "../../components/tracking/kit";
-import { changeBody, readOverview, type ConsentPurpose } from "../lib/consents";
+import { changeBody, needsDecision, readOverview, readPurpose, type ConsentPurpose } from "../lib/consents";
 import { ChoicesStep, OFFERED_PURPOSES } from "./ChoicesStep";
 import { Creating } from "./Creating";
 import {
@@ -337,10 +337,12 @@ export function OnboardingClient() {
     setSaving(true);
     const results = await Promise.allSettled(purposes.map(async (p) => {
       const wanted = granted.has(p.id);
-      if (wanted === p.granted) return;                      // nothing changed for this one
+      if (!needsDecision(p, wanted)) return p;               // the same decision is already on record
       const response = await fetchBubbles(`/consents/${p.id}`, { method: "PUT", body: changeBody(p, wanted, "onboarding") });
       if (!response.ok) throw new Error(p.id);
+      return readPurpose(((await response.json().catch(() => null)) as { consent?: unknown } | null)?.consent) ?? p;   // keep the server's new state, so going back and on adds no second row
     }));
+    setPurposes(purposes.map((p, i) => { const r = results[i]; return r.status === "fulfilled" ? r.value : p; }));
     setSaving(false);
     setChoicesNote(results.some((r) => r.status === "rejected") ? "One of your choices didn't save. You can set it in Settings, under Privacy choices." : "");
     advanceFromChoices();

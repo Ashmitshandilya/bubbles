@@ -69,10 +69,6 @@ SUPPORT_COPY = {
               "steps": ["Pick a regular time to talk, so you have something to look forward to.", "Send a voice note or a photo of your day.", "Keep one small thing of theirs close, and do one kind thing for yourself today."]},
 }
 
-#: Same copy under the name the /wellness/mind/topics route serves.
-TOPIC_COPY = SUPPORT_COPY
-
-
 # --- safety gate ---------------------------------------------------------------------------------------------------------
 
 # --- check-ins -----------------------------------------------------------------------------------------------------------

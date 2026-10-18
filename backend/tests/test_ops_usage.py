@@ -45,7 +45,7 @@ def test_usage_summary_counts_the_chat_mix_the_rates_and_the_funnel():
     u = M.usage_summary(events)
     assert u["safety_by_day"] == {"2026-10-13": {"GREEN": 3, "AMBER": 1, "RED": 1}}
     assert u["route_mix"] == {"ai": 2, "emergency": 1, "consent_needed": 1, "daily_log": 1}
-    assert u["ai_share"] == {"ai": 2, "deterministic": 3, "rate": 0.4}
+    assert u["ai_share"] == {"ai": 2, "deterministic": 2, "rate": 0.4, "deterministic_rate": 0.4}      # consent_needed is its own part (ops_metrics.chat_split)
     assert u["consent_needed"] == {"count": 1, "rate": 0.2}
     assert u["reliability"] == {"fallback_rate": 0.5, "degraded_rate": 0.333, "timeout_rate": 0.5}
     assert u["feature_usage"]["/health/sleep"] == 2 and u["feature_usage"]["/chat"] == 4          # the failed call is not "usage"
