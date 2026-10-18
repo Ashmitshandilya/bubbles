@@ -64,3 +64,12 @@ import kotlinx.serialization.json.JsonElement
 )
 
 @Serializable data class ConsentsResponse(val purposes: List<Purpose> = emptyList())
+
+@Serializable data class WeeklyItem(
+    val id: String = "",
+    val title: String = "",
+    val description: String = "",
+    @SerialName("confidence_label") val confidenceLabel: String = "",
+)
+@Serializable data class WeeklyBody(val insights: List<WeeklyItem> = emptyList())
+@Serializable data class WeeklyResponse(val insights: WeeklyBody = WeeklyBody())

@@ -32,7 +32,14 @@ class Repo(private val api: Api) {
         runCatching { api.entries(slug, WINDOW_DAYS) }.onSuccess { list -> _entries.update { it + (slug to list) } }
     }
 
-    fun clear() { _entries.value = emptyMap(); _loading.value = true }
+    private val _sections = MutableStateFlow<Set<String>?>(null)
+
+    /** Which sections this person should see; null until known. */
+    val sections: StateFlow<Set<String>?> = _sections
+
+    suspend fun loadSections() { runCatching { api.visibleSections() }.onSuccess { _sections.value = it } }
+
+    fun clear() { _entries.value = emptyMap(); _loading.value = true; _sections.value = null }
 
     companion object { const val WINDOW_DAYS = 30 }
 }

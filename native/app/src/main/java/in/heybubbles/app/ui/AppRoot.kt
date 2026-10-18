@@ -39,7 +39,9 @@ import `in`.heybubbles.app.data.Api
 import `in`.heybubbles.app.data.Repo
 import `in`.heybubbles.app.data.Session
 import `in`.heybubbles.app.ui.components.BubblesBackground
+import `in`.heybubbles.app.ui.screens.CycleScreen
 import `in`.heybubbles.app.ui.screens.LoginScreen
+import `in`.heybubbles.app.ui.screens.PatternsScreen
 import `in`.heybubbles.app.ui.screens.MeScreen
 import `in`.heybubbles.app.ui.screens.OnboardingScreen
 import `in`.heybubbles.app.ui.screens.TalkScreen
@@ -97,21 +99,27 @@ private fun Gate(api: Api, repo: Repo) {
 private fun Home(api: Api, repo: Repo) {
     var tab by rememberSaveable { mutableStateOf(Tab.Today) }
     var startSlug by rememberSaveable { mutableStateOf<String?>(null) }
+    var section by rememberSaveable { mutableStateOf<String?>(null) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { repo.loadSections() }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Box(Modifier.weight(1f)) {
                 // Screens are kept alive when you switch (state is held in each screen's own view model), only one is shown.
-                when (tab) {
-                    Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track })
+                when {
+                    section == "cycle" -> CycleScreen(api, onBack = { section = null })
+                    section == "patterns" -> PatternsScreen(api, onBack = { section = null })
+                    else -> when (tab) {
+                    Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track }, onOpenSection = { section = it })
                     Tab.Talk -> TalkScreen(api)
                     Tab.Track -> TrackScreen(api, repo, startSlug, onStartUsed = { startSlug = null })
                     Tab.Me -> MeScreen(api)
+                    }
                 }
             }
             // Room for the floating bar below the content.
             Box(Modifier.navigationBarsPadding().padding(bottom = 88.dp))
         }
-        FloatingBar(tab, onSelect = { tab = it }, Modifier.align(Alignment.BottomCenter))
+        FloatingBar(tab, onSelect = { section = null; tab = it }, Modifier.align(Alignment.BottomCenter))
     }
 }
 

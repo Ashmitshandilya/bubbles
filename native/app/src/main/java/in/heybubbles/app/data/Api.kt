@@ -148,6 +148,20 @@ class Api(private val session: Session) {
         return (o["applied"] as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { ((it as? JsonObject)?.get("label") as? JsonPrimitive)?.contentOrNull }
     }
 
+    suspend fun cycleOverview(today: java.time.LocalDate): CycleOverview = json.decodeFromString(get("/cycle/overview?today=$today"))
+
+    /** Logs that a period started today (the same call the website's Cycle page makes). */
+    suspend fun logPeriodStart() { send("POST", "/health/cycle", "{\"phase\":\"period\"}") }
+
+    suspend fun weekly(): List<WeeklyItem> = json.decodeFromString<WeeklyResponse>(get("/insights/weekly")).insights.insights
+
+    /** The sections the server says this person should see (it hides Cycle for some profiles). Null if the profile isn't built yet. */
+    suspend fun visibleSections(): Set<String>? {
+        val exp = json.parseToJsonElement(get("/experience")).jsonObject["experience"] as? JsonObject ?: return null
+        val sections = exp["sections"] as? JsonObject ?: return null
+        return (sections["visible"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }?.toSet()
+    }
+
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))

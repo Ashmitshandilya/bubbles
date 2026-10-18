@@ -119,10 +119,11 @@ private fun tiles(entries: Map<String, List<Entry>>): List<Tile> {
 }
 
 @Composable
-fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String) -> Unit) {
+fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String) -> Unit, onOpenSection: (String) -> Unit) {
     val vm = viewModel<TodayViewModel>(key = "today${`in`.heybubbles.app.ui.LocalEpoch.current}") { TodayViewModel(api, repo) }
     val s by vm.state.collectAsState()
     val entries by repo.entries.collectAsState()
+    val sections by repo.sections.collectAsState()
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         ScreenTitle("Today", greeting())
@@ -173,6 +174,14 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
             items(Trackers.all, key = { it.slug }) { spec -> Pill(spec.title, spec.tint, spec.ink) { onOpenTracker(spec.slug) } }
         }
 
+        // Explore: the server decides which sections this person sees (Cycle is hidden for some profiles). Until it answers, Cycle stays hidden.
+        Spacer(Modifier.height(20.dp))
+        Eyebrow("Explore", Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (sections?.contains("cycle") == true) ExploreCard("Cycle", "Where you are in it", Bubbles.TintPink, Bubbles.PinkDeep, Modifier.weight(1f)) { onOpenSection("cycle") }
+            ExploreCard("Patterns", "What your logs say", Bubbles.TintGrape, Bubbles.GrapeDeep, Modifier.weight(1f)) { onOpenSection("patterns") }
+        }
+
         if (s.patterns.isNotEmpty()) {
             Spacer(Modifier.height(20.dp))
             Eyebrow("Patterns in your logs", Modifier.padding(horizontal = 24.dp), color = Bubbles.GrapeDeep)
@@ -210,6 +219,16 @@ private fun PatternCard(p: Association) {
                 if (p.strength.isNotBlank()) Pill(p.strength.replaceFirstChar { it.uppercase() } + " link", Bubbles.TintGrape, Bubbles.GrapeDeep)
             }
             Text(p.text, style = MaterialTheme.typography.bodyLarge)
+        }
+    }
+}
+
+@Composable
+private fun ExploreCard(title: String, subtitle: String, tint: androidx.compose.ui.graphics.Color, ink: androidx.compose.ui.graphics.Color, modifier: Modifier, onClick: () -> Unit) {
+    BubbleCard(modifier, tint = tint, onClick = onClick) {
+        Column(Modifier.padding(16.dp)) {
+            Text(title, style = MaterialTheme.typography.titleMedium, color = ink)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = ink)
         }
     }
 }
