@@ -418,7 +418,7 @@ export function SignalTiles({ tiles }: { tiles: Tile[] }) {
 function SignalTile({ tile }: { tile: Tile }) {
   const tone = TONE[tile.slug];
   const meta = SIGNAL_META[tile.slug];
-  if (tile.state === "loading") return <div className="bubbles-skeleton bubbles-skeleton-card h-[120px]" aria-label={`Loading ${meta.label.toLowerCase()}`} />;
+  if (tile.state === "loading") return <div className="bubbles-skeleton bubbles-skeleton-card h-[120px]" role="status" aria-label={`Loading ${meta.label.toLowerCase()}`} />;
 
   const base = "bubbles-lift flex h-full min-h-[120px] flex-col gap-2 rounded-[24px] border bg-surface p-4 text-ink no-underline shadow-sm sm:gap-2.5 sm:p-5";
   const label = <span className={`text-sm font-extrabold ${tone.ink}`}>{meta.label}</span>;
