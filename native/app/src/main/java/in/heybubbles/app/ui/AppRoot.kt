@@ -149,6 +149,7 @@ private fun Home(api: Api, repo: Repo, session: Session) {
                     section == "patterns" -> PatternsScreen(api, onBack = { section = null })
                     section == "care" -> CareScreen(api, repo, onBack = { section = null })
                     section == "community" -> CommunityScreen(api, onBack = { section = null })
+                    section == "body" -> `in`.heybubbles.app.ui.screens.BodyScreen(api, onBack = { section = null })
                     section == "fitness" -> `in`.heybubbles.app.ui.screens.fitness.FitnessScreen(api, onBack = { section = null })
                     else -> when (tab) {
                     Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track }, onOpenSection = { section = it })

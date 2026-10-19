@@ -135,6 +135,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
     val entries by repo.entries.collectAsState()
     val sections by repo.sections.collectAsState()
     val communityOpen by repo.communityOpen.collectAsState()
+    val bodyMapOpen by repo.bodyMapOpen.collectAsState()
 
     val refreshing by repo.loading.collectAsState()
     PullToRefreshBox(isRefreshing = refreshing && entries.isNotEmpty(), onRefresh = { vm.refresh() }) {
@@ -195,6 +196,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
             add(Triple("patterns", "Patterns" to "What your logs say", Bubbles.TintGrape to Bubbles.GrapeDeep))
             if (sections?.contains("care") == true) add(Triple("care", "Care" to "Get ready for a visit", Bubbles.TintMint to Bubbles.MintDeep))
             if (sections?.contains("fitness") == true) add(Triple("fitness", "Fitness" to "Food, meals, workouts", Bubbles.TintSky to Bubbles.SkyDeep))
+            if (bodyMapOpen) add(Triple("body", "Body map" to "See it in 3D", Bubbles.TintGrape to Bubbles.GrapeDeep))
             if (communityOpen) add(Triple("community", "Community" to "Ask or share, kindly", Bubbles.TintSun to Bubbles.SunDeep))
         }
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

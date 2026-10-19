@@ -83,6 +83,11 @@ class Repo(private val api: Api, private val queue: OfflineQueue? = null) {
     /** Which sections this person should see; null until known. */
     val sections: StateFlow<Set<String>?> = _sections
 
+    private val _bodyMap = MutableStateFlow(false)
+
+    /** True when the body map is on for this profile. */
+    val bodyMapOpen: StateFlow<Boolean> = _bodyMap
+
     private val _communityOpen = MutableStateFlow(false)
 
     /** True once the server says Community is on and this person may read it (it is off until the owner sets it up). */
@@ -90,10 +95,11 @@ class Repo(private val api: Api, private val queue: OfflineQueue? = null) {
 
     suspend fun loadSections() {
         runCatching { api.visibleSections() }.onSuccess { _sections.value = it }
+        runCatching { api.bodyMapInfo() }.onSuccess { _bodyMap.value = it.first }
         runCatching { api.communityStatus() }.onSuccess { _communityOpen.value = it.enabled && it.canRead }
     }
 
-    fun clear() { queue?.clear(); _entries.value = emptyMap(); _loading.value = true; _sections.value = null; _communityOpen.value = false }
+    fun clear() { queue?.clear(); _entries.value = emptyMap(); _loading.value = true; _sections.value = null; _communityOpen.value = false; _bodyMap.value = false }
 
     companion object { const val WINDOW_DAYS = 30 }
 }

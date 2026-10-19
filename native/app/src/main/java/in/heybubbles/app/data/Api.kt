@@ -167,6 +167,13 @@ class Api(private val session: Session) {
         return (sections["visible"] as? kotlinx.serialization.json.JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }?.toSet()
     }
 
+    /** Whether the body map is shown for this profile (not for some), and which body model it uses ("female", "male" or a general one). */
+    suspend fun bodyMapInfo(): Pair<Boolean, String> {
+        val exp = getJson("/experience").obj("experience")
+        val bm = exp?.obj("body_map")
+        return (bm?.bool("visible") != false) to (bm?.str("anatomy") ?: "neutral")
+    }
+
     /** POST /doctor/prepare: the questions to ask and what to bring, from the last six months of logs. */
     suspend fun visitPrep(concern: String?): VisitPrep {
         val body = JsonObject(buildMap {
