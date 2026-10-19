@@ -35,6 +35,7 @@ fun MeScreen(api: Api, session: Session, onReplayTour: () -> Unit = {}) {
     when (page) {
         "choices" -> { ChoicesScreen(api, onBack = { page = null }, onSignedOut = { api.signOut() }); return }
         "reminders" -> { RemindersScreen(api, session, onBack = { page = null }); return }
+        "partner" -> { PartnerScreen(api, onBack = { page = null }, onOpenChoices = { page = "choices" }); return }
     }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -43,6 +44,7 @@ fun MeScreen(api: Api, session: Session, onReplayTour: () -> Unit = {}) {
         ScreenTitle("Me", "Your space")
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row("Reminders", "Gentle nudges on this phone") { page = "reminders" }
+            Row("Partner sharing", "Choose what one trusted person can see") { page = "partner" }
             Row("Your choices", "What Bubbles may do with your data, and Delete my data") { page = "choices" }
             Row("Replay the tour", "A quick look at what is where") { onReplayTour() }
             Row("Privacy policy", "How your health data is handled") { open("https://heybubbles.in/privacy") }
