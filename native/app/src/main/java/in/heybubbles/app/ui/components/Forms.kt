@@ -47,7 +47,7 @@ fun FieldRow(
 @Composable
 fun ChoiceChips(legend: String, options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit, hint: String? = null) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(legend, style = MaterialTheme.typography.titleSmall)
+        if (legend.isNotEmpty()) Text(legend, style = MaterialTheme.typography.titleSmall)
         hint?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             options.forEach { (value, label) ->

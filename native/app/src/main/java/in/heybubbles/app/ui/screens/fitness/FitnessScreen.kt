@@ -46,7 +46,7 @@ fun FitnessScreen(api: Api, onBack: () -> Unit) {
         "diet" -> DietScreen(api, onBack = { page = "hub" })
         "workouts" -> WorkoutsScreen(api, onBack = { page = "hub" })
         "progress" -> ProgressScreen(api, onBack = { page = "hub" })
-        "transform" -> TransformScreen(api, onBack = { page = "hub" })
+        "transform" -> TransformScreen(api, onBack = { page = "hub" }, open = { page = it })
         else -> FitnessHub(api, onBack = onBack, open = { page = it })
     }
 }
