@@ -127,6 +127,11 @@ class Api(private val session: Session) {
 
     suspend fun onboardingBank(): Bank = parseBank(json.parseToJsonElement(get("/onboarding/questions")).jsonObject)
 
+    /** Whether this person has already seen (or skipped) the first-run tour. */
+    suspend fun tourSeen(): Boolean = (json.parseToJsonElement(get("/onboarding/tour")).jsonObject["seen"] as? JsonPrimitive)?.booleanOrNull == true
+
+    suspend fun finishTour(skipped: Boolean) { send("PUT", "/onboarding/tour", """{"skipped":$skipped}""") }
+
     suspend fun onboardingState(): OnboardingState {
         val o = json.parseToJsonElement(get("/onboarding/state")).jsonObject
         return OnboardingState(

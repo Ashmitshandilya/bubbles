@@ -29,7 +29,7 @@ import `in`.heybubbles.app.ui.components.BubbleCard
 import `in`.heybubbles.app.ui.components.ScreenTitle
 
 @Composable
-fun MeScreen(api: Api, session: Session) {
+fun MeScreen(api: Api, session: Session, onReplayTour: () -> Unit = {}) {
     var page by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(enabled = page != null) { page = null }
     when (page) {
@@ -44,6 +44,7 @@ fun MeScreen(api: Api, session: Session) {
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row("Reminders", "Gentle nudges on this phone") { page = "reminders" }
             Row("Your choices", "What Bubbles may do with your data, and Delete my data") { page = "choices" }
+            Row("Replay the tour", "A quick look at what is where") { onReplayTour() }
             Row("Privacy policy", "How your health data is handled") { open("https://heybubbles.in/privacy") }
             Row("Terms", "The rules of using Bubbles") { open("https://heybubbles.in/terms") }
             Row("Sign out", "You can sign back in any time") {

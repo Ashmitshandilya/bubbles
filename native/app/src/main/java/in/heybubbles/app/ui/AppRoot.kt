@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.shadow
+import kotlinx.coroutines.launch
 import `in`.heybubbles.app.data.Api
 import `in`.heybubbles.app.data.Repo
 import `in`.heybubbles.app.data.Session
@@ -103,7 +104,11 @@ private fun Home(api: Api, repo: Repo, session: Session) {
     var tab by rememberSaveable { mutableStateOf(Tab.Today) }
     var startSlug by rememberSaveable { mutableStateOf<String?>(null) }
     var section by rememberSaveable { mutableStateOf<String?>(null) }
+    var tour by rememberSaveable { mutableStateOf(false) }
     androidx.compose.runtime.LaunchedEffect(Unit) { repo.loadSections() }
+    // The tour starts once, the first time the app opens after setup; a failed check just means no tour this time.
+    androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { if (!api.tourSeen()) tour = true } }
+    val tourScope = androidx.compose.runtime.rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     // Fitness (body setup with its safety screening, calorie floors, plans) lives on the website until it can be ported with every safeguard.
     androidx.compose.runtime.LaunchedEffect(section) {
@@ -144,7 +149,7 @@ private fun Home(api: Api, repo: Repo, session: Session) {
                     Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track }, onOpenSection = { section = it })
                     Tab.Talk -> TalkScreen(api)
                     Tab.Track -> TrackScreen(api, repo, startSlug, onStartUsed = { startSlug = null })
-                    Tab.Me -> MeScreen(api, session)
+                    Tab.Me -> MeScreen(api, session, onReplayTour = { tour = true })
                     }
                 }
                 }
@@ -153,6 +158,10 @@ private fun Home(api: Api, repo: Repo, session: Session) {
             Box(Modifier.navigationBarsPadding().padding(bottom = 88.dp))
         }
         FloatingBar(tab, onSelect = { section = null; tab = it }, Modifier.align(Alignment.BottomCenter))
+        if (tour) `in`.heybubbles.app.ui.screens.TourOverlay { skipped ->
+            tour = false
+            tourScope.launch { runCatching { api.finishTour(skipped) } }
+        }
     }
 }
 
