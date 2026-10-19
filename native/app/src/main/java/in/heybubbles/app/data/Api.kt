@@ -260,4 +260,7 @@ class Api(private val session: Session) {
 
     /** Deletes Fitness, Cycle, plan and Community data. Tracker entries are separate (the server says so in its reply). */
     suspend fun deleteMyData() { send("DELETE", "/me/whole-health/data?confirm=true", "{}") }
+
+    /** Erases the whole account (every record and the sign-in). The server answers success only when both steps worked. */
+    suspend fun deleteAccount() { send("DELETE", "/me/account?confirm=true", "{}") }
 }

@@ -159,6 +159,8 @@ class Query:
 class FakeAuth:
     def __init__(self, tokens: dict[str, str]):
         self.tokens = tokens
+        self.deleted: list[str] = []
+        self.admin = types.SimpleNamespace(delete_user=lambda uid: self.deleted.append(uid))
 
     def get_user(self, token):
         uid = self.tokens.get(token)

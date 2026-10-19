@@ -56,6 +56,7 @@ data class ChoicesState(
     val busy: Set<String> = emptySet(),
     val deleting: Boolean = false,
     val deleted: Boolean = false,
+    val erasing: Boolean = false,
 )
 
 class ChoicesViewModel(private val api: Api) : ViewModel() {
@@ -86,6 +87,15 @@ class ChoicesViewModel(private val api: Api) : ViewModel() {
         }
     }
 
+    fun deleteAccount(onGone: () -> Unit) {
+        if (_state.value.erasing) return
+        _state.update { it.copy(erasing = true, error = null) }
+        viewModelScope.launch {
+            try { api.deleteAccount(); onGone() }
+            catch (e: Exception) { _state.update { it.copy(erasing = false, error = e.friendly()) } }
+        }
+    }
+
     fun deleteData() {
         _state.update { it.copy(deleting = true, error = null) }
         viewModelScope.launch {
@@ -101,10 +111,11 @@ class ChoicesViewModel(private val api: Api) : ViewModel() {
 }
 
 @Composable
-fun ChoicesScreen(api: Api, onBack: () -> Unit) {
+fun ChoicesScreen(api: Api, onBack: () -> Unit, onSignedOut: () -> Unit) {
     val vm = viewModel<ChoicesViewModel>(key = "choices${`in`.heybubbles.app.ui.LocalEpoch.current}") { ChoicesViewModel(api) }
     val s by vm.state.collectAsState()
     var confirmDelete by remember { mutableStateOf(false) }
+    var confirmAccount by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { vm.load() }
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 8.dp)) {
@@ -140,8 +151,29 @@ fun ChoicesScreen(api: Api, onBack: () -> Unit) {
                         Pill(if (s.deleting) "Deleting…" else "Delete my data…", Bubbles.Urgent, Bubbles.White, Modifier.padding(top = 6.dp)) { if (!s.deleting) confirmDelete = true }
                     }
                 }
+                BubbleCard(Modifier.fillMaxWidth(), tint = Bubbles.TintUrgent) {
+                    Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Delete my account", style = MaterialTheme.typography.titleMedium, color = Bubbles.Urgent)
+                        Text(
+                            "Erases everything Bubbles holds about you, tracker entries included, and removes your sign-in. " +
+                                "You will be signed out and can't get any of it back.",
+                            style = MaterialTheme.typography.bodyMedium, color = Bubbles.Ink,
+                        )
+                        Pill(if (s.erasing) "Deleting…" else "Delete my account…", Bubbles.Urgent, Bubbles.White, Modifier.padding(top = 6.dp)) { if (!s.erasing) confirmAccount = true }
+                    }
+                }
             }
         }
+    }
+
+    if (confirmAccount) {
+        AlertDialog(
+            onDismissRequest = { confirmAccount = false },
+            title = { Text("Delete your account?") },
+            text = { Text("Everything is erased, including your tracker entries, and your sign-in is removed. This can't be undone.") },
+            confirmButton = { TextButton({ confirmAccount = false; vm.deleteAccount(onSignedOut) }) { Text("Delete everything", color = Bubbles.Urgent) } },
+            dismissButton = { TextButton({ confirmAccount = false }) { Text("Keep my account") } },
+        )
     }
 
     if (confirmDelete) {

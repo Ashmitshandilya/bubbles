@@ -27,6 +27,12 @@ Entry template:
 - Where: `native/` (see `native/README.md` and `native/PLAN.md`), `.github/workflows/native.yml`.
 - Do not publish it over the wrapper until Fitness has a native home or the gap is accepted, and Google Play needs in-app account deletion.
 
+### 2026-10-20 · Delete my account (native app, Play requirement)
+- What: `DELETE /me/account?confirm=true` erases every document (safety holds and community posts included), then removes the Supabase sign-in; every user_id table cascades from auth.users. The native app has "Delete my account" under Your choices; the privacy page says so.
+- Why: Google Play requires in-app account deletion; the privacy page said it was "still being built".
+- Use: success is answered only when both steps worked (503 otherwise, safe to retry). Sign-in caches are cleared.
+- Where: backend/data_rights.py, tests/test_data_rights.py, native ChoicesScreen.kt
+
 ### 2026-10-17 · Caching, organ map reads in parallel, load test
 - What: /organs/map reads its five sources in parallel; backend/loadtest (httpx, AI stubbed, localhost only) shows ~94 req/s on one process with 0 errors at 50 users and p95 847 ms; FirstRunTour loads on demand; /models/* cached for a week; fixed a startup crash in main._warm_database_probe (duplicate local import of threading).
 - Why: speed; numbers and method in docs/LOAD_TEST.md.

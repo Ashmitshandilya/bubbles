@@ -33,7 +33,7 @@ fun MeScreen(api: Api, session: Session) {
     var page by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(enabled = page != null) { page = null }
     when (page) {
-        "choices" -> { ChoicesScreen(api, onBack = { page = null }); return }
+        "choices" -> { ChoicesScreen(api, onBack = { page = null }, onSignedOut = { api.signOut() }); return }
         "reminders" -> { RemindersScreen(api, session, onBack = { page = null }); return }
     }
     val context = LocalContext.current
