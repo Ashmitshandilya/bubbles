@@ -77,6 +77,7 @@ import `in`.heybubbles.app.ui.components.Pill
 import `in`.heybubbles.app.ui.components.ScreenTitle
 import `in`.heybubbles.app.ui.components.Skeleton
 import `in`.heybubbles.app.ui.components.Sparkline
+import `in`.heybubbles.app.ui.theme.Bubbles
 import java.time.LocalDate
 import java.util.Locale
 
@@ -88,6 +89,8 @@ data class TrackState(
     val error: String? = null,
     val saving: Boolean = false,
     val formError: String? = null,
+    val notice: String? = null,
+    val pending: Int = 0,
 )
 
 class TrackViewModel(private val api: Api, private val repo: Repo) : ViewModel() {
@@ -97,6 +100,7 @@ class TrackViewModel(private val api: Api, private val repo: Repo) : ViewModel()
     init {
         viewModelScope.launch { repo.entries.collect { e -> _state.update { it.copy(entries = e) } } }
         viewModelScope.launch { repo.loading.collect { l -> _state.update { it.copy(loading = l) } } }
+        viewModelScope.launch { repo.pending.collect { n -> _state.update { it.copy(pending = n, notice = if (n == 0) null else it.notice) } } }
         if (repo.entries.value.isEmpty()) loadAll()
     }
 
@@ -108,6 +112,8 @@ class TrackViewModel(private val api: Api, private val repo: Repo) : ViewModel()
     }
 
     fun clearFormError() = _state.update { it.copy(formError = null) }
+
+    fun clearNotice() = _state.update { it.copy(notice = null) }
 
     /** Validates against the field limits, then saves. [done] runs only after the server accepted it. */
     fun save(spec: TrackerSpec, values: Map<String, String>, done: () -> Unit) {
@@ -130,10 +136,11 @@ class TrackViewModel(private val api: Api, private val repo: Repo) : ViewModel()
         _state.update { it.copy(saving = true, formError = null) }
         viewModelScope.launch {
             try {
-                api.saveEntry(spec.slug, JsonObject(body))
-                repo.reload(spec.slug)
-                _state.update { it.copy(saving = false) }
+                val sent = repo.save(spec.slug, JsonObject(body))
+                if (sent) repo.reload(spec.slug)
+                _state.update { it.copy(saving = false, notice = if (sent) null else "Saved on this phone. It will go to Bubbles when you are back online.") }
                 done()
+                if (sent) repo.sync()   // a working connection is a good moment to send anything that was waiting
             } catch (e: Exception) {
                 _state.update { it.copy(saving = false, formError = e.friendly()) }
             }
@@ -258,6 +265,16 @@ internal fun Detail(spec: TrackerSpec, s: TrackState, vm: TrackViewModel, onBack
                             Modifier.padding(top = 8.dp), style = MaterialTheme.typography.bodyLarge, color = spec.ink,
                         )
                     }
+                }
+            }
+            if (s.notice != null || s.pending > 0) BubbleCard(Modifier.fillMaxWidth(), tint = Bubbles.TintSun) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    s.notice?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                    if (s.pending > 0) Text(
+                        "${s.pending} ${if (s.pending == 1) "entry is" else "entries are"} waiting to go to Bubbles. They are kept safely on this phone until you are online.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (s.notice != null) Pill("OK", MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurface) { vm.clearNotice() }
                 }
             }
             Box(

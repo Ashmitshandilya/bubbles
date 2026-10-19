@@ -12,7 +12,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -29,7 +31,7 @@ import `in`.heybubbles.app.ui.components.BubbleCard
 import `in`.heybubbles.app.ui.components.ScreenTitle
 
 @Composable
-fun MeScreen(api: Api, session: Session, onReplayTour: () -> Unit = {}) {
+fun MeScreen(api: Api, session: Session, repo: `in`.heybubbles.app.data.Repo, onReplayTour: () -> Unit = {}) {
     var page by rememberSaveable { mutableStateOf<String?>(null) }
     BackHandler(enabled = page != null) { page = null }
     when (page) {
@@ -49,10 +51,22 @@ fun MeScreen(api: Api, session: Session, onReplayTour: () -> Unit = {}) {
             Row("Replay the tour", "A quick look at what is where") { onReplayTour() }
             Row("Privacy policy", "How your health data is handled") { open("https://heybubbles.in/privacy") }
             Row("Terms", "The rules of using Bubbles") { open("https://heybubbles.in/terms") }
-            Row("Sign out", "You can sign back in any time") {
+            val waiting by repo.pending.collectAsState()
+            var confirmSignOut by remember { mutableStateOf(false) }
+            fun signOut() {
                 // Take this phone off the server's list first, so the next person on a shared phone gets nothing of yours.
                 scope.launch { Push.disconnect(context.applicationContext, api, session); api.signOut() }
             }
+            Row("Sign out", if (waiting > 0) "$waiting entries have not reached Bubbles yet" else "You can sign back in any time") {
+                if (waiting > 0) confirmSignOut = true else signOut()
+            }
+            if (confirmSignOut) androidx.compose.material3.AlertDialog(
+                onDismissRequest = { confirmSignOut = false },
+                title = { Text("Sign out with entries waiting?") },
+                text = { Text("$waiting ${if (waiting == 1) "entry has" else "entries have"} not reached Bubbles yet. Signing out removes them from this phone. Connect to the internet and wait a moment if you want to keep them.") },
+                confirmButton = { androidx.compose.material3.TextButton({ confirmSignOut = false; signOut() }) { Text("Sign out anyway") } },
+                dismissButton = { androidx.compose.material3.TextButton({ confirmSignOut = false }) { Text("Stay signed in") } },
+            )
             Text(
                 "Bubbles ${BuildConfig.VERSION_NAME}",
                 Modifier.padding(top = 8.dp, start = 4.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,

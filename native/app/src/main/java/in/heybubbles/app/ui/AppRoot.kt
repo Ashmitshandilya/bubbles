@@ -105,10 +105,21 @@ private fun Home(api: Api, repo: Repo, session: Session) {
     var startSlug by rememberSaveable { mutableStateOf<String?>(null) }
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     var tour by rememberSaveable { mutableStateOf(false) }
+    val tourScope = androidx.compose.runtime.rememberCoroutineScope()
     androidx.compose.runtime.LaunchedEffect(Unit) { repo.loadSections() }
+    // Entries saved while offline go out when the app opens and whenever a connection comes back.
+    val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { repo.sync() } }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        val cm = appContext.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+        val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) { tourScope.launch { runCatching { repo.sync() } } }
+        }
+        runCatching { cm?.registerDefaultNetworkCallback(callback) }
+        onDispose { runCatching { cm?.unregisterNetworkCallback(callback) } }
+    }
     // The tour starts once, the first time the app opens after setup; a failed check just means no tour this time.
     androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { if (!api.tourSeen()) tour = true } }
-    val tourScope = androidx.compose.runtime.rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     // A phone that was connected keeps its token fresh (it can change), without asking again.
     androidx.compose.runtime.LaunchedEffect(Unit) { `in`.heybubbles.app.push.Push.refresh(context.applicationContext, api, session) }
@@ -143,7 +154,7 @@ private fun Home(api: Api, repo: Repo, session: Session) {
                     Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track }, onOpenSection = { section = it })
                     Tab.Talk -> TalkScreen(api)
                     Tab.Track -> TrackScreen(api, repo, startSlug, onStartUsed = { startSlug = null })
-                    Tab.Me -> MeScreen(api, session, onReplayTour = { tour = true })
+                    Tab.Me -> MeScreen(api, session, repo, onReplayTour = { tour = true })
                     }
                 }
                 }
