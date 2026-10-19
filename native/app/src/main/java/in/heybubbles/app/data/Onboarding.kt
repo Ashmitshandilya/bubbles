@@ -67,8 +67,6 @@ enum class ScreenKind { Questions, Choices, ExtrasIntro }
 
 class Screen(val id: String, val kind: ScreenKind, val stage: String, val title: String, val ids: MutableList<String>, var followUp: Boolean)
 
-private fun JsonObject.str(k: String) = (this[k] as? JsonPrimitive)?.contentOrNull
-private fun JsonObject.num(k: String) = (this[k] as? JsonPrimitive)?.doubleOrNull
 private fun JsonObject.strings(k: String) = (this[k] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }.orEmpty()
 
 private fun parseRule(e: JsonElement?): Rule? {

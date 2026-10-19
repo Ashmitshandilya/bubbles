@@ -110,13 +110,6 @@ private fun Home(api: Api, repo: Repo, session: Session) {
     androidx.compose.runtime.LaunchedEffect(Unit) { runCatching { if (!api.tourSeen()) tour = true } }
     val tourScope = androidx.compose.runtime.rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
-    // Fitness (body setup with its safety screening, calorie floors, plans) lives on the website until it can be ported with every safeguard.
-    androidx.compose.runtime.LaunchedEffect(section) {
-        if (section == "fitness") {
-            runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://heybubbles.in/fitness"))) }
-            section = null
-        }
-    }
     // A phone that was connected keeps its token fresh (it can change), without asking again.
     androidx.compose.runtime.LaunchedEffect(Unit) { `in`.heybubbles.app.push.Push.refresh(context.applicationContext, api, session) }
     // A tapped reminder opens the matching place. Only the kind travels in the message, never anything about the person.
@@ -145,6 +138,7 @@ private fun Home(api: Api, repo: Repo, session: Session) {
                     section == "patterns" -> PatternsScreen(api, onBack = { section = null })
                     section == "care" -> CareScreen(api, repo, onBack = { section = null })
                     section == "community" -> CommunityScreen(api, onBack = { section = null })
+                    section == "fitness" -> `in`.heybubbles.app.ui.screens.fitness.FitnessScreen(api, onBack = { section = null })
                     else -> when (tab) {
                     Tab.Today -> TodayScreen(api, repo, onTalk = { tab = Tab.Talk }, onOpenTracker = { startSlug = it; tab = Tab.Track }, onOpenSection = { section = it })
                     Tab.Talk -> TalkScreen(api)

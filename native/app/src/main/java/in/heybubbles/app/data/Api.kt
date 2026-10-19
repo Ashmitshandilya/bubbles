@@ -267,5 +267,13 @@ class Api(private val session: Session) {
     suspend fun deleteMyData() { send("DELETE", "/me/whole-health/data?confirm=true", "{}") }
 
     /** Erases the whole account (every record and the sign-in). The server answers success only when both steps worked. */
+    /** Fitness speaks plain JSON documents whose shape the server owns; these two calls carry them without a model per screen. */
+    suspend fun getJson(path: String): JsonObject = json.parseToJsonElement(get(path)).jsonObject
+
+    suspend fun sendJson(method: String, path: String, body: JsonObject? = null): JsonObject {
+        val text = send(method, path, body?.toString() ?: "{}")
+        return if (text.isBlank()) JsonObject(emptyMap()) else json.parseToJsonElement(text).jsonObject
+    }
+
     suspend fun deleteAccount() { send("DELETE", "/me/account?confirm=true", "{}") }
 }
