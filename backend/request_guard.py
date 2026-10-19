@@ -111,6 +111,6 @@ def admin_ids() -> frozenset[str]:
 
 
 def require_admin(user: Any) -> None:
-    """Raises 403 unless the signed-in user is on the admin list. Process-wide metadata is not for ordinary accounts."""
+    """Raises 404 (same answer as the admin portal) unless the signed-in user is on the admin list. Process-wide metadata is not for ordinary accounts."""
     if str(getattr(user, "id", "")) not in admin_ids():
-        raise HTTPException(status_code=403, detail={"error": "forbidden", "message": "Insufficient permissions for this operation"})
+        raise HTTPException(status_code=404, detail="Not Found")

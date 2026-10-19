@@ -69,7 +69,7 @@ def test_only_listed_administrators_pass_the_admin_gate(monkeypatch):
     monkeypatch.delenv("BUBBLES_ADMIN_USER_IDS", raising=False)
     with pytest.raises(HTTPException) as nobody:
         G.require_admin(SimpleNamespace(id="u1"))
-    assert nobody.value.status_code == 403
+    assert nobody.value.status_code == 404
     monkeypatch.setenv("BUBBLES_ADMIN_USER_IDS", " u9 , u1 ")
     G.require_admin(SimpleNamespace(id="u1"))
     with pytest.raises(HTTPException):
@@ -126,7 +126,7 @@ def test_operational_routes_are_for_administrators_only(main_module, monkeypatch
     for fn in (main_module.production_readiness, main_module.models_registry, main_module.ai_telemetry, main_module.privacy_security_baseline):
         with pytest.raises(HTTPException) as refused:
             fn(authorization="Bearer x")
-        assert refused.value.status_code == 403
+        assert refused.value.status_code == 404
     monkeypatch.setenv("BUBBLES_ADMIN_USER_IDS", "ordinary-user")
     assert main_module.privacy_security_baseline(authorization="Bearer x")["status"] == "success"
 
