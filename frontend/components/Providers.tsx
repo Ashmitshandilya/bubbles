@@ -11,7 +11,7 @@ import {
   shareInFlight, type DatabaseStatus, type HealthPayload,
 } from "../app/lib/connection";
 import { createApiCache } from "../app/lib/api-cache";
-import { gateDecision, readExperience, readSetupState, type Experience, type SetupState } from "../app/lib/experience";
+import { gateDecision, needsProviders, readExperience, readSetupState, type Experience, type SetupState } from "../app/lib/experience";
 import { ackStore, flushAcknowledgement } from "../app/lib/acknowledgement";
 import { BubblesMascot } from "./BubblesMascot";
 import dynamic from "next/dynamic";
@@ -48,7 +48,16 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Mounted once in the root layout (AppProviders) so a move between pages keeps the sign-in, the API probe and the setup check
+ * instead of redoing them. The per-page <AuthProvider>/<ApiProvider> wrappers stay and become pass-throughs when one is already above.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  if (useContext(AuthContext)) return <>{children}</>;
+  return <AuthProviderOwn>{children}</AuthProviderOwn>;
+}
+
+function AuthProviderOwn({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -290,6 +299,17 @@ const apiCache = createApiCache();
 const ApiContext = createContext<ApiContextType | undefined>(undefined);
 
 export function ApiProvider({ children }: { children: ReactNode }) {
+  if (useContext(ApiContext)) return <>{children}</>;
+  return <ApiProviderOwn>{children}</ApiProviderOwn>;
+}
+
+export function AppProviders({ children }: { children: ReactNode }) {
+  const pathname = usePathname() ?? "";
+  if (!needsProviders(pathname)) return <>{children}</>;
+  return <AuthProvider><ApiProvider>{children}</ApiProvider></AuthProvider>;
+}
+
+function ApiProviderOwn({ children }: { children: ReactNode }) {
   const [apiStatus, setApiStatus] = useState<"checking" | "online" | "offline">("checking");
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthPayload | null>(null);

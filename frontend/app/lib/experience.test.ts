@@ -77,3 +77,11 @@ describe("the setup gate", () => {
     expect(readSetupState(null)).toBeNull();
   });
 });
+
+describe("needsProviders", () => {
+  it("skips public pages and share links, covers the app", async () => {
+    const { needsProviders } = await import("./experience");
+    for (const p of ["/", "/login", "/terms", "/partner/abc", "/cycle/partner/abc"]) expect(needsProviders(p)).toBe(false);
+    for (const p of ["/dashboard", "/partner", "/privacy-choices", "/onboarding", "/fitness/diet"]) expect(needsProviders(p)).toBe(true);
+  });
+});
