@@ -19,5 +19,6 @@ class BubblesApp : Application() {
         api = Api(session)
         repo = Repo(api, `in`.heybubbles.app.data.OfflineQueue(this))
         `in`.heybubbles.app.push.Push.ensureChannel(this)
+        api.wake()
     }
 }

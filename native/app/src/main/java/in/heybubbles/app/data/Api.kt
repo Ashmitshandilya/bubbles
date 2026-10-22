@@ -8,6 +8,8 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
@@ -39,7 +41,16 @@ fun Throwable.friendly(): String = when {
 /** One client for the existing FastAPI. The server owns safety, consent and memory; this only carries requests. */
 class Api(private val session: Session) {
     val json = Json { ignoreUnknownKeys = true; explicitNulls = false; coerceInputValues = true; encodeDefaults = true }
-    private val http = OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS).readTimeout(90, TimeUnit.SECONDS).build()
+    // Today and Track ask for about 18 tracker lists at once; OkHttp's default of 5 per host would queue the rest behind them.
+    private val http = OkHttpClient.Builder().connectTimeout(20, TimeUnit.SECONDS).readTimeout(90, TimeUnit.SECONDS)
+        .dispatcher(okhttp3.Dispatcher().apply { maxRequestsPerHost = 16; maxRequests = 32 }).build()
+
+    /** One quiet GET /health at app start: the free API host sleeps when idle, and this lets it start while the app opens. No sign-in, no data. */
+    fun wake() {
+        Thread {
+            runCatching { http.newCall(Request.Builder().url(BuildConfig.API_URL + "/health").get().build()).execute().close() }
+        }.apply { isDaemon = true }.start()
+    }
     private val jsonType = "application/json".toMediaType()
 
     private class Raw(val code: Int, val body: String)
@@ -49,6 +60,51 @@ class Api(private val session: Session) {
         val res = authCall("password", json.encodeToString(Credentials.serializer(), Credentials(email.trim(), password)))
         if (res.code == 400 || res.code == 401) throw ApiError(401, "That email and password don't match.")
         keep(res)
+        recordAcknowledgement()   // a sign-up made before the email was confirmed
+    }
+
+    /**
+     * Creates the account (the same Supabase call as the website). With "Confirm email" on, no session comes back: the person opens the
+     * link we emailed (in their browser) and then signs in. The Terms and Privacy tick is kept until the first signed-in request can record it.
+     * Returns true when the person is already signed in.
+     */
+    suspend fun signUp(name: String, email: String, password: String): Boolean = withContext(Dispatchers.IO) {
+        if (BuildConfig.SUPABASE_URL.isBlank()) throw ApiError(500, "This build has no sign-in server set up.")
+        val body = buildJsonObject {
+            put("email", email.trim()); put("password", password)
+            put("data", buildJsonObject { put("display_name", name.trim().take(80)) })
+        }
+        val res = authPost("signup", AuthRules.CALLBACK_URL, json.encodeToString(JsonObject.serializer(), body))
+        when {
+            res.code == 429 -> throw ApiError(429, "Too many tries. Give it a minute.")
+            res.code in 400..499 -> throw ApiError(res.code, "Bubbles couldn't create that account. Check the email and use at least ${AuthRules.MIN_PASSWORD} characters.")
+            res.code !in 200..299 -> throw ApiError(res.code, "Bubbles is waking up. Try again in a moment.")
+        }
+        session.pendingAck = AuthRules.NOTICE_VERSION
+        val signedIn = runCatching { json.parseToJsonElement(res.body).jsonObject["access_token"]?.jsonPrimitive?.contentOrNull }.getOrNull() != null
+        if (signedIn) { keep(res); recordAcknowledgement() }
+        signedIn
+    }
+
+    /** Sends the confirmation email again. The answer never says whether the address has an account. */
+    suspend fun resendConfirmation(email: String) = withContext(Dispatchers.IO) {
+        val res = authPost("resend", AuthRules.CALLBACK_URL, json.encodeToString(JsonObject.serializer(), buildJsonObject { put("type", "signup"); put("email", email.trim()) }))
+        if (res.code == 429) throw ApiError(429, "Too many tries. Give it a minute.")
+    }
+
+    /** Sends a link to set a new password (it opens in the browser). Also works for accounts that never set one. */
+    suspend fun sendPasswordLink(email: String) = withContext(Dispatchers.IO) {
+        val res = authPost("recover", AuthRules.RESET_URL, json.encodeToString(JsonObject.serializer(), buildJsonObject { put("email", email.trim()) }))
+        if (res.code == 429) throw ApiError(429, "Too many tries. Give it a minute.")
+    }
+
+    /** Records "read the Terms and the Privacy notice" once the new account can call the server. Kept for the next try when it fails. */
+    private fun recordAcknowledgement() {
+        val version = session.pendingAck ?: return
+        runCatching {
+            call("POST", "/consents/acknowledgements", json.encodeToString(JsonObject.serializer(), buildJsonObject { put("version", version) }))
+            session.pendingAck = null
+        }
     }
 
     /** Test builds only (debug and qa): the local preview server accepts the token "preview". */
@@ -62,6 +118,12 @@ class Api(private val session: Session) {
     private fun authCall(grant: String, body: String): Raw {
         val req = Request.Builder().url("${BuildConfig.SUPABASE_URL}/auth/v1/token?grant_type=$grant")
             .header("apikey", BuildConfig.SUPABASE_KEY).post(body.toRequestBody(jsonType)).build()
+        http.newCall(req).execute().use { return Raw(it.code, it.body?.string().orEmpty()) }
+    }
+
+    private fun authPost(path: String, redirectTo: String, body: String): Raw {
+        val url = "${BuildConfig.SUPABASE_URL}/auth/v1/$path?redirect_to=${java.net.URLEncoder.encode(redirectTo, "UTF-8")}"
+        val req = Request.Builder().url(url).header("apikey", BuildConfig.SUPABASE_KEY).post(body.toRequestBody(jsonType)).build()
         http.newCall(req).execute().use { return Raw(it.code, it.body?.string().orEmpty()) }
     }
 

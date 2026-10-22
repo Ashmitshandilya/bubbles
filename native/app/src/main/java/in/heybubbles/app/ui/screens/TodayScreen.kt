@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -80,9 +82,12 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             try {
-                val daily = api.daily().companion
-                // Patterns are a bonus: if they fail, Today still works.
-                val assoc = runCatching { api.associations() }.getOrNull()
+                // The two reads do not depend on each other, so they go out together.
+                val (daily, assoc) = coroutineScope {
+                    // Patterns are a bonus: if they fail, Today still works.
+                    val patterns = async { runCatching { api.associations() }.getOrNull() }
+                    api.daily().companion to patterns.await()
+                }
                 _state.update {
                     TodayState(
                         loading = false, daily = daily,

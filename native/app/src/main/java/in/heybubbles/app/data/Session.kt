@@ -30,6 +30,11 @@ class Session(context: Context) {
         get() = prefs.getString("push_token", null)
         set(v) { prefs.edit().apply { if (v == null) remove("push_token") else putString("push_token", v) }.apply() }
 
+    /** The notice version the person ticked at sign-up, kept until the server has recorded it (the account may need an email confirmation first). */
+    var pendingAck: String?
+        get() = prefs.getString("pending_ack", null)
+        set(v) { prefs.edit().apply { if (v == null) remove("pending_ack") else putString("pending_ack", v) }.apply() }
+
     fun save(access: String, refresh: String?) {
         prefs.edit().putString("access", access).putString("refresh", refresh).apply()
         _signedIn.value = true
