@@ -14,6 +14,12 @@ Entry template:
 - Where: files or folders
 - Notes: trade-offs, rejected options, follow-ups
 ```
+### 2026-10-20 · Refetch-loop e2e guard
+- What: `npm run e2e:refetch` (frontend/scripts/e2e-refetch-guard.mjs) opens nine sections against the preview API, waits idle, and fails on more than 40 API calls or any 429 per section.
+- Why: PR #53 fixed a loop where read-by-POST calls counted as data changes and every screen refetched forever; the unit tests cover the rule, this catches any new cause.
+- Use: run before releases, with the preview API on :8001 and `next dev` on :3100 (header of the script has the commands). Not in CI (needs both servers).
+- Where: frontend/scripts/e2e-refetch-guard.mjs, frontend/package.json
+
 ### 2026-10-17 · Caching, organ map reads in parallel, load test
 - What: /organs/map reads its five sources in parallel; backend/loadtest (httpx, AI stubbed, localhost only) shows ~94 req/s on one process with 0 errors at 50 users and p95 847 ms; FirstRunTour loads on demand; /models/* cached for a week; fixed a startup crash in main._warm_database_probe (duplicate local import of threading).
 - Why: speed; numbers and method in docs/LOAD_TEST.md.
