@@ -149,8 +149,12 @@ def get_relevant_memories(
                 if len(word) >= 3
             }
 
+            # What the person plainly told Bubbles about themselves and their people (name, partner, family, pets, city) is always
+            # in front of the model: a friend does not need the right keyword to remember who your boyfriend is. These are few and short.
+            told = isinstance(memory.get("structured_data"), dict) and memory["structured_data"].get("source") == "explicit_user_statement"
             relevant = (
-                not query_words
+                told
+                or not query_words
                 or any(word in searchable for word in query_words)
             )
 
@@ -198,7 +202,7 @@ def format_memory_context(
     # --------------------------------------------------
 
     if memories["L2"]:
-        lines = ["PERSISTENT USER HEALTH FACTS:"]
+        lines = ["WHAT THE PERSON HAS TOLD YOU (saved by them; use it naturally, like a friend who remembers):"]
 
         for memory in memories["L2"]:
             lines.append(

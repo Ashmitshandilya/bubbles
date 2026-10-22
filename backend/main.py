@@ -702,7 +702,7 @@ _chat_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_CHAT_RATE_LIMIT", "30")
 # the person's own context is waited for longer and logged, never dropped quietly.
 RAG_BUDGET_S = max(0.5, float(os.getenv("CHAT_RAG_BUDGET_S", "2.0")))
 CONTEXT_BUDGET_S = max(2.0, float(os.getenv("CHAT_CONTEXT_BUDGET_S", "8.0")))
-_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup"}
+_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup", "recall", "remembered"}
 
 
 def _debug_trace_enabled() -> bool:
@@ -924,6 +924,10 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
             response_text = _fitness_text(user_id, user_message)
+        elif turn.route == "recall" and not state.consent_required:
+            response_text = _recall_text(user_id, user_message, name)
+        elif turn.route == "remembered" and not state.consent_required and not state.memory_saved:
+            response_text = "I couldn't save that just now. Would you tell me again in a moment?"   # never say "I'll remember" when nothing was saved
     else:
         # The person's own context, the evidence lookup and the tone settings do not depend on each other: started together, after the
         # safety gate (evidence is never fetched before it, and only for topics the person actually raised, never for denied or other
@@ -1432,6 +1436,23 @@ def security_scopes(authorization: str | None = Header(default=None)):
     """Return security-related scopes for the authenticated user."""
     user = get_authenticated_user(authorization)
     return {"status": "success", "user_id": str(user.id), "scopes": []}
+
+
+def _recall_text(user_id: str, message: str, account_name: str | None) -> str:
+    """"What's my boyfriend's name?": answered from what the person told Bubbles (no model, no consent question). Never raises."""
+    try:
+        from memory_retrieval import fetch_memory_rows
+        from people_memory import recall_reply, recall_target
+        facts = []
+        for row in fetch_memory_rows(user_id):
+            data = row.get("structured_data") if isinstance(row.get("structured_data"), dict) else {}
+            if data.get("source") == "explicit_user_statement" and row.get("verification_status") not in {"rejected", "superseded"}:
+                facts.append({"key": data.get("key"), "value": data.get("value"), "relation": data.get("relation")})
+        return recall_reply(recall_target(message) or "name", facts, account_name=account_name)
+    except Exception as error:  # noqa: BLE001
+        from logging_util import logger
+        logger.warning(component="CHAT", operation="recall", error=error, fallback_action="generic_reply")
+        return "I couldn't look that up just now. Ask me again in a moment?"
 
 
 def _fitness_text(user_id: str, message: str) -> str:

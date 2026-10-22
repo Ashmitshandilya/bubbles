@@ -110,7 +110,7 @@ def current_note() -> dict:
 # The only values a chat note may carry. Anything else is dropped: no free text can ever reach an event this way.
 NOTE_VALUES: dict[str, frozenset] = {
     "route_kind": frozenset({"ai", "emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer",
-                             "small_talk", "safety_followup", "consent_needed", "empty"}),
+                             "small_talk", "safety_followup", "recall", "remembered", "consent_needed", "empty"}),
     "safety_level": frozenset({"GREEN", "AMBER", "RED"}),
     "ai_called": frozenset({True, False}),
 }
