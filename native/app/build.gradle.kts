@@ -24,6 +24,7 @@ android {
         targetSdk = 36
         versionCode = 10
         versionName = "3.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Public values only (same as the website). Override with -PBUBBLES_API_URL=... for a local server.
         buildConfigField("String", "API_URL", "\"${providers.gradleProperty("BUBBLES_API_URL").getOrElse("https://bubbles-dk3v.onrender.com")}\"")
         buildConfigField("String", "SUPABASE_URL", "\"${providers.gradleProperty("BUBBLES_SUPABASE_URL").getOrElse("")}\"")
@@ -84,6 +85,12 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    // Screen tests that run on a phone or the emulator: ./gradlew connectedDebugAndroidTest
+    androidTestImplementation(bom)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 
 // Firebase (phone reminders) is built in only when this machine has the project's google-services.json (it stays out of git, like the

@@ -42,6 +42,7 @@ Needs JDK 21 and the Android SDK (platform 36). On this PC: `JAVA_HOME=~/.bubble
 ```
 cd native
 ./gradlew.bat assembleDebug testDebugUnitTest                      # compile + 40-odd unit tests
+./gradlew.bat connectedDebugAndroidTest                             # screen tests on a connected phone or the emulator
 ./gradlew.bat assembleDebug -PBUBBLES_API_URL=http://10.0.2.2:8001 # for the emulator + preview server
 ./gradlew.bat assembleRelease bundleRelease \
    -PBUBBLES_SUPABASE_URL=... -PBUBBLES_SUPABASE_KEY=...           # signed APK + AAB (public key only)
@@ -89,5 +90,5 @@ and the person can switch 3D off (remembered). **Real-phone speed is unmeasured.
 
 ## 9. Status and what is next
 Built: sign-in, first-run setup, tour, Today, Talk, Track (8 trackers, offline), Cycle, Patterns, Care, Community, reminders, Your choices, Delete my data, Delete my account, Fitness (food log, diet, workouts, strict transformation with screening, progress, body setup), Partner sharing, 3D body map, light/dark.
-Not done: real-phone test (especially body-map speed), release rebuild copied to `D:\coco\release-native-3.0.0`, `DECISIONS.md` entries for the new features (add in PR #52), Play Console steps (`PLAY_LISTING.md`), Compose UI tests for the main flows, TalkBack pass, a Fitness unit test for the response parsers if they grow.
+Not done: real-phone test (especially body-map speed), release rebuild copied to `D:\coco\release-native-3.0.0`, `DECISIONS.md` entries for the new features (add in PR #52), Play Console steps (`PLAY_LISTING.md`), more Compose UI tests (the sign-in screen has four, run with `./gradlew.bat connectedDebugAndroidTest` on a phone or the emulator), a TalkBack pass on a real phone, a Fitness unit test for the response parsers if they grow.
 Open ideas: Room instead of the encrypted JSON queue if offline needs to cover more than tracker entries; show queued entries in the history list; a measured performance budget for the body map; native-side e2e in CI against the preview server.
