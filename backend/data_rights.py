@@ -75,4 +75,24 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                 "note": ("Your tracker entries (sleep, weight, symptoms and so on) are separate and were not deleted. "
                          "If Bubbles recently paused a plan for your safety, that short safety hold stays in place so a strict plan cannot restart straight away.")}
 
+    @router.delete("/me/account")
+    async def delete_account(confirm: bool = Query(default=False), authorization: str | None = Header(default=None)):
+        """Erases the person: every document (safety holds and community posts included), then the sign-in itself. Every table keyed by
+        user_id is linked to auth.users on delete cascade, so removing the sign-in removes the rest. Nothing is claimed unless both steps worked."""
+        uid = str((await run_in_threadpool(get_user, authorization)).id)
+        if not confirm:
+            raise HTTPException(status_code=422, detail="Add confirm=true to delete your account and everything in it. This cannot be undone.")
+        try:
+            await run_in_threadpool(doc_store.delete_everything, db, uid, ())
+        except doc_store.IncompleteDelete:
+            raise HTTPException(status_code=503, detail="Your account was not deleted because some of your community posts could not be removed yet. Please try again in a minute.")
+        await run_in_threadpool(delete_mirrors, db, uid)
+        try:
+            await run_in_threadpool(db.auth.admin.delete_user, uid)
+        except Exception:  # noqa: BLE001
+            raise HTTPException(status_code=503, detail="Your data was deleted but the sign-in could not be removed yet. Please try again in a minute.")
+        import ttl_cache
+        ttl_cache.clear_all()   # a cached sign-in must not keep answering for a person who no longer exists
+        return {"status": "success", "deleted": True}
+
     return router

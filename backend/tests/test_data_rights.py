@@ -71,3 +71,24 @@ def test_delete_all_is_a_503_not_a_success_when_the_community_wipe_still_fails(m
     res = c.delete("/me/whole-health/data?confirm=true", headers=H1)
     assert res.status_code == 503 and "community" in res.json()["detail"]
     assert doc_store.get(db, "user-1", "profile", "me") is None                       # the rest was deleted
+
+
+def test_account_deletion_needs_confirmation_wipes_documents_and_removes_the_sign_in():
+    c, db = make()
+    doc_store.put(db, "user-1", "profile", "me", {"height_cm": 170})
+    doc_store.put(db, "user-2", "profile", "me", {"height_cm": 150})
+    assert c.delete("/me/account").status_code == 401
+    assert c.delete("/me/account", headers=H1).status_code == 422
+    assert db.auth.deleted == [] and doc_store.get(db, "user-1", "profile", "me")
+    assert c.delete("/me/account?confirm=true", headers=H1).json() == {"status": "success", "deleted": True}
+    assert db.auth.deleted == ["user-1"] and doc_store.get(db, "user-1", "profile", "me") is None
+    assert doc_store.get(db, "user-2", "profile", "me")
+
+
+def test_account_deletion_never_claims_success_when_the_sign_in_cannot_be_removed():
+    c, db = make()
+    def boom(_uid):
+        raise RuntimeError("auth down")
+    db.auth.admin.delete_user = boom
+    r = c.delete("/me/account?confirm=true", headers=H1)
+    assert r.status_code == 503 and "sign-in" in r.json()["detail"]

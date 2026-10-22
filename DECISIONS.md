@@ -14,6 +14,48 @@ Entry template:
 - Where: files or folders
 - Notes: trade-offs, rejected options, follow-ups
 ```
+
+### 2026-10-18 · Native Android app in Kotlin + Compose replaces the wrapper (PR #52)
+- What:  `native/` is a real Android app (same applicationId and release key as the Capacitor wrapper, so it updates it in place). It is
+  a client of the existing API: no new endpoints, no new tables, no health logic copied. Built: sign-in, first-run setup from the server's
+  question bank, first-run tour, Today, Talk, Track (8 trackers, offline), Cycle, Patterns, Care, Community, phone reminders, Your choices,
+  Fitness, Partner sharing, the 3D body map and in-app account deletion (see the entries below). Account creation still happens on the website.
+- Why:   the owner wanted an app that feels like an app (not a website in a wrapper) and a Play Store release later.
+- Rules: missing data is a gap; consent changes go through the server first; no Firebase Analytics; tokens in encrypted storage and excluded
+  from backup; sign-out removes the phone from the reminder list. A new person must be able to finish setup on the phone (the gate follows
+  `GET /onboarding/state`).
+- Where: `native/` (see `native/README.md` and `native/PLAN.md`), `.github/workflows/native.yml`.
+- Fitness and in-app account deletion now exist, so the two reasons for holding it back are gone.
+
+### 2026-10-20 · Fitness in the native app: the server keeps every safeguard
+- What: full port of Fitness (hub, body setup, food log, diet planner with grocery list and swaps, workouts, strict transformation, progress). The app shows what the server answers and offers Start only when the server says `allowed` or `allowed_with_cautions` (unit-tested in `TransformGateTest`); the server re-checks on start.
+- Why: the eating-disorder screening, calorie floors and clinician-clearance path are safety rules. A second copy in the app could drift from the server and let a person past a gate.
+- Rules: the SCOFF-style screening and its verdict belong to the server. Workout safety questions and "how do I feel" stop rules are shown in full, first. Missing data is a dash, never 0.
+- Where: `native/app/.../ui/screens/fitness/*`, `data/FitnessCalc.kt`. Response shapes were checked against the preview API before parsing.
+
+### 2026-10-20 · Partner sharing in the native app is consent-gated
+- What: invite code (48 hours), quick link, connect with a code, leave, and stop all sharing. Nothing is offered until the server reports consent; when off, the screen says so and points to Me, Your choices.
+- Why: sharing health information with another person needs a clear yes from the sharer, and the limits are the server's.
+- Where: `ui/screens/PartnerScreen.kt`, `data/PartnerCalc.kt` (invite text, expiry countdown, tests in `PartnerCalcTest`). Links use `https://heybubbles.in/partner/<token>`.
+
+### 2026-10-20 · Offline logging queues only requests that never reached the server
+- What: tracker entries made with no connection are held in an encrypted queue and sent when the network returns. Only connect-time failures (unknown host, no route, connection refused, connect timeout) are queued, with `date = now`. Read timeouts and dropped answers are not queued.
+- Why: health entries have no idempotency key, so a request the server may have saved could be logged twice. Checked on the emulator: offline save, automatic sync, exactly one server copy.
+- Rules: sync runs at app open, on network-available and after a save; it stops at the first transient failure and drops entries the server refuses for good (4xx except 401, 408, 429). Sign-out clears the queue after naming how many entries would be lost.
+- Where: `data/OfflineQueue.kt` (`QueueRules` is pure and tested), `data/Repo.kt`. Upgrade path: Room, only if offline must cover more than tracker entries.
+
+### 2026-10-20 · 3D body map runs inside the app, with a list and an off switch
+- What: the body map is a three.js page and the same `body.glb` as the website, loaded from app assets in a locked-down WebView (JavaScript on; file and content access off; network blocked; navigation blocked). The organ list is always shown, "Hide 3D" is remembered, and a safety message forces "Talk to a doctor" and is never calmer than the server's wording.
+- Why: it matches the website without a network call for the model. The model is about 400k triangles, so phones get no antialiasing and a 1.5 pixel ratio, and the 3D view can be turned off.
+- Open: speed on real phones is unmeasured (the emulator's software GPU cannot judge it). The list is the fallback.
+- Where: `ui/screens/BodyScreen.kt`, `data/OrganStatus.kt` (tested), `assets/body/`.
+
+### 2026-10-20 · Delete my account (native app, Play requirement)
+- What: `DELETE /me/account?confirm=true` erases every document (safety holds and community posts included), then removes the Supabase sign-in; every user_id table cascades from auth.users. The native app has "Delete my account" under Your choices; the privacy page says so.
+- Why: Google Play requires in-app account deletion; the privacy page said it was "still being built".
+- Use: success is answered only when both steps worked (503 otherwise, safe to retry). Sign-in caches are cleared.
+- Where: backend/data_rights.py, tests/test_data_rights.py, native ChoicesScreen.kt
+
 ### 2026-10-20 · Refetch-loop e2e guard
 - What: `npm run e2e:refetch` (frontend/scripts/e2e-refetch-guard.mjs) opens nine sections against the preview API, waits idle, and fails on more than 40 API calls or any 429 per section.
 - Why: PR #53 fixed a loop where read-by-POST calls counted as data changes and every screen refetched forever; the unit tests cover the rule, this catches any new cause.

@@ -129,8 +129,7 @@ export default function PrivacyPage() {
           <li>Turn phone reminders or crash reports off at any time in the Android app.</li>
           <li>Change or take back any privacy choice at any time.</li>
           <li>
-            Full account deletion is still being built. Until it is, write to <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a> from the email address you signed up with and we will delete your account and
-            everything linked to it.
+            In the Android app, Me, Your choices, Delete my account erases everything and removes your sign-in. On the web, write to <a href="mailto:hello@heybubbles.in">hello@heybubbles.in</a> from the email address you signed up with and we will delete your account and everything linked to it.
           </li>
         </ul>
       </section>

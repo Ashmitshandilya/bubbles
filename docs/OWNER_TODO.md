@@ -23,3 +23,13 @@
 
 ## Not yet done
 - Manual keyboard and screen-reader walkthroughs, Playwright screenshots, `next build`.
+
+## Native Android app (Kotlin) before it replaces the wrapper
+- Decide whether to ship it over 2.1.0 now: Fitness opens on the website, offline logging and Partner sharing are not built.
+- Google Play: a developer account ($25), a privacy policy URL (https://heybubbles.in/privacy), the Data safety form, the content
+  rating, and a closed test (new personal accounts need 12 testers for 14 days). Enrol in Play App Signing and upload with the existing key.
+- Back up `~/.bubbles-signing/bubbles-release.jks` and `keystore.properties` in two places. Losing the key means nobody can update.
+- Play requires in-app account deletion for apps with sign-up. The server only has "delete my data" today: a full account deletion
+  (including the sign-in record) must be built and linked from a public page.
+- Optional: register `in.heybubbles.app.debug` and `.qa` as extra Android apps in the Firebase project so test builds get their own tokens.
+- Test on a real phone (the build was verified on the emulator): sign-in with a real account, push reminders, a long chat, TalkBack.

@@ -1,0 +1,31 @@
+name: Native app
+
+# The Kotlin/Compose Android app in native/. Runs only when it (or this file) changes: unit tests, lint-free debug build, and the
+# minified "qa" build, which is the release code R8 shrinks (a class stripped by mistake shows up here, not on a user's phone).
+on:
+  push:
+    branches: [main]
+    paths: ["native/**", ".github/workflows/native.yml"]
+  pull_request:
+    paths: ["native/**", ".github/workflows/native.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew
+      - run: ./gradlew testDebugUnitTest --no-daemon
+      - run: ./gradlew assembleDebug assembleQa --no-daemon
