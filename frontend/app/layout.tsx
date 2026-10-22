@@ -4,7 +4,9 @@ import "./globals.css";
 import { PrivacyVeilProvider } from "../components/PrivacyVeil";
 import { AuthLinkRedirect } from "../components/AuthLinkRedirect";
 import { PrivacyNotice } from "../components/PrivacyNotice";
+import { AppProviders } from "../components/Providers";
 import { NativeBridge } from "../components/NativeBridge";
+import { WakeApi } from "../components/WakeApi";
 import { isNativeApp } from "../lib/native";
 
 // Self-hosted by next/font (no runtime request to Google) with size-adjusted
@@ -89,7 +91,8 @@ export default function RootLayout({
     <html lang="en" className={`${nunito.variable} ${fredoka.variable} ${fraunces.variable} ${figtree.variable} ${bricolage.variable} ${jetbrainsMono.variable}`} data-native={isNativeApp ? "" : undefined}>
       <body className="bubbles-shell min-h-dvh flex flex-col">
         <AuthLinkRedirect />
-        <PrivacyVeilProvider>{children}</PrivacyVeilProvider>
+        <WakeApi />
+        <PrivacyVeilProvider><AppProviders>{children}</AppProviders></PrivacyVeilProvider>
         <PrivacyNotice />
         {isNativeApp && <NativeBridge />}
       </body>

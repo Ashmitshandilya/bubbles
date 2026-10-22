@@ -98,24 +98,24 @@ export function StatusLegend() {
   return (
     <div className="mt-5 border-t border-line pt-4">
       <h3 className="text-body-sm font-extrabold text-ink">What the colours mean</h3>
-      <dl className="mt-2 grid gap-2 sm:grid-cols-2">
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2">
         {STATUS_ORDER.map((status) => {
           const meta = STATUS_META[status];
           return (
-            <div key={status} className="flex gap-2.5">
+            <li key={status} className="flex gap-2.5">
               <span
                 className={`mt-1 h-3 w-3 shrink-0 rounded-full ${swatch(status)}`}
                 style={status === "no_data" ? undefined : { background: `var(${meta.color})` }}
                 aria-hidden="true"
               />
               <div>
-                <dt className="text-body-sm font-bold text-ink">{meta.label}</dt>
-                <dd className="text-caption text-muted">{meta.meaning}</dd>
+                <p className="text-body-sm font-bold text-ink">{meta.label}</p>
+                <p className="text-caption text-muted">{meta.meaning}</p>
               </div>
-            </div>
+            </li>
           );
         })}
-      </dl>
+      </ul>
     </div>
   );
 }

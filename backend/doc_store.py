@@ -163,6 +163,20 @@ def get_many(db: Any, uid: str, kind: str, keys: list[str]) -> dict[str, dict]:
     return {key: by_title[title] for key, title in wanted.items() if title in by_title}
 
 
+def get_pairs(db: Any, uid: str, pairs: list[tuple[str, str]]) -> dict[tuple[str, str], dict]:
+    """Documents of DIFFERENT kinds in ONE read: {(kind, key): payload}. Same rules as get_many (missing, unsigned and foreign rows are left out)."""
+    wanted = {(str(k), str(key)): _check(k, key) for k, key in dict.fromkeys(pairs)}
+    if not wanted:
+        return {}
+    rows = (db.table(TABLE).select("*").eq("user_id", uid).eq("event_type", EVENT_TYPE).in_("title", list(wanted.values()))
+            .order("created_at", desc=True).limit(len(wanted) * 3).execute().data or [])
+    by_title: dict[str, dict] = {}
+    for row in rows:
+        if row.get("title") not in by_title and row_is_valid(row):
+            by_title[row["title"]] = _unpack(row)["payload"]
+    return {pair: by_title[title] for pair, title in wanted.items() if title in by_title}
+
+
 class IncompleteDelete(RuntimeError):
     """Everything else was removed, but some community tables could not be emptied even after one retry. Holds table names only."""
 

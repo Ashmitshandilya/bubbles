@@ -117,8 +117,8 @@ export function DashboardClient() {
       (r) => { if (alive) setNudges(readNudges(r)); },
       () => { /* an extra: the row simply stays out of Today */ },
     );
-    get<{ summary?: { last_update?: string } }>("/health/summary").then(
-      (r) => { if (alive) setServerLastUpdate(r.summary?.last_update ?? null); },
+    get<{ last_update?: string | null; summary?: { last_update?: string } }>("/health/summary?last_only=true").then(
+      (r) => { if (alive) setServerLastUpdate(r.last_update ?? r.summary?.last_update ?? null); },
       () => { /* the card falls back to what this browser saw */ },
     );
     get<{ profile?: ProfileData | null }>("/profile").then(

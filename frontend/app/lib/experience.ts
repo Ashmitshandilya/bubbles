@@ -76,6 +76,14 @@ export function gateApplies(pathname: string): boolean {
   return !GATE_EXEMPT.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+/** Pages that have no signed-in app behind them (landing, sign-in, legal, share links) get no providers. */
+export function needsProviders(pathname: string): boolean {
+  if (pathname === "/" || pathname === "") return false;
+  return !["/login", "/callback", "/password", "/terms", "/privacy", "/android", "/partner/", "/cycle/partner/"].some(
+    (p) => pathname === p || pathname.startsWith(p.endsWith("/") ? p : `${p}/`),
+  );
+}
+
 export interface SetupState {
   complete: boolean;
   under18: boolean;

@@ -71,11 +71,17 @@ export function ScrollDirector() {
     document.documentElement.addEventListener("pointerleave", onLeave);
 
     const written = sections.map(() => ({ p: "", in: "", out: "", on: false }));
-    const rootVars: Record<string, string> = {};
-    const setRoot = (name: string, value: string) => {
-      if (rootVars[name] === value) return;
-      rootVars[name] = value;
-      root.style.setProperty(name, value);
+    // A custom property changed on .cw restyles the whole page (~60 ms here); changed on the one small element
+    // that reads it, it costs almost nothing. So each variable is written to its consumer, not the root.
+    const bg = root.querySelector<HTMLElement>(".cw-bg") ?? root;
+    const rail = root.querySelector<HTMLElement>(".cw-rail") ?? root;
+    const dive = root.querySelectorAll<HTMLElement>(".cw-portal--rim, .cw-portal--dive");
+    const bloom = root.querySelector<HTMLElement>(".cw-portal--bloom") ?? root;
+    const written_vars = new Map<string, string>();
+    const setOn = (els: HTMLElement | Iterable<HTMLElement>, name: string, value: string) => {
+      if (written_vars.get(name) === value) return;
+      written_vars.set(name, value);
+      for (const el of els instanceof HTMLElement ? [els] : els) el.style.setProperty(name, value);
     };
 
     const companion = CHAPTER_INDEX.companion;
@@ -139,12 +145,12 @@ export function ScrollDirector() {
         if (current !== 0) blended = skyAt(current, t, phase);
         else if (todK < 1) blended = mixSky(skyAt(0, t, phase, "dawn"), skyAt(0, t, phase, tod), smooth(todK));
         else blended = skyAt(0, t, phase, tod);
-        setRoot("--sky-top", blended.top);
-        setRoot("--sky-mid", blended.mid);
-        setRoot("--sky-hor", blended.horizon);
-        setRoot("--bg", blended.mid);
-        setRoot("--vig", fmt(blended.grade.vignette));
-        setRoot("--scrim", scrimCss(blended.scrim));
+        setOn(bg, "--sky-top", blended.top);
+        setOn(bg, "--sky-mid", blended.mid);
+        setOn(bg, "--sky-hor", blended.horizon);
+        setOn(bg, "--bg", blended.mid);
+        setOn(bg, "--vig", fmt(blended.grade.vignette));
+        setOn(bg, "--scrim", scrimCss(blended.scrim));
         sk.top = blended.top;
         sk.mid = blended.mid;
         sk.horizon = blended.horizon;
@@ -177,21 +183,21 @@ export function ScrollDirector() {
       if (root.dataset.tone !== tone) root.dataset.tone = tone;
       if (root.dataset.active !== CHAPTERS[lead].key) root.dataset.active = CHAPTERS[lead].key;
       // Where the story is, fractionally (4.5 = halfway from chapter 4 to 5): the rail's ticks grow and fade from it.
-      setRoot("--ch", fmt(current + story.blend));
+      setOn(rail, "--ch", fmt(current + story.blend));
 
       // Portal 1: the hero opens into the body.
       // (Only drawn while the hero is on stage; afterwards the base colour already matches.)
-      setRoot("--dive", fmt(portalDive * portalDive));
+      setOn(dive, "--dive", fmt(portalDive * portalDive));
       // ...and it opens from the bubble Bubbles stands in (her body centre), not a fixed spot on the screen.
       if (portalDive > 0 && story.bubbles.visible) {
-        setRoot("--dive-x", `${Math.round(story.bubbles.feet.x)}px`);
-        setRoot("--dive-y", `${Math.round((story.bubbles.y + story.bubbles.feet.y) / 2)}px`);
+        setOn(dive, "--dive-x", `${Math.round(story.bubbles.feet.x)}px`);
+        setOn(dive, "--dive-y", `${Math.round((story.bubbles.y + story.bubbles.feet.y) / 2)}px`);
       }
       // Portal 2: light blooms out of Bubbles' horn as the companion hands over to care.
-      setRoot("--bloom", fmt(portalBloom * portalBloom));
+      setOn(bloom, "--bloom", fmt(portalBloom * portalBloom));
       if (current === companion && story.bubbles.visible) {
-        setRoot("--bloom-x", `${Math.round(story.bubbles.horn.x)}px`);
-        setRoot("--bloom-y", `${Math.round(story.bubbles.horn.y)}px`);
+        setOn(bloom, "--bloom-x", `${Math.round(story.bubbles.horn.x)}px`);
+        setOn(bloom, "--bloom-y", `${Math.round(story.bubbles.horn.y)}px`);
       }
       rotateFocus();
       for (const listener of story.listeners) listener(dt);

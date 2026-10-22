@@ -19,6 +19,40 @@ describe("describeWrite", () => {
   });
 });
 
+describe("requests that read through POST are not changes", () => {
+  // Every one of these is sent while a screen loads. If any counted as a change, that screen would reload itself forever.
+  it.each([
+    ["/intelligence/brief", "Today"],
+    ["/intelligence/deep", "Today"],
+    ["/intelligence/longitudinal", "Patterns"],
+    ["/patterns/analyze", "Patterns"],
+    ["/insights/weekly", "Patterns"],
+    ["/companion/daily", "Talk"],
+    ["/doctor/prepare", "Care"],
+    ["/medical/summary", "Care"],
+    ["/rag/search", "Talk"],
+    ["/fitness/meal/parse", "Fitness"],
+    ["/fitness/workouts/screen", "Fitness"],
+    ["/fitness/transform/preview", "Fitness"],
+    ["/fitness/diet/swap-options", "Fitness"],
+  ])("%s (%s) is not a change", (path) => {
+    expect(describeWrite(path, "POST")).toBeNull();
+    expect(describeWrite(`${path}?days=14`, "POST")).toBeNull();
+  });
+  it("an unknown POST is not a change either (fail safe, never loop)", () => {
+    expect(describeWrite("/something/new", "POST")).toBeNull();
+  });
+  it("real saves still count", () => {
+    expect(describeWrite("/fitness/food-log", "POST")).toBe("Fitness");
+    expect(describeWrite("/fitness/workouts/log", "POST")).toBe("Fitness");
+    expect(describeWrite("/cycle/period/start", "POST")).toBe("Cycle");
+    expect(describeWrite("/health/sleep/abc", "DELETE")).toBe("Sleep");
+    expect(describeWrite("/health/medications", "POST")).toBe("Medications");
+    expect(describeWrite("/import/csv", "POST")).toBe("Imported records");
+    expect(describeWrite("/me/whole-health/data?confirm=true", "DELETE")).toBe("Your record");
+  });
+});
+
 describe("pickLastUpdate", () => {
   it("prefers the newer of local and server", () => {
     const local = { label: "Weight", at: 2_000 };

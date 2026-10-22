@@ -778,8 +778,9 @@ def _screen_free_text(body: dict) -> dict | None:
 def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     router = APIRouter()
 
-    def _summary(uid: str) -> dict:
+    def _summary(uid: str, last_only: bool = False) -> dict:
         refused: list[str] = []
+        newest = 1 if last_only else 500   # Today only needs the newest stamp, so it asks for one row per table instead of up to 500
 
         def stamps_of(item: tuple[str, dict]) -> tuple[str, list]:
             slug, domain = item
@@ -787,7 +788,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             for key, value in domain.get("filters", {}).items():
                 query = query.eq(key, value)
             try:
-                rows = query.order("created_at", desc=True).limit(500).execute().data or []
+                rows = query.order("created_at", desc=True).limit(newest).execute().data or []
             except Exception as exc:
                 if not is_permission_denied(exc):
                     raise
@@ -815,6 +816,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                 days.update(s[:10] for s in known)
                 if known:
                     latest = max(known + ([latest] if latest else []))
+        if last_only:   # the counts above are not real counts in this mode, so they are not sent
+            return {"status": "success", "last_update": latest}
         return {"status": "success", "categories_with_data": with_data, "total_entries": total,
                 "days_tracked": len(days), "last_update": latest}
 
@@ -825,8 +828,8 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         return save_domain(db, slug, domain, uid, body)
 
     @router.get("/health/summary")
-    def health_summary(authorization: str | None = Header(default=None)):
-        return _summary(str(get_user(authorization).id))
+    def health_summary(last_only: bool = Query(default=False), authorization: str | None = Header(default=None)):
+        return _summary(str(get_user(authorization).id), last_only)
 
     @router.get("/health/{slug}")
     def list_entries(slug: str, days: int = Query(default=30, ge=1, le=730),

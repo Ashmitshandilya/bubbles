@@ -88,6 +88,17 @@ export function World() {
     if (sim.introAt < 0) {
       sim.introAt = clock;
       story.worldReady = true;
+      // Compile every material now, while the hero is still, so scrolling into a new chapter never stalls on a shader.
+      // (compile skips hidden objects, so show everything for the call and put it back.)
+      const hidden: THREE.Object3D[] = [];
+      state.scene.traverse((o) => {
+        if (!o.visible) {
+          hidden.push(o);
+          o.visible = true;
+        }
+      });
+      state.gl.compile(state.scene, state.camera);
+      for (const o of hidden) o.visible = false;
       const root = document.querySelector<HTMLElement>(".cw");
       if (root) root.dataset.world = "ready";
     }
