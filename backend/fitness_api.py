@@ -27,6 +27,7 @@ import nutrition_calc as N
 import plan_engine
 import transformation as T
 from calc_core import local_today
+from parallel import together as _together
 from wellness_common import request_tz
 from event_filters import is_live_positive
 from exercise_library import LIB
@@ -180,12 +181,15 @@ def _domain(db: Any, uid: str, slug: str, days: int) -> list[dict]:
 
 def records(db: Any, uid: str) -> dict[str, Any]:
     """What Bubbles already knows from the user's tracker records."""
-    conds = [e.get("condition_name") for e in _domain(db, uid, "conditions", 730) if e.get("condition_name")]
-    meds = [e.get("name") for e in _domain(db, uid, "medications", 730) if e.get("name")]
-    allergies = [e.get("allergen") for e in _domain(db, uid, "allergies", 730) if e.get("allergen")]
-    weights = [(str(e["date"])[:10], _lbs_to_kg(e.get("weight"))) for e in _domain(db, uid, "weight", 400) if e.get("weight") is not None]
+    conditions, medications, allergens, weight_rows, cycle_rows = _together(
+        lambda: _domain(db, uid, "conditions", 730), lambda: _domain(db, uid, "medications", 730), lambda: _domain(db, uid, "allergies", 730),
+        lambda: _domain(db, uid, "weight", 400), lambda: _domain(db, uid, "cycle", 730))
+    conds = [e.get("condition_name") for e in conditions if e.get("condition_name")]
+    meds = [e.get("name") for e in medications if e.get("name")]
+    allergies = [e.get("allergen") for e in allergens if e.get("allergen")]
+    weights = [(str(e["date"])[:10], _lbs_to_kg(e.get("weight"))) for e in weight_rows if e.get("weight") is not None]
     weights = sorted([(d, w) for d, w in weights if w], key=lambda t: t[0])
-    periods = sorted({str(e["date"])[:10] for e in _domain(db, uid, "cycle", 730) if e.get("phase") == "period" and e.get("date")})
+    periods = sorted({str(e["date"])[:10] for e in cycle_rows if e.get("phase") == "period" and e.get("date")})
     return {"conditions": conds, "medications": meds, "allergies": allergies, "weights": weights,
             "latest_weight_kg": weights[-1][1] if weights else None, "period_starts": periods}
 
@@ -283,7 +287,10 @@ def _chat_entries_from(rows: list[dict], day: str) -> list[dict]:
 
 def _all_entries(db: Any, uid: str, day: str, chat_rows: list[dict] | None = None) -> list[dict]:
     """Food-log entries plus meals mentioned in chat (for totals and budgets). Pass ``chat_rows`` to avoid re-querying across many days."""
-    return _food_entries(db, uid, day) + _chat_entries_from(chat_rows if chat_rows is not None else _chat_food_rows(db, uid), day)
+    if chat_rows is not None:
+        return _food_entries(db, uid, day) + _chat_entries_from(chat_rows, day)
+    logged, from_chat = _together(lambda: _food_entries(db, uid, day), lambda: _chat_food_rows(db, uid))
+    return logged + _chat_entries_from(from_chat, day)
 
 
 def _sum(entries: list[dict]) -> dict[str, float]:
@@ -351,9 +358,13 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         return mode if isinstance(mode, str) else None
 
     def engine(uid: str) -> tuple[dict, dict, dict]:
-        profile = load_profile(uid)
-        rec = records(db, uid)
-        return profile, rec, engine_profile(profile, rec, eating_positive(uid), cycle_mode(uid))
+        # The three documents come in one read, side by side with the tracker records (this ran as ten reads one after another).
+        docs, rec = _together(lambda: doc_store.get_pairs(db, uid, [("profile", "me"), ("eating_screen", "current"), ("cycle_settings", "main")]),
+                              lambda: records(db, uid))
+        profile = docs.get(("profile", "me")) or {}
+        until = (docs.get(("eating_screen", "current")) or {}).get("positive_until")
+        mode = (docs.get(("cycle_settings", "main")) or {}).get("mode")
+        return profile, rec, engine_profile(profile, rec, bool(until) and str(until) >= local_today().isoformat(), mode if isinstance(mode, str) else None)
 
     def targets_for(uid: str, extra_minutes: float | None = None) -> tuple[dict | None, dict, dict, dict, str | None]:
         profile, rec, ep = engine(uid)
@@ -400,16 +411,19 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
     def summary(date_: str | None = Query(default=None, alias="date"), authorization: str | None = Header(default=None)):
         uid = uid_of(authorization)
         day = _day(date_)
-        t, profile, rec, ep, why = targets_for(uid)
-        entries = _all_entries(db, uid, day)
+        # Four independent groups of reads, run side by side: targets (profile + tracker records), today's food, the plan documents, water.
+        (t, profile, rec, ep, why), entries, docs, water_rows = _together(
+            lambda: targets_for(uid), lambda: _all_entries(db, uid, day),
+            lambda: doc_store.get_pairs(db, uid, [("workout_log", day), ("transform_plan", "current"), ("meal_plan", "current"), ("workout_plan", "current")]),
+            lambda: _domain(db, uid, "hydration", 2))
         eaten = _sum(entries)
-        workout = doc_store.get(db, uid, "workout_log", day) or {}
+        workout = docs.get(("workout_log", day)) or {}
         burn = sum(float(w.get("kcal_estimate", 0)) for w in workout.get("sessions", []))
-        plan = doc_store.get(db, uid, "transform_plan", "current")
-        water_today = hydration_engine.day_totals(_domain(db, uid, "hydration", 2), day, request_tz() or 0)["raw_ml"]  # tz-aware, ignores invalid volumes
+        plan = docs.get(("transform_plan", "current"))
+        water_today = hydration_engine.day_totals(water_rows, day, request_tz() or 0)["raw_ml"]  # tz-aware, ignores invalid volumes
         out: dict[str, Any] = {"status": "success", "date": day, "water_ml_today": round(water_today), "targets": t, "message": why, "eaten": eaten, "entries": len(entries), "intake_logged": bool(entries),
                                "workout_kcal": round(burn), "transform": {"status": plan["status"], "target_weight_kg": plan["target_weight_kg"]} if plan else None,
-                               "has_diet_plan": bool(doc_store.get(db, uid, "meal_plan", "current")), "has_workout_plan": bool(doc_store.get(db, uid, "workout_plan", "current")),
+                               "has_diet_plan": bool(docs.get(("meal_plan", "current"))), "has_workout_plan": bool(docs.get(("workout_plan", "current"))),
                                "review": plan_engine.review_banner(), "latest_weight_kg": rec["latest_weight_kg"]}
         if t:
             out["budget"] = plan_engine.day_budget(t, eaten["kcal"], burn)

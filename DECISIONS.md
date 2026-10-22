@@ -588,6 +588,13 @@ Docs: `docs/admin/README.md` (named exception, Add another admin, rollup and cro
 - Admin: `frontend/app/admin/panels-moderation.tsx`, registered in `registry.tsx`, tab `moderation` in `format.ts` (queue with crisis first, approve / remove / remove and ban, "Who wrote this", audit log).
 
 
+### 2026-10-22 · Site speed: fewer database trips in a row, a lighter Today, an early wake-up call
+- What: `/fitness/summary` ran 15 reads one after another; its independent reads now run side by side (`backend/parallel.py` `together`, which carries the request time zone into each job) and the four plan documents come in one read (`doc_store.get_pairs`, documents of different kinds in one trip). The same helper speeds `engine()` (every Fitness screen), `/nutrients/nudges` (5 reads) and `/profile` (3 reads). `GET /health/summary?last_only=true` asks one row per tracker and sends only `last_update`; Today uses it (it only ever needed that, and read a field the server never sent, so the card always fell back to the browser's own stamp). A small `WakeApi` in the root layout sends one quiet `/health` call when someone lands on any page, so a sleeping free-plan API starts while they read the landing page or type their password instead of after sign-in.
+- Why: measured with the preview server's fake database (trips per endpoint; the real cost is each trip times the Supabase round trip from Render): `/fitness/summary` 15 to 10 trips with a chain of about 2 instead of 15, `/profile` 3 to 2, `/nutrients/nudges` waits for one step instead of five. Answers are unchanged.
+- Rules kept: every read is still owner-scoped and signed-document checked; a failing job raises exactly as the sequential code did; the full `/health/summary` (counts) is unchanged for the Health hub.
+- Where: `backend/parallel.py`, `doc_store.py`, `fitness_api.py`, `deficiency_api.py`, `health_logs.py`, `main.py` (`/profile`), `frontend/components/WakeApi.tsx`, `app/lib/wake-api.ts`, `DashboardClient.tsx`; tests `tests/test_read_speed.py`, `test_health_logs.py`, `wake-api.test.ts`.
+- Not done on purpose: one combined "Today" endpoint (a big API change for the owner to review first) and a tighter keep-awake schedule (GitHub's free minutes would not cover it).
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.

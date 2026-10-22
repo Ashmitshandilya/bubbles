@@ -217,6 +217,15 @@ def test_summary_counts_across_domains():
     assert summary["days_tracked"] == 1 and summary["last_update"]
 
 
+def test_last_only_summary_sends_just_the_newest_stamp_and_no_counts():
+    client, _ = make_client()
+    client.post("/health/sleep", json={"duration": 7}, headers=H)
+    client.post("/health/sleep", json={"duration": 6}, headers=H)
+    full = client.get("/health/summary", headers=H).json()
+    light = client.get("/health/summary?last_only=true", headers=H).json()
+    assert light == {"status": "success", "last_update": full["last_update"]}
+
+
 def test_recent_queries_and_suggestions():
     client, db = make_client()
     for text in ("how is my sleep", "how is my sleep", "when is my period"):

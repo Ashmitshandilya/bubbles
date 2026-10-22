@@ -28,6 +28,7 @@ _lock = threading.Lock()
 
 def load(db: Any, uid: str) -> dict[str, Any]:
     from calc_core import local_today
+    from parallel import together
     from health_logs import DOMAINS, list_domain
     import doc_store
     unavailable: list[str] = []
@@ -40,15 +41,17 @@ def load(db: Any, uid: str) -> dict[str, Any]:
             return empty
 
     today = local_today()
-    onboarding = optional("answers", lambda: doc_store.get(db, uid, "onboarding", "v1") or {}, {})
+    since = (datetime.now(timezone.utc) - timedelta(days=DM.WINDOW_DAYS + 90)).isoformat()
+    # The five reads do not depend on each other, so they run side by side; an under-18 answer still discards the rest.
+    onboarding, events, labs, conds, meds = together(
+        lambda: optional("answers", lambda: doc_store.get(db, uid, "onboarding", "v1") or {}, {}),
+        lambda: (db.table(EVENTS_TABLE).select("id, event_type, extracted_data, confidence, created_at, user_confirmed, extraction_status")
+                 .eq("user_id", uid).gte("created_at", since).order("created_at", desc=True).limit(EVENT_LIMIT).execute().data or []),
+        lambda: optional("labs", lambda: list_domain(db, "labs", DOMAINS["labs"], uid, 730)["entries"], []),
+        lambda: optional("conditions", lambda: list_domain(db, "conditions", DOMAINS["conditions"], uid, 730)["entries"], []),
+        lambda: optional("medicines", lambda: list_domain(db, "medications", DOMAINS["medications"], uid, 730)["entries"], []))
     if onboarding.get("age_gate") == "under_18":
         return {"nudges": [], "lab_notes": [], "unavailable": [], "under_18": True}
-    since = (datetime.now(timezone.utc) - timedelta(days=DM.WINDOW_DAYS + 90)).isoformat()
-    events = (db.table(EVENTS_TABLE).select("id, event_type, extracted_data, confidence, created_at, user_confirmed, extraction_status")
-              .eq("user_id", uid).gte("created_at", since).order("created_at", desc=True).limit(EVENT_LIMIT).execute().data or [])
-    labs = optional("labs", lambda: list_domain(db, "labs", DOMAINS["labs"], uid, 730)["entries"], [])
-    conds = optional("conditions", lambda: list_domain(db, "conditions", DOMAINS["conditions"], uid, 730)["entries"], [])
-    meds = optional("medicines", lambda: list_domain(db, "medications", DOMAINS["medications"], uid, 730)["entries"], [])
     answers = onboarding.get("answers") if isinstance(onboarding.get("answers"), dict) else {}
     profile = {"labs": labs, "answers": answers, "meds": [m.get("name") for m in meds if isinstance(m, dict)],
                "conditions": [c.get("condition_name") for c in conds if isinstance(c, dict)]}
