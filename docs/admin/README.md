@@ -54,7 +54,7 @@ Admins are the ids in `BUBBLES_ADMIN_USER_IDS` on Render (comma-separated, exact
 - **Refusal audit:** counted, and at most one `admin_denied` row a minute (the reason only: no token, address or id).
 - **Second lock:** the router dependency `admin_api._admin` refuses with 404 when the gate did not mark the request.
 - **No cookies:** Bearer header only, so CSRF does not apply. The routes are not in the OpenAPI schema. The website never caches `/admin` reads (`app/lib/api-cache.ts`).
-- **The four older operational routes** (`/ai/telemetry`, `/production/readiness`, `/models/registry`, `/privacy/security-baseline`) keep their 403 for non-admins.
+- **The four older operational routes** (`/ai/telemetry`, `/production/readiness`, `/models/registry`, `/privacy/security-baseline`) now answer the same 404 for non-admins (owner decision 2026-10-20).
 
 **What is public on purpose:** the website route `/admin` exists for everyone (it answers 200 with the loading screen, then shows "We couldn't find that page" to a non-admin), and the console's code ships in the website bundle and the Android app. That reveals nothing about data: every number and every action is behind the API gate above. With `BUBBLES_ADMIN_USER_IDS` empty the gate refuses before any sign-in call.
 
