@@ -15,6 +15,11 @@ Entry template:
 - Notes: trade-offs, rejected options, follow-ups
 ```
 
+### 2026-10-22 · Native: in-app account creation, a faster start, and screen tests
+- What: the sign-in screen has Sign in / Create account tabs and "Forgot or never set a password?". Creating an account is the website's own Supabase call (same confirm-email rules; the link opens in the browser), keeps the "read the Terms and the Privacy notice" tick until the server can record it (`POST /consents/acknowledgements`, version held to the server's by a test), and can resend the confirmation email. Faster: Today asks its two reads together, OkHttp may run 16 requests per host (the app loads about 18 tracker lists; the default of 5 queued the rest), and one quiet `/health` call at launch wakes a sleeping API host. First Compose screen tests (`app/src/androidTest`, four on the sign-in screen: tabs, validation message, 48dp targets) run on a phone or the emulator.
+- Why: a new person could not start in the app without the website, and the free API host sleeps when idle.
+- Where: `data/AuthRules.kt` (pure, unit-tested), `data/Api.kt`, `ui/screens/LoginScreen.kt`, `BubblesApp.kt`, `TodayScreen.kt`.
+
 ### 2026-10-18 · Native Android app in Kotlin + Compose replaces the wrapper (PR #52)
 - What:  `native/` is a real Android app (same applicationId and release key as the Capacitor wrapper, so it updates it in place). It is
   a client of the existing API: no new endpoints, no new tables, no health logic copied. Built: sign-in, first-run setup from the server's
