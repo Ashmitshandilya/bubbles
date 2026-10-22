@@ -595,6 +595,11 @@ Docs: `docs/admin/README.md` (named exception, Add another admin, rollup and cro
 - Where: `backend/parallel.py`, `doc_store.py`, `fitness_api.py`, `deficiency_api.py`, `health_logs.py`, `main.py` (`/profile`), `frontend/components/WakeApi.tsx`, `app/lib/wake-api.ts`, `DashboardClient.tsx`; tests `tests/test_read_speed.py`, `test_health_logs.py`, `wake-api.test.ts`.
 - Not done on purpose: one combined "Today" endpoint (a big API change for the owner to review first) and a tighter keep-awake schedule (GitHub's free minutes would not cover it).
 
+### 2026-10-22 · Compressed answers and a palette that asks only when opened
+- What: the API compresses answers over 1 KB for clients that send `Accept-Encoding: gzip` (`GZipMiddleware`; Starlette leaves `text/event-stream` alone, so the chat stream still arrives word by word). The Ctrl+K "Ask or jump" palette loads its suggestions and recent questions when it is opened (at most once a minute), not on every page load.
+- Why: measured on the preview API, `/patterns/analyze` answers 147 KB, `/doctor/prepare` 72 KB, `/onboarding/questions` 15 KB of JSON, which shrinks four to six times; the Android app calls the API directly over mobile data. Every signed-in page used to make two extra calls for a palette most visits never open.
+- Where: `backend/main.py`, `tests/test_compression.py`, `frontend/components/AskBubbles.tsx`.
+
 ## 4. Open items
 
 - Confirm the `/body` credit states the Z-Anatomy (CC BY-SA 4.0) and BodyParts3D (CC BY-SA 2.1 JP) licences.

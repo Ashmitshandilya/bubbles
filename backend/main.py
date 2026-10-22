@@ -17,6 +17,7 @@ from typing import Any
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Header, Query
 from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from wellness_common import REQUEST_TZ, parse_tz_header
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -350,6 +351,9 @@ def _guard_request(request):
     return None
 
 
+# Answers over 1 KB are compressed for clients that accept it (JSON shrinks about 4 to 6 times: a real gain on a phone's mobile data).
+# Starlette leaves text/event-stream alone, so the chat stream still arrives word by word.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 # Request bodies are capped everywhere, including chunked ones with no Content-Length (the guarded prefixes above keep a lower cap).
 app.add_middleware(BodyLimitMiddleware)
 app.add_middleware(
