@@ -1306,17 +1306,24 @@ def profile_api(authorization: str | None = Header(default=None)):
     user = get_authenticated_user(authorization)
     sync_profile_from_auth(user)
     uid = str(user.id)
-    try:
-        rows = supabase.table("profiles").select("*").eq("id", uid).limit(1).execute().data or []
-    except Exception:
-        rows=[]
+    from parallel import together
+
+    def read_row():
+        try:
+            return supabase.table("profiles").select("*").eq("id", uid).limit(1).execute().data or []
+        except Exception:
+            return []
+
+    def read_docs():
+        try:
+            return doc_store.get_pairs(supabase, uid, [("experience", "main"), ("profile", "me")])
+        except Exception:
+            return {}
+    rows, docs = together(read_row, read_docs)   # two independent reads, side by side
     meta = getattr(user, "user_metadata", {}) or {}
     profile = dict(rows[0]) if rows else {"id": uid}
-    try:
-        setup_name = ((doc_store.get(supabase, uid, "experience", "main") or {}).get("name"))
-        body = doc_store.get(supabase, uid, "profile", "me") or {}
-    except Exception:
-        setup_name, body = None, {}
+    setup_name = (docs.get(("experience", "main")) or {}).get("name")
+    body = docs.get(("profile", "me")) or {}
     name = resolve_display_name(setup_name, profile.get("display_name"), meta.get("display_name") or meta.get("full_name") or meta.get("name"))
     if name and name != profile.get("display_name"):
         # The profile row fell behind what the person told Bubbles: bring it up to date once, so every other reader agrees.
