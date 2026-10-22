@@ -54,6 +54,13 @@ def extract_explicit_personal_facts(text:str)->list[dict[str,Any]]:
                 seen.add(marker)
                 out.append({"key":key,"value":value,"content":template.format(value=value),"confidence":0.98 if key!="name" else 0.99})
             break
+    # The people and pets in their life ("my boyfriend's name is Ashmit"): same plain-statement rule, same saved shape.
+    from people_memory import extract_people_facts
+    for fact in extract_people_facts(text,_is_hedged):
+        marker=(fact["key"],fact["value"].lower())
+        if marker not in seen:
+            seen.add(marker)
+            out.append(fact)
     return out
 
 def persist_explicit_facts(user_id:str, message_id:str|None, facts:list[dict[str,Any]])->list[dict[str,Any]]:
@@ -72,7 +79,8 @@ def persist_explicit_facts(user_id:str, message_id:str|None, facts:list[dict[str
             review_after=(now + timedelta(days=review_days)).isoformat()
             payload={
                 "content":fact["content"],
-                "structured_data":{"key":fact["key"],"value":fact["value"],"source":"explicit_user_statement","source_message_id":message_id},
+                "structured_data":{"key":fact["key"],"value":fact["value"],"source":"explicit_user_statement","source_message_id":message_id,
+                                   **({"relation":fact["relation"]} if fact.get("relation") else {})},
                 "source_type":"user_statement",
                 "source_id":message_id,
                 "confidence":fact["confidence"],

@@ -32,6 +32,8 @@ from event_dates import find_dates, stated_date, user_today
 from daily_log_parser import DailyLog, _estimate_nutrition, parse_daily_log, summarize_log
 from event_filters import clean_data
 from health_event_pipeline import prepare_db_row
+from memory_manager import extract_explicit_personal_facts
+from people_memory import recall_target, remembered_reply
 from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state, split_sentences
 from safety_engine import (
     CRISIS_LINES, POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
@@ -358,6 +360,11 @@ def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | No
     return turn
 
 
+def _only_tells_a_fact(text: str) -> bool:
+    """A short statement that only tells Bubbles something about the person or their people (no question, nothing else to answer)."""
+    return "?" not in text and len(text.split()) <= 18 and bool(extract_explicit_personal_facts(text))
+
+
 def route_turn(turn: Turn) -> str:
     state = turn.safety.state
     if state == "EMERGENCY":
@@ -374,6 +381,13 @@ def route_turn(turn: Turn) -> str:
         return fitness
     if turn.log.is_daily_log and state != "URGENT":
         return "daily_log"
+    # Telling Bubbles who someone is, or asking it to say who they are, is answered here from the person's saved facts: instant, free, and
+    # never waiting on a consent question or an outside model. Only a message with no health fact in it, and never right after a safety reply.
+    if not fitness and state != "URGENT" and not turn.facts and not standing_safety_reply(turn.last_reply):
+        if recall_target(turn.text):
+            return "recall"
+        if _only_tells_a_fact(turn.text):
+            return "remembered"
     kind = None if fitness or state == "URGENT" or turn.facts else small_talk_kind(turn.text)
     if kind:
         # "bye" or "ok" right after a safety reply must not get cheerful small talk: the concern is not settled by a goodbye.
@@ -535,6 +549,10 @@ def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> s
         return emergency_response(safety)
     if route == "small_talk":
         return small_talk_reply(turn.text, name=name)
+    if route == "remembered":
+        return remembered_reply(extract_explicit_personal_facts(turn.text), seed=turn.text)
+    if route == "recall":
+        return ""   # filled in by main._recall_text (needs the saved facts)
     if route == "safety_followup":
         return safety_followup_reply(turn.last_reply, name=name)
     if route in ("fitness_support", "fitness_answer"):
