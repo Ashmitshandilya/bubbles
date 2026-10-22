@@ -81,12 +81,14 @@ export function AskBubbles() {
     }
   }, [fetchBubbles]);
 
+  // Asked when the palette is opened (not on every page load): they are only shown there. Not again within a minute of the last ask.
+  const askedAt = useRef(0);
   useEffect(() => {
-    if (session) {
-      void loadSuggestions();
-      void loadRecentQueries();
-    }
-  }, [session, loadSuggestions, loadRecentQueries]);
+    if (!isOpen || !session || Date.now() - askedAt.current < 60_000) return;
+    askedAt.current = Date.now();
+    void loadSuggestions();
+    void loadRecentQueries();
+  }, [isOpen, session, loadSuggestions, loadRecentQueries]);
 
   // No cleanup that closes the dialog: under StrictMode the async `close` event would re-close it.
   useEffect(() => {
