@@ -1290,6 +1290,14 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
         for conv in conversations:
             conv["message_count"] = counts.get(str(conv["id"]), 0)
 
+        # Heart-to-heart threads are marked when they start (see /chat); the rest are ordinary talk. One read for the whole page.
+        try:
+            orbit_ids = doc_store.get_many(supabase, user_id, "conversation_mode", [str(c["id"]) for c in conversations])
+        except Exception:  # noqa: BLE001 - a missing label must never hide the history
+            orbit_ids = {}
+        for conv in conversations:
+            conv["mode"] = "orbit" if (orbit_ids.get(str(conv["id"])) or {}).get("mode") == "orbit" else "talk"
+
         return {"conversations": conversations, "has_more": has_more}
     except Exception as e:
         from logging_util import logger

@@ -94,3 +94,16 @@ def test_history_pages_back_with_before_and_reports_has_more(client):
     assert [x["title"] for x in older["conversations"]] == ["Older 1"] and older["has_more"] is False
     assert c.get("/chat/history?before=nope", headers=H).status_code == 400
 
+
+
+def test_history_marks_heart_to_heart_threads(client, monkeypatch):
+    import doc_store
+    monkeypatch.setenv("BUBBLES_DOC_SIGNING_KEY", "history-mode-key")
+    c, db = client
+    other = "11111111-1111-4111-8111-111111111119"
+    db.table("chat_conversations").insert({"id": other, "user_id": USER, "title": "Late night", "created_at": "2026-10-09T10:00:00Z",
+                                           "updated_at": "2026-10-09T10:05:00Z"}).execute()
+    doc_store.put(db, USER, "conversation_mode", other, {"mode": "orbit"})
+    modes = {x["title"]: x["mode"] for x in c.get("/chat/history?limit=10", headers=H).json()["conversations"]}
+    assert modes["Late night"] == "orbit"
+    assert modes["Headache"] == "talk"

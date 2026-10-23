@@ -107,6 +107,8 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
   const [error, setError] = useState<string | null>(null);
   const [failed, setFailed] = useState<{ text: string; messageId: string; fresh?: boolean } | null>(null);
   const [history, setHistory] = useState<ConversationSummary[]>([]);
+  // A past Heart-to-heart opened from the Talk history keeps its voice: its replies are sent as `mode: "orbit"`.
+  const [threadMode, setThreadMode] = useState<"talk" | "orbit">("talk");
   const [historyState, setHistoryState] = useState<"loading" | "error" | "ready">("loading");
   const [loadingConversation, setLoadingConversation] = useState(false);
   const [conversationError, setConversationError] = useState<string | null>(null);
@@ -170,7 +172,7 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
       if (!response.ok) throw new Error(`history ${response.status}`);
       const payload = await response.json();
       if (payload?.degraded === true) throw new Error("history degraded");
-      const rows: Array<{ id?: unknown; title?: unknown; created_at?: unknown; updated_at?: unknown }> = Array.isArray(payload?.conversations)
+      const rows: Array<{ id?: unknown; title?: unknown; created_at?: unknown; updated_at?: unknown; mode?: unknown }> = Array.isArray(payload?.conversations)
         ? payload.conversations
         : [];
       setHistory(
@@ -180,6 +182,7 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
             id: c.id as string,
             title: typeof c.title === "string" && c.title.trim() ? c.title : "Untitled chat",
             when: relativeDay(c.updated_at ?? c.created_at),
+            mode: c.mode === "orbit" ? ("orbit" as const) : ("talk" as const),
           }))
       );
       setHistoryState("ready");
@@ -239,7 +242,7 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
         // Words arrive on the stream when the server has one; any trouble falls back to plain POST /chat (see stream.ts).
         const { payload } = await requestChat({
           fetcher: fetchBubbles,
-          body: JSON.stringify({ conversation_id: conversationId, message: text, message_id: messageId, ...(mode === "orbit" ? { mode } : {}) }),
+          body: JSON.stringify({ conversation_id: conversationId, message: text, message_id: messageId, ...(mode === "orbit" || threadMode === "orbit" ? { mode: "orbit" } : {}) }),
           onMeta: (meta) => {
             if (view === viewRef.current) setStream((prev) => ({ ...prev, meta }));
           },
@@ -300,7 +303,7 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
         setStream(emptyStream);
       }
     },
-    [conversationId, fetchBubbles, loadHistory, mode]
+    [conversationId, fetchBubbles, loadHistory, mode, threadMode]
   );
 
   /** Best effort: thumbs already given in this conversation. A failure just means no highlighted thumbs. */
@@ -372,6 +375,7 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
   const startNewChat = useCallback(() => {
     viewRef.current += 1;
     setConversationId(undefined);
+    setThreadMode("talk");
     clearThread();
     setLoadingConversation(false);
     setResumeState("ready");
@@ -707,7 +711,7 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
       items={history}
       state={historyState}
       activeId={conversationId}
-      onSelect={(id) => void openConversation(id)}
+      onSelect={(id) => { setThreadMode(history.find((c) => c.id === id)?.mode === "orbit" ? "orbit" : "talk"); void openConversation(id); }}
       onNew={startNewChat}
       onRetry={() => void loadHistory()}
       heading={!inDrawer}
@@ -727,12 +731,12 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
       <div className="flex min-h-0 flex-1">
         <Sidebar apiStatus={apiStatus} />
 
-        <aside aria-label="History" className={`${mode === "orbit" ? "hidden" : "hidden lg:flex"} w-[280px] shrink-0 flex-col overflow-y-auto border-r-2 border-line bg-surface px-4 py-6`}>
+        <aside aria-label="History" className={`${mode === "orbit" ? "hidden" : "hidden lg:flex"} w-[280px] shrink-0 flex-col overflow-y-auto border-r border-[color:var(--hairline)] bg-surface px-4 py-6`}>
           {conversationList(false)}
         </aside>
 
         <section aria-label="Chat with Bubbles" className="flex min-w-0 flex-1 flex-col">
-          <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b-2 border-line bg-blush px-4 py-3 lg:px-7 lg:py-4">
+          <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[color:var(--hairline)] bg-blush px-4 py-3 lg:px-7 lg:py-4">
             <div className="flex min-w-0 items-center gap-3">
               {!urgent && !caution && !harborVoice && mode !== "orbit" && <BubblesMascot size={44} animated={false} />}
               <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">{mode === "orbit" ? "Heart-to-heart" : "Bubbles"}</h1>
@@ -758,7 +762,7 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
                 New chat
               </button>
             </div>
-            <p className="m-0 w-full rounded-2xl border border-line bg-surface px-3 py-1.5 text-[0.75rem] font-bold text-ink-soft sm:w-auto sm:rounded-full sm:text-[0.8125rem]">
+            <p className="m-0 w-full text-[0.75rem] font-semibold text-ink-soft sm:w-auto sm:text-[0.8125rem]">
               Not a diagnosis · for emergencies call your local number
             </p>
           </header>
