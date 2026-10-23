@@ -12,6 +12,7 @@ import { useWellnessQuery } from "../../components/wellness/useWellness";
 import { askHref } from "../lib/ask-handoff";
 import { readOrganMap } from "../lib/organ-map";
 import type { MindInsight, MindOverview, Pixels } from "../../app/lib/wellness-types";
+import { Lede } from "../../components/pearl";
 import { Calm } from "./Calm";
 import { CheckIn } from "./CheckIn";
 import { ASK, softBrain } from "./hub";
@@ -29,6 +30,13 @@ export function MindClient() {
   );
 }
 
+/** One line in Bubbles' voice at the top: the person's own strongest pattern when there is one, otherwise a calm question. Never a score. */
+function MindLede() {
+  const [insights] = useWellnessQuery<{ insights: MindInsight[] }>("/wellness/mind/insights?days=90");
+  const first = insights.status === "ready" ? insights.data.insights?.[0] : undefined;
+  return <Lede>{first?.text ?? "Take a breath. How are you, right now?"}</Lede>;
+}
+
 function Mind() {
   const [overview, reloadOverview] = useWellnessQuery<MindOverview>("/wellness/mind/overview?days=30");
   const [panic, setPanic] = useState(false);
@@ -37,6 +45,7 @@ function Mind() {
     <QueryView query={overview} onRetry={reloadOverview} what="the Mind page" skeleton={<Skeleton className="h-72 rounded-3xl" />}>
       {(o) => (
         <>
+          <MindLede />
           <CheckIn overview={o} onSaved={reloadOverview} />
           {panic ? (
             <PanicFlow copy={o.support.panic} onClose={() => setPanic(false)} />
