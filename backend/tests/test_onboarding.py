@@ -64,7 +64,7 @@ def test_questions_that_share_a_screen_share_a_step_and_titled_screens_exist():
         assert len(members) >= 2, screen
         assert screen in ob.SCREENS or screen in {"first", "conditions"}, screen
         assert [m["id"] for m in members] == [q["id"] for q in ob.QUESTIONS if q.get("screen") == screen]
-    assert [m["id"] for m in groups["first"]] == ["body", "language"] and [m["id"] for m in groups["about"]] == ["birth_date", "preferred_name"]
+    assert [m["id"] for m in groups["first"]] == ["body", "language", "country"] and [m["id"] for m in groups["about"]] == ["birth_date", "preferred_name"]
     for key in ("diet_style", "recent_blood_test"):
         assert ob.BY_ID[key]["step"] == "extras", "the nutrition lane reads these two keys"
 
@@ -332,7 +332,7 @@ def test_a_new_person_starts_empty_and_resumes_where_they_left_off(api):
     client, _ = api
     s = client.get("/onboarding/state", headers=H).json()
     assert s["complete"] is False and s["answers"] == {} and s["required_missing"] == list(ob.REQUIRED)
-    assert s["visible"][:3] == ["body", "language", "birth_date"]
+    assert s["visible"][:4] == ["body", "language", "country", "birth_date"]
     r = put(client, {"body": "female", "birth_date": born(32), "preferred_name": "Riya"}, step=1)
     assert r.status_code == 200
     again = client.get("/onboarding/state", headers=H).json()

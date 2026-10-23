@@ -53,6 +53,14 @@ export default function TermsPage() {
       </section>
 
       <section>
+        <h2>Orbit is support, not therapy or advice</h2>
+        <p>
+          Orbit helps you think about and talk about your relationships. It is not couples therapy, counselling, or legal advice, and it only ever knows your side of a story. It will not tell you to stay or to leave.
+          If you feel unsafe at home, the help lines it shows are public numbers and Bubbles is not an emergency service: call your local emergency number if you are in danger.
+        </p>
+      </section>
+
+      <section>
         <h2>Our responsibility</h2>
         <p>
           We work to keep Bubbles accurate, safe and secure, but it is provided as it is. To the extent the law allows, we are not liable for decisions you make based on it.

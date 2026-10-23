@@ -27,6 +27,12 @@ class ModelsTest {
         assertFalse(r.consentAsk)
     }
 
+    @Test fun chatReplyReadsQuickRepliesAndIsEmptyWithoutThem() {
+        val r = json.decodeFromString<ChatReply>("""{"response":"Hi","suggestions":["Help me work out what to say","Open it up gently"]}""")
+        assertEquals(listOf("Help me work out what to say", "Open it up gently"), r.suggestions)
+        assertTrue(json.decodeFromString<ChatReply>("""{"response":"Hi"}""").suggestions.isEmpty())
+    }
+
     @Test fun latestChatReadsMessagesAndConversation() {
         val l = json.decodeFromString<LatestChat>("""{"messages":[{"id":"1","role":"user","content":"x","created_at":"t","safety_level":null}],"has_more":false,"conversation":{"id":"c1","user_id":"u"}}""")
         assertEquals("c1", l.conversation?.id)

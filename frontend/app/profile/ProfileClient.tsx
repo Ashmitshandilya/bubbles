@@ -168,6 +168,9 @@ function Me() {
               Partner sharing
             </Link>
           )}
+          <Link href="/profile/understanding" className={`${BTN_SECONDARY} no-underline`}>
+            How Bubbles understands you
+          </Link>
           <Link href="/settings" className={`${BTN_SECONDARY} no-underline`}>
             Settings
           </Link>

@@ -20,12 +20,21 @@ import re
 from datetime import date, timedelta
 from typing import Any
 
-BANK_VERSION = "2026-10b"
+BANK_VERSION = "2026-10c"
 MIN_AGE = 18
 MAX_AGE = 110
 REQUIRED = ("body", "language", "birth_date", "preferred_name", "main_goal", "conditions_any", "sleep_pattern", "stress_level")
 #: required only while the rule holds (and the question is shown)
 REQUIRED_IF: dict[str, dict] = {"periods": {"body_in": ["female"]}}
+
+COUNTRIES = ("in", "us", "uk", "ca", "au", "ae", "sg", "other")
+#: states and union territories, shown only when the country is India (ids are the lowercase names with underscores)
+REGIONS_IN = (
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+    "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan",
+    "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+)
 
 BODIES = ("female", "male", "trans", "other", "prefer_not")
 REPRO = ("female", "trans", "other", "prefer_not")   # may have periods: the question is asked and "I don't get periods" is an answer. Never a male body.
@@ -35,11 +44,11 @@ STRICT_REPRO = ("female",)                           # pregnancy, menopause and 
 SCREENS: dict[str, str] = {
     "about": "About you",
     "body_basics": "Your body", "food": "Food", "health_basics": "Health basics", "talk": "How Bubbles talks",
-    "support": "Looking after you", "cycle": "Your cycle",
+    "support": "Looking after you", "cycle": "Your cycle", "identity": "About you",
 }
 
 #: free-text answers: each goes through the safety engine before it is stored (onboarding_api.py)
-FREE_TEXT = ("conditions_other", "drains_other")
+FREE_TEXT = ("conditions_other", "drains_other", "gender_other")
 
 STEPS: list[dict[str, str]] = [
     {"id": "core", "title": "A few quick taps", "intro": ""},
@@ -77,6 +86,9 @@ QUESTIONS: list[dict[str, Any]] = [
        options=[_o("female", "Female"), _o("male", "Male"), _o("trans", "Transgender"), _o("other", "Other"), _o("prefer_not", "Prefer not to say")], screen="first"),
     _q("language", "core", "single", "Which language feels easiest?",
        options=[_o("english", "English"), _o("hinglish", "Hinglish"), _o("hindi", "Hindi")], screen="first"),
+    _q("country", "core", "single", "Where do you live?", "So Bubbles shows the right emergency numbers and support lines for where you are.", screen="first", options=[
+        _o("in", "India"), _o("us", "United States"), _o("uk", "United Kingdom"), _o("ca", "Canada"), _o("au", "Australia"),
+        _o("ae", "United Arab Emirates"), _o("sg", "Singapore"), _o("other", "Somewhere else")]),
     _q("birth_date", "core", "date", "When were you born?", "Bubbles is for people 18 and over for now.", screen="about"),
     _q("preferred_name", "core", "text", "What should Bubbles call you?", maxlength=40, screen="about"),
     _q("main_goal", "core", "single", "What would you like help with most?", options=[
@@ -101,6 +113,12 @@ QUESTIONS: list[dict[str, Any]] = [
         _o("pregnant", "I am pregnant"), _o("recently_gave_birth", "I recently gave birth"), _o("breastfeeding", "I am breastfeeding"),
         _o("contraception", "Contraception stops them"), _o("menopause", "Menopause"), _o("other", "Something else"), _o("prefer_not", "Prefer not to say")]),
     # ---- extras: all optional, one stage, "skip all" is one tap
+    _q("region", "extras", "single", "Which state?", "Optional. Helps with food and local ideas.", show_if={"answers": {"country": ["in"]}},
+       options=[_o(r.lower().replace(" ", "_"), r) for r in REGIONS_IN]),
+    _q("gender", "extras", "single", "How do you describe yourself?",
+       "So Bubbles speaks to you the right way and shows the right support lines. Your body answer still picks the body map.", screen="identity", options=[
+        _o("woman", "Woman"), _o("man", "Man"), _o("nonbinary", "Non-binary"), _o("self_describe", "Prefer to self-describe"), _o("prefer_not", "Prefer not to say")]),
+    _q("gender_other", "extras", "text", "In your own words", show_if={"answers": {"gender": ["self_describe"]}}, maxlength=30, screen="identity"),
     _q("height_weight", "extras", "number_pair", "Height and weight", "Used for fitness and food guidance.", screen="body_basics"),
     _q("activity", "extras", "single", "How active is a usual week?", screen="body_basics", options=[
         _o("sedentary", "Mostly sitting"), _o("light", "Light: a little walking"), _o("moderate", "Moderate: exercise a few times a week"), _o("very_active", "Very active")]),
@@ -132,8 +150,16 @@ QUESTIONS: list[dict[str, Any]] = [
         _o("health_worries", "Health worries"), _o("noise_or_crowds", "Noise or crowds"), _o("traffic_commute", "Traffic or commuting"), _o("screens_social_media", "Screens and social media"),
         _o("heat", "Heat"), _o("being_rushed", "Being rushed"), _o("something_else", "Something else")]),
     _q("drains_other", "extras", "text", "What else?", show_if={"answers": {"drains": ["something_else"]}}, maxlength=80, screen="support"),
+    _q("relationship_status", "extras", "single", "Are you in a relationship?", screen="support", options=[
+        _o("single", "Single"), _o("dating", "Dating someone"), _o("in_relationship", "In a relationship"), _o("married", "Married"),
+        _o("complicated", "It's complicated"), _o("prefer_not", "Prefer not to say")]),
+    _q("living_with", "extras", "multi", "Who do you live with?", exclusive=("alone", "prefer_not"), screen="support", options=[
+        _o("alone", "Alone"), _o("partner", "My partner"), _o("family", "Parents or family"), _o("in_laws", "In-laws"),
+        _o("roommates", "Roommates or friends"), _o("children", "Children"), _o("prefer_not", "Prefer not to say")]),
     _q("checkins_wanted", "extras", "single", "Would you like Bubbles to check in on you now and then?", screen="support", options=[_o("yes_daily", "Yes, daily"), _o("sometimes", "Sometimes"), _o("no", "No, thanks")]),
     # ---- later: not part of the first run. Me > Your setup (the edit view) shows them.
+    _q("chronotype", "later", "single", "When do you feel most like yourself?", options=[
+        _o("early_morning", "Early morning"), _o("daytime", "During the day"), _o("evening", "Evenings"), _o("late_night", "Late at night")]),
     _q("bp_sugar_check", "later", "single", "When did you last get your blood pressure and blood sugar checked?", show_if={"age_gte": 30},
        options=[_o("within_year", "In the last year"), _o("one_to_three_years", "One to three years ago"), _o("longer_or_never", "Longer ago, or never"), _o("not_sure", "Not sure")]),
     _q("cervical_screen", "later", "single", "Have you ever had a cervical screening test (Pap, HPV or VIA)?",
@@ -236,6 +262,7 @@ def required_missing(answers: dict[str, Any], today: date) -> list[str]:
 
 
 _GOAL_IDS = {o["id"] for o in BY_ID["main_goal"]["options"]}
+_GENDER_IDS = {o["id"] for o in BY_ID["gender"]["options"]}
 
 
 def migrate_legacy(answers: dict[str, Any]) -> dict[str, Any]:
@@ -530,8 +557,16 @@ def build_experience(answers: dict[str, Any], today: date) -> dict[str, Any]:
     fitness = {"formula_basis": {"female": "female", "male": "male"}.get(body or "", "average"), "deficits_allowed": deficits_allowed,
                "hide_numbers": bool({"weight", "calories_food_numbers"} & set(avoid))}
 
+    # -- who they are and who is close to them (weak hints for wording and for which support lines fit; never conclusions)
+    identity = {"country": answers.get("country") if answers.get("country") in COUNTRIES else None,
+                "region": answers.get("region"),
+                "gender": answers.get("gender") if answers.get("gender") in _GENDER_IDS else None}
+    orbit = {"status": answers.get("relationship_status"), "living_with": _picked(answers.get("living_with"))}
+
     return {
         "version": BANK_VERSION,
+        "identity": identity,
+        "orbit": orbit,
         "anatomy": {"base": base, "reproductive": body_map["reproductive"]},
         "body_map": body_map,
         "sections": {"visible": visible, "hidden": hide},

@@ -15,7 +15,7 @@ def build_personalization(profile: dict[str, Any] | None, preferences: dict[str,
     if preferences.get("language"): signals.append({"kind":"language","value":preferences["language"]})
     return {
         "signals": signals,
-        "style": preferences.get("communication_style","warm_formal"),
+        "style": preferences.get("communication_style","warm_friendly"),
         "detail_level": preferences.get("response_detail","balanced"),
         "topics_recently_active": list(dict.fromkeys(str(e.get("event_type")) for e in recent_events if e.get("event_type")))[:8],
         "policy":"personalization may adapt presentation and prioritization, never safety thresholds or clinical facts."

@@ -11,6 +11,7 @@ from fastapi import APIRouter, Header, HTTPException, Query
 from starlette.concurrency import run_in_threadpool
 
 import doc_store
+import person_model
 
 EXPORT_LIMIT = 5000
 
@@ -69,6 +70,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         except doc_store.IncompleteDelete as e:   # everything else is gone; do not say "success"
             before, incomplete = e.removed, e
         mirrors = await run_in_threadpool(delete_mirrors, db, uid)
+        person_model.forget(uid)   # the 30-second read cache must not keep what was just deleted
         if incomplete:
             raise HTTPException(status_code=503, detail="Most of your data was deleted, but some of your community posts could not be removed yet. Please try again in a minute.")
         return {"status": "success", "deleted": before, "analytics_copies_removed": mirrors,
@@ -87,6 +89,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         except doc_store.IncompleteDelete:
             raise HTTPException(status_code=503, detail="Your account was not deleted because some of your community posts could not be removed yet. Please try again in a minute.")
         await run_in_threadpool(delete_mirrors, db, uid)
+        person_model.forget(uid)
         try:
             await run_in_threadpool(db.auth.admin.delete_user, uid)
         except Exception:  # noqa: BLE001

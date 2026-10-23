@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fixture from "./bank.fixture.json";
 import {
-  advancesOnPick, ageOn, buildScreens, isAnswered, isRequired, matches, missingRequired, pendingPatch, pick, progressLabel, resumeIndex,
+  advancesOnPick, ageOn, buildScreens, countryFromTimeZone, isAnswered, isRequired, matches, missingRequired, pendingPatch, pick, progressLabel, resumeIndex,
   screenQuestions, titleFor, visibleOptions, visibleQuestions, type Answers, type Question,
 } from "./flow";
 
@@ -63,7 +63,7 @@ describe("ages", () => {
 describe("screens", () => {
   it("opens on the gender question with the language row beside it, then the date of birth with the name", () => {
     const screens = screensOf({});
-    expect(screens[0]).toMatchObject({ id: "first", ids: ["body", "language"] });
+    expect(screens[0]).toMatchObject({ id: "first", ids: ["body", "language", "country"] });
     expect(screens[1]).toMatchObject({ id: "about", ids: ["birth_date", "preferred_name"] });
   });
 
@@ -94,7 +94,7 @@ describe("screens", () => {
 
   it("groups the optional extras into a few screens", () => {
     const extras = screensOf({ body: "female", birth_date: "1990-01-01" }).filter((s) => s.stage === "extras" && s.kind === "questions");
-    expect(extras.map((s) => s.id)).toEqual(["body_basics", "food", "health_basics", "cycle", "talk", "support"]);
+    expect(extras.map((s) => s.id)).toEqual(["identity", "body_basics", "food", "health_basics", "cycle", "talk", "support"]);
     expect(extras.find((s) => s.id === "food")!.ids).toEqual(["diet_style", "recent_blood_test"]);
     expect(extras.every((s) => screenQuestions(s, questions).every((q) => !q.required))).toBe(true);
   });
@@ -172,8 +172,8 @@ describe("answering", () => {
 
   it("a single tap moves on only when nothing else on the screen is waiting", () => {
     const first = screensOf({})[0];
-    expect(advancesOnPick(first, questions, "body", { body: "male", language: "english" })).toBe(true);
-    expect(advancesOnPick(first, questions, "body", { body: "male" })).toBe(false);
+    expect(advancesOnPick(first, questions, "body", { body: "male", language: "english", country: "in" })).toBe(true);
+    expect(advancesOnPick(first, questions, "body", { body: "male", language: "english" })).toBe(false);
     const screens = screensOf({ body: "male", birth_date: "1990-01-01" });
     const goal = screens.find((s) => s.id === "main_goal")!;
     expect(advancesOnPick(goal, questions, "main_goal", { main_goal: "sleep" })).toBe(true);
@@ -240,5 +240,26 @@ describe("language", () => {
     expect(titleFor(byId("tone"), "hinglish", hi)).toBe(hi.tone);
     expect(titleFor(byId("tone"), "english", hi)).toBe(byId("tone").title);
     expect(titleFor(byId("last_period"), "hinglish", hi)).toBe(byId("last_period").title);
+  });
+});
+
+describe("country", () => {
+  it("starts from India only for an Indian time zone, and never asks a server", () => {
+    expect(countryFromTimeZone("Asia/Kolkata")).toBe("in");
+    expect(countryFromTimeZone("Asia/Calcutta")).toBe("in");
+    expect(countryFromTimeZone("America/New_York")).toBeUndefined();
+    expect(countryFromTimeZone(undefined)).toBeUndefined();
+  });
+
+  it("is an optional question beside language, and the state is asked only in India", () => {
+    expect(byId("country").required).toBe(false);
+    expect(visibleQuestions(questions, { country: "in" }, today).map((q) => q.id)).toContain("region");
+    expect(visibleQuestions(questions, { country: "us" }, today).map((q) => q.id)).not.toContain("region");
+    expect(missingRequired(visibleQuestions(questions, {}, today), {}, today)).not.toContain("country");
+  });
+
+  it("the self-description appears only when chosen", () => {
+    expect(visibleQuestions(questions, { gender: "woman" }, today).map((q) => q.id)).not.toContain("gender_other");
+    expect(visibleQuestions(questions, { gender: "self_describe" }, today).map((q) => q.id)).toContain("gender_other");
   });
 });

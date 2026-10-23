@@ -16,12 +16,14 @@ from typing import Any
 import ops_telemetry
 
 TABLE = "bubbles_admin_settings"
-CACHE_NAMES = ("sign_in", "consent", "profile_sync", "embedding", "rag_policy", "style_block", "profile_context")
+CACHE_NAMES = ("sign_in", "consent", "profile_sync", "embedding", "rag_policy", "style_block", "profile_context", "identity", "person_model")
 CACHE_LABELS = {"sign_in": "Remember sign-in checks (30 s)", "consent": "Remember the AI consent answer (5 min)",
                 "profile_sync": "Remember that a name is saved (1 h)",
                 "embedding": "Remember the meaning-search form of recent questions (1 h, no names)",
                 "rag_policy": "Remember each reading page's handling rule (1 h)",
                 "style_block": "Remember each person's tone settings (2 min)",
+                "identity": "Remember each person's country and gender answers (2 min)",
+                "person_model": "Remember what Bubbles has learned about each person (30 s)",
                 "profile_context": "Remember each person's profile for replies (1 min)"}
 
 _lock = threading.Lock()

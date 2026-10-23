@@ -20,7 +20,9 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Any, Iterable
+
+import locale_support
 
 from health_semantics import (
     CRISIS, PAIN_CONCEPTS, POSSIBLE_IS_EMERGENCY, Fact, analyze, display_name, keyword_hits,
@@ -243,11 +245,8 @@ def _names(assessment: SafetyAssessment) -> str:
     return ", ".join(seen[:-1]) + (" and " if len(seen) > 1 else "") + seen[-1]
 
 
-#: crisis lines, India first (Bubbles is India-first), then a global fallback. One copy for every crisis reply.
-CRISIS_LINES = (
-    "In India, call 112 for emergency help, or Tele-MANAS, the free 24x7 mental health line, on 14416 or 1-800-891-4416. "
-    "Outside India, call your local emergency number, or find a free local line at findahelpline.com."
-)
+#: crisis lines for India (the default); `locale_support.crisis_lines(country)` gives the wording for anywhere else. One copy for every crisis reply.
+CRISIS_LINES = locale_support.crisis_lines(None)
 
 _NET = {
     "chest_pain": "it spreads to your arm, jaw or back, or comes with trouble breathing, sweating, nausea or fainting",
@@ -256,7 +255,7 @@ _NET = {
 }
 
 
-def emergency_response(assessment: SafetyAssessment) -> str:
+def emergency_response(assessment: SafetyAssessment, country: Any = None) -> str:
     """Hard-gate copy: deterministic, never sent through a model."""
     if assessment.crisis:
         return (
@@ -264,7 +263,7 @@ def emergency_response(assessment: SafetyAssessment) -> str:
             "What you're describing sounds heavy, and your safety matters most right now. "
             "If you might act on these thoughts or you are in immediate danger, please call your local emergency number now.\n\n"
             "### Reaching someone right now\n"
-            f"- {CRISIS_LINES}\n"
+            f"- {locale_support.crisis_lines(country)}\n"
             "- If you can, tell someone you trust and ask them to stay with you.\n"
             "- If I've misunderstood you, tell me. I'd rather be corrected than miss something.\n\n"
             "I'm not a substitute for a crisis service or a clinician, but I'm here to keep talking."
@@ -282,7 +281,7 @@ def emergency_response(assessment: SafetyAssessment) -> str:
     )
 
 
-def clarification_response(assessment: SafetyAssessment) -> str:
+def clarification_response(assessment: SafetyAssessment, country: Any = None) -> str:
     """Short, calm follow-up for a possible red flag whose status is unclear (no model call)."""
     lines = ["Thanks for telling me. Before we go on, I want to check something so I don't guess:\n"]
     nets: list[str] = []
@@ -307,7 +306,7 @@ def clarification_response(assessment: SafetyAssessment) -> str:
         for concept in dict.fromkeys(assessment.concepts):
             lines.append(f"- You mentioned something that sounds like {display_name(concept)}. Is it happening right now, and how strong is it from 0 to 10?")
     if assessment.crisis:
-        lines.append(f"- If you are thinking about harming yourself, please reach out now. {CRISIS_LINES}")
+        lines.append(f"- If you are thinking about harming yourself, please reach out now. {locale_support.crisis_lines(country)}")
     lines.append("\nIf it's happening now and it's severe, don't wait for my reply: call your local emergency number.")
     if nets:
         lines.append("\n**Go to emergency care straight away if:**\n" + "\n".join(dict.fromkeys(nets)))

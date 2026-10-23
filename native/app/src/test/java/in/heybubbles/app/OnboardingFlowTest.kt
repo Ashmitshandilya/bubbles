@@ -36,6 +36,13 @@ class OnboardingFlowTest {
         ) as JsonObject,
     )
 
+    @Test fun countryStartsAsIndiaOnlyForAnIndianTimeZone() {
+        assertEquals("in", Flow.countryFromTimeZone("Asia/Kolkata"))
+        assertEquals("in", Flow.countryFromTimeZone("Asia/Calcutta"))
+        assertNull(Flow.countryFromTimeZone("America/New_York"))
+        assertNull(Flow.countryFromTimeZone(null))
+    }
+
     @Test fun ageIsWholeYearsAndRejectsFutureDates() {
         assertEquals(27, Flow.ageOn(s("1999-03-14"), today))
         assertEquals(26, Flow.ageOn(s("1999-12-31"), today))      // birthday not reached yet this year

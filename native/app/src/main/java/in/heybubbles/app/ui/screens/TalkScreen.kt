@@ -93,6 +93,8 @@ data class Msg(
     val id: String, val fromUser: Boolean, val text: String, val urgent: Boolean = false, val consentAsk: Boolean = false, val failed: Boolean = false,
     /** A Safe Harbor reply (someone close to the person hurts or frightens them): drawn as plain text with its own help button and choices. */
     val harbor: Harbor? = null,
+    /** Quick replies offered under this message (only the newest reply shows them). */
+    val suggestions: List<String> = emptyList(),
 )
 
 /** The screen hides itself from screenshots and the recent-apps preview while a Safe Harbor reply is in the conversation. */
@@ -136,7 +138,7 @@ class TalkViewModel(private val api: Api) : ViewModel() {
                 val r = api.chat(clean, UUID.randomUUID().toString(), conversationId)
                 conversationId = r.conversationId ?: conversationId
                 val urgent = r.safety.level == "RED" || r.kind == "emergency"
-                _state.update { it.copy(sending = false, msgs = it.msgs + Msg(r.messageId ?: UUID.randomUUID().toString(), false, r.response, urgent, r.consentAsk, harbor = r.harbor?.shown())) }
+                _state.update { it.copy(sending = false, msgs = it.msgs + Msg(r.messageId ?: UUID.randomUUID().toString(), false, r.response, urgent, r.consentAsk, harbor = r.harbor?.shown(), suggestions = r.suggestions.filter { it.isNotBlank() && it != "Open in Heart-to-heart" }.take(3))) }
             } catch (e: Exception) {
                 _state.update { it.copy(sending = false, notice = e.friendly()) }
             }
@@ -196,6 +198,9 @@ fun TalkScreen(api: Api) {
                             if (harbor != null) HelpPill { helpFor = harbor }
                         }
                         if (m.consentAsk) ConsentRow(onYes = { vm.answerConsent(true) }, onNo = { vm.answerConsent(false) })
+                        if (!s.sending && m.id == s.msgs.last().id && !m.fromUser && m.suggestions.isNotEmpty() && !m.consentAsk && !m.urgent) {
+                            Suggestions(m.suggestions, onPick = { vm.send(it) })
+                        }
                     }
                     if (s.sending) item { Row(Modifier.padding(start = 4.dp)) { Typing() } }
                 }
@@ -357,6 +362,17 @@ private fun EmptyTalk(onPick: (String) -> Unit) {
         Text("Log in plain words, in English, Hinglish or Hindi.", Modifier.padding(top = 4.dp, bottom = 16.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         listOf("Slept 7 hours", "2 rotis, dal and curd", "Cramps since morning", "Drank 2 glasses of water").forEach {
             Pill(it, MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface, Modifier.padding(vertical = 4.dp)) { onPick(it) }
+        }
+    }
+}
+
+
+/** Quick replies under the newest reply: quiet text buttons, not tinted pills (plan 5.6). */
+@Composable
+private fun Suggestions(items: List<String>, onPick: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(start = 4.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        items.forEach { text ->
+            androidx.compose.material3.TextButton(onClick = { onPick(text) }) { Text(text, style = MaterialTheme.typography.bodyMedium) }
         }
     }
 }

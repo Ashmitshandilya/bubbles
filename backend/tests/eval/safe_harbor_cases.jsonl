@@ -1643,3 +1643,7 @@
 {"text": "he elbowed his way through the crowd", "expect_tier": 0, "lang": "en", "note": "final fix round: red team misses and false positives", "group": "negative"}
 {"text": "he was knocked down by the car", "expect_tier": 0, "lang": "en", "note": "final fix round: red team misses and false positives", "group": "negative"}
 {"text": "kicked the ball at me and it hurt", "expect_tier": 0, "lang": "en", "note": "final fix round: red team misses and false positives", "group": "negative"}
+{"text": "he said I will beat you black and blue if you leave", "expect_tier": 2, "lang": "en", "note": "reported threat to hit", "group": "positive"}
+{"text": "my coach said I will beat you all today", "expect_tier": 0, "lang": "en", "note": "sport talk", "group": "negative"}
+{"text": "my brother said he will beat me at ludo", "expect_tier": 0, "lang": "en", "note": "game", "group": "negative"}
+{"text": "she said she will hit the gym", "expect_tier": 0, "lang": "en", "note": "idiom", "group": "negative"}

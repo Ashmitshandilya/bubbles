@@ -27,7 +27,7 @@ def test_response_format():
     assert normalize_response("  ")
 
 def test_personalization():
-    assert build_personalization({"full_name":"Ashmit"},{},[] )["style"]=="warm_formal"
+    assert build_personalization({"full_name":"Ashmit"},{},[] )["style"]=="warm_friendly"
 
 def test_habits():
     assert analyze_habits([{"event_type":"sleep"}])["domains"][0]["domain"]=="sleep"

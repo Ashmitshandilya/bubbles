@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sidebar, MobileNav, ApiAlert } from "../../components/Navigation";
 import { useAuth, useApi } from "../../components/Providers";
@@ -88,7 +89,12 @@ function SearchWatcher({ onChange }: { onChange: (search: string) => void }) {
   return null;
 }
 
-export function CompanionClient() {
+/** Heart-to-heart (Orbit) opens as a blank thread of its own, in the dusk theme, and tells the server so with `mode: "orbit"`. */
+/** A chip the server sends under relationship talk in Talk: it opens Heart-to-heart instead of sending a message. */
+const OPEN_ORBIT = "Open in Heart-to-heart";
+const ORBIT_STARTERS = ["We had a fight and I don't know how to start fixing it", "I don't know what to say to them", "I'm feeling distant from someone I love", "Help me understand something they said"];
+
+export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } = {}) {
   const router = useRouter();
   const { loading: authLoading, session } = useAuth();
   const { connectionError, fetchBubbles, checkApiHealth, apiStatus, reconnects } = useApi();
@@ -184,8 +190,8 @@ export function CompanionClient() {
 
   // The list is only fetched when it can be seen: always visible on a wide screen, on demand behind History on a phone.
   useEffect(() => {
-    if (session && window.matchMedia("(min-width: 1024px)").matches) void loadHistory();
-  }, [session, loadHistory]);
+    if (mode !== "orbit" && session && window.matchMedia("(min-width: 1024px)").matches) void loadHistory();
+  }, [mode, session, loadHistory]);
 
   // Bubbles came back after being unreachable: reload the list that failed while it was down.
   const seenReconnects = useRef(reconnects);
@@ -233,7 +239,7 @@ export function CompanionClient() {
         // Words arrive on the stream when the server has one; any trouble falls back to plain POST /chat (see stream.ts).
         const { payload } = await requestChat({
           fetcher: fetchBubbles,
-          body: JSON.stringify({ conversation_id: conversationId, message: text, message_id: messageId }),
+          body: JSON.stringify({ conversation_id: conversationId, message: text, message_id: messageId, ...(mode === "orbit" ? { mode } : {}) }),
           onMeta: (meta) => {
             if (view === viewRef.current) setStream((prev) => ({ ...prev, meta }));
           },
@@ -294,7 +300,7 @@ export function CompanionClient() {
         setStream(emptyStream);
       }
     },
-    [conversationId, fetchBubbles, loadHistory]
+    [conversationId, fetchBubbles, loadHistory, mode]
   );
 
   /** Best effort: thumbs already given in this conversation. A failure just means no highlighted thumbs. */
@@ -432,9 +438,12 @@ export function CompanionClient() {
     const first = firstEntry.current;
     firstEntry.current = false;
     if (entry.fresh) startNewChat();
-    else if (first) void resume();
-    if (entry.fresh || entry.ask) router.replace("/companion");
-  }, [urlSearch, authLoading, session, router, resume, startNewChat]);
+    else if (first) {
+      if (mode === "orbit") startNewChat();
+      else void resume();
+    }
+    if (entry.fresh || entry.ask) router.replace(mode === "orbit" ? "/orbit/talk" : "/companion");
+  }, [mode, urlSearch, authLoading, session, router, resume, startNewChat]);
 
   // Once the chat is open and idle, send the question that was waiting.
   useEffect(() => {
@@ -709,7 +718,7 @@ export function CompanionClient() {
     "bubbles-press inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-body-sm font-extrabold text-ink";
 
   return (
-    <main className="flex h-dvh flex-col overflow-hidden bg-blush">
+    <main className={`${mode === "orbit" ? "dusk " : ""}flex h-dvh flex-col overflow-hidden bg-blush`}>
       <Suspense fallback={null}>
         <SearchWatcher onChange={setUrlSearch} />
       </Suspense>
@@ -718,27 +727,32 @@ export function CompanionClient() {
       <div className="flex min-h-0 flex-1">
         <Sidebar apiStatus={apiStatus} />
 
-        <aside aria-label="History" className="hidden w-[280px] shrink-0 flex-col overflow-y-auto border-r-2 border-line bg-surface px-4 py-6 lg:flex">
+        <aside aria-label="History" className={`${mode === "orbit" ? "hidden" : "hidden lg:flex"} w-[280px] shrink-0 flex-col overflow-y-auto border-r-2 border-line bg-surface px-4 py-6`}>
           {conversationList(false)}
         </aside>
 
         <section aria-label="Chat with Bubbles" className="flex min-w-0 flex-1 flex-col">
           <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b-2 border-line bg-blush px-4 py-3 lg:px-7 lg:py-4">
             <div className="flex min-w-0 items-center gap-3">
-              {!urgent && !caution && !harborVoice && <BubblesMascot size={44} animated={false} />}
-              <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">Bubbles</h1>
+              {!urgent && !caution && !harborVoice && mode !== "orbit" && <BubblesMascot size={44} animated={false} />}
+              <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">{mode === "orbit" ? "Heart-to-heart" : "Bubbles"}</h1>
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={openHistory}
-                aria-haspopup="dialog"
-                aria-expanded={drawerOpen}
-                className={headerButton}
-              >
-                <Icon d={ICONS.menu} size={18} />
-                History
-              </button>
+              {mode === "orbit" ? (
+                <>
+                  <Link href="/orbit" className={`${headerButton} no-underline`}>
+                    Orbit
+                  </Link>
+                  <button type="button" onClick={() => router.replace("/dashboard")} className={headerButton}>
+                    Hide
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={openHistory} aria-haspopup="dialog" aria-expanded={drawerOpen} className={headerButton}>
+                  <Icon d={ICONS.menu} size={18} />
+                  History
+                </button>
+              )}
               <button type="button" onClick={startNewChat} className={`${headerButton} border-bubbles-pink-ink text-bubbles-pink-ink`}>
                 <Icon d={ICONS.plus} size={18} strokeWidth={2.6} />
                 New chat
@@ -754,14 +768,32 @@ export function CompanionClient() {
               <h2 className="sr-only">Conversation</h2>
               {messages.length === 0 && resumeState === "ready" && !loadingConversation && !conversationError && !sending && (
                 <div className="mx-auto flex w-full flex-col items-center gap-6 py-8 text-center">
-                  <div className="bubbles-rise flex max-w-md flex-col items-center gap-3">
-                    <BubblesMascot size={96} mood="happy" />
-                    <p className="m-0 font-display text-h2 font-semibold text-ink">Hi, I&apos;m Bubbles</p>
-                    <p className="m-0 text-body text-ink-soft">
-                      Tell me how you&apos;re feeling or ask about your patterns. I can&apos;t diagnose, but I can help you understand and prepare.
-                    </p>
-                  </div>
-                  <PromptCards cards={PROMPT_CARDS} disabled={composerDisabled} onPick={(text) => void sendMessage(text)} />
+                  {mode === "orbit" ? (
+                    <div className="bubbles-rise flex max-w-md flex-col items-center gap-3">
+                      <p className="m-0 font-display text-h2 font-semibold text-ink">Tell me about them</p>
+                      <p className="m-0 text-body text-ink-soft">
+                        I only know your side, so I won&apos;t judge anyone. This stays between us, and I can help you find words for what you feel.
+                      </p>
+                      <div className="pearl-chips" role="group" aria-label="Ways to start" style={{ justifyContent: "center" }}>
+                        {ORBIT_STARTERS.map((text) => (
+                          <button key={text} type="button" className="pearl-chip" disabled={composerDisabled} onClick={() => void sendMessage(text)}>
+                            {text}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bubbles-rise flex max-w-md flex-col items-center gap-3">
+                        <BubblesMascot size={96} mood="happy" />
+                        <p className="m-0 font-display text-h2 font-semibold text-ink">Hi, I&apos;m Bubbles</p>
+                        <p className="m-0 text-body text-ink-soft">
+                          Tell me how you&apos;re feeling or ask about your patterns. I can&apos;t diagnose, but I can help you understand and prepare.
+                        </p>
+                      </div>
+                      <PromptCards cards={PROMPT_CARDS} disabled={composerDisabled} onPick={(text) => void sendMessage(text)} />
+                    </>
+                  )}
                 </div>
               )}
 
@@ -832,7 +864,7 @@ export function CompanionClient() {
                       onDecide={(ids, confirmed) => void decideEvents(m.id, ids, confirmed)}
                       showAvatar={!isReplyInRun(messages[i - 1])}
                       chips={m.id === chipsFor ? chips : undefined}
-                      onChip={(text) => void sendMessage(text)}
+                      onChip={(text) => (text === OPEN_ORBIT ? router.push("/orbit/talk") : void sendMessage(text))}
                       chipsDisabled={composerDisabled}
                       feedback={ratings[m.id]}
                       feedbackBusy={ratingBusy[m.id] === true}
@@ -880,7 +912,7 @@ export function CompanionClient() {
               >
                 <div className="flex items-baseline justify-between gap-3 px-1">
                   <label htmlFor="bubbles-message" className="text-body-sm font-extrabold text-ink">
-                    Message Bubbles
+                    {mode === "orbit" ? "Tell Bubbles" : "Message Bubbles"}
                   </label>
                   <span id="bubbles-message-hint" className={`text-chip font-semibold ${nearLimit ? "text-bubbles-urgent" : "text-ink-soft"}`}>
                     {nearLimit ? (
@@ -899,7 +931,7 @@ export function CompanionClient() {
                     maxLength={MAX_MESSAGE}
                     disabled={composerDisabled}
                     aria-describedby="bubbles-message-hint"
-                    placeholder="Ask Bubbles anything about your health…"
+                    placeholder={mode === "orbit" ? "What is on your heart?" : "Ask Bubbles anything about your health…"}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {

@@ -123,8 +123,10 @@ class OnboardingViewModel(private val api: Api) : ViewModel() {
                 if (st.complete) { onFinished(); return@launch }
                 if (st.under18) { _state.update { it.copy(phase = Phase.Under18) }; return@launch }
                 saved = st.answers
-                val screens = Flow.buildScreens(bank, st.answers, today)
-                _state.update { it.copy(phase = Phase.Asking, bank = bank, answers = st.answers, screens = screens, index = Flow.resumeIndex(screens, bank, st.answers, today)) }
+                val start = Flow.countryFromTimeZone(java.util.TimeZone.getDefault().id)?.takeIf { st.answers["country"] == null }
+                    ?.let { st.answers + ("country" to JsonPrimitive(it)) } ?: st.answers
+                val screens = Flow.buildScreens(bank, start, today)
+                _state.update { it.copy(phase = Phase.Asking, bank = bank, answers = start, screens = screens, index = Flow.resumeIndex(screens, bank, start, today)) }
             } catch (e: Exception) {
                 _state.update { it.copy(phase = Phase.Failed, error = e.friendly()) }
             }

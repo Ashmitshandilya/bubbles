@@ -4,8 +4,8 @@ India is fully supported. Every other country, and a person who has not said whe
 "your local emergency number". A number is shipped only after the owner has checked it against an official source (plan Appendix B),
 so no other country's number appears here on purpose.
 
-Country and gender are not asked yet (setup v2 adds them). Until then every caller passes ``None``, which means India and an unknown
-gender, and gets the women's set: the Women Helpline serves women, and 112 is always shown beside it because the 181 line is not
+Country and gender come from the setup (``experience.identity``). A person who never answered, which includes everyone who set up
+before those questions existed, is passed as ``None``: that means India and an unknown gender, and gets the women's set: the Women Helpline serves women, and 112 is always shown beside it because the 181 line is not
 run in every state (it is not run by the West Bengal government, per a Rajya Sabha reply of 11 December 2024).
 """
 from __future__ import annotations
@@ -27,6 +27,14 @@ _WOMAN = frozenset({"woman", "women", "female", "f", "girl", "lady"})
 _MAN = frozenset({"man", "men", "male", "m", "boy", "gentleman"})
 _NON_BINARY = frozenset({"non binary", "nonbinary", "nb", "enby", "genderqueer", "genderfluid", "agender"})   # "non-binary" and "non_binary" are folded to a space first
 _INDIA = frozenset({"in", "ind", "india", "bharat", "भारत"})
+
+
+#: One copy of the crisis wording for India. ``safety_engine.CRISIS_LINES`` is this text and must stay byte-identical (tests compare it).
+_CRISIS_IN = (
+    "In India, call 112 for emergency help, or Tele-MANAS, the free 24x7 mental health line, on 14416 or 1-800-891-4416. "
+    "Outside India, call your local emergency number, or find a free local line at findahelpline.com."
+)
+_CRISIS_LOCAL = "Please call your local emergency number, or find a free local line at findahelpline.com."
 
 
 def normalize_country(country: Any) -> str:
@@ -67,3 +75,13 @@ def self_help_resources(country: Any = None, child_at_risk: bool = False) -> lis
     if normalize_country(country) != "IN":
         return [dict(_LOCAL)]
     return [dict(_EMERGENCY), dict(_TELE_MANAS), *([dict(_CHILDLINE)] if child_at_risk else [])]
+
+
+def crisis_lines(country: Any = None) -> str:
+    """The sentence after "reaching someone right now". India (or not said): the original wording. Any other country: no number."""
+    return _CRISIS_IN if normalize_country(country) == "IN" else _CRISIS_LOCAL
+
+
+def emergency_number(country: Any = None) -> str:
+    """"112" for India (or not said), else "your local emergency number"."""
+    return _EMERGENCY["number"] if normalize_country(country) == "IN" else LOCAL_EMERGENCY

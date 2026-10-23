@@ -34,11 +34,15 @@ from event_filters import clean_data
 from health_event_pipeline import prepare_db_row
 from memory_manager import extract_explicit_personal_facts
 from people_memory import recall_target, remembered_reply
+import locale_support
+import orbit_knowledge
+import response_quality
+import topic_tags
 import safe_harbor
 from safe_harbor import Harbor, HarborContext
 from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state, split_sentences
 from safety_engine import (
-    CRISIS_LINES, POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
+    POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
 )
 
 HISTORY_TURNS = 10
@@ -218,6 +222,7 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
         "consent_required": meta.get("consent_required") is True,
         "evidence": [],
         "replayed": True,
+        "suggestions": [s for s in meta.get("suggestions") or [] if isinstance(s, str)][:3] if isinstance(meta.get("suggestions"), list) else [],
     }
     if isinstance(meta.get("harbor"), dict):
         replay["harbor"] = {k: v for k, v in meta["harbor"].items() if k in ("tier", "mode", "step", "resources", "actions")}   # same as first time; nothing recomputed, no state written twice
@@ -314,6 +319,9 @@ class Turn:
     timings_ms: dict[str, float] = field(default_factory=dict)
     pause_strict_plan: bool = False
     last_reply: dict[str, Any] | None = None   # the newest Bubbles message in this conversation (content + metadata)
+    mode: str = "talk"    # "talk" or "orbit" (Heart-to-heart): set by the client, kept with the conversation
+    topics: tuple[str, ...] = ()   # relationship / mind / body / fitness / cycle / care (topic_tags.py): a hint for chips and context, never for safety
+    country: Any = None   # from the setup (None = not said = India); picks the emergency wording of the fixed replies
     harbor: Harbor = field(default_factory=Harbor)   # partner or family violence: tier, whether this is a follow-up, what to store (safe_harbor.py)
 
 
@@ -334,7 +342,7 @@ def history_user_facts(history: list[dict[str, Any]], now: datetime | None = Non
     return out
 
 
-def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | None = None, harbor_ctx: HarborContext | None = None) -> Turn:
+def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | None = None, harbor_ctx: HarborContext | None = None, mode: str = "talk") -> Turn:
     t0 = time.perf_counter()
     try:
         facts: list[Fact] | None = analyze(text)
@@ -362,6 +370,8 @@ def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | No
         log = DailyLog(log_date=(now or datetime.now(timezone.utc)).date().isoformat())
     turn = Turn(text, facts, safety, correction, conflicts, log, history_facts)
     turn.last_reply = next((r for r in reversed(history) if r.get("role") == "bubbles"), None)
+    turn.topics = topic_tags.tags(text)
+    turn.mode = "orbit" if mode == "orbit" else "talk"
     try:
         turn.harbor = safe_harbor.assess(text, history, harbor_ctx, now=now)
     except Exception as error:  # noqa: BLE001 - if the rules themselves fail, a plain keyword look decides (a fixed reply beats sending the message to a model)
@@ -379,12 +389,25 @@ def _only_tells_a_fact(text: str) -> bool:
     return "?" not in text and len(text.split()) <= 18 and bool(extract_explicit_personal_facts(text))
 
 
+_TROUBLE = re.compile(r"\b(?:upset|angry|mad at|sad|hurt|hurting|fight|fighting|fought|argu\w*|cheat\w*|lie[sd]?|lying|trust|jealous|miss(?:ing)?|break\s?up|broke up|ignor\w*|silent|distant|distance|"
+                      r"naraz|gussa|gusse|jhagd\w*|ladai|ladte|pareshan|dukhi|udaas|rooth\w*|baat nahi|bharosa|shak|chhod\w*)\b", re.I)
+
+
+def _relationship_concern(turn: Turn) -> bool:
+    """A message about a relationship that is a worry (a feeling, a problem word, or a known pattern), not a passing mention like a birthday gift."""
+    if "relationship" not in turn.topics:
+        return False
+    return "mind" in turn.topics or bool(_TROUBLE.search(turn.text)) or bool(orbit_knowledge.cards_for(turn.text, limit=1))
+
+
 def route_turn(turn: Turn) -> str:
     state = turn.safety.state
     if state == "EMERGENCY":
         return "emergency"
     if turn.harbor.deterministic:
         return "safe_harbor"   # partner or family violence (tier 2 and up) and the follow-ups after it: fixed copy, never an outside model
+    if response_quality.manipulation_request(turn.text) and state != "URGENT":
+        return "orbit_redirect"   # making someone jealous, checking up on them in secret, testing them: a fixed warm answer, never a model
     if turn.correction.is_correction:
         return "correction"
     if state == POTENTIAL:
@@ -413,6 +436,8 @@ def route_turn(turn: Turn) -> str:
         if kind == "ack" and "?" in str((turn.last_reply or {}).get("content") or ""):
             return "ai"
         return "small_talk"   # "hey bubbles", "thanks": answered here, no outside model and no consent question
+    if not fitness and state == "NO_REDFLAG" and (turn.mode == "orbit" or _relationship_concern(turn)):
+        return "orbit"   # relationship support: the Heart-to-heart voice and the pattern cards, still behind the same consent as every model reply
     return fitness or "ai"
 
 
@@ -429,14 +454,14 @@ def standing_safety_reply(reply: dict[str, Any] | None) -> dict[str, Any] | None
     return meta if (meta.get("kind") in _SAFETY_KINDS or safety.get("state") in _SAFETY_STATES) else None
 
 
-def safety_followup_reply(reply: dict[str, Any] | None, *, name: str | None) -> str:
+def safety_followup_reply(reply: dict[str, Any] | None, *, name: str | None, country: Any = None) -> str:
     """Fixed text for small talk right after a safety reply (no model): the earlier concern is restated, never waved off."""
     meta = standing_safety_reply(reply) or {}
     safety = meta.get("safety") or {}
     comma = f", {name}" if name else ""
     if any(c in CRISIS for c in safety.get("concepts") or []):
         return (f"I'm still here{comma}. If you might act on these thoughts or you are in immediate danger, please call your local emergency "
-                f"number now. {CRISIS_LINES} Would you tell me how you're feeling right now?")
+                f"number now. {locale_support.crisis_lines(country)} Would you tell me how you're feeling right now?")
     if meta.get("kind") == "emergency" or safety.get("state") == "EMERGENCY":
         return (f"I'm still here{comma}. If what you told me is still happening, or it feels severe, please contact your local emergency "
                 "service now, and ask someone nearby to stay with you. How are you feeling right now?")
@@ -555,19 +580,21 @@ def first_name(user: Any) -> str | None:
 
 
 def reply_kind(route: str) -> str:
-    return {"emergency": "emergency", "safe_harbor": "safe_harbor", "correction": "correction_ack", "clarification": "clarification",
+    return {"emergency": "emergency", "orbit_redirect": "orbit_redirect", "safe_harbor": "safe_harbor", "correction": "correction_ack", "clarification": "clarification",
             "daily_log": "daily_log_summary", "fitness_support": "fitness_support", "fitness_answer": "fitness_answer"}.get(route, "reply")
 
 
 def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> str:
     route, safety = turn.route, turn.safety
     if route == "emergency":
-        text = emergency_response(safety)
+        text = emergency_response(safety, turn.country)
         if turn.harbor.tier >= 2:
             text += "\n\n" + safe_harbor.resource_line(turn.harbor)   # "he hit me and I want to die": the crisis reply first, then the numbers for being unsafe at home
         return text
     if route == "safe_harbor":
         return safe_harbor.reply(turn.harbor, seed=turn.text, medical=safety.state == "URGENT")
+    if route == "orbit_redirect":
+        return orbit_redirect_reply(turn.text)
     if route == "small_talk":
         return small_talk_reply(turn.text, name=name)
     if route == "remembered":
@@ -575,16 +602,16 @@ def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> s
     if route == "recall":
         return ""   # filled in by main._recall_text (needs the saved facts)
     if route == "safety_followup":
-        return safety_followup_reply(turn.last_reply, name=name)
+        return safety_followup_reply(turn.last_reply, name=name, country=turn.country)
     if route in ("fitness_support", "fitness_answer"):
         return ""   # filled in by main._fitness_text (needs the database)
     if route == "correction":
         text = correction_response(turn.correction)
         if safety.state == POTENTIAL:
-            text += "\n\n" + clarification_response(safety)
+            text += "\n\n" + clarification_response(safety, turn.country)
         return text
     if route == "clarification":
-        text = clarification_response(safety)
+        text = clarification_response(safety, turn.country)
         if saved_events:
             text += "\n\nI've also noted the other things you told me."
         return text
@@ -1026,3 +1053,132 @@ def stored_metadata(*, kind: str, user_message_id: str, safety: dict[str, Any], 
         "conflicts": conflicts[:5], "semantic_trace": trace,
         **({"evidence_package": package} if package else {}),   # audit trail: which engines ran and which facts/evidence were used
     }
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------
+# the prompt budget (plan 5.4)
+# ---------------------------------------------------------------------------------------------------------------------------------
+
+#: Characters for everything the prompt adds on top of the two fixed voice texts (SYSTEM_INSTRUCTION and the response style): the safety lines,
+#: the setup style, the recent conversation, the person model, open threads, the person's own context and the evidence. Shorter prompts also answer faster.
+PROMPT_BUDGET = 9000
+RECENT = "recent_conversation"
+MIN_RECENT_TURNS = 4
+NL = chr(10)
+
+
+def fit_blocks(blocks: list[tuple[str, str, int]], budget: int = PROMPT_BUDGET) -> dict[str, str]:
+    """The text each block keeps once the whole fits in ``budget`` characters.
+
+    ``blocks`` is ``(name, text, priority)`` in prompt order. Priority 0 is never dropped (safety, the setup voice). When over budget the
+    block with the largest priority number goes first (ties: the later one), then the recent conversation is trimmed oldest line first down to
+    ``MIN_RECENT_TURNS`` lines. Blocks are dropped whole, never cut in the middle, so no sentence is ever half-sent."""
+    keep = {name: text for name, text, _p in blocks if text and text.strip()}
+    priority = {name: p for name, _t, p in blocks}
+    order = {name: i for i, (name, _t, _p) in enumerate(blocks)}
+
+    def size() -> int:
+        return sum(len(t) + 2 for t in keep.values())
+
+    for name in sorted(keep, key=lambda n: (-priority[n], -order[n])):
+        if size() <= budget:
+            break
+        if priority[name] > 0 and name != RECENT:
+            del keep[name]
+    if size() > budget and RECENT in keep:
+        head, _, body = keep[RECENT].partition(NL)
+        lines = body.split(NL) if body else []
+        while len(lines) > MIN_RECENT_TURNS and size() - len(keep[RECENT]) + len(head) + len(NL.join(lines)) + 1 > budget:
+            lines.pop(0)
+        keep[RECENT] = head + NL + NL.join(lines) if lines else head
+    return keep
+
+
+def assemble_context(blocks: list[tuple[str, str, int]], budget: int = PROMPT_BUDGET) -> str:
+    """The blocks that fit, in prompt order, separated by a blank line."""
+    kept = fit_blocks(blocks, budget)
+    return (NL + NL).join(kept[name] for name, _t, _p in blocks if name in kept)
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------
+# suggestion chips (plan C7): deterministic, by route and topic, at most three, in the language the person writes in
+# ---------------------------------------------------------------------------------------------------------------------------------
+
+_NO_CHIPS = {"emergency", "safe_harbor", "safety_followup", "clarification", "correction", "orbit_redirect"}
+_CHIPS: dict[str, dict[str, tuple[str, ...]]] = {
+    "en": {
+        "relationship": ("Help me work out what to say", "Why do I feel this way about it?", "Open in Heart-to-heart"),
+        "mind": ("What could help me feel calmer?", "Can we talk it through?", "What can I do for the next hour?"),
+        "cycle": ("What is normal in this phase?", "Help me log how I feel", "What should I ask my doctor?"),
+        "body": ("What should I keep an eye on?", "When should I see a doctor?", "Can you explain that more simply?"),
+        "fitness": ("Suggest a simple plan", "What should I eat today?", "How do I stay consistent?"),
+        "care": ("Help me prepare questions for my doctor", "What should I keep track of?", "Can you explain that more simply?"),
+        "log": ("How did my week look?", "Log something else", "What should I keep an eye on?"),
+        "default": ("Can you explain that more simply?", "What should I keep an eye on?", "Help me prepare questions for my clinician"),
+    },
+    "hinglish": {
+        "relationship": ("Kya bolna chahiye, samajhne mein madad karo", "Mujhe aisa kyun lag raha hai?", "Open in Heart-to-heart"),
+        "mind": ("Mujhe shaant hone mein kya madad karega?", "Chalo isse baat karke dekhte hain", "Agle ek ghante ke liye kya kar sakta hoon?"),
+        "cycle": ("Is phase mein kya normal hai?", "Meri feeling log karne mein madad karo", "Doctor se kya poochna chahiye?"),
+        "body": ("Mujhe kis cheez par nazar rakhni chahiye?", "Doctor ko kab dikhana chahiye?", "Isse aasan shabdon mein samjhao"),
+        "fitness": ("Ek simple plan batao", "Aaj kya khana chahiye?", "Main regular kaise rahun?"),
+        "care": ("Doctor ke liye sawaal taiyaar karne mein madad karo", "Mujhe kya track karna chahiye?", "Isse aasan shabdon mein samjhao"),
+        "log": ("Mera hafta kaisa raha?", "Kuch aur log karo", "Mujhe kis cheez par nazar rakhni chahiye?"),
+        "default": ("Isse aasan shabdon mein samjhao", "Mujhe kis cheez par nazar rakhni chahiye?", "Doctor ke liye sawaal taiyaar karne mein madad karo"),
+    },
+}
+_CHIP_ORDER = ("relationship", "mind", "cycle", "body", "fitness", "care")
+
+
+def suggestions_for(turn: Turn, *, consent_required: bool = False) -> list[str]:
+    """Up to three quick replies for the newest Bubbles message. Empty on safety replies and while a consent question is open; those are not a
+    moment for chips. Language follows how the person wrote (Roman-script Hindi gets Hinglish chips)."""
+    if turn.route in _NO_CHIPS or consent_required or turn.safety.state != "NO_REDFLAG" or turn.harbor.tier >= 1:
+        return []
+    lang = "hinglish" if safe_harbor.detect_language(turn.text) in ("hi", "hi-latn") else "en"
+    bank = _CHIPS[lang]
+    if turn.route == "daily_log":
+        return list(bank["log"][:3])
+    for topic in _CHIP_ORDER:
+        if topic in turn.topics:
+            return list(bank[topic][:3])
+    return list(bank["default"][:3])
+
+
+# ---------------------------------------------------------------------------------------------------------------------------------
+# Orbit (relationship support): the voice block, and the fixed answer to a request to manipulate or secretly check someone
+# ---------------------------------------------------------------------------------------------------------------------------------
+
+ORBIT_BLOCK = """ORBIT MODE (relationship support):
+- You are Bubbles, a warm friend who understands relationships well. The person is talking about someone they love or are close to. Only their side is known; never judge the other person or the relationship.
+- First, show you heard the feeling under the words. Then help them see the pattern, not the villain: "it sounds like the more you reach out, the more they pull back" (the cycle is the problem, not either person).
+- Offer at most one skill, in plain words: a soft start ("I feel ... about ... and I need ..."), a repair line, a pause when things are heated, turning toward small bids, asking instead of assuming.
+- If they want to reply to their partner, offer to draft it in their language (Hinglish stays Hinglish).
+- Use PATTERN CARDS only when the person's own words match them, and never name a pattern as a diagnosis.
+- Never: tell them to stay or leave; label anyone (toxic, narcissist, manipulative); help them check, track, test or make their partner jealous; generalise about men, women, families, castes or star signs; reveal or guess anything about their partner's own Bubbles use.
+- If they mention being hit, threatened, choked, forced or afraid, stop coaching and follow SAFE HARBOR (handled by the app).
+- Keep it short: 3 to 5 sentences unless they ask for more. At most one question."""
+
+_REDIRECT = {
+    "en": ("I'd rather help you say what you need directly. Wanting to know where you stand is human, but checking up on someone, testing them or making them jealous "
+           "tends to leave both of you feeling worse. If you tell me what you are hoping to find out, or what you are feeling, I can help you put it into an honest message to them."),
+    "hinglish": ("Main chahunga ki tum jo chahte ho woh seedhe bol sako, aur main usme madad karunga. Jaanna ki hum kahan khade hain, ye bilkul insaani hai, par kisi pe nazar rakhna, "
+                 "unhe test karna ya jealous karna aksar dono ko aur bura feel karata hai. Tum bataao ki tum kya jaanna chahte ho ya kya feel kar rahe ho, "
+                 "toh main use ek sachche message mein likhne mein madad kar sakta hoon."),
+}
+
+
+_HINGLISH_HINTS = re.compile(r"\b(?:usse|use|unhe|uska|uski|uske|kaise|karna|karni|karun|karoon|hai|hain|chahta|chahti|mujhe|mera|meri|nahi|chupke)\b", re.I)
+
+
+def orbit_redirect_reply(text: str) -> str:
+    hinglish = safe_harbor.detect_language(text) in ("hi", "hi-latn") or len(_HINGLISH_HINTS.findall(text or "")) >= 2
+    return _REDIRECT["hinglish" if hinglish else "en"]
+
+
+def orbit_blocks(turn: Turn, history: list[dict[str, Any]]) -> list[tuple[str, str, int]]:
+    """Prompt blocks for the orbit route: the voice (never dropped) and up to two pattern cards (dropped early if the prompt is full).
+    The cards come from the new message, with the last two messages adding a little weight; relationship talk may use looser matching."""
+    cards = orbit_knowledge.cards_for(turn.text, history, limit=2, loose=True)
+    block = orbit_knowledge.prompt_block(cards, turn.country) if cards else orbit_knowledge.catalogue_block(turn.country)
+    return [("orbit", ORBIT_BLOCK, 0), ("pattern_cards", block, 6)]

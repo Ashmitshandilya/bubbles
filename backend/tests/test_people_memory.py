@@ -123,7 +123,7 @@ def test_a_message_with_a_health_fact_still_goes_to_the_model_but_the_fact_is_sa
     send(env, "my boyfriends name is ashmit")
     res = send(env, "I slept badly and have a mild headache, any tips?")        # nothing in it shares a word with the saved fact
     assert res.status_code == 200 and env.ai_calls
-    assert "boyfriend is called Ashmit" in seen[-1]
+    assert "boyfriend is called [PARTNER]" in seen[-1] and "Ashmit" not in seen[-1]   # the saved name is in front of the model only as a label (name_privacy.py)
 
 
 def test_one_persons_facts_never_reach_another(env):

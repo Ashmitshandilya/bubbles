@@ -14,6 +14,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request
 from starlette.concurrency import run_in_threadpool
 
 import doc_store
+import person_model
 
 KIND = "chat_feedback"
 RATINGS = ("up", "down")
@@ -66,6 +67,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
             raise HTTPException(status_code=404, detail="That reply was not found")
         payload = {"rating": rating, "reason": reason, "at": datetime.now(timezone.utc).isoformat()}
         await run_in_threadpool(doc_store.put, db, uid, KIND, message_id, payload)
+        await run_in_threadpool(person_model.observe_feedback, db, uid, rating, reason)   # never raises; "too long" twice becomes a trait
         return {"status": "success", "message_id": message_id, "rating": rating, "reason": reason}
 
     @router.get("/chat/feedback")
