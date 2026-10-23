@@ -1,0 +1,1685 @@
+{
+ "summary": {
+  "k": 5,
+  "n": 131,
+  "recall_at_1": 0.82,
+  "recall_at_k": 0.98
+ },
+ "cases": [
+  {
+   "id": "R01",
+   "query": "dal chawal calories",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Dal (toor/arhar), cooked with tadka",
+    "Chana dal, cooked"
+   ]
+  },
+  {
+   "id": "R02",
+   "query": "how many calories in roti",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Roti / Chapati / Phulka (plain, whole wheat, no fat)",
+    "Roti with ghee (1 tsp)"
+   ]
+  },
+  {
+   "id": "R03",
+   "query": "ferritin blood test fasting",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Ferritin Blood Test: what happens, how to prepare, risks",
+    "Ferritin Blood Test: what it is and what it is used for",
+    "Iron Tests: what happens, how to prepare, risks"
+   ]
+  },
+  {
+   "id": "R04",
+   "query": "what does HbA1c measure",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Hemoglobin A1C (HbA1c) Test: what results can mean (general)",
+    "Hemoglobin A1C (HbA1c) Test: what it is and what it is used for",
+    "Haemoglobin A1c (HbA1c) test: overview",
+    "Diabetes tests (A1C, fasting glucose): how diabetes is checked",
+    "Haemoglobin A1c (HbA1c) test: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R05",
+   "query": "metformin side effects",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Metformin",
+    "Metformin",
+    "Methadone: who should check first, side effects and interactions",
+    "Ibuprofen",
+    "Buprenorphine for pain: who should check first, side effects and interactions"
+   ]
+  },
+  {
+   "id": "R06",
+   "query": "paracetamol in pregnancy",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Headaches in pregnancy: overview",
+    "Paracetamol (acetaminophen)",
+    "Paracetamol (acetaminophen)",
+    "Nefopam: pregnancy, breastfeeding and fertility",
+    "Co-dydramol: pregnancy, breastfeeding and fertility"
+   ]
+  },
+  {
+   "id": "R07",
+   "query": "ibuprofen stomach",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Stomach ulcer: causes, treatment and self-care",
+    "Ibuprofen",
+    "Gastritis: overview",
+    "Gastritis: causes, treatment and self-care",
+    "Alendronate (bisphosphonate)"
+   ]
+  },
+  {
+   "id": "R08",
+   "query": "iron deficiency anaemia symptoms",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Iron deficiency anaemia: overview",
+    "Iron-deficiency anaemia: symptoms",
+    "Iron deficiency anaemia: causes, treatment and self-care",
+    "Iron-deficiency anaemia: complications and red flags",
+    "Fatigue: associated symptoms and contextual factors"
+   ]
+  },
+  {
+   "id": "R09",
+   "query": "PCOS and irregular periods",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "PCOS (polycystic ovary syndrome): signs and what it can affect",
+    "Irregular periods: causes, treatment and self-care",
+    "Polycystic ovary syndrome (PCOS) — summary: diagnosis",
+    "Polycystic ovary syndrome (PCOS) — summary: symptoms",
+    "Polyendocrine metabolic ovarian syndrome (PMOS): overview"
+   ]
+  },
+  {
+   "id": "R10",
+   "query": "heavy periods",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Heavy periods: causes, treatment and self-care",
+    "Heavy periods: overview",
+    "How contraception affects periods: causes, treatment and self-care",
+    "Periods: overview",
+    "Fatigue around menstruation: common causes"
+   ]
+  },
+  {
+   "id": "R11",
+   "query": "signs of stroke",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Symptoms of a stroke: overview",
+    "Atherosclerosis: overview",
+    "Symptoms of a stroke: when to get help",
+    "Dizziness & light-headedness: red flags requiring urgent/emergency care",
+    "Aphasia: when to get help"
+   ]
+  },
+  {
+   "id": "R12",
+   "query": "how much water to drink daily",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "5 A Day: what counts?: overview",
+    "Excessive thirst: causes, treatment and self-care",
+    "Excessive thirst: duration considerations and when evaluation is appropriate",
+    "Fever and infections raise fluid needs; sip fluids frequently and watch for dehydration signs",
+    "Sodium, potassium, chloride, calcium, magnesium, phosphate and bicarbonate regulate fluid balance, nerves, muscles and heart rhythm"
+   ]
+  },
+  {
+   "id": "R13",
+   "query": "symptoms of depression",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Symptoms suggesting depression that warrant professional assessment",
+    "Low mood, sadness and depression: overview",
+    "Depression in adults: overview",
+    "Depression in pregnancy: overview",
+    "How to help someone with depression: overview"
+   ]
+  },
+  {
+   "id": "R14",
+   "query": "how to get better sleep",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Bedtime meditation video: overview",
+    "Insomnia: causes, treatment and self-care",
+    "Insomnia: overview",
+    "How to be happier: overview",
+    "Restless legs syndrome: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R15",
+   "query": "morning sickness in pregnancy",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Vomiting and morning sickness: overview",
+    "Vomiting and morning sickness: when to get help",
+    "Pregnancy symptoms: overview",
+    "Feeling sick (nausea): causes, treatment and self-care",
+    "Pregnancy Test: why a clinician may order it"
+   ]
+  },
+  {
+   "id": "R16",
+   "query": "cholesterol test preparation",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Triglycerides Test: why a clinician may order it",
+    "Cholesterol Levels: what happens, how to prepare, risks",
+    "Dyslipidaemia (high cholesterol/triglycerides): diagnosis",
+    "Cholesterol Levels: what it is and what it is used for",
+    "Blood tests: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R17",
+   "query": "gestational diabetes screening",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Diabetes and pregnancy: causes, treatment and self-care",
+    "Diabetes and pregnancy: causes, treatment and self-care",
+    "Diabetes tests (A1C, fasting glucose): how diabetes is checked",
+    "Gestational diabetes: diabetes first recognised in pregnancy; India screens all women with a single-step test",
+    "Routine tests at the first antenatal visit"
+   ]
+  },
+  {
+   "id": "R18",
+   "query": "vitamin D deficiency",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Vitamin D deficiency: definition",
+    "Vitamin D Test: why a clinician may order it",
+    "Vitamin D deficiency: treatment categories",
+    "Vitamin D test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "R19",
+   "query": "thyroid test TSH",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done",
+    "TSH (Thyroid-stimulating hormone) Test: what it is and what it is used for",
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "Thyroxine (T4) test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "R20",
+   "query": "contraception options",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Hormonal contraception reduces period pain for many women",
+    "Who can get the contraceptive injection: overview",
+    "What is the combined pill?: overview",
+    "Side effects and risks of hormonal contraception: overview",
+    "Thyroxine (T4) test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "R21",
+   "query": "sugar ki bimari ke lakshan",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Diabetes: causes, treatment and self-care",
+    "Diabetes: overview",
+    "What is type 1 diabetes?: overview",
+    "What is type 2 diabetes?: overview",
+    "Diabetic eye screening: overview"
+   ]
+  },
+  {
+   "id": "R22",
+   "query": "BP high rehta hai kya karun",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Blood pressure test: overview",
+    "High blood pressure: overview",
+    "High blood pressure: when to get help",
+    "Hypertension (high blood pressure): definition",
+    "High blood pressure (hypertension) and pregnancy: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R23",
+   "query": "pet me gas aur acidity",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Indigestion and heartburn in pregnancy: overview",
+    "Heartburn and acid reflux: overview",
+    "Heartburn and acid reflux: causes, treatment and self-care",
+    "Heartburn & acid reflux: definition and common causes",
+    "Indigestion and heartburn in pregnancy: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R24",
+   "query": "loose motion since morning",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Diarrhoea and vomiting: overview",
+    "Diarrhoea: definition and common causes",
+    "Calprotectin Stool Test: why a clinician may order it",
+    "Diarrhoea and vomiting: causes, treatment and self-care",
+    "Diarrhoea: red flags requiring urgent/emergency care"
+   ]
+  },
+  {
+   "id": "R25",
+   "query": "kabz ki problem",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Constipation: overview",
+    "Constipation: red flags requiring urgent/emergency care",
+    "Constipation: causes, treatment and self-care",
+    "Constipation: definition and common causes",
+    "Isabgol (ispaghula/psyllium husk)"
+   ]
+  },
+  {
+   "id": "R26",
+   "query": "bukhar hai 3 din se",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Q fever: overview",
+    "Fever: duration considerations and when evaluation is appropriate",
+    "Fever: definition and common causes",
+    "Fever and infections raise fluid needs; sip fluids frequently and watch for dehydration signs",
+    "Q fever: when to get help"
+   ]
+  },
+  {
+   "id": "R27",
+   "query": "sar dard bahut hai",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Tension headaches: when to get help",
+    "Headache: red flags requiring urgent/emergency care",
+    "Headache: definition and common causes",
+    "Tension headaches: overview",
+    "10 headache triggers: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R28",
+   "query": "pet dard",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Abdominal pain: definition and common causes",
+    "Abdominal pain: red flags requiring urgent/emergency care",
+    "Stomach ulcer: overview",
+    "Appendicitis Tests: why a clinician may order it",
+    "Bloating & gas: red flags requiring urgent/emergency care"
+   ]
+  },
+  {
+   "id": "R29",
+   "query": "ulti aa rahi hai",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Nausea & vomiting: red flags requiring urgent/emergency care",
+    "Nausea & vomiting: definition and common causes",
+    "Vomiting blood: causes, treatment and self-care",
+    "Vomiting blood: when to get help",
+    "Cyclical vomiting syndrome: when to get help"
+   ]
+  },
+  {
+   "id": "R30",
+   "query": "khansi aur zukam",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Whooping Cough Tests: why a clinician may order it",
+    "Whooping cough: overview",
+    "Cough: when to get help",
+    "Common cold: when to get help",
+    "Common cold: overview"
+   ]
+  },
+  {
+   "id": "R31",
+   "query": "chakkar aana",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Dizziness & light-headedness: definition and common causes",
+    "Dizziness & light-headedness: duration considerations and when evaluation is appropriate",
+    "Labyrinthitis and vestibular neuritis: causes, treatment and self-care",
+    "Postural tachycardia syndrome (PoTS): overview",
+    "Dehydration symptoms: thirst, dry mouth, less urine, dark urine, tiredness, dizziness — severe signs are an emergency"
+   ]
+  },
+  {
+   "id": "R32",
+   "query": "ghabrahat hoti hai",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Anxiety, fear and panic: overview",
+    "Anxiety is a normal response; anxiety disorders are persistent, excessive and interfere with life",
+    "Heart palpitations: causes, treatment and self-care",
+    "Anxiety and panic attacks: overview",
+    "Generalised anxiety disorder (GAD): overview"
+   ]
+  },
+  {
+   "id": "R33",
+   "query": "kamzori aur thakan",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Symptoms - Myalgic encephalomyelitis or chronic fatigue syndrome (ME/CFS): overview",
+    "Fatigue: duration considerations and when evaluation is appropriate",
+    "Fatigue: definition and common causes",
+    "Self-help tips to fight tiredness: causes, treatment and self-care",
+    "Overview - Myalgic encephalomyelitis or chronic fatigue syndrome (ME/CFS): overview"
+   ]
+  },
+  {
+   "id": "R34",
+   "query": "peeliya ho gaya",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Jaundice: overview",
+    "Jaundice: causes, treatment and self-care",
+    "Jaundice in babies: overview",
+    "Jaundice in babies: when to get help",
+    "Bilirubin Blood Test: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "R35",
+   "query": "khoon ki kami",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Iron deficiency anaemia: overview",
+    "Iron-deficiency anaemia: definition",
+    "Iron deficiency anaemia: causes, treatment and self-care",
+    "Iron-deficiency anaemia: complications and red flags",
+    "Iron: a plain fact sheet"
+   ]
+  },
+  {
+   "id": "R36",
+   "query": "thyroid ki problem",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "TSH (Thyroid-stimulating hormone) Test: what it is and what it is used for",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done"
+   ]
+  },
+  {
+   "id": "R37",
+   "query": "piles ka ilaaj",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Piles (haemorrhoids): overview",
+    "Piles (haemorrhoids): when to get help",
+    "Piles in pregnancy: causes, treatment and self-care",
+    "Lidocaine for piles and itchy bottom: pregnancy, breastfeeding and fertility",
+    "Piles in pregnancy: overview"
+   ]
+  },
+  {
+   "id": "R38",
+   "query": "safed paani ki problem",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Vaginal discharge: causes, treatment and self-care",
+    "Vaginal discharge: overview",
+    "Bacterial vaginosis: overview",
+    "Vaginal discharge in pregnancy: when to get help",
+    "Normal vaginal discharge varies through the cycle"
+   ]
+  },
+  {
+   "id": "R39",
+   "query": "periods late ho gaye",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Irregular periods: overview",
+    "Acute stress can delay ovulation and the period",
+    "Missed or late periods: causes, treatment and self-care",
+    "Domperidone",
+    "SHBG Blood Test: why a clinician may order it"
+   ]
+  },
+  {
+   "id": "R40",
+   "query": "neend nahi aati",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Insomnia: overview",
+    "Insomnia: causes, treatment and self-care",
+    "Insomnia: trouble falling or staying asleep; chronic if ≥3 nights/week for ≥3 months; CBT-I is first-line",
+    "Sleep Study: what it is and what it is used for",
+    "Evidence-aligned sleep habits: consistent schedule, dark/quiet/cool room, limit caffeine/alcohol/late screens, wind-down routine"
+   ]
+  },
+  {
+   "id": "R41",
+   "query": "dhadkan tez chalti hai",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Heart palpitations: overview",
+    "Heart palpitations: causes, treatment and self-care",
+    "Palpitations: red flags requiring urgent/emergency care",
+    "Palpitations: definition and common causes",
+    "Heart rhythm problems (arrhythmia): overview"
+   ]
+  },
+  {
+   "id": "R42",
+   "query": "saans phoolna",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Shortness of breath: definition and common causes",
+    "Shortness of breath: duration considerations and when evaluation is appropriate",
+    "Shortness of breath: causes, treatment and self-care",
+    "Shortness of breath: overview",
+    "Heart valve disease: when to get help"
+   ]
+  },
+  {
+   "id": "R43",
+   "query": "jodon ka dard",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Joint pain: causes, treatment and self-care",
+    "Joint pain: overview",
+    "Reactive arthritis: when to get help",
+    "Septic arthritis: when to get help",
+    "Elbow and arm pain: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R44",
+   "query": "pathri kidney stone",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Kidney stones: overview",
+    "Kidney Stone Analysis: what it is and what it is used for",
+    "Kidney stones: causes, treatment and self-care",
+    "Kidney Stone Analysis: what happens, how to prepare, risks",
+    "Crystals in Urine: why a clinician may order it"
+   ]
+  },
+  {
+   "id": "R45",
+   "query": "khujli aur daad",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Itching: associated symptoms and contextual factors",
+    "Itching: definition and common causes",
+    "Itching in pregnancy: causes, treatment and self-care",
+    "Terbinafine: what it is used for",
+    "Vulvovaginal candidiasis (thrush): thick white discharge with itching"
+   ]
+  },
+  {
+   "id": "R46",
+   "query": "does lack of sleep affect my mood",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Poor sleep and depression/anxiety are bidirectionally linked; insomnia predicts later depression",
+    "Low mood, sadness and depression: causes, treatment and self-care",
+    "Seasonal affective disorder (SAD): overview",
+    "Insomnia: causes, treatment and self-care",
+    "Postpartum Depression Screening: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "R47",
+   "query": "does exercise help with low mood and anxiety",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Low mood, sadness and depression: causes, treatment and self-care",
+    "Exercise for depression: causes, treatment and self-care",
+    "Things you can do to help menopause and perimenopause symptoms: causes, treatment and self-care",
+    "Anxiety, fear and panic: causes, treatment and self-care",
+    "How to be happier: overview"
+   ]
+  },
+  {
+   "id": "R48",
+   "query": "does exercise help me sleep better",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Regular exercise improves sleep quality; vigorous exercise right before bed may delay sleep for some",
+    "Benefits of exercise: overview",
+    "Bedtime meditation video: overview",
+    "Restless legs syndrome: causes, treatment and self-care",
+    "Exercise in pregnancy: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R49",
+   "query": "why do I get headaches when I do not drink enough water",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Dehydration: overview",
+    "Dehydration symptoms: thirst, dry mouth, less urine, dark urine, tiredness, dizziness — severe signs are an emergency",
+    "Headaches: causes, treatment and self-care",
+    "10 headache triggers: overview",
+    "Tension headaches: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R50",
+   "query": "does caffeine or alcohol affect my sleep",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Up to 400 mg/day caffeine is not harmful for most healthy adults; ≤200 mg in pregnancy",
+    "Evidence-aligned sleep habits: consistent schedule, dark/quiet/cool room, limit caffeine/alcohol/late screens, wind-down routine",
+    "Restless legs syndrome: causes, treatment and self-care",
+    "Insomnia: trouble falling or staying asleep; chronic if ≥3 nights/week for ≥3 months; CBT-I is first-line",
+    "Reducing caffeine, salt, sugar and alcohol premenstrually may ease PMS"
+   ]
+  },
+  {
+   "id": "R51",
+   "query": "can stress delay my period",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Acute stress can delay ovulation and the period",
+    "Common reasons periods become irregular or stop",
+    "Fatigue around menstruation: common causes",
+    "Expect cyclical weight and appetite changes during weight loss",
+    "Mood changes before and during periods are common; persistent low mood needs attention"
+   ]
+  },
+  {
+   "id": "R52",
+   "query": "PMS mood swings and poor sleep before my period",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Mood changes before and during periods are common; persistent low mood needs attention",
+    "Common physical and emotional PMS symptoms",
+    "Poor sleep and depression/anxiety are bidirectionally linked; insomnia predicts later depression",
+    "Low mood, sadness and depression: causes, treatment and self-care",
+    "Fatigue around menstruation: common causes"
+   ]
+  },
+  {
+   "id": "R53",
+   "query": "does poor sleep affect my weight or blood pressure",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Adults need 7–9 hours of sleep per night; regularly <7 h is associated with harm",
+    "Adults need 7–9 hours of sleep per night; regularly <7 h is associated with harm",
+    "Heart palpitations: causes, treatment and self-care",
+    "Sleep apnoea: repeated breathing pauses; loud snoring, gasping, daytime sleepiness; risk with overweight",
+    "Measuring Blood Pressure: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "R54",
+   "query": "can anxiety or lack of sleep cause a fast heartbeat",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Heart palpitations: causes, treatment and self-care",
+    "Poor sleep and depression/anxiety are bidirectionally linked; insomnia predicts later depression",
+    "Low mood, sadness and depression: causes, treatment and self-care",
+    "Adults need 7–9 hours of sleep per night; regularly <7 h is associated with harm",
+    "Anxiety, fear and panic: overview"
+   ]
+  },
+  {
+   "id": "R55",
+   "query": "why am I always tired and pale",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Symptoms of acute myeloid leukaemia: overview",
+    "Fatigue: definition and common causes",
+    "Symptoms - Myalgic encephalomyelitis or chronic fatigue syndrome (ME/CFS): overview",
+    "Symptoms of chronic lymphocytic leukaemia: overview",
+    "Self-help tips to fight tiredness: overview"
+   ]
+  },
+  {
+   "id": "R56",
+   "query": "heavy periods and feeling tired all the time",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Heavy periods: overview",
+    "Fatigue: definition and common causes",
+    "Heavy periods: causes, treatment and self-care",
+    "Underactive thyroid (hypothyroidism): overview",
+    "Irregular periods: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R57",
+   "query": "does stress make me gain weight",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Chronic stress can increase appetite for energy-dense foods and abdominal fat deposition",
+    "Cortisol test: what it measures and why it is done",
+    "Obesity Screening: what it is and what it is used for",
+    "Irregular periods: causes, treatment and self-care",
+    "Unintentional weight loss: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "R58",
+   "query": "does being overweight cause sleep apnoea",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Sleep apnoea: repeated breathing pauses; loud snoring, gasping, daytime sleepiness; risk with overweight",
+    "Adults need 7–9 hours of sleep per night; regularly <7 h is associated with harm",
+    "Obesity Screening: what it is and what it is used for",
+    "Sleep apnoea: causes, treatment and self-care",
+    "Sleep apnoea: overview"
+   ]
+  },
+  {
+   "id": "R59",
+   "query": "pani kam peene se sar dard hota hai kya",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Headache: definition and common causes",
+    "Headache: red flags requiring urgent/emergency care",
+    "Tension headaches: when to get help",
+    "10 headache triggers: causes, treatment and self-care",
+    "Migraine: definition"
+   ]
+  },
+  {
+   "id": "R60",
+   "query": "sleeping in late gives me a headache",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "10 headache triggers: overview",
+    "10 headache triggers: overview",
+    "Headaches: causes, treatment and self-care",
+    "Tension headaches: causes, treatment and self-care",
+    "Alcohol may hasten sleep onset but fragments the second half of the night and suppresses REM"
+   ]
+  },
+  {
+   "id": "R61",
+   "query": "does screen time at night affect my sleep",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Narcolepsy: when to get help",
+    "Evening screen use delays sleep via light and arousal; effects are modest but consistent",
+    "Sleep Study: what it is and what it is used for",
+    "Broken or bruised ribs: causes, treatment and self-care",
+    "Sleep Study: what happens, how to prepare, risks"
+   ]
+  },
+  {
+   "id": "R62",
+   "query": "why is my sleep worse before my period",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Sleep is often worse in the late luteal/premenstrual days",
+    "Women's sleep is affected by the menstrual cycle, pregnancy, postpartum and menopause",
+    "Fatigue around menstruation: common causes",
+    "Common reasons periods become irregular or stop",
+    "Expect cyclical weight and appetite changes during weight loss"
+   ]
+  },
+  {
+   "id": "R63",
+   "query": "does menopause affect sleep and mood",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Poor sleep and depression/anxiety are bidirectionally linked; insomnia predicts later depression",
+    "Mood changes before and during periods are common; persistent low mood needs attention",
+    "Low mood, sadness and depression: causes, treatment and self-care",
+    "Common physical and emotional PMS symptoms",
+    "Symptoms of menopause and perimenopause: overview"
+   ]
+  },
+  {
+   "id": "R64",
+   "query": "is low energy linked to thyroid or anaemia",
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "top_titles": [
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done"
+   ]
+  },
+  {
+   "id": "R65",
+   "query": "does alcohol before bed ruin sleep",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Alcohol may hasten sleep onset but fragments the second half of the night and suppresses REM",
+    "Evidence-aligned sleep habits: consistent schedule, dark/quiet/cool room, limit caffeine/alcohol/late screens, wind-down routine",
+    "Tips on cutting down on alcohol: overview",
+    "Breastfeeding and drinking alcohol: overview",
+    "Olanzapine: what it is used for"
+   ]
+  },
+  {
+   "id": "N01",
+   "query": "pet mein jalan ho rahi hai khane ke baad",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Heartburn and acid reflux: overview",
+    "Heartburn and acid reflux: causes, treatment and self-care",
+    "Heartburn & acid reflux: definition and common causes",
+    "Heartburn & acid reflux: red flags requiring urgent/emergency care",
+    "Indigestion and heartburn in pregnancy: overview"
+   ]
+  },
+  {
+   "id": "N02",
+   "query": "bacche ko dast ho rahe hain",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Diarrhoea: definition and common causes",
+    "Diarrhoea: duration considerations and when evaluation is appropriate",
+    "Diarrhoea and vomiting: overview",
+    "Dehydration causes: diarrhoea, vomiting, sweating, fever, excess urination, low intake; infants and older adults most at risk",
+    "Clostridioides difficile (C. diff) infection: when to get help"
+   ]
+  },
+  {
+   "id": "N03",
+   "query": "peshab mein jalan aur baar baar peshab",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Frequent urination & urinary symptoms: definition and common causes",
+    "Frequent urination & urinary symptoms: red flags requiring urgent/emergency care",
+    "Urinary tract infections: symptoms and why women are more affected",
+    "Urinary tract infections (UTIs): overview",
+    "Urinary tract infection (cystitis) — summary: definition"
+   ]
+  },
+  {
+   "id": "N04",
+   "query": "baal bahut jhad rahe hain",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Hair loss: red flags requiring urgent/emergency care",
+    "Women and hair loss: coping tips: overview",
+    "Hair loss: definition and common causes",
+    "Hair loss: causes, treatment and self-care",
+    "Women and hair loss: coping tips: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "N05",
+   "query": "paon mein sujan hai",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Swelling of feet/ankles (oedema): red flags requiring urgent/emergency care",
+    "Swelling of feet/ankles (oedema): definition and common causes",
+    "Swollen ankles, feet and legs (oedema): when to get help",
+    "Swollen arms and hands (oedema): when to get help",
+    "Swollen ankles, feet and fingers in pregnancy: overview"
+   ]
+  },
+  {
+   "id": "N06",
+   "query": "gale mein kharash aur dard",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Sore throat: when to get help",
+    "Sore throat: overview",
+    "Tonsillitis: when to get help",
+    "Laryngitis: overview",
+    "Tonsillitis: overview"
+   ]
+  },
+  {
+   "id": "N07",
+   "query": "mooh mein chaale pad gaye",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Mouth ulcers: overview",
+    "Mouth ulcers: when to get help",
+    "Hand, foot and mouth disease: overview",
+    "Benzydamine: what it is used for",
+    "Stomach ulcer: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "N08",
+   "query": "motapa kaise kam karein",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Obesity Screening: what results can mean (general)",
+    "Obesity = excess body fat; BMI ≥30 (WHO) but Asian-Indian cut-offs are lower",
+    "What is weight loss surgery?: overview",
+    "Overweight and obesity in adults: causes, treatment and self-care",
+    "Prediabetes and insulin resistance: what they are"
+   ]
+  },
+  {
+   "id": "N09",
+   "query": "tired all the time, always cold and gaining weight",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Self-help tips to fight tiredness: overview",
+    "Underactive thyroid (hypothyroidism): overview",
+    "Fatigue: associated symptoms and contextual factors",
+    "Obesity Screening: what it is and what it is used for",
+    "Hyperthyroidism (overactive thyroid): symptoms and causes"
+   ]
+  },
+  {
+   "id": "N10",
+   "query": "lower back pain that shoots down my leg",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Back pain: causes, treatment and self-care",
+    "Pain in the bottom of the foot: when to get help",
+    "Sciatica: overview",
+    "Spondylolisthesis: when to get help",
+    "Back pain: red flags requiring urgent/emergency care"
+   ]
+  },
+  {
+   "id": "N11",
+   "query": "very thirsty and passing urine a lot, tired",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Excessive thirst: duration considerations and when evaluation is appropriate",
+    "Excessive thirst: definition and common causes",
+    "Excessive thirst: overview",
+    "Frequent urination & urinary symptoms: associated symptoms and contextual factors",
+    "Excessive thirst: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "N12",
+   "query": "tingling in hands and feet, I am vegetarian",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Methylmalonic Acid (MMA) Test: why a clinician may order it",
+    "Ciprofloxacin / ofloxacin / levofloxacin (fluoroquinolones)",
+    "Electromyography (EMG) and Nerve Conduction Studies: what results can mean (general)",
+    "Pain in the palm of the hand: when to get help",
+    "Pins and needles: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "N13",
+   "query": "dizzy when I stand up quickly",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Dizziness & light-headedness: definition and common causes",
+    "Fainting (syncope): definition and common causes",
+    "Dehydration: when to get help",
+    "Fainting: causes, treatment and self-care",
+    "Postural tachycardia syndrome (PoTS): overview"
+   ]
+  },
+  {
+   "id": "N14",
+   "query": "bloated and gassy after drinking milk",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Bloating: causes, treatment and self-care",
+    "Bloating & gas: associated symptoms and contextual factors",
+    "Bloating & gas: definition and common causes",
+    "Bloating: when to get help",
+    "Gastroparesis: when to get help"
+   ]
+  },
+  {
+   "id": "N15",
+   "query": "period pain so bad I miss work",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Primary period pain is caused by prostaglandin-driven uterine contractions",
+    "Secondary period pain is caused by an underlying condition",
+    "Period-related diarrhoea or constipation is common",
+    "Common reasons periods become irregular or stop",
+    "Pelvic pain (women): definition and common causes"
+   ]
+  },
+  {
+   "id": "N16",
+   "query": "headache and blurry vision in my third trimester",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Headaches in pregnancy: overview",
+    "Headaches in pregnancy: when to get help",
+    "Pre-eclampsia: overview",
+    "Retinal (ocular) migraine: when to get help",
+    "Vision Screening: why a clinician may order it"
+   ]
+  },
+  {
+   "id": "N17",
+   "query": "what should I eat for iron deficiency",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Iron: a plain fact sheet",
+    "Iron deficiency anaemia: overview",
+    "Iron: a plain fact sheet",
+    "Iron tests: what they measure and why they are done",
+    "Eating a balanced diet: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "N18",
+   "query": "what to eat to lower cholesterol",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "How to lower your cholesterol - High cholesterol: causes, treatment and self-care",
+    "What is high cholesterol? - High cholesterol: overview",
+    "Triglycerides Test: why a clinician may order it",
+    "How to lower your cholesterol - High cholesterol: overview",
+    "Dairy and alternatives in your diet: overview"
+   ]
+  },
+  {
+   "id": "N19",
+   "query": "diet for high blood pressure",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "High blood pressure: causes, treatment and self-care",
+    "High blood pressure (hypertension) and pregnancy: causes, treatment and self-care",
+    "Prevention - Coronary heart disease: causes, treatment and self-care",
+    "Hypertension (high blood pressure): lifestyle and monitoring",
+    "Prevention - Coronary heart disease: overview"
+   ]
+  },
+  {
+   "id": "N20",
+   "query": "what should I eat if I have PCOS",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Polycystic ovary syndrome (PCOS) — summary: lifestyle and monitoring",
+    "Polycystic ovary syndrome (PCOS) — summary: common misconceptions",
+    "PCOS (polycystic ovary syndrome): signs and what it can affect",
+    "Polyendocrine metabolic ovarian syndrome (PMOS): overview"
+   ]
+  },
+  {
+   "id": "N21",
+   "query": "best vegetarian protein sources",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Reaching 1.2–1.6 g/kg protein on a vegetarian Indian diet requires deliberate planning",
+    "The vegetarian diet: causes, treatment and self-care",
+    "Meat in your diet: causes, treatment and self-care",
+    "Dairy and alternatives in your diet: overview",
+    "The vegan diet: overview"
+   ]
+  },
+  {
+   "id": "N22",
+   "query": "what to eat for constipation",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Constipation: causes, treatment and self-care",
+    "How to get more fibre into your diet: causes, treatment and self-care",
+    "The vegetarian diet: causes, treatment and self-care",
+    "Macrogol: pregnancy, breastfeeding and fertility",
+    "Docusate: pregnancy, breastfeeding and fertility"
+   ]
+  },
+  {
+   "id": "N23",
+   "query": "my hemoglobin is 9.5 what does it mean",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Hemoglobin Test: what results can mean (general)",
+    "Haemoglobin test: what it measures and why it is done",
+    "Hemoglobin Electrophoresis: what results can mean (general)",
+    "Haptoglobin (HP) Test: what results can mean (general)",
+    "Haptoglobin (HP) Test: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "N24",
+   "query": "TSH 6.2 is that high",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "TSH (Thyroid-stimulating hormone) Test: what results can mean (general)",
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done",
+    "Thyroxine (T4) test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "N25",
+   "query": "fasting blood sugar 118",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Blood Glucose Test: what happens, how to prepare, risks",
+    "Living with type 1 diabetes: overview",
+    "Blood Glucose Test: what it is and what it is used for",
+    "Diabetes Tests: what happens, how to prepare, risks",
+    "Diabetes tests (A1C, fasting glucose): how diabetes is checked"
+   ]
+  },
+  {
+   "id": "N26",
+   "query": "LDL 160 what does that mean",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Cholesterol Levels: what results can mean (general)",
+    "Dyslipidaemia (high cholesterol/triglycerides): definition",
+    "Lipoprotein (a) Blood Test: what it is and what it is used for",
+    "Cholesterol Levels: what it is and what it is used for",
+    "Triglycerides Test: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "N27",
+   "query": "SGPT high in my report",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Growth Hormone Tests: what results can mean (general)",
+    "ALT Blood Test: what it is and what it is used for",
+    "Gamma-glutamyl Transferase (GGT) Test: what results can mean (general)",
+    "IGF-1 (Insulin-like Growth Factor 1) Test: what it is and what it is used for",
+    "CSF Immunoglobulin G (IgG) Index: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "N28",
+   "query": "creatinine 1.4 in blood test",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Creatinine Test: what happens, how to prepare, risks",
+    "Creatinine Test: what it is and what it is used for",
+    "Microalbumin Creatinine Ratio: why a clinician may order it",
+    "Microalbumin Creatinine Ratio: what results can mean (general)",
+    "Creatine Kinase: what happens, how to prepare, risks"
+   ]
+  },
+  {
+   "id": "N29",
+   "query": "vitamin B12 180 pg/ml low",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Vitamin B12: a plain fact sheet",
+    "Vitamin B12: a plain fact sheet",
+    "Vitamin B12 (cyanocobalamin / methylcobalamin)",
+    "Vitamin B12 (cyanocobalamin / methylcobalamin)",
+    "Homocysteine test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "N30",
+   "query": "missed my period but pregnancy test is negative",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "How PMS is identified (symptom timing over ≥3 cycles)",
+    "Missed or late periods: causes, treatment and self-care",
+    "What menstruation is",
+    "Pregnancy Test: what results can mean (general)",
+    "FSH (follicle stimulating hormone) test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "N31",
+   "query": "spotting between periods",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Bleeding between periods (intermenstrual bleeding)",
+    "How a menstrual cycle is counted",
+    "Vaginal bleeding in pregnancy: overview",
+    "Symptoms of menopause and perimenopause: when to get help",
+    "Endometriosis symptoms: pelvic pain, painful periods, pain with sex, infertility, GI/urinary symptoms"
+   ]
+  },
+  {
+   "id": "N32",
+   "query": "when do I ovulate in my cycle",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Ovulation pain: overview",
+    "Acute stress can delay ovulation and the period",
+    "Appetite and energy intake tend to rise in the luteal phase",
+    "Typical cycle length is a range, not a fixed 28 days",
+    "Cycle changes in the menopausal transition"
+   ]
+  },
+  {
+   "id": "N33",
+   "query": "passing big clots during periods",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Normal variation in menstrual blood colour and small clots",
+    "Practical indicators of heavy periods",
+    "D-Dimer Test: what it is and what it is used for",
+    "Bleeding between periods (intermenstrual bleeding)",
+    "Light periods (hypomenorrhoea) and their common causes"
+   ]
+  },
+  {
+   "id": "N34",
+   "query": "how many days a week should I exercise",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Exercise in pregnancy: causes, treatment and self-care",
+    "Physical activity guidelines for adults aged 19 to 64: overview",
+    "Exercise for depression: causes, treatment and self-care",
+    "Symptoms of stomach cancer: when to get help",
+    "Constipation: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "N35",
+   "query": "how to start running as a beginner",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Aerobics video for beginners: overview",
+    "Knee exercises for runners: overview",
+    "Belly dancing exercise video: overview",
+    "Exercise for depression: causes, treatment and self-care",
+    "Pilates video for beginners: overview"
+   ]
+  },
+  {
+   "id": "N36",
+   "query": "calories in a plate of poha",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Poha (flattened rice)",
+    "Pav bhaji"
+   ]
+  },
+  {
+   "id": "N37",
+   "query": "calories in paneer",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Paneer (cottage cheese), raw cube serving",
+    "Paneer bhurji / paneer sabzi (home-style)"
+   ]
+  },
+  {
+   "id": "N38",
+   "query": "is intermittent fasting safe",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Fasting for a Blood Test: what it is and what it is used for",
+    "Fasting for a Blood Test: why a clinician may order it",
+    "Intravenous Pyelogram (IVP): what happens, how to prepare, risks",
+    "Common weight-loss pitfalls",
+    "Smaller, more frequent meals and calorie-containing drinks help when appetite is low"
+   ]
+  },
+  {
+   "id": "N39",
+   "query": "can I take ibuprofen and paracetamol together",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Cuts and grazes: causes, treatment and self-care",
+    "Paracetamol (acetaminophen)",
+    "Medicines for babies and children: overview",
+    "Paracetamol (acetaminophen)",
+    "Ibuprofen"
+   ]
+  },
+  {
+   "id": "N40",
+   "query": "antibiotics for viral fever",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Fever: definition and common causes",
+    "Azithromycin",
+    "Aciclovir: what it is used for",
+    "Fever: duration considerations and when evaluation is appropriate",
+    "Strep A Test: why a clinician may order it"
+   ]
+  },
+  {
+   "id": "N41",
+   "query": "can I stop my thyroid tablet when I feel fine",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Triiodothyronine (T3) tests: what they measure and why they are done",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done"
+   ]
+  },
+  {
+   "id": "N42",
+   "query": "omeprazole long term side effects",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Omeprazole",
+    "Pantoprazole",
+    "Lorazepam: who should check first, side effects and interactions",
+    "Ibuprofen",
+    "Tuberculosis (TB): complications and red flags"
+   ]
+  },
+  {
+   "id": "N43",
+   "query": "missed a pill of the contraceptive pill",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "What to do if you miss a combined pill or take an extra one: overview",
+    "Combined pill: overview",
+    "What to do if you miss a combined pill or take an extra one: overview",
+    "What to do if you miss a progestogen-only pill or take an extra one: overview",
+    "What is the combined pill?: overview"
+   ]
+  },
+  {
+   "id": "D101",
+   "query": "what does a ferritin test show",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Ferritin Blood Test: what it is and what it is used for",
+    "Ferritin blood test: what it measures and why it is done",
+    "Iron tests: what they measure and why they are done",
+    "Iron Tests: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "D102",
+   "query": "low iron tiredness hair fall which blood test",
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "top_titles": [
+    "Fatigue: definition and common causes",
+    "Iron deficiency anaemia: overview",
+    "Hair thinning in women: common causes",
+    "Hair loss: duration considerations and when evaluation is appropriate",
+    "Hair loss: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "D103",
+   "query": "haemoglobin test why is it done",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Haemoglobin A1c (HbA1c) test: causes, treatment and self-care",
+    "Hemoglobin Test: what it is and what it is used for",
+    "Haemoglobin test: what it measures and why it is done",
+    "Haptoglobin (HP) Test: what it is and what it is used for",
+    "Haptoglobin (HP) Test: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "D104",
+   "query": "complete blood count what is measured",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Full blood count (FBC): overview",
+    "Complete Blood Count (CBC): why a clinician may order it",
+    "Complete Blood Count (CBC): what happens, how to prepare, risks",
+    "Full blood count (FBC): causes, treatment and self-care",
+    "Iron Tests: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "D105",
+   "query": "vitamin B12 test vegetarian tingling",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Methylmalonic Acid (MMA) Test: why a clinician may order it",
+    "Homocysteine test: what it measures and why it is done",
+    "Vitamin B12: a plain fact sheet",
+    "Homocysteine Test: why a clinician may order it",
+    "Vitamin B tests (B12 and folate): what they measure and why they are done"
+   ]
+  },
+  {
+   "id": "D106",
+   "query": "folate test when is it done",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Folic acid",
+    "Folate: a plain fact sheet",
+    "Folate: a plain fact sheet",
+    "Homocysteine test: what it measures and why it is done",
+    "Homocysteine Test: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "D107",
+   "query": "homocysteine blood test",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Homocysteine Test: what it is and what it is used for",
+    "Homocysteine test: what it measures and why it is done",
+    "Methylmalonic Acid (MMA) Test: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "D108",
+   "query": "vitamin D test low sun exposure",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Vitamin D test: what it measures and why it is done",
+    "Vitamin D Test: what results can mean (general)",
+    "Vitamin D: a plain fact sheet"
+   ]
+  },
+  {
+   "id": "D109",
+   "query": "magnesium blood test cramps",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Magnesium Blood Test: why a clinician may order it",
+    "Magnesium Blood Test: what happens, how to prepare, risks",
+    "Myasthenia Gravis Tests: what happens, how to prepare, risks",
+    "Electrolyte Panel: what it is and what it is used for",
+    "Myasthenia Gravis Tests: why a clinician may order it"
+   ]
+  },
+  {
+   "id": "D110",
+   "query": "TSH test thyroid periods",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Underactive thyroid (hypothyroidism): causes, treatment and self-care",
+    "Underactive thyroid (hypothyroidism): causes, treatment and self-care",
+    "Triiodothyronine (T3) tests: what they measure and why they are done",
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "D111",
+   "query": "T4 thyroxine test",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "Thyroxine (T4) Test: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "D112",
+   "query": "HbA1c test what does it measure",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Hemoglobin A1C (HbA1c) Test: what results can mean (general)",
+    "Hemoglobin A1C (HbA1c) Test: what it is and what it is used for",
+    "Haemoglobin A1c (HbA1c) test: overview",
+    "Diabetes tests (A1C, fasting glucose): how diabetes is checked",
+    "Haemoglobin A1c (HbA1c) test: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "D113",
+   "query": "fasting insulin test",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Insulin in Blood Test: what happens, how to prepare, risks",
+    "Insulin blood test: what it measures and why it is done",
+    "C-Peptide Test: why a clinician may order it",
+    "IGF-1 (Insulin-like Growth Factor 1) Test: what happens, how to prepare, risks",
+    "Diabetes Tests: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "D114",
+   "query": "cortisol test stress hormone",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Adrenocorticotropic Hormone (ACTH): what it is and what it is used for",
+    "Cortisol Test: what it is and what it is used for",
+    "Cortisol test: what it measures and why it is done",
+    "17-Hydroxyprogesterone Test: what it is and what it is used for",
+    "Progesterone Test: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "D115",
+   "query": "testosterone test pcos facial hair",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "PCOS (polycystic ovary syndrome): signs and what it can affect",
+    "Polyendocrine metabolic ovarian syndrome (PMOS): overview",
+    "Polycystic ovary syndrome (PCOS) — summary: diagnosis",
+    "Polycystic ovary syndrome (PCOS) — summary: symptoms",
+    "SHBG Blood Test: what results can mean (general)"
+   ]
+  },
+  {
+   "id": "D116",
+   "query": "estrogen level test irregular periods",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Estrogen test: what it measures and why it is done",
+    "Estrogen Levels Test: what results can mean (general)",
+    "Irregular periods: causes, treatment and self-care",
+    "Cycle changes in the menopausal transition",
+    "Common reasons periods become irregular or stop"
+   ]
+  },
+  {
+   "id": "D117",
+   "query": "prolactin test why",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Prolactin test: what it measures and why it is done",
+    "Prolactin Levels: what it is and what it is used for"
+   ]
+  },
+  {
+   "id": "D118",
+   "query": "pcos signs what it can affect",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "PCOS (polycystic ovary syndrome): signs and what it can affect",
+    "Polycystic ovary syndrome (PCOS) — summary: definition",
+    "Polycystic ovary syndrome (PCOS) — summary: symptoms",
+    "Polyendocrine metabolic ovarian syndrome (PMOS): overview"
+   ]
+  },
+  {
+   "id": "D119",
+   "query": "underactive thyroid tiredness cold weight gain",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Underactive thyroid (hypothyroidism): causes, treatment and self-care",
+    "Hypothyroidism (underactive thyroid): symptoms and causes",
+    "Underactive thyroid (hypothyroidism): causes, treatment and self-care",
+    "Hypothyroidism (underactive thyroid): symptoms and causes",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done"
+   ]
+  },
+  {
+   "id": "D120",
+   "query": "prediabetes insulin resistance meaning",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Prediabetes and insulin resistance: what they are",
+    "Prediabetes and insulin resistance: what they are",
+    "Insulin in Blood Test: what results can mean (general)",
+    "Insulin blood test: what it measures and why it is done",
+    "Type 2 diabetes: definition"
+   ]
+  },
+  {
+   "id": "D121",
+   "query": "iron fact sheet vegetarian ragi dal",
+   "hit_at_1": false,
+   "hit_at_k": true,
+   "top_titles": [
+    "Ragi",
+    "Iron-deficiency anaemia: lifestyle and monitoring",
+    "Masoor dal (red lentil), cooked",
+    "Iron: a plain fact sheet",
+    "Iron-deficiency anaemia: common misconceptions"
+   ]
+  },
+  {
+   "id": "D122",
+   "query": "zinc fact sheet hair immunity",
+   "hit_at_1": true,
+   "hit_at_k": true,
+   "top_titles": [
+    "Zinc: a plain fact sheet",
+    "Zinc: a plain fact sheet",
+    "Hair thinning in women: common causes",
+    "Hair loss: definition and common causes",
+    "Hair dye reactions: causes, treatment and self-care"
+   ]
+  },
+  {
+   "id": "D123",
+   "query": "iodine thyroid iodised salt",
+   "hit_at_1": false,
+   "hit_at_k": false,
+   "top_titles": [
+    "TSH (Thyroid-stimulating hormone) Test: what it is and what it is used for",
+    "TSH (thyroid stimulating hormone) test: what it measures and why it is done",
+    "Thyroxine (T4) test: what it measures and why it is done",
+    "Triiodothyronine (T3) tests: what they measure and why they are done",
+    "Hypothyroidism: diagnosis"
+   ]
+  }
+ ]
+}

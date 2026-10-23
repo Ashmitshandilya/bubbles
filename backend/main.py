@@ -1625,6 +1625,56 @@ def pattern_analysis(
     }
 
 
+TODAY_TRACKERS = ("cycle", "sleep", "mood", "activity", "hydration", "nutrition")
+
+
+@app.get("/today")
+def today_bundle(authorization: str | None = Header(default=None), days: int = Query(default=14, ge=1, le=90)):
+    """Everything Today shows in one call. Each part is read side by side and fails alone: a part that could not be read is null
+    (a gap), never a guess. The old per-part routes stay for other screens. ponytail: no server cache yet; add a per-user 60 s
+    TTLCache invalidated on writes if the warm p95 misses 400 ms."""
+    import association_insights
+    import association_loader
+    import orbit
+    import today_brief
+    from health_logs import DOMAINS, list_domain
+    from parallel import together
+
+    user = get_authenticated_user(authorization)
+    uid = str(user.id)
+
+    def safe(job):
+        def run():
+            try:
+                return job()
+            except Exception:  # noqa: BLE001 - one broken part must not blank Today
+                return None
+        return run
+
+    def tracker(slug):
+        return safe(lambda: list_domain(supabase, slug, DOMAINS[slug], uid, 365 if slug == "cycle" else 30))
+
+    parts = together(
+        *[tracker(slug) for slug in TODAY_TRACKERS],
+        safe(lambda: list_domain(supabase, "visits", DOMAINS["visits"], uid, 365)),
+        safe(lambda: intelligence_brief(InteractionRequest(days=days), authorization).model_dump()["brief"]),
+        safe(lambda: weekly_insights(authorization).model_dump()["insights"]),
+        safe(lambda: living_signal_map(authorization, 14).model_dump()["map"]),
+        safe(lambda: __import__("deficiency_api").load(supabase, uid)),
+        safe(lambda: profile_api(authorization)),
+        safe(lambda: orbit.home(supabase, uid)),
+    )
+    n = len(TODAY_TRACKERS)
+    trackers = dict(zip(TODAY_TRACKERS, parts[:n]))
+    visits, brief, weekly, living, nudges, profile, orbit_home = parts[n:]
+    cached = association_loader.cached(uid)   # never waits: an empty cache simply means no pattern line today
+    lines = association_insights.chat_lines(cached) if cached else []
+    waiting = bool(orbit_home and (orbit_home.get("question") or {}).get("answered") is False)
+    lede = today_brief.pick(uid=uid, day=datetime.now(timezone.utc).date().isoformat(), association=lines[0] if lines else None, orbit_waiting=waiting)
+    return {"status": "success", "lede": lede, "trackers": trackers, "visits": visits, "brief": brief, "weekly": weekly,
+            "living_map": living, "nudges": nudges, "profile": profile, "orbit": orbit_home}
+
+
 app.include_router(build_insights_router(get_authenticated_user, supabase))   # GET /insights/{id}; after /insights/weekly so that path wins
 
 

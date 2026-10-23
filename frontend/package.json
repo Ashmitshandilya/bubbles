@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "eslint . && node scripts/design-lint.mjs",
     "e2e:refetch": "node scripts/e2e-refetch-guard.mjs",
     "android:release": "node scripts/build-android.mjs"
   },

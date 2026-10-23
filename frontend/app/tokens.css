@@ -478,3 +478,14 @@
 .pearl-chip { min-height: 44px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--hairline); background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
 .pearl-chip[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand); color: #1E1B2E; }
 .dusk .pearl-chip[aria-pressed="true"] { background: #3B2F52; border-color: var(--dusk-accent); color: var(--dusk-text); }
+.pearl-bubbles { display: flex; justify-content: space-between; align-items: flex-end; margin: 22px 0 0; padding: 0; list-style: none; width: 100%; }
+.pearl-bubble { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 44px; min-height: 44px; padding: 4px; background: none; border: 0; color: var(--ink); font: inherit; cursor: pointer; }
+.pearl-bubble:focus-visible { outline: 3px solid var(--mind); outline-offset: 2px; border-radius: 12px; }
+.pearl-bubble svg { transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.pearl-bubble-label { font-size: 0.8125rem; font-weight: 600; }
+.pearl-bubble-gap { font-size: 0.75rem; color: var(--ink-soft); }
+.pearl-thread { padding: 18px 0; border-bottom: 1px solid var(--hairline); }
+.pearl-thread-ends { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--ink-soft); }
+.pearl-thread-ends i { flex: 1; border-top: 1.5px dotted var(--gold-line); }
+.pearl-thread-text { margin: 8px 0 0; font-family: var(--font-fraunces), Georgia, serif; font-size: 1.125rem; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .pearl-bubble svg { transition: none; } }
