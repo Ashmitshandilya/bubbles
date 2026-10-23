@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BTN_PRIMARY, CARD, ErrorCard, Skeleton, useBubblesQuery } from "../../../components/hub/HubKit";
+import { BTN_PRIMARY, ErrorCard, Skeleton, useBubblesQuery } from "../../../components/hub/HubKit";
 import { WeightTrendChart } from "../../../components/fitness/WeightTrendChart";
 import { Disclaimer, EstimateLabel, FitnessPage, LiveMessage, NumField, Notice, PageHeading, ReviewNote, Section, Sheet, useSend } from "../../../components/fitness/ui";
 import { useUnits } from "../../../components/fitness/useUnits";
@@ -48,7 +48,7 @@ function ProgressView() {
     <div className="flex flex-col gap-5">
       <PageHeading kicker="Progress" title="The bigger picture" text="One weigh-in is a snapshot. The trend line smooths out water, salt and timing, so it tells the truer story." />
       <ReviewNote />
-      <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4" aria-label="Summary">
+      <ul className="m-0 flex list-none flex-col p-0" aria-label="Summary">
         <Tile label="Latest weigh-in" value={formatWeight(latest, units)} />
         <Tile label="Trend now" value={formatWeight(trendNow, units)} />
         <Tile label="Rate" value={formatRate(p.rate_kg_per_week, units)} note="over about two weeks" />
@@ -105,10 +105,10 @@ function ProgressView() {
 
 function Tile({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <li className={`${CARD} p-4`}>
+    <li className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-[color:var(--hairline)] py-3">
       <p className="m-0 text-label font-extrabold uppercase tracking-wide text-subtle">{label}</p>
       <p className="m-0 font-display text-h3 text-ink">{value}</p>
-      {note && <p className="m-0 text-body-sm text-muted">{note}</p>}
+      {note && <p className="m-0 w-full text-body-sm text-muted">{note}</p>}
     </li>
   );
 }

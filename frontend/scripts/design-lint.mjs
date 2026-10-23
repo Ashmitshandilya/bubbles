@@ -14,7 +14,7 @@ export const RULES = {
   "nested-card": (src) => src.split(/\r?\n/).some((line) => (line.match(/\bCARD\b/g) ?? []).length > 1),
   "tile-grid": (src) => /grid-cols-[34]\b/.test(src) && /\.map\(/.test(src),
   "score-percent": (src) => /score[^\n"'`]{0,24}\d+\s?%|\d+\s?%[^\n"'`]{0,12}score/i.test(src),
-  emoji: (src) => /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(src.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "")),
+  emoji: (src) => /[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}\u{2705}\u{2728}\u{274C}\u{2764}\u{FE0F}]/u.test(src.replace(/\/\/.*$|\/\*[\s\S]*?\*\//gm, "")),
 };
 
 export function lintSource(src) {

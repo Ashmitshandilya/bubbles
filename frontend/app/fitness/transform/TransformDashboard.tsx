@@ -36,7 +36,7 @@ export function Dashboard({ plan, units, reload }: { plan: TransformPlan; units:
 function Summary({ plan, units }: { plan: TransformPlan; units: Units }) {
   return (
     <Section title="At a glance" aside={<EstimateLabel />}>
-      <dl className="m-0 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <dl className="m-0 flex flex-col">
         <Stat label="Started" value={formatWhen(plan.start_date, true)} />
         <Stat label="From" value={formatWeight(plan.start_weight_kg, units)} />
         <Stat label="Target" value={formatWeight(plan.target_weight_kg, units)} />
@@ -49,7 +49,7 @@ function Summary({ plan, units }: { plan: TransformPlan; units: Units }) {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-[color:var(--hairline)] py-3">
       <dt className="text-label font-extrabold uppercase tracking-wide text-subtle">{label}</dt>
       <dd className="m-0 font-display text-h4 text-ink">{value}</dd>
     </div>

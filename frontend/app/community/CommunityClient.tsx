@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
-import { BTN_PRIMARY, BTN_SECONDARY, CARD, Skeleton } from "../../components/hub/HubKit";
+import { BTN_PRIMARY, BTN_SECONDARY, SECTION, Skeleton } from "../../components/hub/HubKit";
 import { TrackerShell } from "../../components/tracking/kit";
 import { useWellnessSend } from "../../components/wellness/useWellness";
 import { ErrorNotice, INPUT, LiveRegion, Notice, Switch } from "../../components/wellness/ui";
@@ -194,7 +194,7 @@ function PostCard({ post, send, canPost, limit, onReact, onDelete, onSaid, onSup
     </button>
   );
   return (
-    <li className={`${CARD} p-5`}>
+    <li className={`${SECTION}`}>
       <div className="flex flex-wrap items-center justify-between gap-2 text-body-sm text-muted">
         <span><span className="font-extrabold text-ink">{post.alias}</span>{post.topic ? `, ${topicLabel(post.topic)}` : ""}</span>
         <span>{new Date(post.created_at).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</span>

@@ -1,20 +1,8 @@
 # path  rule  reason. Violations from before the Pearl restyle; each WP3.x removes the lines for its folders.
-app/admin/panels-live.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/admin/panels-moderation.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/admin/panels-overall.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/admin/panels.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/care/CareClient.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/fitness/progress/ProgressClient.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/fitness/setup/SetupClient.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/fitness/transform/TransformDashboard.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/fitness/transform/TransformStepper.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
+app/admin/panels-live.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
+app/admin/panels-moderation.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
+app/admin/panels-overall.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
+app/admin/panels.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
 app/hydration/HydrationClient.tsx tile-grid  amount choices in the log form (a pick-one control, not a tile summary)
-app/login/page.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/medications/DueList.tsx emoji  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-components/cycle/CalendarTab.tsx emoji  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-components/cycle/FertilityTab.tsx emoji  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-components/cycle/fields.tsx emoji  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-components/cycle/ModesTab.tsx emoji  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-components/cycle/YearView.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-components/fitness/ui.tsx emoji  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-components/wellness/ui.tsx emoji  legacy before the Pearl restyle (WP3.2-3.5 remove it)
+app/login/page.tsx tile-grid  segmented sign-in control (a pick-one tab list, not a tile summary)
+components/cycle/YearView.tsx tile-grid  the year view is twelve months of a calendar, not stat tiles

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
-import { BTN_PRIMARY, CARD, ErrorCard, Icon, Skeleton, TONE, useBubblesQuery, type Tone } from "../../components/hub/HubKit";
+import { BTN_PRIMARY, CARD, SECTION, ErrorCard, Icon, Skeleton, TONE, useBubblesQuery, type Tone } from "../../components/hub/HubKit";
 import { ClinicalNote, Disclaimer, EstimateLabel, FitnessPage, MacroBars, PageHeading, Pill, ProgressRing, RangeBadge, Section } from "../../components/fitness/ui";
 import { useUnits } from "../../components/fitness/useUnits";
 import { cardState, fmt, formatWeeks, formatWeight, ringFraction, ringWord } from "../lib/fitness-calc";
@@ -95,7 +95,7 @@ function Hub() {
 
       <section aria-labelledby="fit-tools">
         <h2 id="fit-tools" className="m-0 mb-2 text-label font-extrabold uppercase tracking-wide text-subtle">Plan and log</h2>
-        <ul className={`${CARD} m-0 list-none divide-y divide-line overflow-hidden p-0`} aria-label="Fitness tools">
+        <ul className={`${SECTION} m-0 list-none divide-y divide-line overflow-hidden`} aria-label="Fitness tools">
           {cards.map((c) => {
             const st = cardState(c.kind, state);
             return (

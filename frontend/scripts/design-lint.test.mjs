@@ -10,3 +10,11 @@ describe("design lint", () => {
     expect(lintSource(`<Rows><Row label="Sleep" value="6h" /></Rows>`)).toEqual([]);
   });
 });
+
+describe("design lint emoji rule", () => {
+  it("allows plain marks and flags real emoji", () => {
+    expect(lintSource("<span>✓ ✕ ● ○</span>")).toEqual([]);
+    expect(lintSource("<p>Great ☀️ day</p>")).toEqual(["emoji"]);
+    expect(lintSource("<p>Done ✅</p>")).toEqual(["emoji"]);
+  });
+});
