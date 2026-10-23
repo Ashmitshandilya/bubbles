@@ -52,6 +52,8 @@ fun dialNumber(raw: String?): String {
     @SerialName("conversation_id") val conversationId: String? = null,
     @SerialName("consent_ask") val consentAsk: Boolean = false,
     val harbor: Harbor? = null,
+    /** Up to three quick replies for this message (empty on safety replies). Shown as quiet text buttons under the newest reply. */
+    val suggestions: List<String> = emptyList(),
 )
 
 @Serializable data class StoredMessage(

@@ -28,7 +28,7 @@ from ttl_cache import TTLCache
 KIND = "consent"            # the older single yes: document kind / key
 KEY = "ai_chat"
 VERSION = "2026-10b"        # text version of ai_chat_processing (kept so an old yes keeps its meaning). Bump when what is sent changes.
-POLICY_VERSION = "2026-10-23"
+POLICY_VERSION = "2026-10-23c"
 """Version of the privacy notice (frontend/app/lib/privacy-notice-version.ts must match; a test pins it)."""
 
 TABLE = "consent_events"
@@ -57,6 +57,12 @@ PURPOSES: dict[str, dict[str, Any]] = {
     "partner_sharing": {
         "title": "Share summaries with one person",
         "description": "Lets you choose a few summaries (not your chats or logs) for one person you trust to see. Nothing is shared until you pick what and who.",
+        "text_version": "2026-10a", "available": True,
+    },
+    "orbit_partner_signals": {
+        "title": "Let Orbit share gentle signals with my partner",
+        "description": "Lets you switch on two things for the person you are connected with: your answers to shared questions and check-ins (shown only when you have both answered), "
+                       "and gentle general nudges that never say what you logged. You choose each one, and you can stop at any time.",
         "text_version": "2026-10a", "available": True,
     },
     "push_notifications": {

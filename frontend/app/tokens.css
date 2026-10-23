@@ -353,3 +353,128 @@
 .z-sticky { z-index: var(--z-sticky); }
 .z-toast { z-index: var(--z-toast); }
 }
+
+/* ============================================================
+   PEARL JOURNAL (renovation plan 10.2)
+   New names for the calmer system. The old --bubbles-* names stay as the working palette during the migration;
+   screens move to these one by one (components/pearl/*). Pearl neutrals carry the page, pink is the one accent,
+   violet only means "Bubbles noticed". Domain colours live inside data marks, beside a text label.
+   ============================================================ */
+:root {
+  --paper: #FBF8F6;
+  --paper-raised: #FFFFFF;
+  --ink: #1E1B2E;
+  --ink-soft: #5E5873;          /* 6.7:1 on paper */
+  --hairline: #E7E0EC;
+  --brand: #D6246F;             /* white text 4.9:1 */
+  --brand-soft: #FFE3EF;        /* selected states only */
+  --mind: #6B46D6;              /* "Bubbles noticed" moments, links */
+  --gold-line: #E3C58C;         /* hairline flourishes only */
+  --urgent: #B42318;
+  --caution: #B45309;
+
+  --mark-sleep: #7C6CF0;
+  --mark-mood: #F08A5D;
+  --mark-body: #E8336F;
+  --mark-food: #3FAE7A;
+  --mark-move: #2F8FD6;
+  --mark-us: #C9A227;
+
+  --pearl-radius-s: 8px;
+  --pearl-radius-m: 14px;
+  --pearl-radius-l: 20px;
+  --pearl-shadow-sheet: 0 -8px 40px rgba(30, 27, 46, 0.14);
+}
+
+/* Heart-to-heart and the Orbit hero: a late-night conversation, clearly different from Talk. Scoped, never app-wide.
+   It re-points the working palette, so every component inside follows (text AA on the plum background). */
+.dusk {
+  color-scheme: dark;
+  --dusk-bg: #1B1626;
+  --dusk-soft: #2A2238;
+  --dusk-text: #F3ECE6;
+  --dusk-accent: #E9C98B;
+  --dusk-muted: #C9BFD6;       /* 9.4:1 on --dusk-bg */
+  --dusk-line: #43385A;
+
+  --bubbles-ink: var(--dusk-text);
+  --bubbles-ink-soft: var(--dusk-muted);
+  --bubbles-ink-faint: #B4A9C4;
+  --bubbles-blush: var(--dusk-bg);
+  --bubbles-white: var(--dusk-soft);
+  --bubbles-line: var(--dusk-line);
+  --bubbles-line-strong: #574A73;
+  --bubbles-lilac: #3B2F52;
+  --bubbles-grape-deep: #D7CBFF;      /* text on the plum background */
+  --bubbles-pink-deep: #FFB3D1;
+  --tint-pink: #3B2F52;
+  --tint-grape: #33294A;
+  --tint-sun: #3A3322;
+  --tint-mint: #1F3A33;
+  --tint-sky: #22344A;
+  --tint-peach: #3E2D2B;
+  --tint-urgent: #4A2229;
+  --color-bg: var(--dusk-bg);
+  --color-surface: var(--dusk-soft);
+  --color-text: var(--dusk-text);
+  --color-text-muted: var(--dusk-muted);
+  --paper: var(--dusk-bg);
+  --paper-raised: var(--dusk-soft);
+  --ink: var(--dusk-text);
+  --ink-soft: var(--dusk-muted);
+  --hairline: var(--dusk-line);
+  --mind: #B8A2FF;
+  --brand: var(--dusk-accent);
+  background: var(--dusk-bg);
+  color: var(--dusk-text);
+}
+.dusk .font-display { font-family: var(--font-fraunces), Georgia, serif; }
+@media (prefers-reduced-motion: reduce) {
+  .bubbles-drift, .pearl-rise { animation: none !important; transition: none !important; }
+}
+
+/* Pearl components (components/pearl/index.tsx). Grouping comes from spacing, type and hairlines, not boxes. */
+.pearl-page { margin: 0 auto; padding: 8px 0 64px; max-width: 720px; color: var(--ink); }
+.pearl-page.wide { max-width: 1120px; }
+.pearl-eyebrow { margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.pearl-title { margin: 6px 0 0; font-family: var(--font-fraunces), Georgia, serif; font-size: clamp(1.75rem, 4vw, 2.5rem); line-height: 1.15; font-weight: 500; color: var(--ink); }
+.pearl-lede { margin: 14px 0 0; font-family: var(--font-fraunces), Georgia, serif; font-style: italic; font-size: 1.2rem; line-height: 1.5; color: var(--ink); max-width: 38ch; }
+.pearl-section { margin-top: 36px; }
+.pearl-section > .pearl-eyebrow { margin-bottom: 4px; }
+.pearl-rows { margin: 0; padding: 0; list-style: none; }
+.pearl-row { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 56px; padding: 14px 2px; background: none; border: 0; border-bottom: 1px solid var(--hairline);
+  text-align: left; color: var(--ink); font: inherit; cursor: pointer; text-decoration: none; }
+.pearl-row:hover .pearl-row-label { text-decoration: underline; text-underline-offset: 3px; }
+.pearl-row:focus-visible, .pearl-btn:focus-visible, .pearl-link:focus-visible { outline: 3px solid var(--mind); outline-offset: 2px; border-radius: 6px; }
+.pearl-row-label { flex: 1 1 auto; font-weight: 600; font-size: 1.0625rem; }
+.pearl-row-value { flex: 0 1 auto; color: var(--ink-soft); font-size: 0.9375rem; text-align: right; }
+.pearl-chevron { flex: 0 0 auto; color: var(--ink-soft); }
+.pearl-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 20px; border-radius: 999px; border: 1px solid var(--hairline); background: var(--paper-raised);
+  color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
+.pearl-btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.dusk .pearl-btn.primary { color: #1B1626; }
+.pearl-btn:disabled { opacity: 0.55; cursor: default; }
+.pearl-link { background: none; border: 0; padding: 4px 2px; min-height: 44px; color: var(--mind); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.pearl-gap { margin: 0; padding: 18px 0; color: var(--ink-soft); }
+.pearl-quote { margin: 18px 0 0; padding: 2px 0 2px 16px; border-left: 2px solid var(--gold-line); }
+.pearl-quote-tone { margin: 0 0 4px; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+.pearl-quote-text { margin: 0; font-family: var(--font-fraunces), Georgia, serif; font-size: 1.125rem; line-height: 1.5; color: var(--ink); }
+.pearl-quote-why { margin: 6px 0 0; font-size: 0.875rem; color: var(--ink-soft); }
+.pearl-note { margin: 10px 0 0; font-size: 0.9375rem; color: var(--ink-soft); }
+.pearl-field { display: block; width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: var(--pearl-radius-m); border: 1px solid var(--hairline); background: var(--paper-raised);
+  color: var(--ink); font: inherit; line-height: 1.5; resize: vertical; }
+.pearl-field:focus-visible { outline: 3px solid var(--mind); outline-offset: 1px; }
+.pearl-label { display: block; margin: 20px 0 6px; font-weight: 600; font-size: 0.9375rem; color: var(--ink); }
+.pearl-error { margin: 12px 0 0; color: var(--urgent); font-weight: 600; font-size: 0.9375rem; }
+.dusk .pearl-error { color: #FFB4AB; }
+.pearl-sheet { position: fixed; inset: auto 0 0 0; max-height: 86dvh; width: 100%; max-width: 560px; margin: 0 auto; padding: 24px 20px 32px; border: 0; border-radius: var(--pearl-radius-l) var(--pearl-radius-l) 0 0;
+  background: var(--paper-raised); color: var(--ink); box-shadow: var(--pearl-shadow-sheet); overflow-y: auto; }
+.pearl-sheet::backdrop { background: rgba(30, 27, 46, 0.45); }
+.pearl-rise { animation: pearl-rise 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes pearl-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.bubbles-drift { animation: bubbles-drift 9s ease-in-out infinite alternate; transform-origin: center; }
+@keyframes bubbles-drift { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+.pearl-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pearl-chip { min-height: 44px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--hairline); background: transparent; color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
+.pearl-chip[aria-pressed="true"] { background: var(--brand-soft); border-color: var(--brand); color: #1E1B2E; }
+.dusk .pearl-chip[aria-pressed="true"] { background: #3B2F52; border-color: var(--dusk-accent); color: var(--dusk-text); }

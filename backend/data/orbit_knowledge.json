@@ -1,0 +1,1451 @@
+{
+  "version": 1,
+  "note": "General relationship knowledge for Heart-to-heart. Cards are offered only when the person's own words match; they are never facts about the person or their partner. Evidence: strong = replicated findings, moderate = good studies or clinical outcome research, practice = widely used clinical practice or advice with thin research. No claim here carries a number or a percentage. Citations were checked against their publication records on 2026-10-23 (title, journal, year); findings are summarised modestly and were not re-read in full text.",
+  "cards": [
+    {
+      "id": "pursue_withdraw",
+      "title": "Reaching out and pulling back",
+      "signals": [
+        "keeps texting",
+        "keep texting",
+        "goes silent",
+        "go silent",
+        "won't talk",
+        "wont talk",
+        "shuts down",
+        "shut down",
+        "pulls away",
+        "pull away",
+        "i chase",
+        "chup ho jata",
+        "chup ho jati",
+        "baat nahi karta",
+        "baat nahi karti",
+        "ignore karta",
+        "ignore karti",
+        "reply nahi karta",
+        "reply nahi karti",
+        "text reply fight",
+        "send texts ignore",
+        "beg him to talk",
+        "beg her to talk",
+        "chase him",
+        "chase her",
+        "pulls back",
+        "needs space fight",
+        "withdraw",
+        "distance when upset",
+        "call no answer",
+        "text unanswered",
+        "wont reply texts",
+        "more i push",
+        "more i reach",
+        "ghost after fight",
+        "send messages no answer",
+        "texts no reply",
+        "text again and again",
+        "keep calling no answer",
+        "he wont answer my messages",
+        "she wont answer my messages"
+      ],
+      "what_it_is": "One person reaches for connection harder when they feel distance, and the other pulls back to calm down. Each reaction feeds the other, so the cycle becomes the problem, not either person.",
+      "what_helps": [
+        "Name the cycle together instead of blaming each other",
+        "The one who pulls back says when they will come back to the talk",
+        "The one who reaches out asks for one small, specific thing"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "A shared home or family close by can leave the person who pulls back with nowhere to cool down; a short walk or a separate room counts."
+      },
+      "never_say": [
+        "men always withdraw",
+        "women always nag",
+        "he is avoiding you on purpose"
+      ],
+      "source": "Christensen & Heavey (1990), demand/withdraw patterns in couples; Johnson (2004), The Practice of Emotionally Focused Couple Therapy"
+    },
+    {
+      "id": "harsh_startup",
+      "title": "How a hard talk begins",
+      "signals": [
+        "started yelling",
+        "started shouting",
+        "snapped at",
+        "blew up at",
+        "you always",
+        "you never",
+        "chilla diya",
+        "chilla di",
+        "chillane lagi",
+        "chillane laga",
+        "gusse mein bol diya",
+        "taunt",
+        "taunts",
+        "yell at me",
+        "shout at me",
+        "scream at me",
+        "raised voice",
+        "blow up",
+        "criticise me",
+        "criticize me",
+        "complain about everything",
+        "starts fight shout",
+        "angry the moment",
+        "sudden anger talk",
+        "attacks me when we talk",
+        "snapped at me",
+        "snapped the moment",
+        "came home snapped",
+        "shouted the moment",
+        "started the fight angrily",
+        "you never listen",
+        "you always do this"
+      ],
+      "what_it_is": "A hard conversation tends to end the way it began. Starting with blame or criticism makes the other person defend themselves, while starting with how you feel and one clear request keeps them listening.",
+      "what_helps": [
+        "Try: I feel ... about ... and I need ...",
+        "Talk about one thing, not the whole history",
+        "If you already started harshly, say so and begin again"
+      ],
+      "evidence": "moderate",
+      "cultures": {},
+      "never_say": [
+        "it is all your fault for starting it",
+        "he started it so he must be the problem"
+      ],
+      "source": "Gottman & Levenson (1992), marital processes predicting later dissolution; Gottman & Silver (1999), The Seven Principles for Making Marriage Work"
+    },
+    {
+      "id": "flooding",
+      "title": "When you are too worked up to talk",
+      "signals": [
+        "heart is racing",
+        "heart racing",
+        "cant think straight",
+        "can't think straight",
+        "too angry to talk",
+        "so angry i",
+        "shaking with anger",
+        "blood boiling",
+        "dimaag kharab ho gaya",
+        "dimag kharab ho gaya",
+        "gussa control nahi",
+        "gusse se kaanp",
+        "bahut gussa aa raha",
+        "dimaag kharab ho jata",
+        "dimag kharab ho jata",
+        "kuch samajh nahi aata jab ladte",
+        "cant think when we fight",
+        "can't think when we fight",
+        "mind blank fight",
+        "explode when fight",
+        "overwhelmed in fight",
+        "panic during argument",
+        "heart racing angry",
+        "shaking angry",
+        "lose control angry",
+        "angry cant talk",
+        "blank mind argument",
+        "cant think when angry",
+        "need a break during fight",
+        "too upset to talk",
+        "mind goes blank",
+        "explode in argument",
+        "feel like i explode",
+        "lose my temper in fight",
+        "cant control my anger",
+        "overwhelmed when we fight"
+      ],
+      "what_it_is": "In a heated moment the body can go into alarm: a racing heart, a blank mind, a short temper. In that state almost nobody listens well or says what they mean. A break lets the body settle.",
+      "what_helps": [
+        "Say you need a break and when you will come back",
+        "Use the break to calm down, not to rehearse the argument",
+        "Come back to the talk the same day if you can"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "If privacy is hard to find at home, a walk, a bathroom break or stepping onto the balcony can serve as the break."
+      },
+      "never_say": [
+        "calm down",
+        "you are overreacting"
+      ],
+      "source": "Gottman & Levenson (1992), physiological arousal in couple conflict; Gottman & Silver (1999)"
+    },
+    {
+      "id": "repair_attempts",
+      "title": "Repairing in the middle of a fight",
+      "signals": [
+        "want to say sorry",
+        "wanted to say sorry",
+        "how do i apologise",
+        "how do i apologize",
+        "how to apologise",
+        "how to apologize",
+        "make up after",
+        "fix things after",
+        "make it up to",
+        "sorry kaise bolun",
+        "sorry kaise bolu",
+        "manana hai",
+        "manaun kaise",
+        "manaoon kaise",
+        "maafi kaise",
+        "say sorry start",
+        "apologise start",
+        "how to say sorry",
+        "make up after fight",
+        "fix things after fight",
+        "repair after fight",
+        "patch up",
+        "peace after fight",
+        "make it up",
+        "start over after fight",
+        "reconcile"
+      ],
+      "what_it_is": "A repair is any small move that stops a fight from getting worse: a joke, a soft word, an apology, a touch, a pause. How well couples repair matters more than whether they fight.",
+      "what_helps": [
+        "Own your part in one sentence without a but",
+        "Say what you will do differently, in small terms",
+        "Let the other person take their time to accept it"
+      ],
+      "evidence": "moderate",
+      "cultures": {},
+      "never_say": [
+        "just apologise and it will be fine",
+        "you must say sorry first"
+      ],
+      "source": "Gottman & Silver (1999), The Seven Principles for Making Marriage Work (repair attempts); Gottman et al. (1998) for accepting influence"
+    },
+    {
+      "id": "bids_for_connection",
+      "title": "Small bids for attention",
+      "signals": [
+        "doesn't notice me",
+        "doesnt notice me",
+        "never asks about my day",
+        "doesn't ask about my day",
+        "ignores me when i talk",
+        "on his phone when i talk",
+        "on her phone when i talk",
+        "feel invisible",
+        "feel unseen",
+        "mere baare mein nahi poochta",
+        "mere baare mein nahi poochti",
+        "dhyan nahi deta",
+        "dhyan nahi deti",
+        "phone mein laga rehta",
+        "phone mein lagi rehti",
+        "never notices",
+        "ignores when i share",
+        "try to share nothing",
+        "no interest in my day",
+        "phone while i talk",
+        "doesnt listen when i talk",
+        "never asks about me",
+        "no attention",
+        "feel ignored",
+        "feel lonely together",
+        "never notices when i share",
+        "try to share something",
+        "doesnt notice when i talk",
+        "does not see me",
+        "unseen in marriage",
+        "invisible to him",
+        "invisible to her"
+      ],
+      "what_it_is": "Couples reach for each other in small ways all day: a comment, a question, a shared joke, a sigh. How often these moments are met, rather than missed, builds closeness more than big gestures do.",
+      "what_helps": [
+        "Notice the small reaches and answer one today",
+        "Say what you need in a specific, easy request",
+        "Put the phone down for a few minutes when they speak"
+      ],
+      "evidence": "moderate",
+      "cultures": {},
+      "never_say": [
+        "he does not care about you",
+        "she is ignoring you on purpose"
+      ],
+      "source": "Gottman & Silver (1999); Gable, Reis, Impett & Asher (2004), responses to a partner's good news (JPSP)"
+    },
+    {
+      "id": "contempt_antidote",
+      "title": "Sneering and put-downs",
+      "signals": [
+        "rolls his eyes",
+        "rolls her eyes",
+        "mocks me",
+        "makes fun of me",
+        "belittles me",
+        "talks down to me",
+        "sarcastic with me",
+        "insults me",
+        "mazaak udata",
+        "mazaak udati",
+        "taane marta",
+        "taane marti",
+        "neecha dikhata",
+        "neecha dikhati",
+        "laughs at me mistake",
+        "talks down",
+        "calls me stupid",
+        "puts me down",
+        "sarcastic comments",
+        "humiliates me",
+        "mocks me in front of friends",
+        "makes fun of me in public",
+        "humiliates me in front of"
+      ],
+      "what_it_is": "Mocking, eye-rolling and put-downs hurt more than most disagreements because they say the other person is beneath you. Couples who feel this often feel less safe and less close over time.",
+      "what_helps": [
+        "Name what you feel hurt by without calling the person a name",
+        "Build a habit of saying one thing you appreciate each day",
+        "Talk about the behaviour and how it lands, not about who they are"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Teasing is common in many families; it can still wound when it becomes about worth or looks. It is fine to say where your line is."
+      },
+      "never_say": [
+        "he is toxic",
+        "she is abusive for teasing"
+      ],
+      "source": "Gottman & Levenson (2000), the timing of divorce over a fourteen-year period"
+    },
+    {
+      "id": "defensiveness_antidote",
+      "title": "Always defending",
+      "signals": [
+        "always defends himself",
+        "always defends herself",
+        "never admits",
+        "makes excuses",
+        "blames me back",
+        "turns it around on me",
+        "says it is my fault",
+        "kabhi galti nahi maanta",
+        "kabhi galti nahi maanti",
+        "ulta mujhe blame",
+        "mujh par hi daal deta",
+        "mujh par hi daal deti",
+        "turns it around",
+        "my fault every time",
+        "never admits wrong",
+        "explains why my fault",
+        "cant take criticism",
+        "denies everything",
+        "plays victim",
+        "never takes responsibility"
+      ],
+      "what_it_is": "When someone feels attacked they often defend, explain or counter-blame. It is a way of protecting themselves, and it keeps the real issue from being heard.",
+      "what_helps": [
+        "Start with a soft opening so there is less to defend against",
+        "Take responsibility for even a small part",
+        "Ask for one change instead of a list of faults"
+      ],
+      "evidence": "moderate",
+      "cultures": {},
+      "never_say": [
+        "he is a narcissist",
+        "she can never be wrong"
+      ],
+      "source": "Gottman & Silver (1999); Gottman & Levenson (2000)"
+    },
+    {
+      "id": "stonewalling",
+      "title": "Going quiet in a fight",
+      "signals": [
+        "silent treatment",
+        "gives me the silent treatment",
+        "stops talking for days",
+        "not talking for days",
+        "days of silence",
+        "stonewall",
+        "refuses to discuss",
+        "leaves the room",
+        "walks out in the middle",
+        "kai din baat nahi",
+        "do din baat nahi",
+        "baat karna band",
+        "bolna band kar diya",
+        "muh phula",
+        "stopped talking to me",
+        "stops talking to me",
+        "stopped speaking to me",
+        "wont speak week",
+        "stops talking days",
+        "not talking after fight",
+        "refuses to talk",
+        "leaves room fight",
+        "cold shoulder",
+        "ignores me for days",
+        "shuts me out",
+        "walls up",
+        "goes cold after fight"
+      ],
+      "what_it_is": "Going completely quiet or leaving the room is often a way to cope with feeling overwhelmed, not a plan to hurt. To the other person it can feel like being shut out, so both end up alone with the feeling.",
+      "what_helps": [
+        "The quiet one says: I need a break, I will come back at a set time",
+        "The other gives the space and does not follow with messages",
+        "Come back and talk once both have settled"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Not speaking for days is common after a fight in many homes. A short message that says you still care and need time can soften it."
+      },
+      "never_say": [
+        "silence is abuse",
+        "he is punishing you"
+      ],
+      "source": "Gottman & Levenson (1992); Christensen & Heavey (1990)"
+    },
+    {
+      "id": "love_maps",
+      "title": "Knowing each other's inner world",
+      "signals": [
+        "feel like strangers",
+        "dont know him anymore",
+        "don't know him anymore",
+        "dont know her anymore",
+        "don't know her anymore",
+        "grown apart",
+        "drifting apart",
+        "nothing to talk about",
+        "what to ask him",
+        "what to ask her",
+        "ek dusre ko jaante nahi",
+        "ajnabi lagte",
+        "baat karne ko kuch nahi",
+        "dont know what going on in each other lives",
+        "hardly know each other",
+        "strangers at home",
+        "drifted apart",
+        "dont know his world",
+        "dont know her world",
+        "dont share anything anymore",
+        "never talk deeply",
+        "dont know his fears",
+        "dont know her fears",
+        "strangers in same house",
+        "live like strangers",
+        "roommates not partners"
+      ],
+      "what_it_is": "Partners who keep up with each other's inner world, such as worries, hopes and small likes, tend to feel closer and cope better with stress. The map goes out of date unless it is updated.",
+      "what_helps": [
+        "Ask one open question tonight about their week, not their chores",
+        "Share one thing you have been thinking about lately",
+        "Remember and mention something small they told you"
+      ],
+      "evidence": "moderate",
+      "cultures": {},
+      "never_say": [
+        "the spark is gone",
+        "you have grown apart so it is over"
+      ],
+      "source": "Gottman & Silver (1999), love maps"
+    },
+    {
+      "id": "accepting_influence",
+      "title": "Making decisions together",
+      "signals": [
+        "doesn't listen to my opinion",
+        "doesnt listen to my opinion",
+        "makes all the decisions",
+        "decides everything",
+        "never asks what i think",
+        "has to have his way",
+        "has to have her way",
+        "meri baat nahi sunta",
+        "meri baat nahi sunti",
+        "sab decide kar leta",
+        "sab decide kar leti",
+        "meri raay nahi poochta",
+        "my wishes dont count",
+        "never asks my opinion",
+        "his way only",
+        "her way only",
+        "doesnt consider my view",
+        "my opinion doesnt matter",
+        "no say in decisions",
+        "makes decisions without me",
+        "controls decisions"
+      ],
+      "what_it_is": "Relationships tend to go better when both people let the other's view change their mind sometimes. Feeling that your opinion matters to the person you love is a basic need.",
+      "what_helps": [
+        "Say: help me understand what matters to you here",
+        "Look for a choice that respects what each of you needs most",
+        "Agree on which decisions you make together and which are each person's own"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Family elders sometimes decide for a couple; it can help to agree together how much weight their views get."
+      },
+      "never_say": [
+        "he is controlling",
+        "that is patriarchy"
+      ],
+      "source": "Gottman, Coan, Carrere & Swanson (1998)"
+    },
+    {
+      "id": "stress_spillover",
+      "title": "Stress from outside coming home",
+      "signals": [
+        "work stress is affecting us",
+        "bad day at work and we fought",
+        "takes his work stress out",
+        "takes her work stress out",
+        "exam stress and we fight",
+        "tired from work and snapped",
+        "office ka gussa ghar",
+        "office ki tension ghar",
+        "kaam ka stress aur jhagda",
+        "thaka hua aur chidchida",
+        "takes out stress on me",
+        "office anger home",
+        "work stress home",
+        "exam stress fight",
+        "tired from work snaps",
+        "comes home angry",
+        "job pressure affecting us",
+        "stress affecting relationship",
+        "busy at work no time",
+        "work pressure fights"
+      ],
+      "what_it_is": "Pressure from work, study, money or family can spill into a relationship. People get shorter with those closest to them. Talking about the stress together, as a shared thing, protects the relationship.",
+      "what_helps": [
+        "Ask: is this about us or about your day?",
+        "Offer a short, no-fix listening time at the end of the day",
+        "Plan one small thing to lower the load this week"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Long commutes and long work hours leave little energy at home; a ten-minute decompression before talking can help."
+      },
+      "never_say": [
+        "work comes before you",
+        "he does not care about you"
+      ],
+      "source": "Bodenmann (2005), dyadic coping and its significance for marital functioning"
+    },
+    {
+      "id": "long_distance",
+      "title": "Being apart",
+      "signals": [
+        "long distance",
+        "ldr",
+        "different cities",
+        "he lives abroad",
+        "she lives abroad",
+        "far from each other",
+        "miss him so much",
+        "miss her so much",
+        "dooriyan",
+        "door rehte hain",
+        "alag shehar",
+        "video call pe",
+        "milna mushkil",
+        "different time zones",
+        "far apart",
+        "miss him distance",
+        "miss her distance",
+        "video calls only",
+        "visit rarely",
+        "when will we live together",
+        "he moved abroad",
+        "she moved abroad"
+      ],
+      "what_it_is": "Couples apart often do well when they have a shared plan for when they will be together and keep up honest, regular contact. The hard part is usually the uncertainty and mismatched schedules, not the distance alone.",
+      "what_helps": [
+        "Agree on a rhythm of contact that suits both, not a rule that feels like a chore",
+        "Share small daily moments, not only the big ones",
+        "Talk about the plan for the future so the wait has a shape"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Time zones, family visits and visa timelines add pressure; a shared calendar of dates can help."
+      },
+      "never_say": [
+        "long distance never works",
+        "he must be cheating"
+      ],
+      "source": "Stafford (2005), Maintaining Long-Distance and Cross-Residential Relationships"
+    },
+    {
+      "id": "in_laws_and_family",
+      "title": "Family caught in the middle",
+      "signals": [
+        "in-laws",
+        "in laws",
+        "mother-in-law",
+        "father-in-law",
+        "his mother",
+        "her mother",
+        "his family",
+        "her family",
+        "family pressure",
+        "saas",
+        "sasur",
+        "sasural",
+        "mummy ji",
+        "ghar wale",
+        "ghar walon",
+        "pariwar ka pressure",
+        "mother in law criticises",
+        "in laws interfere",
+        "his parents interfere",
+        "her parents interfere",
+        "family comments on me",
+        "he doesnt defend me",
+        "she doesnt defend me",
+        "caught between family and partner",
+        "family pressure on us",
+        "family involved in our fights",
+        "saas pati",
+        "family interfering in our decisions",
+        "his family interferes",
+        "her family interferes",
+        "family keeps interfering"
+      ],
+      "what_it_is": "When families are close, a couple can end up caught between loyalty to their parents and to each other. Feeling unsupported by your partner in front of family hurts more than the family comment itself.",
+      "what_helps": [
+        "Decide together what you will say, and say it as a team",
+        "Each person speaks to their own family about hard topics",
+        "Agree privately on the limits you both can live with"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "Joint families and respect for elders are a strength and a source of stress. It is possible to honour the elders and still protect the couple's time and choices."
+      },
+      "never_say": [
+        "your in-laws are toxic",
+        "cut off your family",
+        "your husband must choose you"
+      ],
+      "source": "Clinical practice with couples and families; no single study"
+    },
+    {
+      "id": "joint_family_privacy",
+      "title": "No room to be a couple",
+      "signals": [
+        "no privacy",
+        "no time alone",
+        "no space for us",
+        "living with his parents",
+        "living with her parents",
+        "joint family",
+        "shared room",
+        "cant talk freely at home",
+        "can't talk freely at home",
+        "privacy nahi",
+        "akele time nahi",
+        "joint family mein",
+        "saath mein rehte hain",
+        "share room with parents",
+        "no private time",
+        "no space alone",
+        "cant talk freely",
+        "walls thin family",
+        "never alone together",
+        "joint family couple"
+      ],
+      "what_it_is": "Living with family can leave a couple with little private time, or the feeling that every conversation can be overheard. Closeness suffers when there is no moment that belongs to just the two of them.",
+      "what_helps": [
+        "Protect a small regular time that is just yours, even a walk",
+        "Agree on a signal that means I need to talk to you privately",
+        "Plan a short outing together, even close to home"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "A walk, a drive, a terrace evening or a visit to a nearby cafe are common ways couples create privacy."
+      },
+      "never_say": [
+        "you must move out",
+        "your family is the problem"
+      ],
+      "source": "Clinical practice; no single study"
+    },
+    {
+      "id": "arranged_marriage_early_years",
+      "title": "Getting to know each other after the wedding",
+      "signals": [
+        "arranged marriage",
+        "arranged marriage and we",
+        "married through family",
+        "just got married",
+        "newly married",
+        "met only a few times before the wedding",
+        "shaadi ko kuch mahine",
+        "nayi shaadi",
+        "arrange marriage",
+        "arranged shaadi",
+        "ek dusre ko abhi jaan rahe",
+        "married through parents",
+        "just married awkward",
+        "newly married awkward",
+        "dont know my husband yet",
+        "dont know my wife yet",
+        "married few months strangers",
+        "getting to know after wedding",
+        "first year of marriage",
+        "shy with my husband",
+        "shy with my wife"
+      ],
+      "what_it_is": "In arranged marriages closeness often grows after the wedding rather than before. Many couples start as near strangers and build trust and affection over time, and early awkwardness is common. In one small study of couples in India, satisfaction in arranged marriages was no lower than in chosen marriages elsewhere.",
+      "what_helps": [
+        "Treat the first year as getting to know each other, not a test",
+        "Share small things about your day and your likes",
+        "Talk about what each of you expects from family life, kindly and early"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Both families often stay involved; agree between you how much each family hears about your private life."
+      },
+      "never_say": [
+        "arranged marriages have no love",
+        "you married a stranger"
+      ],
+      "source": "Myers, Madathil & Tingle (2005), a small preliminary comparison; findings are tentative"
+    },
+    {
+      "id": "money_and_family",
+      "title": "Money and family obligations",
+      "signals": [
+        "money fights",
+        "fight about money",
+        "spending too much",
+        "he spends too much",
+        "she spends too much",
+        "sending money to my parents",
+        "sending money to his parents",
+        "shared account",
+        "financial stress",
+        "paise ko lekar",
+        "paise pe jhagda",
+        "salary ka hisaab",
+        "ghar ko paise bhejna",
+        "udhaar",
+        "argue about money",
+        "send money home",
+        "support my parents financially",
+        "spends too much",
+        "savings fight",
+        "loan stress",
+        "who pays",
+        "salary control",
+        "financial stress couple",
+        "argue about sending money",
+        "argue send home",
+        "send money family fight",
+        "how much to send home",
+        "money to my parents fight",
+        "money to his parents fight",
+        "spends too much savings"
+      ],
+      "what_it_is": "Money is rarely only about money: it carries safety, freedom, fairness and family duty. Couples argue most when the rules about money were never said out loud.",
+      "what_helps": [
+        "Pick a calm moment to say what money means to each of you",
+        "Agree on a small amount each of you can spend without asking",
+        "Decide together how much goes to family support"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Supporting parents or siblings financially is common and meaningful; agree on the amount and the way together rather than deciding alone."
+      },
+      "never_say": [
+        "he only cares about money",
+        "she is a gold digger"
+      ],
+      "source": "Dew, Britt & Huston (2012), financial issues and divorce"
+    },
+    {
+      "id": "new_parents",
+      "title": "After a baby arrives",
+      "signals": [
+        "new baby",
+        "since the baby",
+        "after the baby",
+        "newborn",
+        "new mom",
+        "new dad",
+        "baby ke baad",
+        "baby hone ke baad",
+        "bachche ke baad",
+        "delivery ke baad",
+        "no sleep with the baby",
+        "since baby born",
+        "baby arrived",
+        "after baby",
+        "newborn tired fight",
+        "son born fight",
+        "daughter born fight",
+        "no sleep baby fight",
+        "baby changed us",
+        "new mother partner distant",
+        "new father distant",
+        "baby born",
+        "baby snap",
+        "baby tired",
+        "baby fight",
+        "baby distant",
+        "son born",
+        "daughter born",
+        "baby changed things"
+      ],
+      "what_it_is": "A baby brings joy and a lot of strain: little sleep, new roles and less time as a couple. Many couples feel their relationship dip for a while and recover as the routine settles.",
+      "what_helps": [
+        "Share the night shifts and say thank you for the small things",
+        "Keep five minutes a day that is about the two of you",
+        "Say what you need instead of waiting to be noticed"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Grandparents often help and also bring opinions; agree together on what help you welcome."
+      },
+      "never_say": [
+        "it is normal for fathers to do less",
+        "mothers always cope better"
+      ],
+      "source": "Doss, Rhoades, Stanley & Markman (2009), the transition to parenthood and relationship quality"
+    },
+    {
+      "id": "cycle_and_mood",
+      "title": "Mood changes around a period",
+      "signals": [
+        "mood swings before my period",
+        "mood swings before period",
+        "pms and we fight",
+        "irritable before period",
+        "emotional before my period",
+        "he says i am moody",
+        "he says its my pms",
+        "period se pehle mood",
+        "pms mein chidchida",
+        "pms ki wajah se jhagda",
+        "chidchidi",
+        "chidchida pms",
+        "pms mein",
+        "says its my pms",
+        "says it is my pms",
+        "calls me hormonal",
+        "says its pms",
+        "emotional before period",
+        "period mood fights",
+        "pms fights",
+        "hormones blame",
+        "mood before periods"
+      ],
+      "what_it_is": "Many people notice mood shifts in the days before a period, and they differ a lot from person to person. If the changes are strong or disrupt life, that is something to talk to a doctor about, because some conditions need treatment.",
+      "what_helps": [
+        "Notice your own pattern over a few cycles",
+        "Tell your partner what helps you in those days, in advance",
+        "See a doctor if the mood changes are severe or hard to live with"
+      ],
+      "evidence": "practice",
+      "cultures": {},
+      "never_say": [
+        "it is just hormones",
+        "women are moody before their period",
+        "you are overreacting because of your period"
+      ],
+      "source": "General clinical guidance on premenstrual symptoms; a doctor should assess severe symptoms"
+    },
+    {
+      "id": "jealousy_and_phone_checking",
+      "title": "Jealousy and checking",
+      "signals": [
+        "checks my phone",
+        "checking his phone",
+        "checking her phone",
+        "wants my password",
+        "asks for my password",
+        "tracking my location",
+        "wants to see my messages",
+        "jealous of",
+        "gets jealous",
+        "jealous when i talk",
+        "phone check karta",
+        "phone check karti",
+        "password maangta",
+        "password maangti",
+        "location track",
+        "shak karta",
+        "shak karti",
+        "jalan hoti",
+        "jealous when he",
+        "jealous when she",
+        "i feel jealous",
+        "feel jealous",
+        "reads my messages",
+        "tracks my location",
+        "jealous when talk",
+        "accuses me of cheating",
+        "doesnt let me talk to",
+        "monitors my phone",
+        "checks my chats",
+        "suspicious of everything",
+        "jealous of my friends"
+      ],
+      "what_it_is": "Jealousy is a common feeling, often about fear of losing someone. Checking phones, messages or locations tends to calm the fear for a moment and then make it worse. When one person controls where the other goes or who they talk to, it is a safety concern, not just jealousy.",
+      "what_helps": [
+        "Name the fear under the jealousy and ask for reassurance in words",
+        "Agree openly on what each of you is comfortable with online",
+        "Notice if the checking is turning into control, and talk to someone you trust"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Shared phones and shared passwords are common in some families; the difference is whether both people chose it freely."
+      },
+      "never_say": [
+        "he is toxic",
+        "it proves he loves you",
+        "just let him check"
+      ],
+      "source": "Elphinston & Noller (2011), online intrusion, jealousy and relationship satisfaction; Muise, Christofides & Desmarais (2009)"
+    },
+    {
+      "id": "situationship_uncertainty",
+      "title": "Not knowing where you stand",
+      "signals": [
+        "situationship",
+        "don't know what we are",
+        "dont know what we are",
+        "not sure where we stand",
+        "mixed signals",
+        "hot and cold",
+        "wont commit",
+        "won't commit",
+        "doesn't want a label",
+        "no label",
+        "kya hum couple hain",
+        "label nahi dena chahta",
+        "label nahi dena chahti",
+        "commit nahi karta",
+        "commit nahi karti",
+        "kabhi pyaar kabhi door",
+        "never defined what we are",
+        "hot cold",
+        "tired of guessing",
+        "unsure where we stand",
+        "he wont define",
+        "she wont define",
+        "keeps me hanging"
+      ],
+      "what_it_is": "Being unsure where you stand is tiring, and it keeps the mind busy guessing. It helps to separate what the other person has actually said and done from what you are afraid or hope it means.",
+      "what_helps": [
+        "Decide what you need from the connection, in plain words",
+        "Ask once, clearly, instead of reading signs",
+        "Notice how you feel after spending time together"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "Family expectations about marriage can add pressure; it is fair to want clarity about direction."
+      },
+      "never_say": [
+        "he is just using you",
+        "she is playing games",
+        "walk away"
+      ],
+      "source": "Clinical practice; no single study"
+    },
+    {
+      "id": "breakup_grief",
+      "title": "After a breakup",
+      "signals": [
+        "we broke up",
+        "just broke up",
+        "he left me",
+        "she left me",
+        "cant stop thinking about my ex",
+        "can't stop thinking about my ex",
+        "miss my ex",
+        "moving on",
+        "breakup ho gaya",
+        "breakup ke baad",
+        "usne chhod diya",
+        "ex ki yaad",
+        "bhool nahi pa raha",
+        "bhool nahi pa rahi",
+        "my breakup",
+        "the breakup",
+        "after the breakup",
+        "since the breakup",
+        "broke up with me",
+        "we broke up last",
+        "we broke up yesterday",
+        "ex left me",
+        "cry every night ex",
+        "cant get over ex",
+        "moving on from ex",
+        "heartbroken",
+        "relationship ended"
+      ],
+      "what_it_is": "A breakup can bring real grief: sadness, anger, longing and waves that come and go. Recovery is usually uneven, with better days and worse days, and it is not a sign of weakness.",
+      "what_helps": [
+        "Let the feelings come and keep your basic routine of sleep, food and movement",
+        "Lean on a friend or family member you trust",
+        "Give yourself time before big decisions or contacting your ex"
+      ],
+      "evidence": "moderate",
+      "cultures": {
+        "IN": "Some people cannot tell family about a relationship; a trusted friend or a counsellor can be that safe place."
+      },
+      "never_say": [
+        "you will find someone better",
+        "it was meant to be",
+        "just get over it"
+      ],
+      "source": "Sbarra & Emery (2005), emotional sequelae of nonmarital relationship dissolution"
+    },
+    {
+      "id": "reassurance_seeking",
+      "title": "Needing to hear it is okay",
+      "signals": [
+        "does he still love me",
+        "does she still love me",
+        "need reassurance",
+        "keep asking if he loves me",
+        "keep asking if she loves me",
+        "afraid he will leave",
+        "afraid she will leave",
+        "scared he will leave",
+        "scared she will leave",
+        "overthinking our relationship",
+        "is it me",
+        "kya woh mujhse pyaar karta",
+        "kya woh mujhse pyaar karti",
+        "chhod dega",
+        "chhod degi",
+        "darr hai ki chhod",
+        "need him to tell me fine",
+        "need her to tell me fine",
+        "need constant reassurance",
+        "overthink relationship",
+        "afraid of being left",
+        "keep checking if upset with me",
+        "keep asking him",
+        "keep asking her",
+        "i hate that i keep asking",
+        "keep asking if he still loves me"
+      ],
+      "what_it_is": "Wanting reassurance is human. When the worry is strong, asking again and again can bring short relief and then more worry, and it can tire the other person. Learning to calm yourself while also asking for what you need helps both.",
+      "what_helps": [
+        "Ask for one specific kind of reassurance, once",
+        "Have a few things you can do to settle yourself when the worry spikes",
+        "Notice what makes the worry louder, such as being tired or alone"
+      ],
+      "evidence": "moderate",
+      "cultures": {},
+      "never_say": [
+        "you are clingy",
+        "you are anxious-attached",
+        "he is making you insecure"
+      ],
+      "source": "Joiner, Alfano & Metalsky (1992), excessive reassurance seeking and rejection"
+    },
+    {
+      "id": "different_love_expressions",
+      "title": "Different ways of showing care",
+      "signals": [
+        "he doesn't say i love you",
+        "she doesn't say i love you",
+        "never says i love you",
+        "doesn't show affection",
+        "not romantic",
+        "shows love by doing things",
+        "wants more attention",
+        "wants more time together",
+        "pyaar jatata nahi",
+        "pyaar nahi jatati",
+        "romantic nahi hai",
+        "bolta nahi hai",
+        "bolti nahi hai",
+        "show she cares",
+        "show he cares",
+        "doesnt say i love you",
+        "shows love by doing",
+        "dont feel cared for",
+        "feel unloved not showing",
+        "wish he showed",
+        "wish she showed",
+        "different ways of love",
+        "wants more affection"
+      ],
+      "what_it_is": "People show and feel care in different ways: words, time, help, touch, gifts. Trouble starts when each person gives in their own way and neither sees what the other is giving. The popular love-language types are not well supported as fixed categories, but asking what makes someone feel cared for works.",
+      "what_helps": [
+        "Ask: what makes you feel most cared for these days?",
+        "Notice the ways your partner already shows care",
+        "Ask for one small thing that would mean a lot to you"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "Many people show care through service, such as cooking or helping, rather than words. It can help to say out loud that you see it."
+      },
+      "never_say": [
+        "he is not romantic enough",
+        "your love languages do not match so it will not work"
+      ],
+      "source": "Bunt & Hazelwood (2017), love languages and relationship satisfaction; Gable, Gonzaga & Strachman (2006)"
+    },
+    {
+      "id": "apology_styles",
+      "title": "When sorry doesn't land",
+      "signals": [
+        "said sorry but",
+        "apologised but",
+        "apologized but",
+        "his apology doesn't feel real",
+        "her apology doesn't feel real",
+        "sorry means nothing",
+        "keeps saying sorry and repeats",
+        "sorry bolta hai par",
+        "sorry bolti hai par",
+        "maafi maangta hai par",
+        "sorry se kuch nahi hota",
+        "apologises but doesnt understand",
+        "says sorry repeats",
+        "sorry feels empty",
+        "apology not real",
+        "sorry but nothing changes",
+        "apology doesnt help",
+        "he apologises every time",
+        "she apologises every time"
+      ],
+      "what_it_is": "People need different things from an apology: some need to hear that you understand how it felt, some need to see a change, some need an acknowledgement of the wrong. A sorry that misses the thing they needed can feel empty.",
+      "what_helps": [
+        "Ask: what would help you feel this is repaired?",
+        "Say what you understood about how it felt for them",
+        "Follow the words with one small change they can see"
+      ],
+      "evidence": "practice",
+      "cultures": {},
+      "never_say": [
+        "he will never change",
+        "forgive him"
+      ],
+      "source": "Chapman & Thomas (2006), The Five Languages of Apology; clinical practice"
+    },
+    {
+      "id": "festival_and_family_stress",
+      "title": "Festival and family-event stress",
+      "signals": [
+        "diwali",
+        "festival season",
+        "wedding season",
+        "relatives are coming",
+        "guests are coming",
+        "hosting everyone",
+        "festival pe",
+        "shaadi mein jana",
+        "rishtedaar",
+        "mehmaan",
+        "family function stress",
+        "function ka stress",
+        "stressed about the function",
+        "hosting guests",
+        "festival stress",
+        "diwali is coming",
+        "diwali aa raha",
+        "relatives arrive festival",
+        "festival fight cooking",
+        "guests hosting stress",
+        "festival workload",
+        "wedding season stress",
+        "family event stress",
+        "who cooks fight",
+        "diwali stress",
+        "eid stress",
+        "holi stress",
+        "pooja preparation fight"
+      ],
+      "what_it_is": "Festivals and family events can bring joy and a heavy load at once: hosting, travel, expectations and comments. Couples often argue because both are tired and neither feels helped.",
+      "what_helps": [
+        "Divide the tasks in advance and say who does what",
+        "Agree on a signal for when either of you needs a break",
+        "Keep one small ritual for just the two of you"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "The load often falls unevenly in a household; naming it kindly and sharing it helps more than keeping score."
+      },
+      "never_say": [
+        "women have to do all of it",
+        "just adjust"
+      ],
+      "source": "Clinical practice; no single study"
+    },
+    {
+      "id": "religion_or_caste_differences",
+      "title": "Different faiths or backgrounds",
+      "signals": [
+        "different religion",
+        "different caste",
+        "inter-caste",
+        "intercaste",
+        "interfaith",
+        "inter faith",
+        "family will not accept",
+        "family wont accept",
+        "family won't accept",
+        "parents won't agree",
+        "parents wont agree",
+        "alag dharm",
+        "alag jaati",
+        "alag caste",
+        "ghar wale nahi maanenge",
+        "family nahi maanegi",
+        "another community",
+        "different faith",
+        "parents refuse to meet",
+        "inter caste love",
+        "parents against our relationship",
+        "family against our relationship"
+      ],
+      "what_it_is": "When partners come from different faiths or communities, the hardest part is often family pressure and the fear of loss rather than the difference itself. Values and daily life can be talked about and often matched.",
+      "what_helps": [
+        "Talk with your partner about which values matter most to each of you",
+        "Take family conversations slowly, one person and one topic at a time",
+        "Look for a trusted elder or friend who can support you"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "Family consent can matter a great deal; there is no one right path, and the choice is yours to make with care for your safety."
+      },
+      "never_say": [
+        "it will never work",
+        "you should follow your family",
+        "you should defy your family"
+      ],
+      "source": "Clinical practice with couples; no single study"
+    },
+    {
+      "id": "sexual_mismatch",
+      "title": "Different wishes about closeness",
+      "signals": [
+        "different sex drive",
+        "not in the mood",
+        "no intimacy",
+        "no sex in our marriage",
+        "he doesn't want sex",
+        "she doesn't want sex",
+        "i want more intimacy",
+        "pain during sex",
+        "pain during intercourse",
+        "intimacy nahi",
+        "mood nahi rehta",
+        "physical relation nahi",
+        "dard hota hai relation",
+        "no interest in physical closeness",
+        "feel rejected in bed",
+        "he doesnt want intimacy",
+        "she doesnt want intimacy",
+        "pain during intimacy",
+        "intimacy problems",
+        "sexless marriage",
+        "want more closeness physical"
+      ],
+      "what_it_is": "Partners often want different amounts and kinds of closeness, and that is common. What helps most is being able to talk about it kindly, with consent always, and without turning it into blame. Pain during sex is a medical matter worth seeing a doctor about.",
+      "what_helps": [
+        "Choose a relaxed moment, not bedtime or after a fight, to talk",
+        "Start with what you enjoy and what you miss, not what is wrong with them",
+        "See a doctor if there is pain, or a counsellor if talking is stuck"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "Many people have never talked about this openly. A trusted doctor or counsellor can be a private, judgement-free place to start."
+      },
+      "never_say": [
+        "he must be cheating",
+        "it is your duty",
+        "a husband has a right"
+      ],
+      "source": "General clinical practice; consent and medical advice are central"
+    },
+    {
+      "id": "trust_after_lie",
+      "title": "Rebuilding trust after a lie",
+      "signals": [
+        "he lied to me",
+        "she lied to me",
+        "caught him lying",
+        "caught her lying",
+        "cant trust him",
+        "can't trust him",
+        "cant trust her",
+        "can't trust her",
+        "hid it from me",
+        "found out he",
+        "found out she",
+        "jhooth bola",
+        "jhooth bola mujhse",
+        "bharosa nahi raha",
+        "bharosa toot gaya",
+        "chhupaya mujhse",
+        "found out he hid",
+        "found out she hid",
+        "hid messages",
+        "lied about",
+        "caught lying",
+        "cant trust anymore",
+        "trust broken",
+        "kept secret from me",
+        "betrayed my trust",
+        "found out lied",
+        "lied to me about where",
+        "lied to me",
+        "cant trust him now",
+        "cant trust her now",
+        "lied about where he was"
+      ],
+      "what_it_is": "Trust breaks fast and returns slowly. It usually comes back when the person who lied is honest, patient with questions and consistent over time, and when the hurt person is allowed to decide what they need next.",
+      "what_helps": [
+        "Say what you need to feel safe again, in specific terms",
+        "Ask for honesty about the facts you need, not every detail",
+        "Give it time and decide for yourself whether it is working"
+      ],
+      "evidence": "practice",
+      "cultures": {},
+      "never_say": [
+        "once a liar always a liar",
+        "you must forgive",
+        "you must leave"
+      ],
+      "source": "Clinical practice with couples; no single study"
+    },
+    {
+      "id": "social_media_comparison",
+      "title": "Comparing your relationship online",
+      "signals": [
+        "compare our relationship",
+        "other couples",
+        "instagram couples",
+        "couple goals",
+        "he doesn't post me",
+        "she doesn't post me",
+        "following his ex",
+        "following her ex",
+        "likes her photos",
+        "likes his photos",
+        "social media makes me feel",
+        "dusre couples",
+        "instagram pe",
+        "story pe nahi daalta",
+        "story pe nahi daalti",
+        "photo like karta",
+        "photo like karti",
+        "couples online look happy",
+        "our relationship boring online",
+        "doesnt post me",
+        "follows his ex",
+        "follows her ex",
+        "story posts jealous",
+        "doesnt post me anywhere",
+        "never posts me",
+        "overthink his posts",
+        "overthink her posts"
+      ],
+      "what_it_is": "Online we see other people's best moments. Comparing them with the ordinary days of your own relationship can make it feel smaller than it is. Social media can also stir up jealousy about likes and followed accounts.",
+      "what_helps": [
+        "Notice how you feel after scrolling and take breaks if it drops your mood",
+        "Talk about what you each want to share online",
+        "Ask for the closeness you want in real life"
+      ],
+      "evidence": "moderate",
+      "cultures": {},
+      "never_say": [
+        "he is hiding you",
+        "she is flirting"
+      ],
+      "source": "Muise, Christofides & Desmarais (2009), social media and jealousy; Elphinston & Noller (2011)"
+    },
+    {
+      "id": "partner_unwell_support",
+      "title": "When your partner is unwell or low",
+      "signals": [
+        "my partner is depressed",
+        "my wife is depressed",
+        "my husband is depressed",
+        "my boyfriend is depressed",
+        "my girlfriend is depressed",
+        "he is going through a bad phase",
+        "she is going through a bad phase",
+        "how to support him",
+        "how to support her",
+        "how do i help him",
+        "how do i help her",
+        "pati udaas",
+        "patni udaas",
+        "usse kaise support karun",
+        "uska saath kaise",
+        "partner is low lately",
+        "partner depressed",
+        "partner going through bad time",
+        "how to support partner",
+        "how to be there for him",
+        "how to be there for her",
+        "he is very low",
+        "she is very low",
+        "partner mental health",
+        "partner anxiety support"
+      ],
+      "what_it_is": "Supporting someone who is struggling is hard and tiring. Listening without fixing, staying steady and looking after your own limits all matter. If they talk about harming themselves, professional help is needed.",
+      "what_helps": [
+        "Ask what would help most right now instead of guessing",
+        "Offer to go with them to see a doctor or counsellor",
+        "Keep your own sleep, food and friends going so you can keep supporting"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "Mental health can carry stigma; framing it as health, like any other, often makes it easier to seek help."
+      },
+      "never_say": [
+        "they just need to try harder",
+        "it is all in their head"
+      ],
+      "source": "General guidance on supporting a loved one; Tele-MANAS and a doctor for crisis"
+    },
+    {
+      "id": "friends_and_boundaries",
+      "title": "Friends, exes and boundaries",
+      "signals": [
+        "his female friend",
+        "her male friend",
+        "his ex still",
+        "her ex still",
+        "talks to his ex",
+        "talks to her ex",
+        "not comfortable with his friend",
+        "not comfortable with her friend",
+        "boundaries in our relationship",
+        "uski dost se jalan",
+        "uski ex se baat",
+        "dost ke saath zyada time",
+        "boundary set karna",
+        "hangs out with old boyfriend",
+        "hangs out with old girlfriend",
+        "female friend uncomfortable",
+        "male friend uncomfortable",
+        "boundaries with friends",
+        "uncomfortable with friend",
+        "close friend opposite gender",
+        "ex still in touch"
+      ],
+      "what_it_is": "Couples often differ on what feels okay with friends and exes. These talks go best as a shared agreement about what makes each person feel respected, rather than as a rule one person sets for the other.",
+      "what_helps": [
+        "Say what you feel and what would help, rather than who should be cut off",
+        "Ask what is important to them and listen",
+        "Agree on a few things you both choose, and revisit them"
+      ],
+      "evidence": "practice",
+      "cultures": {
+        "IN": "Friendships across genders can be viewed differently by families and communities; talk openly about how each of you sees them."
+      },
+      "never_say": [
+        "he is cheating",
+        "you should make him delete her",
+        "she must cut off her friends"
+      ],
+      "source": "Clinical practice; Elphinston & Noller (2011)"
+    }
+  ]
+}

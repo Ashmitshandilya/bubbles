@@ -86,7 +86,7 @@ def test_default_is_sharing_nothing(env):
     client, _ = env
     s = client.get("/partner-sharing", headers=HA).json()
     assert s["sharing"] is False and s["configured"] is False and s["connection"] is None and s["link"]["active"] is False
-    assert {c["key"] for c in s["available"]} == {"cycle", "sleep", "support_note"}
+    assert {c["key"] for c in s["available"]} == {"cycle", "sleep", "support_note", "orbit_rituals", "orbit_weather"}
     assert any("Symptoms" in x for x in s["never_shared"])
     assert client.post("/partner-sharing/link", json={"expires_in_days": 30}, headers=HA).status_code == 422     # choose what to share first
     assert invite(client).status_code == 422

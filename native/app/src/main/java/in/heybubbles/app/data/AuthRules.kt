@@ -3,7 +3,7 @@ package `in`.heybubbles.app.data
 /** Pure rules for creating an account, held to the website's sign-up (frontend/app/login/page.tsx). */
 object AuthRules {
     /** Must equal POLICY_VERSION in backend/consent.py and PRIVACY_NOTICE_VERSION on the website. */
-    const val NOTICE_VERSION = "2026-10-23"
+    const val NOTICE_VERSION = "2026-10-23c"
 
     /** Confirmation and reset links open in the browser on the real site, like the website's own. */
     const val CALLBACK_URL = "https://heybubbles.in/callback"

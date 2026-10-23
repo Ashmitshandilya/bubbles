@@ -333,7 +333,10 @@ _add("physical", rf"\b{_WHO_DID}\s+(?:did|caused)\s+(?:it|this|that|them|these)\
 _add("physical", r"\b(?:punch\w*|hit|kick\w*|slam\w*|smash\w*|bang\w*)\s+(?:the\s+|a\s+)?(?:wall|door|table|glass|plate|cupboard|mirror)\s+"
                  r"(?:right\s+)?(?:next\s+to|near|beside|by|past|inches\s+from)\s+my\s+(?:face|head|ear)\b", "weak")
 _add("physical", r"\b(?:threaten\w*|tries|tried|trying|wants|wanted)\s+to\s+(?:hit|beat|slap|punch|kick|hurt|harm)\s+me\b", "any")        # a threat to hit: tier 2 like a hit
-_add("physical", r"\b(?:said|says|told\s+me|tells\s+me|warned\s+me|swore|promised)\b[^.!?]{0,25}?\b(?:he|she|they)(?:'ll|\s+will|\s+would|'d)\s+(?:hit|beat|slap|punch|kick|hurt|harm|break)\b",
+_add("physical", r"\b(?:said|says|told\s+me|tells\s+me|warned\s+me|swore|promised)\b[^.!?]{0,25}?\b(?:he|she|they)(?:'ll|\s+will|\s+would|'d)\s+(?:hit|beat|slap|punch|kick|hurt|harm|break)\b(?!\s+(?:the\s+)?(?:gym|road|books?|sack|hay|town|ground|target|jackpot|bottle|lights?))(?!\s+(?:me\s+|you\s+|us\s+)?(?:at|in|all|every\w*)\b)",
+     "speaker")
+# a threat said to her in the second person: "he said I will beat you black and blue if you leave" (she reports his words)
+_add("physical", r"\b(?:said|says|told\s+me|tells\s+me|warned\s+me|swore|promised|keeps?\s+saying|kept\s+saying)\b[^.!?]{0,25}?\b(?:i|he|she|they)(?:'ll|\s+will|\s+would|'d)\s+(?:beat|thrash|hit|slap|punch|kick|hurt|break)\s+(?:you|me)\b(?!\s+(?:at|in|all|to\s+it|by|every\w*)\b)",
      "speaker")
 # --- no body part named: "gave me a slap", "put his hands on me", "whipped me with a belt", "got violent with me"
 _add("physical", r"\b(?:gave|gives|giving|give|landed|lands|delivered|dealt)\s+me\s+(?:a|an|one|two|three|four|a\s+couple\s+of|a\s+few|several|some|many|a\s+lot\s+of)\s+"

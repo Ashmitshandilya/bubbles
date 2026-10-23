@@ -173,6 +173,9 @@ object Flow {
         return JsonArray((without + optionId).map(::JsonPrimitive))
     }
 
+    /** The country answer to start from: India for an Asia/Kolkata time zone (read on the phone, nothing is looked up), else none so the person chooses. */
+    fun countryFromTimeZone(zone: String?): String? = if (zone == "Asia/Kolkata" || zone == "Asia/Calcutta") "in" else null
+
     /** The title in the person's language when the bank has one (Hinglish), else English. */
     fun titleFor(q: Question, a: Answers, bank: Bank): String {
         val lang = (a["language"] as? JsonPrimitive)?.contentOrNull

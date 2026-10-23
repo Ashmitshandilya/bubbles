@@ -12,13 +12,13 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from time import perf_counter
 from uuid import UUID, uuid4
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Header, Query
 from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from wellness_common import REQUEST_TZ, parse_tz_header
+from wellness_common import REQUEST_TZ, parse_tz_header, request_tz
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from auth_errors import (
@@ -46,6 +46,12 @@ from wellness_api import build_router as build_wellness_router
 from insights_api import build_router as build_insights_router
 from push_api import build_router as build_push_router
 from chat_feedback import build_router as build_chat_feedback_router
+from understanding_api import build_router as build_understanding_router
+from orbit import build_router as build_orbit_router
+import doc_store
+import name_privacy
+import open_threads
+import person_model
 from consent_api import build_router as build_consent_router
 import chat_cache
 from chat_concurrency import settled, submit, submit_io
@@ -72,6 +78,7 @@ from chat_pipeline import (
     RateLimiter, ai_failed_reply, analyze_turn, build_rule_events, conversation_block, deterministic_reply,
     evidence_query, find_stored_reply, first_name, load_history, persist_events, reconcile_ai_events, reply_kind,
     safety_payload, semantic_trace, shown_evidence, state_block, stored_metadata,
+    RECENT, fit_blocks, orbit_blocks, suggestions_for,
 )
 from conversation_correction import apply_correction, contradiction_note
 from health_semantics import display_name
@@ -105,7 +112,7 @@ from digital_twin import build_digital_twin
 from health_agent import plan_agent_actions
 from memory_manager import extract_explicit_personal_facts, persist_explicit_facts, memory_diagnostics
 from response_formatter import normalize_response, response_style_instruction
-from response_quality import lint, scrub_doses, strip_attribution
+from response_quality import enforce_orbit, lint, scrub_doses, strip_attribution
 from metric_names import plain_metric
 from personalization_engine import build_personalization
 from habit_intelligence import analyze_habits
@@ -293,7 +300,7 @@ def _emit_api_event(method: str, route: str, status: int, latency: float) -> Non
 
 
 # Coarse protection for the Whole-Health OS routes: a request-size cap and a per-user request budget (the chat has its own limiter).
-_GUARDED_PREFIXES = ("/onboarding", "/experience", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback", "/consents")
+_GUARDED_PREFIXES = ("/onboarding", "/experience", "/orbit", "/fitness", "/wellness", "/cycle", "/notifications", "/import", "/me/", "/profile/body", "/partner", "/chat/feedback", "/consents")
 _MAX_BODY_BYTES = 1_500_000
 _route_limiter = RateLimiter(limit=240, window=60.0)
 _public_limiter = RateLimiter(limit=30, window=60.0)    # the unauthenticated partner link: slows token guessing
@@ -453,6 +460,7 @@ class ChatRequest(BaseModel):
     message: str = Field(default="", max_length=8000)
     message_id: str | None = Field(default=None, min_length=16, max_length=128)
     conversation_id: str | None = Field(default=None, max_length=64)
+    mode: Literal["talk", "orbit"] = "talk"   # "orbit" is the Heart-to-heart thread: its own voice, pattern cards and rules
 
 
 # --------------------------------------------------
@@ -551,6 +559,8 @@ app.include_router(build_data_rights_router(get_authenticated_user, supabase))
 app.include_router(build_wellness_router(get_authenticated_user, supabase))
 app.include_router(build_push_router(supabase))   # POST /internal/push/run (cron secret, not a user route)
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
+app.include_router(build_understanding_router(get_authenticated_user, supabase))   # GET/PUT/DELETE /me/understanding: how Bubbles understands you
+app.include_router(build_orbit_router(get_authenticated_user, supabase))   # /orbit/*: relationship support, shared rituals, partner weather
 app.include_router(build_consent_router(get_authenticated_user, supabase))
 app.include_router(build_client_telemetry_router())   # POST /telemetry/client: a fixed problem code, nothing else
 app.include_router(build_confirm_router(get_authenticated_user, supabase))   # POST /health-events/confirmation (batch) + the old single PATCH
@@ -703,7 +713,7 @@ _chat_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_CHAT_RATE_LIMIT", "30")
 # the person's own context is waited for longer and logged, never dropped quietly.
 RAG_BUDGET_S = max(0.5, float(os.getenv("CHAT_RAG_BUDGET_S", "2.0")))
 CONTEXT_BUDGET_S = max(2.0, float(os.getenv("CHAT_CONTEXT_BUDGET_S", "8.0")))
-_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup", "recall", "remembered"} | {"safe_harbor"}
+_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup", "recall", "remembered"} | {"safe_harbor", "orbit_redirect"}
 
 
 def _debug_trace_enabled() -> bool:
@@ -737,6 +747,8 @@ class _ChatState:
     fresh: bool = False   # the user message was just created (not a retry), so none of its events exist yet
     timings: dict = field(default_factory=dict)
     harbor_ctx: Any = None   # the Safe Harbor documents read for this message (safe_harbor.HarborContext), reused when the state is written
+    mode: str = "talk"
+    people: dict = field(default_factory=dict)   # {name: "[LABEL]"}: the people in this person's life, hidden from the outside AI (name_privacy.py)
     early: dict | None = None   # a finished answer (empty message, replay of a retry): nothing more to compute
 
     @property
@@ -793,6 +805,11 @@ def _chat_prepare(user, user_id: str, request: ChatRequest) -> _ChatState:
         history = history_job.result()[0] or []
     else:
         conversation_id = _ensure_conversation(user_id, None, user_message)
+        if request.mode == "orbit":   # the thread stays a Heart-to-heart in the history list; nothing else about it is stored differently
+            try:
+                doc_store.put(supabase, user_id, "conversation_mode", conversation_id, {"mode": "orbit"})
+            except Exception:  # noqa: BLE001 - a history label must never stop a reply
+                pass
     state = _ChatState(user, user_id, user_message, conversation_id, started, history=history)
     state.user_message_id, created = _persist_chat_message(
         user_id=user_id, conversation_id=conversation_id, role="user", content=user_message,
@@ -814,8 +831,12 @@ def _chat_prepare(user, user_id: str, request: ChatRequest) -> _ChatState:
 
     # ---- 1. understand: facts (negation, tense, who, severity), safety state, Safe Harbor, correction, contradictions, daily log
     # The Safe Harbor documents are read only when this message or the last reply needs them (a tier 2 message, or a conversation already in that voice).
-    state.harbor_ctx = safe_harbor.load_context(supabase, user_id, conversation_id, user_message, history, message_id=state.user_message_id)
-    turn = analyze_turn(user_message, history, harbor_ctx=state.harbor_ctx)
+    ident = chat_cache.identity(supabase, user_id)   # country and gender from the setup: which numbers and support lines fit this person
+    state.harbor_ctx = safe_harbor.load_context(supabase, user_id, conversation_id, user_message, history, message_id=state.user_message_id,
+                                                country=ident.get("country"), gender=ident.get("gender"))
+    state.mode = request.mode
+    turn = analyze_turn(user_message, history, harbor_ctx=state.harbor_ctx, mode=request.mode)
+    turn.country = ident.get("country")
     state.turn = turn
     state.name = first_name(user)
     state.timings = dict(turn.timings_ms)
@@ -831,27 +852,33 @@ def _chat_prepare(user, user_id: str, request: ChatRequest) -> _ChatState:
     state.consent_required = turn.route not in _DETERMINISTIC_ROUTES and not has_ai_consent(supabase, user_id)
     # Technical facts only, from fixed lists (ops_telemetry.NOTE_VALUES): which kind of reply, the safety level, whether a model was asked.
     try:
-        ops_telemetry.note(route_kind="consent_needed" if state.consent_required else turn.route, safety_level=turn.safety.level,
+        ops_telemetry.note(route_kind="consent_needed" if state.consent_required else ("ai" if turn.route == "orbit" else turn.route), safety_level=turn.safety.level,
                            ai_called=not state.deterministic, stage_pre_ms=_ms(started))
     except Exception:  # noqa: BLE001 - telemetry never interrupts a reply
         pass
     return state
 
 
-def _context_stage(user_id: str, user_message: str) -> tuple[str, float]:
-    """The person's own context as prompt text (profile, memory, recent events, trends, patterns in their logs)."""
+def _context_stage(user_id: str, user_message: str, first_message: bool = False) -> tuple[list[tuple[str, str, int]], float]:
+    """The person's own context as prompt blocks ``(name, text, priority)``: profile and memory, what Bubbles has learned about how they like to
+    talk, open threads at the start of a conversation, their newest tracker values, trends and patterns. ``chat_pipeline.fit_blocks`` keeps the
+    ones that fit the prompt budget, dropping the highest priority number first."""
     t0 = perf_counter()
+    parts: list[tuple[str, str, int]] = []
     user_context = build_user_context(user_id=user_id, query=user_message)
-    memory_context = format_user_context(user_context)
+    parts.append(("personal", format_user_context(user_context), 2))
+    parts.append(("person_model", person_model.prompt_block(supabase, user_id), 4))   # never raises
+    if first_message:
+        parts.append(("open_threads", open_threads.prompt_block(supabase, user_id), 5))   # never raises; only when a conversation starts
     from latest_values_block import latest_values_block
-    memory_context += latest_values_block(supabase, user_id)   # the trackers' own newest entries, so a value saved anywhere is what Companion says
+    parts.append(("values", latest_values_block(supabase, user_id), 7))   # the trackers' own newest entries, so a value saved anywhere is what Companion says
 
     # Concrete metrics from stored events (best effort)
     try:
         recent_events = user_context.get("recent_events", [])
         health_state = build_health_state(recent_events, days=14)
         if health_state.get("baseline") or health_state.get("deviations"):
-            health_metrics = "\n\nRECENT HEALTH METRICS:\n"
+            health_metrics = "RECENT HEALTH METRICS:\n"
             if health_state.get("baseline"):
                 health_metrics += "Baseline (past 14 days):\n"
                 for metric, value in health_state["baseline"].items():
@@ -860,23 +887,28 @@ def _context_stage(user_id: str, user_message: str) -> tuple[str, float]:
                 health_metrics += "\nCurrent trends (last 14 days vs baseline):\n"
                 for metric, data in health_state["deviations"].items():
                     health_metrics += f"- {metric}: {data.get('current')} (baseline: {data.get('baseline')}, change: {data.get('percent')}%)\n"
-            memory_context += health_metrics
+            parts.append(("metrics", health_metrics, 8))
     except Exception as error:
         from logging_util import logger
         logger.warning(component="CHAT", operation="health_state_retrieval", error=error, user_id=user_id,
                        fallback_action="continuing_without_metrics")
 
     try:  # the user's own log patterns (cached; never waits on a computation)
-        memory_context += association_loader.chat_block(supabase, user_id)
+        parts.append(("associations", association_loader.chat_block(supabase, user_id), 9))
     except Exception as error:  # noqa: BLE001
         from logging_util import logger
         logger.warning(component="CHAT", operation="association_block", error=error, fallback_action="continuing_without_patterns")
     try:  # at most one soft "might be worth a blood test" note (cached; never waits; needs the AI-processing yes)
-        memory_context += deficiency_api.chat_block(supabase, user_id)
+        parts.append(("nutrient_hint", deficiency_api.chat_block(supabase, user_id), 10))
     except Exception as error:  # noqa: BLE001
         from logging_util import logger
         logger.warning(component="CHAT", operation="nutrient_hint", error=error, fallback_action="continuing_without_hint")
-    return memory_context, _ms(t0)
+    return [(name, text.strip(), prio) for name, text, prio in parts if text and text.strip()], _ms(t0)
+
+
+def _people_stage(user_id: str) -> dict[str, str]:
+    """{name: "[LABEL]"} for the people this person has told Bubbles about, so their names are not sent to the outside AI. Never raises."""
+    return name_privacy.people_map(supabase, user_id)
 
 
 def _evidence_stage(user_id: str, query: str) -> tuple[list[dict], float]:
@@ -889,6 +921,10 @@ def _evidence_stage(user_id: str, query: str) -> tuple[list[dict], float]:
                      context={"query_length": len(query)}, fallback_action="using_empty_evidence")
         results = []
     return results, _ms(t0)
+
+
+_MEMORY_ORDER = ("personal", "person_model", "open_threads", "values", "metrics", "associations", "nutrient_hint")
+_LEARNING_ROUTES = frozenset({"ai", "orbit", "small_talk", "daily_log", "recall", "remembered"})
 
 
 def _after_turn(conversation_id: str, user_id: str, route: str, state_name: str, event_count: int, timings: dict) -> None:
@@ -940,15 +976,16 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         # people's symptoms).
         # Hurtful or controlling treatment at home (Safe Harbor tier 1) and other people's stories are not health topics: nothing is looked up for them.
         query = "" if (turn.harbor.tier >= 1 or turn.harbor.about_other) else evidence_query(turn.facts, user_message)
-        ctx_job = submit(_context_stage, user_id, user_message)
+        ctx_job = submit(_context_stage, user_id, user_message, not state.history)
+        people_job = submit(_people_stage, user_id)
         rag_job = submit(_evidence_stage, user_id, query) if query else None
         style_job = submit_io(settled, chat_cache.style_block, supabase, user_id)
         try:
-            memory_context, stage["ctx"] = ctx_job.result(timeout=CONTEXT_BUDGET_S)
+            context_blocks, stage["ctx"] = ctx_job.result(timeout=CONTEXT_BUDGET_S)
         except Exception as error:  # noqa: BLE001 - never a silent loss: the reply still goes out and the miss is logged
             from logging_util import logger
             logger.warning(component="CHAT", operation="context_stage", error=error, user_id=user_id, fallback_action="replying_without_personal_context")
-            memory_context, stage["ctx"] = "", CONTEXT_BUDGET_S * 1000
+            context_blocks, stage["ctx"] = [], CONTEXT_BUDGET_S * 1000
         if rag_job is not None:
             try:
                 evidence_results, stage["rag"] = rag_job.result(timeout=RAG_BUDGET_S)
@@ -968,22 +1005,49 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             logger.warning(component="CHAT", operation="evidence_package", error=error, fallback_action="no_audit_trail")
 
         recent_block = conversation_block(state.history)
-        conversation_context = "\n\n".join(filter(None, [
-            ("RECENT CONVERSATION (oldest first):\n" + recent_block) if recent_block else "",
-            state_block(turn.facts, turn.history_facts),
-        ]))
         style = style_job.result()[0] or ""
+        mind, harbor_block = mind_support_block(turn), safe_harbor.model_block(turn.harbor)
+        # Everything the prompt adds is kept under one budget (chat_pipeline.PROMPT_BUDGET): the safety lines and the setup voice never go; the
+        # lowest-priority context (evidence, patterns, trends, newest values, then open threads and the person model) goes first, and the
+        # recent conversation is trimmed oldest first, never below four lines.
+        kept = fit_blocks([
+            ("safety", safety_instruction(safety), 0), ("mind", mind, 0), ("harbor", harbor_block, 0), ("setup_style", style, 1),
+            ("state", state_block(turn.facts, turn.history_facts), 2),
+            (RECENT, ("RECENT CONVERSATION (oldest first):\n" + recent_block) if recent_block else "", 3),
+            *context_blocks,
+            *(orbit_blocks(turn, state.history) if turn.route == "orbit" else []),
+            ("evidence", evidence_context, 11),
+        ])
+        try:
+            state.people = people_job.result(timeout=CONTEXT_BUDGET_S) or {}
+        except Exception:  # noqa: BLE001
+            state.people = {}
+        memory_context = "\n\n".join(kept[n] for n in _MEMORY_ORDER if n in kept)
+        mask = lambda text: name_privacy.mask(text, state.people)   # noqa: E731 - the outside AI sees [PARTNER], the person reads Ashmit
+        conversation_context = "\n\n".join(kept[n] for n in (RECENT, "state") if n in kept)
+        evidence_context = kept.get("evidence", "")
+        pattern_cards = kept.get("pattern_cards", "")
+        if "open_threads" in kept:
+            defer(open_threads.mark_shown, supabase, user_id)   # asked about once; not again for a day
         # What the person said about themselves is saved while the model thinks (the model only PROPOSES more events afterwards).
         rule_job = submit_io(settled, persist_chat_events, supabase, user_id, user_message_id, state.rule_events, persist=persist_events, fresh=state.fresh) if state.rule_events else None
         t0 = perf_counter()
+        sent_memory, sent_conversation = mask(memory_context), mask(conversation_context)
         ai_result = ask_bubbles(
-            user_message,
-            memory_context=memory_context,
+            mask(user_message),
+            memory_context=sent_memory,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if style else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else "")
-            + (("\n\n" + harbor_block) if (harbor_block := safe_harbor.model_block(turn.harbor)) else ""),
-            conversation_context=conversation_context,
+            safety_context="\n\n".join(filter(None, [kept.get("safety", ""), response_style_instruction(turn.country), kept.get("setup_style", ""), kept.get("mind", ""), kept.get("harbor", ""),
+                                                       kept.get("orbit", ""), pattern_cards])),
+            conversation_context=sent_conversation,
         )
+        if state.people and not is_degraded(ai_result):   # put the names back before anything is checked, saved or shown
+            ai_result.response = name_privacy.unmask(ai_result.response, state.people)
+            for event in ai_result.health_events:
+                for field_name in ("name", "symptom", "details", "notes", "evidence_span"):
+                    value = getattr(event.extracted_data, field_name, None)
+                    if isinstance(value, str):
+                        setattr(event.extracted_data, field_name, name_privacy.unmask(value, state.people))
         stage["ai"] = _ms(t0)
         timings["ai_ms"] = stage["ai"]
         post_started = perf_counter()
@@ -1005,7 +1069,10 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             response_text = strip_attribution(normalize_response(ai_result.response))
             # Output guard: a medicine amount or schedule never reaches the user, whatever the model wrote (the no-dosing rule).
             response_text, _dose_removed = scrub_doses(response_text)
-            _issues = lint(response_text, user_message=user_message, has_evidence=bool(evidence_results)) + (["dose_removed"] if _dose_removed else [])
+            _orbit_removed: list[str] = []
+            if turn.route == "orbit":   # verdicts about people or the relationship, stereotypes and unasked astrology never reach the person here
+                response_text, _orbit_removed = enforce_orbit(response_text, user_message)
+            _issues = lint(response_text, user_message=user_message, has_evidence=bool(evidence_results), grounding=memory_context + "\n" + conversation_context + "\n" + evidence_context) + (["dose_removed"] if _dose_removed else []) + [f"orbit_removed_{c}" for c in _orbit_removed]
             if _issues:
                 from logging_util import logger
                 logger.warning(component="CHAT", operation="reply_lint", error=None, user_id=user_id, context={"issues": _issues},
@@ -1032,6 +1099,8 @@ def _chat_respond(state: _ChatState, defer) -> dict:
                                evidence_ids=evidence_ids, conflicts=turn.conflicts, trace=semantic_trace(turn), package=package_audit_meta)
     if state.consent_required:
         metadata["consent_required"] = True   # so the card survives a replay and a reload
+    suggestions = suggestions_for(turn, consent_required=state.consent_required)
+    metadata["suggestions"] = suggestions
     # Safe Harbor: the resources and choices travel with the reply (and are stored with it, so a reload and a retry show the same); a crisis reply that
     # was followed by the numbers for being unsafe at home carries them too. Stored harbor replies are also what keeps these turns out of the model's context.
     harbor_shown = None
@@ -1062,6 +1131,10 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         }
         safety_dict = safety_payload(safety, correction=correction_payload if correction_payload["retracted_message_id"] else None)
     # A log line tied to a user id must not say that someone told Bubbles they were hurt: Safe Harbor turns are logged as plain "deterministic" ones.
+    if turn.harbor.tier == 0 and turn.facts:
+        defer(open_threads.observe, supabase, user_id, turn.facts, safety.state)   # a strong or recurring symptom becomes a thread; "better now" or an urgent turn closes it
+    if turn.route in _LEARNING_ROUTES and turn.harbor.tier == 0 and safety.state == "NO_REDFLAG":
+        defer(person_model.observe_turn, supabase, user_id, user_message, request_tz() or 0)   # how and when they write, never the words; not for safety turns
     defer(_after_turn, state.conversation_id, user_id, "deterministic" if (harbor_shown or turn.harbor.deterministic) else turn.route, safety.state, len(persisted), timings)
     try:
         ops_telemetry.note(**{f"stage_{name}_ms": ms for name, ms in stage.items()}, stage_post_ms=_ms(post_started))
@@ -1080,6 +1153,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         "message_id": bubbles_message_id,
         "user_message_id": user_message_id,
         "consent_required": state.consent_required,
+        "suggestions": suggestions,
         "consent_ask": consent_ask["ask"] if state.consent_required else False,
         "conversation_id": state.conversation_id,
         "user_id": state.user.id,

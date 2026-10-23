@@ -55,7 +55,7 @@ def test_the_old_conflicting_voice_lines_are_gone(monkeypatch):
 
 def test_the_style_block_forbids_authority_names_and_scary_leads_and_keeps_the_warning(monkeypatch):
     style = response_style_instruction()
-    assert len(style.split()) < 450
+    assert len(style.split()) < 540   # 450 before the renovation plan 5.3 voice rules (person model, threads, no stereotypes, no verdicts, never invent)
     for must in ("NO AUTHORITY NAMES", "SOFT, NOT SCARY", "WARN WITHOUT ALARM", "never diagnose", "never give a dose", "112", "At most one question"):
         assert must in style, must
 

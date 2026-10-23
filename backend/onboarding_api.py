@@ -22,6 +22,7 @@ import chat_cache
 import ops_telemetry
 import consent_ledger
 import doc_store
+import person_model
 import onboarding as ob
 from calc_core import local_today
 from health_logs import DOMAINS, list_domain, save_domain
@@ -46,6 +47,16 @@ def style_block_for(db: Any, uid: str) -> str:
         return ob.style_block(doc_store.get(db, uid, EXP_KIND, EXP_KEY))
     except Exception:  # noqa: BLE001
         return ""
+
+
+def identity_for(db: Any, uid: str) -> dict[str, Any]:
+    """{country, gender} from the saved setup, or {} (not answered yet, or any read problem). ``None`` country means India: see locale_support."""
+    try:
+        doc = doc_store.get(db, uid, EXP_KIND, EXP_KEY)
+        ident = doc.get("identity") if isinstance(doc, dict) else None
+        return {k: ident.get(k) for k in ("country", "gender")} if isinstance(ident, dict) else {}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
@@ -276,6 +287,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         try:
             doc_store.put(db, uid, EXP_KIND, EXP_KEY, {**exp, "built_at": now})
             chat_cache.forget_user(uid)   # the next reply reads the new tone settings and profile
+            person_model.observe_setup(db, uid, answers)   # what they chose becomes evidence on "How Bubbles understands you" (never raises)
             doc_store.put(db, uid, KIND, KEY, {**s["doc"], "answers": answers, "completed_at": now, "bank_version": ob.BANK_VERSION, "step": len(ob.STEPS)})
             ops_telemetry.funnel("completed")
         except Exception as exc:  # noqa: BLE001

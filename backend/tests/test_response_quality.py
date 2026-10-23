@@ -95,3 +95,27 @@ def test_strip_attribution_rewrites_only_a_leading_attribution():
 def test_safety_copy_is_untouched_by_the_guard():
     from safety_engine import CRISIS_LINES
     assert strip_attribution(CRISIS_LINES) == CRISIS_LINES
+
+
+# ---- renovation plan section 12: verdicts, stereotypes, astrology and invented numbers (logged first, enforced once the sets stay clean) ----
+
+def test_the_new_reply_rules_score_at_least_98_percent_on_the_eval_set():
+    import json
+    from pathlib import Path
+    from response_quality import lint
+    new = {"person_verdict", "relationship_verdict", "stereotype", "astrology_unasked", "ungrounded_number"}
+    rows = [json.loads(l) for l in (Path(__file__).parent / "eval" / "lint_cases.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    wrong = []
+    for r in rows:
+        got = sorted(set(lint(r["text"], user_message=r.get("user", ""), grounding=r.get("grounding"))) & new)
+        if got != sorted(r["issues"]):
+            wrong.append((r["text"], r["issues"], got))
+    assert len(rows) >= 55
+    assert (len(rows) - len(wrong)) / len(rows) >= 0.98, wrong
+
+
+def test_numbers_are_only_checked_when_a_grounding_text_is_passed():
+    from response_quality import lint
+    assert "ungrounded_number" not in lint("You slept 4 hours.")
+    assert "ungrounded_number" in lint("You slept 4 hours.", grounding="")
+    assert "ungrounded_number" not in lint("You slept 4 hours.", grounding="sleep 4 hours", user_message="")

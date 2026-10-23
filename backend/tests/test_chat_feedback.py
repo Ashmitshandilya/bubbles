@@ -79,9 +79,13 @@ def test_bad_requests_are_422_with_a_plain_message(env, body):
 def test_stores_only_the_fixed_fields(env):
     client, db = env
     client.post("/chat/feedback", json={"message_id": REPLY, "rating": "down", "reason": "too_long", "note": "secret words"}, headers=H1)
-    stored = [row for row in db.tables["health_events"] if row.get("event_type") == "bubbles_doc"]
+    docs = [row for row in db.tables["health_events"] if row.get("event_type") == "bubbles_doc"]
+    stored = [row for row in docs if row["data"]["kind"] == "chat_feedback"]
     assert len(stored) == 1 and set(stored[0]["data"]["payload"]) == {"rating", "reason", "at"}
     assert "hello" not in str(stored[0]) and "secret" not in str(stored[0])
+    # the reason also becomes one fixed-template piece of evidence in the person model, and nothing else is kept
+    assert {row["data"]["kind"] for row in docs} == {"chat_feedback", "person_model"}
+    assert "hello" not in str(docs) and "secret" not in str(docs)
 
 
 def test_duplicate_and_junk_ids_in_the_read_are_ignored(env):

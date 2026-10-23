@@ -38,7 +38,13 @@ CATEGORIES = {
     "cycle": {"label": "Cycle estimate", "description": "When your next period may start (a range), the phase you may be in, and gentle tips for them. A prediction, never a fact."},
     "sleep": {"label": "Sleep this week", "description": "Your average sleep over the last 7 nights. Never notes or times."},
     "support_note": {"label": "A note from you", "description": "A short message in your own words, for example how they can support you."},
+    "orbit_rituals": {"label": "Orbit: shared question and weekly check-in", "description": "Lets the person you are connected with see your answer to the daily question and your weekly check-in, "
+                      "but only once you have both answered. Nothing else from Orbit is ever shown."},
+    "orbit_weather": {"label": "Orbit: a gentle nudge for them", "description": "Lets Bubbles show the person you are connected with one kind, general line now and then, such as "
+                      "\"Ask how their day really was\". It never names a feeling or anything you logged, and some lines appear whatever your week was like."},
 }
+#: categories that live in Orbit (orbit.py), have no section in the "Shared with you" view and are never shown through a quick link
+ORBIT_CATEGORIES = ("orbit_rituals", "orbit_weather")
 EXPIRY_CHOICES = (7, 30, 90)
 NOTE_MAX, NAME_MAX = 500, 40
 INVITE_HOURS = 48
@@ -150,6 +156,8 @@ def save_settings(db: Any, uid: str, body: dict) -> dict:
     if not isinstance(cats, list) or not cats or len(cats) > len(CATEGORIES) or any(c not in CATEGORIES for c in cats):
         raise _bad("Choose at least one thing to share, from the list shown.")
     cats = [c for c in CATEGORIES if c in cats]
+    if any(c in ORBIT_CATEGORIES for c in cats) and not consent.is_granted(db, uid, "orbit_partner_signals"):
+        raise _bad("Turn on Orbit partner signals in Privacy choices first.", 403)
     note = body.get("note", "")
     if not isinstance(note, str) or len(note) > NOTE_MAX:
         raise _bad(f"Your note can be up to {NOTE_MAX} characters.")
@@ -381,6 +389,8 @@ def _section_sleep(db: Any, uid: str) -> dict:
 def _sections(db: Any, uid: str, cfg: dict) -> list[dict]:
     out = []
     for cat in cfg.get("categories", []):
+        if cat in ORBIT_CATEGORIES:
+            continue
         sec = _section_cycle(db, uid) if cat == "cycle" else _section_sleep(db, uid) if cat == "sleep" else (
             {"key": "support_note", "title": "A note from them", "text": cfg["note"], "detail": None} if cfg.get("note") else None)
         if sec:
@@ -409,6 +419,32 @@ def public(db: Any, token: str) -> dict:
     except Exception:  # noqa: BLE001
         pass
     return {"status": "success", "label": "Shared with you", "expires_at": link["expires_at"], "sections": sections, "notice": NOTICE}
+
+
+# ---- Orbit: who is paired with whom, and what each side allows ---------------------------------------------------------------
+
+def paired_with(db: Any, uid: str) -> dict | None:
+    """The person ``uid`` is connected with, or None: ``{uid, name}``. Either side may have made the invite; the connection must still be there on both sides,
+    and it is checked on every call, so leaving or disconnecting ends everything at the next read."""
+    cfg = _load(db, uid)
+    conn = cfg.get("connection")
+    if conn and doc_store.get(db, conn["uid"], WITH_KIND, _owner_id(uid)):
+        return {"uid": str(conn["uid"]), "name": conn.get("name") or "Your partner"}
+    for d in doc_store.list_docs(db, uid, WITH_KIND, 5):
+        owner = str((d.get("payload") or {}).get("owner_uid") or "")
+        owner_cfg = _load(db, owner) if owner else {}
+        if owner and str((owner_cfg.get("connection") or {}).get("uid")) == str(uid):
+            return {"uid": owner, "name": owner_cfg.get("owner_name") or "Your partner"}
+    return None
+
+
+def shares(db: Any, uid: str, category: str) -> bool:
+    """True only when ``uid`` has said yes to partner sharing and to Orbit partner signals and has switched this category on."""
+    try:
+        return (category in (_load(db, uid).get("categories") or []) and consent.is_granted(db, uid, "partner_sharing")
+                and consent.is_granted(db, uid, "orbit_partner_signals"))
+    except Exception:  # noqa: BLE001 - if it cannot be read, nothing is shared
+        return False
 
 
 # ---- HTTP ----------------------------------------------------------------------------------------------------------------

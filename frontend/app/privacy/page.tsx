@@ -47,8 +47,9 @@ export default function PrivacyPage() {
         <ul>
           <li>
             <strong>Answer open questions with an outside AI.</strong> Your message, your recent messages in that chat and a short summary of your profile and notes (such as your date of birth,
-            gender and recent entries) go to an AI provider from an approved list, on its free tier, and nothing more than is needed. Each provider handles data under its own terms. Turn it
-            off and nothing more is sent. Messages that sound like an emergency, logging, patterns and fitness questions are handled by Bubbles itself and never need this.
+            gender and recent entries) go to an AI provider from an approved list, on its free tier, and nothing more than is needed. Free tiers may use what they receive to improve their services, and their staff may
+            review it, which is why Bubbles replaces the names of the people you have told it about with labels such as &quot;partner&quot; before anything leaves our server, and puts the names back in the answer.
+            Each provider handles data under its own terms. Turn it off and nothing more is sent. Messages that sound like an emergency, logging, patterns and fitness questions are handled by Bubbles itself and never need this.
           </li>
           <li>
             <strong>Save details Bubbles notices in chat.</strong> Bubbles suggests saving them and you confirm or dismiss each one. When it is off, chat still works and anything you log yourself is still saved.
@@ -93,6 +94,40 @@ export default function PrivacyPage() {
         <p>
           Bubbles recognises these messages by their wording, so it can miss some. Other worries about home, such as feeling controlled or afraid, are treated like any other chat: they go to an
           outside AI only if you turned that choice on.
+        </p>
+      </section>
+
+      <section>
+        <h2>How Bubbles learns how you like to be talked to</h2>
+        <p>
+          Bubbles keeps a short list of how you like to be spoken to: for example short replies, a gentle tone, the language you write in and when you are usually around. It comes from your setup answers, from the
+          reasons you give when you mark a reply unhelpful, and, only if you allowed Bubbles to save details noticed in chat, from the language and time of day of your messages and a few phrases about how you cope with
+          stress. With that same choice on, Bubbles may remember for up to a week that you mentioned a strong or recurring symptom, so it can ask how you are once. It does not store your messages.
+        </p>
+        <p>
+          You can see every item at Me, How Bubbles understands you, confirm it, remove it or clear all of it. It is only used to choose words, and it is deleted with your data.
+        </p>
+      </section>
+
+      <section>
+        <h2>Country, gender and relationship questions</h2>
+        <p>
+          Setup can ask which country you live in, your state in India, how you describe yourself, whether you are in a relationship and who you live with. You can skip any of them. Your country picks the emergency numbers
+          Bubbles shows (if you skip it, Bubbles shows India&apos;s numbers). How you describe yourself only helps choose which support lines fit and how Bubbles speaks to you. None of it changes a safety rule.
+        </p>
+      </section>
+
+      <section>
+        <h2>Orbit: your closest relationship</h2>
+        <p>
+          What you tell Bubbles in Orbit, such as drafts, notes, repair messages and what you write in Heart-to-heart, is private to you. A connected partner never sees it. Only two things can ever reach them, and only
+          if you switch each one on in Privacy choices: your answer to the shared daily question and your weekly check-in (shown to both of you only once you have both answered), and now and then one kind, general line
+          such as &quot;Ask how their day really was&quot;. Those lines never say what you logged or how you feel, and some of them appear whatever your week was like. Either of you can stop at any time, and leaving
+          the connection ends it at once.
+        </p>
+        <p>
+          When you ask Bubbles to help you reply to someone, the message you paste goes to an outside AI only if you allowed that choice, with the names of people you have told Bubbles about replaced by labels. Pasted text
+          that describes being hurt at home or a crisis is answered by Bubbles itself and is never sent to an outside AI or saved.
         </p>
       </section>
 

@@ -9,7 +9,7 @@ import { changeBody, needsDecision, readOverview, readPurpose, type ConsentPurpo
 import { ChoicesStep, OFFERED_PURPOSES } from "./ChoicesStep";
 import { Creating } from "./Creating";
 import {
-  advancesOnPick, ageOn, buildScreens, isAnswered, isRequired, missingRequired, pendingPatch, pick, picked, progressLabel, resumeIndex, screenQuestions,
+  advancesOnPick, ageOn, buildScreens, countryFromTimeZone, isAnswered, isRequired, missingRequired, pendingPatch, pick, picked, progressLabel, resumeIndex, screenQuestions,
   titleFor, visibleOptions, type Answers, type Question, type Screen,
 } from "./flow";
 
@@ -84,6 +84,14 @@ function browserLanguage(): string {
   return typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("hi") ? "hindi" : "english";
 }
 
+function browserCountry(): string | undefined {
+  try {
+    return countryFromTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  } catch {
+    return undefined;
+  }
+}
+
 export function OnboardingClient() {
   const router = useRouter();
   const { loading, session, user, signOut } = useAuth();
@@ -140,7 +148,8 @@ export function OnboardingClient() {
       const loaded: Bank = { questions: bankJson.questions, screens: bankJson.screens ?? {}, titlesHi: bankJson.titles_hi ?? {} };
       setBank(loaded);
       const server: Answers = state.answers ?? {};
-      const start: Answers = { ...server, ...(server.language ? {} : { language: browserLanguage() }) };
+      const country = server.country ? undefined : browserCountry();
+      const start: Answers = { ...server, ...(server.language ? {} : { language: browserLanguage() }), ...(country ? { country } : {}) };
       answersRef.current = start;
       setAnswersState(start);
       savedRef.current = Object.fromEntries(Object.entries(server).filter(([k]) => !(state.prefilled ?? []).includes(k)));

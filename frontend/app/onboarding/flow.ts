@@ -211,4 +211,9 @@ export function titleFor(q: Question, language: unknown, hinglish: Record<string
   return language === "hinglish" || language === "hindi" ? hinglish[q.id] ?? q.title : q.title;
 }
 
+/** The country answer to start from: India for an Asia/Kolkata time zone (checked on the phone or browser only, nothing is looked up), otherwise none, so the person chooses. */
+export function countryFromTimeZone(timeZone: string | undefined): string | undefined {
+  return timeZone === "Asia/Kolkata" || timeZone === "Asia/Calcutta" ? "in" : undefined;
+}
+
 export const dayMs = MS_PER_DAY;

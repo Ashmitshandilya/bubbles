@@ -20,6 +20,7 @@ const ICON_PATHS: Record<string, string> = {
   health: "M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21.5l8.8-8.8a5 5 0 0 0 0-7.1z",
   activity: "M3 12h4l3-8 4 16 3-8h4",
   companion: "M20 15a3 3 0 0 1-3 3H8l-4 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z",
+  orbit: "M8 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17.5 20a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM10.8 14.2l3.6 1.6",
   people: "M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 20v-1.5a4 4 0 0 0-3-3.9M15.5 4.2a3.5 3.5 0 0 1 0 6.6",
   care: "M9 3h6v4h4v6h-4v4H9v-4H5V7h4z",
   cycle: "M20 11a8 8 0 1 0-1.5 5.5M20 4v7h-7",
@@ -82,9 +83,16 @@ type Section = {
  * Seven places, not twenty-nine links. Each section groups the pages that belong together and shows its sibling pages as a
  * tab bar at the top of the page (SectionTabs), so every page is still one tap away and every URL is unchanged.
  */
+/** The one place the relationship space is named (plan 7.1): renaming it is this line. */
+export const ORBIT_LABEL = "Orbit";
+
 export const SECTIONS: readonly Section[] = [
   { id: "today", label: "Today", icon: "dashboard", href: "/dashboard", match: ["/dashboard"] },
   { id: "talk", label: "Talk", icon: "companion", href: "/companion", match: ["/companion"] },
+  {
+    id: "orbit", label: ORBIT_LABEL, icon: "orbit", href: "/orbit", match: ["/orbit", "/partner"],
+    tabs: [{ label: ORBIT_LABEL, href: "/orbit", exact: true }, { label: "Partner sharing", href: "/partner" }],
+  },
   {
     id: "patterns", label: "Patterns", icon: "insights", href: "/insights", match: ["/insights", "/health", "/body"],
     tabs: [{ label: "Patterns", href: "/insights" }, { label: "My health", href: "/health" }, { label: "Body map", href: "/body" }],
@@ -104,8 +112,7 @@ export const SECTIONS: readonly Section[] = [
   },
   { id: "community", label: "Community", icon: "people", href: "/community", match: ["/community"] },
   {
-    id: "cycle", label: "Cycle", icon: "cycle", href: "/cycle", match: ["/cycle", "/partner"],
-    tabs: [{ label: "Cycle", href: "/cycle" }, { label: "Partner sharing", href: "/partner" }],
+    id: "cycle", label: "Cycle", icon: "cycle", href: "/cycle", match: ["/cycle"],
   },
   {
     id: "fitness", label: "Fitness", icon: "fitness", href: "/fitness", match: ["/fitness"],
