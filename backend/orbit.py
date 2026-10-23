@@ -467,6 +467,10 @@ def repair(db: Any, uid: str, body: dict) -> dict:
     blocked = screen(db, uid, *parts.values())
     if blocked:
         return blocked
+    try:   # a bare date marker (no words): lets the association engine compare tension days with sleep, for this person only
+        doc_store.put(db, uid, "orbit_tension", local_today().isoformat(), {"marked": True})
+    except Exception:  # noqa: BLE001 - never stops the repair kit
+        pass
     language = _lang(" ".join(parts.values()))
     template = _REPAIR_TEMPLATE[language].format(own=parts["own"].rstrip(".") + ".", felt=parts["felt"].rstrip("."), needed=parts["needed"].rstrip("."))
     draft, source = template, "template"

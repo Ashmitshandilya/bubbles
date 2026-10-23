@@ -60,6 +60,8 @@ const TOPIC: Record<string, string> = {
   resting_hr: "heart rate",
   luteal: "cycle phase",
   screen_hours: "screen time",
+  orbit_tension: "tension at home",
+  orbit_connection: "connection moments",
   eye_comfort: "eye comfort",
 };
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import threading
 import time
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import association_insights as ai
@@ -51,6 +51,32 @@ def _daily(db: Any, uid: str, slug: str, days: int, off: int, field: str, how: s
     return {d: round(agg(xs), 2) for d, xs in per.items()}
 
 
+def _orbit_series(db: Any, uid: str, today: date, days: int) -> dict[str, dict[date, float | None]]:
+    """Two 0/1 series from Orbit, covering the days since the person first used it (before that nothing is known, so nothing is compared).
+    Only dates are read here, never what anyone wrote."""
+    import doc_store
+    def days_of(kind: str, field: str | None = None) -> set[date]:
+        out: set[date] = set()
+        for d in doc_store.list_docs(db, uid, kind, 400):
+            try:
+                out.add(date.fromisoformat(str(d["key"])[:10] if kind != "orbit_note" else str((d["payload"] or {}).get(field or "created_at"))[:10]))
+            except (ValueError, KeyError, TypeError):
+                continue
+        return out
+    try:
+        tension = days_of("orbit_tension")
+        connection = days_of("orbit_question")
+        connection |= {d for d in days_of("orbit_note", "created_at")}
+    except Exception:  # noqa: BLE001 - Orbit unreadable: no Orbit series, the other links still work
+        return {}
+    seen = tension | connection
+    if not seen:
+        return {}
+    start = max(min(seen), today - timedelta(days=days))
+    span = [start + timedelta(days=i) for i in range((today - start).days + 1)]
+    return {"orbit_tension": {d: 1.0 if d in tension else 0.0 for d in span}, "orbit_connection": {d: 1.0 if d in connection else 0.0 for d in span}}
+
+
 def load_series(db: Any, uid: str, days: int = 90, tz_offset_minutes: int | None = None) -> dict[str, dict[date, float | None]]:
     off = W.tz_offset(tz_offset_minutes) if tz_offset_minutes is not None else (W.request_tz() or 0)
     today = W.local_now(datetime.now(timezone.utc), off).date()
@@ -77,6 +103,7 @@ def load_series(db: Any, uid: str, days: int = 90, tz_offset_minutes: int | None
         out["luteal"] = {date.fromisoformat(d[:10]): 1.0 if str(p).lower() == "luteal" else 0.0 for d, p in phases.items()}
     except Exception:  # noqa: BLE001
         pass
+    out.update(_orbit_series(db, uid, today, days))
     return {k: v for k, v in out.items() if v}
 
 

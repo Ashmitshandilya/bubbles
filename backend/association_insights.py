@@ -85,11 +85,14 @@ PAIRS: list[tuple[str, str, int, str, str, str]] = [
     ("screen_hours", "sleep_quality", 1, "After days you logged more screen time, your next sleep rating tended to be better", "After days you logged more screen time, your next sleep rating tended to be worse", "Screen time is only what you logged in the Eyes tracker."),
     ("luteal", "mood", 0, "In the luteal phase of your cycle, your logged mood tended to be higher", "In the luteal phase of your cycle, your logged mood tended to be lower", "Cycle phase is an estimate, not a measurement."),
     ("luteal", "sleep_quality", 0, "In the luteal phase of your cycle, your sleep rating tended to be better", "In the luteal phase of your cycle, your sleep rating tended to be worse", "Cycle phase is an estimate, not a measurement."),
+    ("orbit_tension", "sleep_hours", 1, "On days with tension at home, your sleep that night tended to be longer in your logs", "On days with tension at home, your sleep that night was shorter in your logs", "Tension days are the days you used After a fight in Orbit; days without it are counted as calm, which may not always be true."),
+    ("orbit_connection", "mood", 1, "After days with a connection moment, your logged mood tended to be higher", "After days with a connection moment, your logged mood tended to be lower", "Connection moments are the days you answered Orbit's daily question or wrote a gratitude note."),
+    ("luteal", "orbit_tension", 0, "In the luteal phase of your cycle, tension days were more common in your logs", "In the luteal phase of your cycle, tension days were less common in your logs", "Cycle phase is an estimate, not a measurement. This is shown only to you."),
     ("luteal", "symptom_severity", 0, "In the luteal phase of your cycle, your logged symptoms tended to be more severe", "In the luteal phase of your cycle, your logged symptoms tended to be milder", "Cycle phase is an estimate, not a measurement. Only days you logged a symptom are compared."),
 ]
 TOPIC = {"sleep_hours": "sleep", "sleep_quality": "sleep ratings", "mood": "mood", "activity_minutes": "activity", "hydration_ml": "drinks",
          "symptom_severity": "symptoms", "calories": "meals", "resting_hr": "heart rate", "luteal": "cycle phase",
-         "screen_hours": "screen time", "eye_comfort": "eye comfort"}
+         "screen_hours": "screen time", "eye_comfort": "eye comfort", "orbit_tension": "tension at home", "orbit_connection": "connection moments"}
 _LOG_MORE = "Log {x} and {y} on the same days to check this link (you have {n} of the {need} days needed)."
 
 
