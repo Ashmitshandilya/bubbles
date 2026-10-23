@@ -4,7 +4,6 @@ app/admin/panels-moderation.tsx tile-grid  legacy before the Pearl restyle (WP3.
 app/admin/panels-overall.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
 app/admin/panels.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
 app/care/CareClient.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
-app/dashboard/dashboard/TodaySections.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
 app/fitness/progress/ProgressClient.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
 app/fitness/setup/SetupClient.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)
 app/fitness/transform/TransformDashboard.tsx tile-grid  legacy before the Pearl restyle (WP3.2-3.5 remove it)

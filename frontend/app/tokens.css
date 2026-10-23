@@ -489,3 +489,7 @@
 .pearl-thread-ends i { flex: 1; border-top: 1.5px dotted var(--gold-line); }
 .pearl-thread-text { margin: 8px 0 0; font-family: var(--font-fraunces), Georgia, serif; font-size: 1.125rem; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) { .pearl-bubble svg { transition: none; } }
+.pearl-log { margin-top: 32px; }
+.pearl-log-row { display: flex; gap: 10px; margin-top: 8px; }
+.pearl-log-input { flex: 1 1 auto; min-width: 0; min-height: 48px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--hairline); background: var(--paper-raised); color: var(--ink); font: inherit; }
+.pearl-log-input:focus-visible { outline: 3px solid var(--mind); outline-offset: 1px; }
