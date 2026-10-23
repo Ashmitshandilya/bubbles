@@ -321,6 +321,8 @@ class Api(private val session: Session) {
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))
+    /** Everything Today shows, in one call (the server reads the parts side by side and chooses the lede sentence). */
+    suspend fun today(): TodayBundle = parseToday(getJson("/today?days=14"))
     suspend fun setConsent(purpose: String, granted: Boolean, textHash: String? = null, source: String = "settings") {
         send("PUT", "/consents/$purpose", json.encodeToString(ConsentBody.serializer(), ConsentBody(granted, source, textHash)))
     }

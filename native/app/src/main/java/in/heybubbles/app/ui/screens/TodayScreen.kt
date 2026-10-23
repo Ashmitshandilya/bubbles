@@ -38,7 +38,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import `in`.heybubbles.app.data.Api
 import `in`.heybubbles.app.data.Association
-import `in`.heybubbles.app.data.DailyCompanion
+import `in`.heybubbles.app.data.TodayBundle
 import `in`.heybubbles.app.data.Entry
 import `in`.heybubbles.app.data.Repo
 import `in`.heybubbles.app.data.TrackerSpec
@@ -57,7 +57,7 @@ import java.util.Calendar
 
 data class TodayState(
     val loading: Boolean = true,
-    val daily: DailyCompanion? = null,
+    val today: TodayBundle? = null,
     val patterns: List<Association> = emptyList(),
     val gaps: List<String> = emptyList(),
     val error: String? = null,
@@ -82,17 +82,17 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
         _state.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
             try {
-                // The two reads do not depend on each other, so they go out together.
-                val (daily, assoc) = coroutineScope {
+                // One call carries the lede, the brief, the Orbit question and the profile; the patterns come beside it.
+                val (bundle, assoc) = coroutineScope {
                     // Patterns are a bonus: if they fail, Today still works.
                     val patterns = async { runCatching { api.associations() }.getOrNull() }
-                    api.daily().companion to patterns.await()
+                    api.today() to patterns.await()
                 }
                 _state.update {
                     TodayState(
-                        loading = false, daily = daily,
+                        loading = false, today = bundle,
                         patterns = assoc?.insights.orEmpty().take(3),
-                        gaps = (assoc?.gaps.orEmpty() + daily.dataGaps).mapNotNull { g -> g.readable() }.distinct().take(4),
+                        gaps = (assoc?.gaps.orEmpty().mapNotNull { g -> g.readable() } + bundle.gaps).distinct().take(4),
                     )
                 }
             } catch (e: Exception) {
@@ -157,7 +157,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
                         Pill("Try again", MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.primary, Modifier.padding(top = 12.dp)) { vm.load() }
                     }
                     else -> {
-                        Text(s.daily?.headline.orEmpty().ifBlank { "Your Bubbles daily check-in" }, Modifier.padding(top = 8.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(s.today?.lede ?: "Your Bubbles daily check-in", Modifier.padding(top = 8.dp), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         Pill("Tell Bubbles how you are", MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary, Modifier.padding(top = 16.dp), onClick = onTalk)
                     }
                 }
@@ -197,7 +197,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
         Spacer(Modifier.height(20.dp))
         Eyebrow("Explore", Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         val explore = buildList {
-            add(Triple("orbit", "Orbit" to "Your closest people", Bubbles.TintGrape to Bubbles.GrapeDeep))
+            add(Triple("orbit", "Orbit" to (if (s.today?.orbitQuestionWaiting == true) "Today's question is waiting" else "Your closest people"), Bubbles.TintGrape to Bubbles.GrapeDeep))
             if (sections?.contains("cycle") == true) add(Triple("cycle", "Cycle" to "Where you are in it", Bubbles.TintPink to Bubbles.PinkDeep))
             add(Triple("patterns", "Patterns" to "What your logs say", Bubbles.TintGrape to Bubbles.GrapeDeep))
             if (sections?.contains("care") == true) add(Triple("care", "Care" to "Get ready for a visit", Bubbles.TintMint to Bubbles.MintDeep))
@@ -233,9 +233,9 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
             }
         }
 
-        s.daily?.takeIf { it.safetyNote.isNotBlank() || it.disclaimer.isNotBlank() }?.let {
+        s.today?.takeIf { it.safetyNote.isNotBlank() }?.let {
             Text(
-                listOf(it.safetyNote, it.disclaimer).filter { t -> t.isNotBlank() }.joinToString(" "),
+                it.safetyNote,
                 Modifier.padding(horizontal = 24.dp, vertical = 16.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

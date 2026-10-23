@@ -1,0 +1,53 @@
+{"reply": "You slept about 6 hours last night.", "grounding": "Sleep: 6.2 h last night", "user": "", "expect": "clean"}
+{"reply": "You slept 7 hours.", "grounding": "sleep 7.0 hours", "user": "", "expect": "clean"}
+{"reply": "You logged 7.25 hours of sleep.", "grounding": "slept 7h 15m", "user": "", "expect": "clean"}
+{"reply": "That is 7 hours of sleep, a bit under your usual.", "grounding": "last night 7h 5m; usual 7h 40m", "user": "", "expect": "clean"}
+{"reply": "Your mood was 4/10 on Tuesday.", "grounding": "mood 4/10 (Tue)", "user": "", "expect": "clean"}
+{"reply": "Your resting heart rate was 72 bpm.", "grounding": "heart_rate 72 bpm", "user": "", "expect": "clean"}
+{"reply": "You walked 6420 steps.", "grounding": "Walked 6420 steps", "user": "", "expect": "clean"}
+{"reply": "You had about 2 glasses of water.", "grounding": "water: 2 glasses", "user": "", "expect": "clean"}
+{"reply": "You drank 1.8 litres.", "grounding": "hydration 1.8 L", "user": "", "expect": "clean"}
+{"reply": "Your weight was 62 kg this week.", "grounding": "latest weight 62.0 kg", "user": "", "expect": "clean"}
+{"reply": "Cramps were 4/10.", "grounding": "Cramps 4/10", "user": "", "expect": "clean"}
+{"reply": "You logged sleep on 5 days this week.", "grounding": "sleep logged on 5 days", "user": "", "expect": "clean"}
+{"reply": "About 30 minutes of walking helps.", "grounding": "", "user": "I walk 30 minutes a day", "expect": "clean"}
+{"reply": "In your logs, on 12 days both were logged.", "grounding": "n_days 12 days logged", "user": "", "expect": "clean"}
+{"reply": "Your sleep averaged 6.5 hours over the last 14 days.", "grounding": "average 6.5 hours; window 14 days", "user": "", "expect": "clean"}
+{"reply": "You slept 6 hours, so go gently.", "grounding": "slept 6h", "user": "", "expect": "clean"}
+{"reply": "Last night you had 5.5 hours.", "grounding": "sleep 5.5h", "user": "", "expect": "clean"}
+{"reply": "That was 3 days in a row.", "grounding": "streak 3 days", "user": "", "expect": "clean"}
+{"reply": "Your blood pressure was 128 mmHg systolic.", "grounding": "bp 128 mmHg", "user": "", "expect": "clean"}
+{"reply": "Around 2000 kcal would be a rough guide.", "grounding": "Daily budget about 2000 kcal", "user": "", "expect": "clean"}
+{"reply": "You are on day 14 of your cycle.", "grounding": "cycle day 14", "user": "", "expect": "clean"}
+{"reply": "A 10 minute walk is enough.", "grounding": "", "user": "can I just do a 10 minute walk", "expect": "clean"}
+{"reply": "Aim for 8 hours if you can.", "grounding": "", "user": "I only slept 5 hours, should I aim for 8 hours?", "expect": "clean"}
+{"reply": "You have logged 20 minutes of exercise.", "grounding": "Exercise 20 minutes", "user": "", "expect": "clean"}
+{"reply": "Your sleep was 6.8 hours.", "grounding": "sleep 6.8 h", "user": "", "expect": "clean"}
+{"reply": "That is about 7 hours.", "grounding": "sleep 7.2 hours", "user": "", "expect": "clean"}
+{"reply": "Your mood was 6/10.", "grounding": "mood 6/10", "user": "", "expect": "clean"}
+{"reply": "You drank 750 ml.", "grounding": "hydration 750 ml", "user": "", "expect": "clean"}
+{"reply": "Your temperature was 37.2 cm of nothing, no.", "grounding": "37.2", "user": "", "expect": "clean"}
+{"reply": "Just breathe in for 4 minutes.", "grounding": "", "user": "should I breathe for 4 minutes", "expect": "clean"}
+{"reply": "Your weight is 60 kg.", "grounding": "weight 59.8 kg", "user": "", "expect": "clean"}
+{"reply": "It has been 9 days since the last log.", "grounding": "last log 9 days ago", "user": "", "expect": "clean"}
+{"reply": "Logged 3 meals today.", "grounding": "meals 3", "user": "", "expect": "clean"}
+{"reply": "That is 4 hours of screen time.", "grounding": "screen 4.0 h", "user": "", "expect": "clean"}
+{"reply": "You are at 55 kg.", "grounding": "55.0 kg latest", "user": "", "expect": "clean"}
+{"reply": "Eight hours is the usual advice.", "grounding": "", "user": "", "expect": "clean"}
+{"reply": "You walked 10000 steps.", "grounding": "steps 10000", "user": "", "expect": "clean"}
+{"reply": "Your last reading was 98 bpm.", "grounding": "heart rate 98 bpm today", "user": "", "expect": "clean"}
+{"reply": "You slept 5 hours.", "grounding": "slept 5 hours 10 minutes", "user": "", "expect": "clean"}
+{"reply": "You slept 9 hours last night.", "grounding": "Sleep: 6.2 h last night", "user": "", "expect": "flag"}
+{"reply": "Your mood was 8/10 yesterday.", "grounding": "mood 4/10", "user": "", "expect": "flag"}
+{"reply": "Your average heart rate is 64 bpm.", "grounding": "heart_rate 72 bpm", "user": "", "expect": "flag"}
+{"reply": "You drank 3.5 litres.", "grounding": "hydration 1.8 L", "user": "", "expect": "flag"}
+{"reply": "You have lost 4 kg this month.", "grounding": "weight 62 kg", "user": "", "expect": "flag"}
+{"reply": "You slept 6 hours on average, 7 hours at best.", "grounding": "sleep 8h", "user": "", "expect": "flag"}
+{"reply": "You walked 12000 steps.", "grounding": "Walked 6420 steps", "user": "", "expect": "flag"}
+{"reply": "That was 45 minutes of cardio.", "grounding": "Exercise 20 minutes", "user": "", "expect": "flag"}
+{"reply": "Your cycle is 28 days long.", "grounding": "cycle day 14", "user": "", "expect": "flag"}
+{"reply": "You logged 15 days.", "grounding": "sleep logged on 5 days", "user": "", "expect": "flag"}
+{"reply": "Your sleep debt is 11 hours.", "grounding": "slept 6h", "user": "", "expect": "flag"}
+{"reply": "Your blood pressure was 150 mmHg.", "grounding": "bp 128 mmHg", "user": "", "expect": "flag"}
+{"reply": "Your calories were 2400 kcal.", "grounding": "budget 2000 kcal", "user": "", "expect": "flag"}
+{"reply": "You have a 85% chance of better sleep.", "grounding": "", "user": "", "expect": "flag"}
