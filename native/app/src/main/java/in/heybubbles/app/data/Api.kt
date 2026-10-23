@@ -34,7 +34,7 @@ fun Throwable.friendly(): String = when {
 
 @Serializable private data class Credentials(val email: String, val password: String)
 @Serializable private data class RefreshBody(val refresh_token: String)
-@Serializable private data class ChatBody(val message: String, val message_id: String, val conversation_id: String? = null)
+@Serializable private data class ChatBody(val message: String, val message_id: String, val conversation_id: String? = null, val mode: String? = null)
 @Serializable private data class ConsentBody(val granted: Boolean, val source: String = "settings", val text_hash: String? = null)
 @Serializable private data class ChatConsentBody(val ai_chat: Boolean, val source: String = "chat_card")
 
@@ -168,8 +168,9 @@ class Api(private val session: Session) {
     private suspend fun get(path: String): String = withContext(Dispatchers.IO) { call("GET", path, null) }
     private suspend fun send(method: String, path: String, body: String): String = withContext(Dispatchers.IO) { call(method, path, body) }
 
-    suspend fun chat(message: String, messageId: String, conversationId: String?): ChatReply =
-        json.decodeFromString(send("POST", "/chat", json.encodeToString(ChatBody.serializer(), ChatBody(message, messageId, conversationId))))
+    /** [mode] is "orbit" for a Heart-to-heart thread (its own voice and rules on the server); null for ordinary Talk. */
+    suspend fun chat(message: String, messageId: String, conversationId: String?, mode: String? = null): ChatReply =
+        json.decodeFromString(send("POST", "/chat", json.encodeToString(ChatBody.serializer(), ChatBody(message, messageId, conversationId, mode))))
 
     /** GET /health/<slug>?days=N, newest first. */
     suspend fun entries(slug: String, days: Int): List<Entry> {
@@ -320,6 +321,8 @@ class Api(private val session: Session) {
     suspend fun latestChat(): LatestChat = json.decodeFromString(get("/chat/latest?limit=100"))
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))
+    /** Everything Today shows, in one call (the server reads the parts side by side and chooses the lede sentence). */
+    suspend fun today(): TodayBundle = parseToday(getJson("/today?days=14"))
     suspend fun setConsent(purpose: String, granted: Boolean, textHash: String? = null, source: String = "settings") {
         send("PUT", "/consents/$purpose", json.encodeToString(ConsentBody.serializer(), ConsentBody(granted, source, textHash)))
     }

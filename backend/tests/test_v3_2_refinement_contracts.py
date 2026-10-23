@@ -33,6 +33,10 @@ def test_next_actions_are_bounded_and_deterministic():
 
 
 def test_frontend_consumes_adaptive_action_endpoint():
+    # Today reads the brief (state, learning and the adaptive actions) from the one /today call, whose brief part is /intelligence/brief's data.
     page = (ROOT.parent / "frontend/app/dashboard/dashboard/DashboardClient.tsx").read_text(encoding="utf-8")
-    assert "/intelligence/brief" in page
-    assert "Your next step" in (ROOT.parent / "frontend/app/dashboard/dashboard/TodaySections.tsx").read_text(encoding="utf-8")
+    assert "TODAY_PATH" in page and "briefData?.actions" in page
+    assert '"/today' in (ROOT.parent / "frontend/app/dashboard/dashboard/bundle.ts").read_text(encoding="utf-8")
+    assert "WorthALook" in (ROOT.parent / "frontend/app/dashboard/dashboard/TodaySections.tsx").read_text(encoding="utf-8")
+    main = (ROOT / "main.py").read_text(encoding="utf-8")
+    assert 'intelligence_brief(InteractionRequest(days=days), authorization)' in main   # the bundle's brief IS the brief route's answer

@@ -18,6 +18,7 @@ import condition_rules
 import diet_planner
 import doc_store
 import exercise_planner
+import fitness_readiness
 import food_db
 import health_logs
 import hydration_engine
@@ -427,7 +428,32 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
                                "review": plan_engine.review_banner(), "latest_weight_kg": rec["latest_weight_kg"]}
         if t:
             out["budget"] = plan_engine.day_budget(t, eaten["kcal"], burn)
+        out["readiness"] = _readiness(uid, day)
         return out
+
+    def _readiness(uid: str, day: str) -> dict[str, Any]:
+        """Last night's sleep against the person's usual, and recent training minutes, in words. Soreness, period and stress are not
+        fed yet (nothing logs soreness), so those reasons simply never appear. Never raises: a gap is still an answer."""
+        import sleep_engine
+        try:
+            today = date.fromisoformat(day)
+            nights = sleep_engine.nightly(_domain(db, uid, "sleep", 21), {}, today)
+            by_day: dict[str, float] = {}
+            for e in _domain(db, uid, "activity", 4):
+                try:
+                    by_day[str(e.get("date"))[:10]] = by_day.get(str(e.get("date"))[:10], 0.0) + float(e.get("duration") or 0)
+                except (TypeError, ValueError):
+                    continue
+            last = nights[-1] if nights and nights[-1]["date"] == day else None
+            earlier = [n["hours"] for n in nights if not last or n["date"] != last["date"]]
+            days = [(today - timedelta(days=i)).isoformat() for i in (1, 2, 3)]
+            return fitness_readiness.assess(
+                last_night_hours=last["hours"] if last else None,
+                usual_hours=round(sum(earlier) / len(earlier), 1) if len(earlier) >= 3 else None,
+                yesterday_minutes=by_day.get(days[0]) if any(d in by_day for d in days) else None,
+                recent_hard_days=sum(1 for d in days if by_day.get(d, 0) >= 45))
+        except Exception:  # noqa: BLE001 - readiness is an extra; the summary must still load
+            return fitness_readiness.assess()
 
     # ---- foods -------------------------------------------------------------------------------------
     @router.get("/fitness/foods/search")

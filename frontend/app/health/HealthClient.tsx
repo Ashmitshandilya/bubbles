@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
-import { CARD, ErrorCard, HubPage, Icon, Skeleton, TONE, useBubblesQuery, type Query, type Tone } from "../../components/hub/HubKit";
+import { ErrorCard, HubPage, Icon, Skeleton, TONE, useBubblesQuery, type Query, type Tone } from "../../components/hub/HubKit";
 import { readHealthSummary, type HealthSummary } from "../lib/api-adapters";
 import { formatWhen } from "../lib/dates";
 import { OrganTracker } from "./OrganTracker";
@@ -59,12 +59,12 @@ function HealthHub() {
 
       <TrackerGroup id="care-records" title="Care records" items={CARE} />
 
-      <details className="group rounded-[24px] border border-line bg-surface shadow-sm">
-        <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 font-display text-lg font-semibold text-ink [&::-webkit-details-marker]:hidden">
+      <details className="group border-b border-[color:var(--hairline)]">
+        <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 py-3 font-display text-lg font-semibold text-ink [&::-webkit-details-marker]:hidden">
           Body systems
           <span className="transition-transform group-open:rotate-90"><Icon id="arrow" size={18} /></span>
         </summary>
-        <div className="px-3 pb-4 sm:px-4">
+        <div className="pb-4">
           <OrganTracker />
         </div>
       </details>
@@ -75,9 +75,9 @@ function HealthHub() {
 function Overview({ summary, onRetry }: { summary: Query<unknown>; onRetry: () => void }) {
   if (summary.status === "loading") {
     return (
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" role="status" aria-label="Loading your summary">
+      <div className="flex flex-col gap-3" role="status" aria-label="Loading your summary">
         {[0, 1, 2, 3].map((i) => (
-          <Skeleton key={i} className="h-[104px] rounded-3xl" />
+          <Skeleton key={i} className="h-[40px] rounded-2xl" />
         ))}
       </div>
     );
@@ -89,7 +89,7 @@ function Overview({ summary, onRetry }: { summary: Query<unknown>; onRetry: () =
   const data: HealthSummary = readHealthSummary(summary.data);
   if (!data.entries) {
     return (
-      <div className={`${CARD} flex flex-wrap items-center gap-4 p-5`}>
+      <div className="flex flex-wrap items-center gap-4 py-2">
         <BubblesMascot size={56} mood="resting" animated={false} />
         <div className="min-w-0 flex-1">
           <p className="font-display text-h4 text-ink">Nothing logged yet</p>
@@ -106,11 +106,11 @@ function Overview({ summary, onRetry }: { summary: Query<unknown>; onRetry: () =
     { label: "Last logged", value: data.lastUpdate ? formatWhen(data.lastUpdate) : "No date", tone: "sky" },
   ];
   return (
-    <dl className="bubbles-stagger m-0 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <dl className="bubbles-stagger m-0 flex flex-col">
       {tiles.map((tile) => (
-        <div key={tile.label} className={`${CARD} p-4 sm:p-5`}>
+        <div key={tile.label} className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-[color:var(--hairline)] py-3">
           <dt className={`text-body-sm font-extrabold ${TONE[tile.tone].ink}`}>{tile.label}</dt>
-          <dd className="m-0 mt-2 font-display text-[1.75rem] font-semibold leading-tight text-ink sm:text-[1.875rem]">{tile.value}</dd>
+          <dd className="m-0 font-display text-h4 text-ink">{tile.value}</dd>
         </div>
       ))}
     </dl>
@@ -123,14 +123,14 @@ function TrackerGroup({ id, title, items }: { id: string; title: string; items: 
       <h2 id={`${id}-title`} className="text-h3 text-ink">
         {title}
       </h2>
-      <ul className="bubbles-stagger m-0 mt-3 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3">
+      <ul className="bubbles-stagger m-0 mt-3 flex list-none flex-col p-0">
         {items.map((item) => (
           <li key={item.id}>
             <Link
               href={`/${item.id}`}
-              className={`${CARD} bubbles-lift group flex h-full items-center gap-3 p-3 no-underline hover:border-line-strong`}
+              className="group flex items-center gap-3 border-b border-[color:var(--hairline)] py-3 no-underline"
             >
-              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${TONE[item.tone].bubble}`}>
+              <span aria-hidden="true" className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${TONE[item.tone].bubble}`}>
                 <Icon id={item.id} />
               </span>
               <span className="min-w-0 flex-1">

@@ -402,7 +402,7 @@ function ReviewBody({ pv, units }: { pv: NonNullable<PreviewResponse["preview"]>
         <p className="m-0 mt-1 font-display text-metric text-ink">about {fmt(t.kcal)} kcal</p>
         <p className="m-0 text-body-sm text-muted">Never below {fmt(t.floor_kcal)} kcal. About {t.pace_kg_per_week.toFixed(2)} {units === "imperial" ? "kg (" + (t.pace_kg_per_week * 2.2046).toFixed(2) + " lb)" : "kg"} a week on paper.</p>
         <div className="mt-3"><MacroBars eaten={{ protein_g: t.protein_g, carbs_g: t.carbs_g, fat_g: t.fat_g, fibre_g: t.fibre_g }} target={{ protein_g: t.protein_g, carbs_g: t.carbs_g, fat_g: t.fat_g, fibre_g: t.fibre_g }} /></div>
-        <ul className="m-0 mt-3 grid list-none grid-cols-1 gap-1 p-0 text-body-sm text-ink sm:grid-cols-3">
+        <ul className="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-body-sm text-ink">
           <li>Water: about {(t.water_ml / 1000).toFixed(1)} L</li>
           <li>Steps: about {fmt(t.steps)}</li>
           <li>Sleep: {t.sleep_hours[0]}–{t.sleep_hours[1]} hours</li>

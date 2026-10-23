@@ -151,7 +151,7 @@ function SetupForm({ data }: { data: BodyResponse }) {
 
       <Section title="What Bubbles already knows">
         <p className="m-0 mb-3 text-body-sm text-muted">From your Records pages. If something is out of date, fix it there and Bubbles will pick it up.</p>
-        <dl className="m-0 grid gap-3 sm:grid-cols-3">
+        <dl className="m-0 flex flex-col">
           <Known title="Conditions" items={data.known.conditions} href="/conditions" />
           <Known title="Medications" items={data.known.medications} href="/medications" />
           <Known title="Allergies" items={data.known.allergies} href="/allergies" />
@@ -242,7 +242,7 @@ function SetupForm({ data }: { data: BodyResponse }) {
 
 function Known({ title, items, href }: { title: string; items: string[]; href: string }) {
   return (
-    <div className="rounded-2xl bg-blush p-3">
+    <div className="border-b border-[color:var(--hairline)] py-3">
       <dt className="text-body-sm font-extrabold text-ink">{title}</dt>
       <dd className="m-0 mt-1 text-body-sm text-muted">{items.length ? items.join(", ") : "Nothing recorded"}</dd>
       <dd className="m-0">

@@ -28,7 +28,7 @@ from ttl_cache import TTLCache
 KIND = "consent"            # the older single yes: document kind / key
 KEY = "ai_chat"
 VERSION = "2026-10b"        # text version of ai_chat_processing (kept so an old yes keeps its meaning). Bump when what is sent changes.
-POLICY_VERSION = "2026-10-23c"
+POLICY_VERSION = "2026-11a"
 """Version of the privacy notice (frontend/app/lib/privacy-notice-version.ts must match; a test pins it)."""
 
 TABLE = "consent_events"
@@ -64,6 +64,18 @@ PURPOSES: dict[str, dict[str, Any]] = {
         "description": "Lets you switch on two things for the person you are connected with: your answers to shared questions and check-ins (shown only when you have both answered), "
                        "and gentle general nudges that never say what you logged. You choose each one, and you can stop at any time.",
         "text_version": "2026-10a", "available": True,
+    },
+    "stars_lens": {
+        "title": "Use my birth details for the Stars lens",
+        "description": "Lets Bubbles keep your birth date, optional birth time and birth place to show a traditional lens (Moon sign, nakshatra). It is for fun and reflection and never predicts "
+                       "anything. Bubbles checks each word against what it has seen about you. You can turn it off at any time and your birth time and place are deleted.",
+        "text_version": "2026-11a", "available": True,
+    },
+    "improve_bubbles": {
+        "title": "Help improve Bubbles with de-identified examples",
+        "description": "Lets Bubbles keep a few of its own replies to simple app questions, with every name, number and date removed, to learn which replies help. "
+                       "Your messages are never kept, and nothing links a reply to you. You can stop at any time.",
+        "text_version": "2026-11a", "available": True,
     },
     "push_notifications": {
         "title": "Reminders on your phone",
@@ -298,6 +310,12 @@ def _after_change(db: Any, uid: str, purpose: str, granted: bool) -> None:
         elif purpose == "community_visibility" and not granted:
             import community_api
             community_api.hold_all(db, uid)   # what they wrote stops showing to others; re-granting does not bring it back on its own
+        elif purpose == "stars_lens" and not granted:   # the birth details go, and so do the hints the lens added to what Bubbles knows
+            import person_model, stars_lens
+            doc_store.delete(db, uid, stars_lens.KIND, stars_lens.KEY)
+            model = person_model.load(db, uid, fresh=True)
+            stars_lens.clear_priors(model)
+            person_model.save(db, uid, model)
         elif purpose == "email_reminders":
             _mirror_channel(db, uid, "email", granted)
         elif purpose == "push_notifications":

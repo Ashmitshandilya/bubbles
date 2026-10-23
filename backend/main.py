@@ -573,7 +573,7 @@ app.include_router(build_organ_map_router(get_authenticated_user, supabase))
 app.include_router(build_deficiency_router(get_authenticated_user, supabase))
 app.include_router(build_community_router(get_authenticated_user, supabase))   # /community/* and /admin/community/* (off until COMMUNITY_ALIAS_SECRET is set)
 app.include_router(build_schema_router(supabase))
-app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
+app.include_router(build_admin_router(lambda: _database_report(), supabase))   # /admin/*: gated in the middleware (_admin_gate)
 
 
 # --------------------------------------------------
@@ -924,6 +924,19 @@ def _evidence_stage(user_id: str, query: str) -> tuple[list[dict], float]:
 
 
 _MEMORY_ORDER = ("personal", "person_model", "open_threads", "values", "metrics", "associations", "nutrient_hint")
+def _playbook_block(user_message: str, turn: Any) -> str:
+    """One approved Playbook entry for a plain app question (never health, safety, Safe Harbor or relationship advice), or ''. Never raises."""
+    try:
+        import playbook
+        from orbit import _lang
+        if turn.route != "ai" or playbook.blocked_route(turn.route):
+            return ""
+        intent = playbook.intent_of(user_message)
+        return playbook.block_for_prompt(playbook.approved_for(supabase, intent, {"en": "english"}.get(_lang(user_message), _lang(user_message)))) if intent else ""
+    except Exception:  # noqa: BLE001 - the Playbook is an extra; a reply never depends on it
+        return ""
+
+
 _LEARNING_ROUTES = frozenset({"ai", "orbit", "small_talk", "daily_log", "recall", "remembered"})
 
 
@@ -1017,6 +1030,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             *context_blocks,
             *(orbit_blocks(turn, state.history) if turn.route == "orbit" else []),
             ("evidence", evidence_context, 11),
+            ("playbook", _playbook_block(user_message, turn), 12),
         ])
         try:
             state.people = people_job.result(timeout=CONTEXT_BUDGET_S) or {}
@@ -1038,7 +1052,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             memory_context=sent_memory,
             evidence_context=evidence_context,
             safety_context="\n\n".join(filter(None, [kept.get("safety", ""), response_style_instruction(turn.country), kept.get("setup_style", ""), kept.get("mind", ""), kept.get("harbor", ""),
-                                                       kept.get("orbit", ""), pattern_cards])),
+                                                       kept.get("orbit", ""), pattern_cards, kept.get("playbook", "")])),
             conversation_context=sent_conversation,
         )
         if state.people and not is_degraded(ai_result):   # put the names back before anything is checked, saved or shown
@@ -1289,6 +1303,14 @@ def chat_history_api(authorization: str | None = Header(default=None), limit: in
         counts = message_counts(supabase, user_id, [c["id"] for c in conversations])
         for conv in conversations:
             conv["message_count"] = counts.get(str(conv["id"]), 0)
+
+        # Heart-to-heart threads are marked when they start (see /chat); the rest are ordinary talk. One read for the whole page.
+        try:
+            orbit_ids = doc_store.get_many(supabase, user_id, "conversation_mode", [str(c["id"]) for c in conversations])
+        except Exception:  # noqa: BLE001 - a missing label must never hide the history
+            orbit_ids = {}
+        for conv in conversations:
+            conv["mode"] = "orbit" if (orbit_ids.get(str(conv["id"])) or {}).get("mode") == "orbit" else "talk"
 
         return {"conversations": conversations, "has_more": has_more}
     except Exception as e:
@@ -1562,8 +1584,27 @@ def _fitness_text(user_id: str, message: str) -> str:
         return "I couldn't look that up right now. You can find it under Fitness in the menu."
 
 
+# One request may need the same events for several parts (the Today bundle asks for the brief, the week and the living map). While a request
+# holds a memo, a read that a longer earlier read already covers is answered from it instead of asking the database again.
+_EVENT_MEMO: contextvars.ContextVar[dict | None] = contextvars.ContextVar("event_memo", default=None)
+
+
+def _memoised_events(user_id: str, days: int) -> list[dict] | None:
+    memo = _EVENT_MEMO.get()
+    if memo is None:
+        return None
+    for (uid, have_days), rows in memo.items():
+        if uid == user_id and have_days >= days:
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+            return [dict(r) for r in rows if str(r.get("ingested_at") or r.get("created_at") or "") >= cutoff]   # the recording time, as the database filtered on
+    return None
+
+
 def _get_user_health_events(user_id: str, days: int = 30) -> list[dict]:
     days = max(1, min(days, 730))
+    held = _memoised_events(user_id, days)
+    if held is not None:
+        return held
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     try:
         result = (
@@ -1587,6 +1628,9 @@ def _get_user_health_events(user_id: str, days: int = 30) -> list[dict]:
                     row["created_at"] = moment.isoformat()
             except Exception:
                 continue
+        memo = _EVENT_MEMO.get()
+        if memo is not None:
+            memo[(user_id, days)] = [dict(r) for r in rows]   # copies, so a caller changing its rows cannot change what the next part is given
         return rows
     except Exception as error:
         from logging_util import logger
@@ -1623,6 +1667,61 @@ def pattern_analysis(
         "status": "success",
         "analysis": analyze_patterns(events, days=days),
     }
+
+
+TODAY_TRACKERS = ("cycle", "sleep", "mood", "activity", "hydration", "nutrition")
+
+
+@app.get("/today")
+def today_bundle(authorization: str | None = Header(default=None), days: int = Query(default=14, ge=1, le=90)):
+    """Everything Today shows in one call. Each part is read side by side and fails alone: a part that could not be read is null
+    (a gap), never a guess. The old per-part routes stay for other screens. The health events the brief, the week and the living map all
+    need are read once. ponytail: no server cache yet; add a per-user TTLCache invalidated on writes if the load test asks for it."""
+    import association_insights
+    import association_loader
+    import orbit
+    import today_brief
+    from health_logs import DOMAINS, list_domain
+    from parallel import together
+
+    user = get_authenticated_user(authorization)
+    uid = str(user.id)
+
+    def safe(job):
+        def run():
+            try:
+                return job()
+            except Exception:  # noqa: BLE001 - one broken part must not blank Today
+                return None
+        return run
+
+    def tracker(slug):
+        return safe(lambda: list_domain(supabase, slug, DOMAINS[slug], uid, 365 if slug == "cycle" else 30))
+
+    token = _EVENT_MEMO.set({})
+    try:
+        _get_user_health_events(uid, 30)   # once, before the parts fan out; the parts below take their window from it
+        parts = together(
+            *[tracker(slug) for slug in TODAY_TRACKERS],
+            safe(lambda: list_domain(supabase, "visits", DOMAINS["visits"], uid, 365)),
+            safe(lambda: intelligence_brief(InteractionRequest(days=days), authorization).model_dump()["brief"]),
+            safe(lambda: weekly_insights(authorization).model_dump()["insights"]),
+            safe(lambda: living_signal_map(authorization, 14).model_dump()["map"]),
+            safe(lambda: __import__("deficiency_api").load(supabase, uid)),
+            safe(lambda: profile_api(authorization)),
+            safe(lambda: orbit.home(supabase, uid)),
+        )
+    finally:
+        _EVENT_MEMO.reset(token)
+    n = len(TODAY_TRACKERS)
+    trackers = dict(zip(TODAY_TRACKERS, parts[:n]))
+    visits, brief, weekly, living, nudges, profile, orbit_home = parts[n:]
+    cached = association_loader.cached(uid)   # never waits: an empty cache simply means no pattern line today
+    lines = association_insights.chat_lines(cached) if cached else []
+    waiting = bool(orbit_home and (orbit_home.get("question") or {}).get("answered") is False)
+    lede = today_brief.pick(uid=uid, day=datetime.now(timezone.utc).date().isoformat(), association=lines[0] if lines else None, orbit_waiting=waiting)
+    return {"status": "success", "lede": lede, "trackers": trackers, "visits": visits, "brief": brief, "weekly": weekly,
+            "living_map": living, "nudges": nudges, "profile": profile, "orbit": orbit_home}
 
 
 app.include_router(build_insights_router(get_authenticated_user, supabase))   # GET /insights/{id}; after /insights/weekly so that path wins

@@ -138,21 +138,18 @@ export function TrackerHero({ signal, icon, kicker, title, why, action }: {
 }) {
   const s = SIGNALS[signal];
   return (
-    <section aria-labelledby="tracker-title" className={`bubbles-rise relative overflow-hidden rounded-[24px] p-5 sm:p-7 ${s.tint}`}>
-      <span aria-hidden="true" className="bubbles-drift-slow pointer-events-none absolute -right-12 -top-14 h-44 w-44 rounded-full bg-white/45" />
-      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-4">
-          <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[20px] bg-surface ${s.ink}`}>
-            <Icon name={icon} size={28} />
-          </span>
-          <div className="min-w-0">
-            <p className={`text-label font-extrabold ${s.ink}`}>{kicker}</p>
-            <h1 id="tracker-title" className="mt-1 break-words font-display text-h1 text-default">{title}</h1>
-            <p className="mt-2 hidden max-w-xl text-body text-muted sm:line-clamp-2 sm:block">{why}</p>
-          </div>
+    <section aria-labelledby="tracker-title" className="bubbles-rise flex flex-col gap-4 border-b border-[color:var(--hairline)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
+        <span aria-hidden="true" className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${s.tint} ${s.ink}`}>
+          <Icon name={icon} size={20} />
+        </span>
+        <div className="min-w-0">
+          <p className={`pearl-eyebrow ${s.ink}`}>{kicker}</p>
+          <h1 id="tracker-title" className="pearl-title break-words">{title}</h1>
+          <p className="mt-2 hidden max-w-xl text-body text-muted sm:block">{why}</p>
         </div>
-        <div className="shrink-0">{action}</div>
       </div>
+      <div className="shrink-0">{action}</div>
     </section>
   );
 }
@@ -186,22 +183,22 @@ export function LogButton({ signal, onClick, children, wide = false }: { signal:
   );
 }
 
+/** The week in plain rows: label on the left, the value (or a quiet gap) on the right. No tiles. */
 export function StatGrid({ stats, signal }: { stats: StatValue[]; signal: Signal }) {
   const s = SIGNALS[signal];
-  const cols = stats.length >= 4 ? "lg:grid-cols-4" : stats.length === 3 ? "sm:grid-cols-3" : "";
   return (
-    <dl aria-label="Summary" className={`bubbles-stagger m-0 grid grid-cols-2 gap-3 max-sm:[&>*:last-child:nth-child(odd)]:col-span-2 ${cols}`}>
+    <dl aria-label="Summary" className="bubbles-stagger m-0 flex flex-col">
       {stats.map((st) => (
-        <div key={st.label} className={`flex min-w-0 flex-col gap-1 rounded-[24px] border bg-surface p-4 ${st.value === null ? `border-dashed ${s.dashed}` : s.border}`}>
+        <div key={st.label} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-[color:var(--hairline)] py-3">
           <dt className={`text-body-sm font-extrabold ${s.ink}`}>{st.label}</dt>
-          <dd className="m-0 break-words">
+          <dd className="m-0 break-words text-right">
             {st.value === null ? (
-              <span className="font-display text-h4 text-muted">{st.gap ?? "Not logged yet"}</span>
+              <span className="text-body-sm text-muted">{st.gap ?? "Not logged yet"}</span>
             ) : (
-              <span data-private className="font-display text-metric text-default">{st.value}</span>
+              <span data-private className="font-display text-h4 text-default">{st.value}</span>
             )}
           </dd>
-          {st.note && <dd className="m-0 text-body-sm font-semibold text-muted">{st.note}</dd>}
+          {st.note && <dd className="m-0 w-full text-body-sm font-semibold text-muted">{st.note}</dd>}
         </div>
       ))}
     </dl>
@@ -221,9 +218,9 @@ export function LastLogged({ entries }: { entries: Entry[] }) {
 
 export function StatSkeleton({ count }: { count: number }) {
   return (
-    <div aria-hidden="true" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div aria-hidden="true" className="flex flex-col gap-3">
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} className="bubbles-skeleton h-[104px] rounded-[24px]" />
+        <div key={i} className="bubbles-skeleton h-[44px] rounded-2xl" />
       ))}
     </div>
   );
@@ -694,7 +691,7 @@ function EditEntry({ entry, onEdit }: { entry: Entry; onEdit: (id: string, body:
   );
 }
 
-export function History({ title = "History", status, error, onRetry, entries, freshId, signal, renderEntry, empty, onDelete, onEdit }: {
+export function History({ title = "History", status, error, onRetry, entries, freshId, renderEntry, empty, onDelete, onEdit }: {
   title?: string; status: LoadStatus; error: string; onRetry: () => void; entries: Entry[]; freshId: string | null;
   signal: Signal; renderEntry: (entry: Entry) => ReactNode; empty: ReactNode;
   /** When given, every entry can be removed (after a yes/no). */
@@ -703,7 +700,6 @@ export function History({ title = "History", status, error, onRetry, entries, fr
   onEdit?: (id: string, body: Record<string, string | number>) => Promise<string | null>;
 }) {
   const headingId = useId();
-  const s = SIGNALS[signal];
   const [all, setAll] = useState(false);
   const sorted = [...entries].sort(byNewest);
   // Only the latest few show at first; the rest is one tap away, so a long log never becomes a long page.
@@ -728,7 +724,7 @@ export function History({ title = "History", status, error, onRetry, entries, fr
     );
   } else if (status === "error") {
     body = (
-      <div role="alert" className="flex flex-col items-center gap-3 rounded-[24px] border border-line bg-surface px-5 py-8 text-center">
+      <div role="alert" className="flex flex-col items-start gap-3 py-4">
         <p className="m-0 font-display text-h3 text-default">Couldn&apos;t load your entries</p>
         <p className="m-0 max-w-md text-body text-muted">{error}</p>
         <button type="button" onClick={onRetry} className="bubbles-press min-h-[48px] rounded-full border border-line-strong bg-surface px-6 text-body font-extrabold text-default">
@@ -741,10 +737,10 @@ export function History({ title = "History", status, error, onRetry, entries, fr
   } else {
     body = groups.map((group) => (
       <div key={group.key} className="flex flex-col gap-2">
-        <h3 className="m-0 text-body-sm font-extrabold text-muted">{group.label}</h3>
-        <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+        <h3 className="pearl-eyebrow">{group.label}</h3>
+        <ul className="m-0 flex list-none flex-col p-0">
           {group.items.map((entry) => (
-            <li key={entry.id} className={`rounded-[24px] border bg-surface p-4 ${s.border} ${entry.id === freshId ? "bubbles-rise" : ""}`}>
+            <li key={entry.id} className={`border-b border-[color:var(--hairline)] py-3 ${entry.id === freshId ? "bubbles-rise" : ""}`}>
               {renderEntry(entry)}
               {(onEdit || onDelete) && !entry.id.startsWith("pending-") && (
                 <div className="flex flex-wrap items-center gap-1">
@@ -779,15 +775,15 @@ const HISTORY_FIRST = 7;
 /** A titled card that opens on tap: the detail of a tracker page stays one tap away instead of stacking up. */
 export function Fold({ title, hint, children, onOpen }: { title: string; hint?: string; children: ReactNode; onOpen?: () => void }) {
   return (
-    <details className="group rounded-[24px] border border-line bg-surface shadow-sm" onToggle={onOpen ? (e) => e.currentTarget.open && onOpen() : undefined}>
-      <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 [&::-webkit-details-marker]:hidden">
+    <details className="group border-b border-[color:var(--hairline)]" onToggle={onOpen ? (e) => e.currentTarget.open && onOpen() : undefined}>
+      <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 py-3 [&::-webkit-details-marker]:hidden">
         <span className="font-display text-lg font-semibold text-default">{title}</span>
         <span className="flex items-center gap-2 text-body-sm font-extrabold text-muted">
           {hint}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform group-open:rotate-90"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
         </span>
       </summary>
-      <div className="flex flex-col gap-6 px-3 pb-4 pt-1 sm:px-4">{children}</div>
+      <div className="flex flex-col gap-6 pb-4 pt-1">{children}</div>
     </details>
   );
 }
@@ -875,7 +871,7 @@ export function WeekBars({ title, entries, field, unit, signal, minScale, decima
   }
   const max = Math.max(minScale, ...totals);
   return (
-    <section aria-labelledby={headingId} className={`rounded-[24px] border bg-surface p-5 ${s.border}`}>
+    <section aria-labelledby={headingId} className="py-2">
       <h2 id={headingId} className="m-0 font-display text-h3 text-default">
         {title}
       </h2>

@@ -131,7 +131,10 @@ export function toneFor(signal: string): Tone {
 
 /* ── Small UI ───────────────────────────────────────────── */
 
-export const CARD = "rounded-3xl border border-line bg-surface shadow-sm";
+// Pearl surface: hairline edge on raised paper, no shadow. A box is for something truly separate; new screens use components/pearl instead.
+export const CARD = "rounded-[20px] border border-[color:var(--hairline)] bg-[color:var(--paper-raised)]";
+// An unboxed group: a hairline above and room around it. Use for sections of a page; keep CARD for forms and truly separate things.
+export const SECTION = "border-t border-[color:var(--hairline)] py-6";
 export const BTN_PRIMARY =
   "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-6 text-[0.9375rem] font-semibold text-white bubbles-glow disabled:opacity-40";
 export const BTN_SECONDARY =

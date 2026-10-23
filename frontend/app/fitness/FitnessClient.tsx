@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
-import { BTN_PRIMARY, CARD, ErrorCard, Icon, Skeleton, TONE, useBubblesQuery, type Tone } from "../../components/hub/HubKit";
+import { BTN_PRIMARY, CARD, SECTION, ErrorCard, Icon, Skeleton, TONE, useBubblesQuery, type Tone } from "../../components/hub/HubKit";
 import { ClinicalNote, Disclaimer, EstimateLabel, FitnessPage, MacroBars, PageHeading, Pill, ProgressRing, RangeBadge, Section } from "../../components/fitness/ui";
 import { useUnits } from "../../components/fitness/useUnits";
 import { cardState, fmt, formatWeeks, formatWeight, ringFraction, ringWord } from "../lib/fitness-calc";
@@ -60,6 +60,16 @@ function Hub() {
         </section>
       )}
 
+      {s.readiness && (
+        <Section title="How ready you look today">
+          <p className="m-0 font-display text-h3 text-ink">{s.readiness.label}</p>
+          <ul className="m-0 mt-2 flex list-none flex-col gap-1 p-0 text-body-sm text-muted">
+            {s.readiness.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+          </ul>
+          <p className="m-0 mt-2 text-body-sm text-muted">A guide to effort from your own logs, not a medical check. How you feel comes first.</p>
+        </Section>
+      )}
+
       {t !== null && s.budget && (
         <Section title="Today" aside={<EstimateLabel />}>
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
@@ -95,7 +105,7 @@ function Hub() {
 
       <section aria-labelledby="fit-tools">
         <h2 id="fit-tools" className="m-0 mb-2 text-label font-extrabold uppercase tracking-wide text-subtle">Plan and log</h2>
-        <ul className={`${CARD} m-0 list-none divide-y divide-line overflow-hidden p-0`} aria-label="Fitness tools">
+        <ul className={`${SECTION} m-0 list-none divide-y divide-line overflow-hidden`} aria-label="Fitness tools">
           {cards.map((c) => {
             const st = cardState(c.kind, state);
             return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { BTN_PRIMARY, BTN_SECONDARY, CARD, HubPage, PILL, Skeleton } from "../../components/hub/HubKit";
+import { BTN_PRIMARY, BTN_SECONDARY, SECTION, HubPage, PILL, Skeleton } from "../../components/hub/HubKit";
 import { ErrorNotice, INPUT, LiveRegion, QueryView } from "../../components/wellness/ui";
 import { useWellnessQuery, useWellnessSend } from "../../components/wellness/useWellness";
 import {
@@ -93,7 +93,7 @@ function SharedWithYou({ data, reload }: { data: SharedWithMe; reload: () => voi
   }
 
   return (
-    <section aria-labelledby="with-you" className={`${CARD} space-y-4 p-5`}>
+    <section aria-labelledby="with-you" className={`${SECTION} space-y-4`}>
       <LiveRegion message={said} />
       <h2 id="with-you" className="m-0 font-display text-h3 text-ink">Shared with you</h2>
       {data.shares.length === 0 && <p className="m-0 text-body-sm text-muted">Nobody is sharing with you yet. If someone gave you a code, enter it below.</p>}
@@ -180,13 +180,13 @@ function YourSharing({ data, reload }: { data: PartnerSharingStatus; reload: () 
       <LiveRegion message={said} />
       {error && <ErrorNotice message={error} />}
 
-      <section aria-labelledby="what-share" className={`${CARD} space-y-4 p-5`}>
+      <section aria-labelledby="what-share" className={`${SECTION} space-y-4`}>
         <h2 id="what-share" className="m-0 font-display text-h3 text-ink">What you share</h2>
         <Chooser key={`${data.categories.join()}|${data.note}|${data.owner_name}`} data={data} busy={busy} onSubmit={saveSettings} />
       </section>
 
       {data.configured && (
-        <section aria-labelledby="who-sees" className={`${CARD} space-y-5 p-5`}>
+        <section aria-labelledby="who-sees" className={`${SECTION} space-y-5`}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="who-sees" className="m-0 font-display text-h3 text-ink">Who can see it</h2>
             <span className={`${PILL} ${data.sharing ? "bg-tint-mint text-bubbles-mint-deep" : "bg-blush text-ink-soft"}`}>{data.sharing ? "Sharing is on" : "Not shared with anyone yet"}</span>
@@ -240,7 +240,7 @@ function YourSharing({ data, reload }: { data: PartnerSharingStatus; reload: () 
         </section>
       )}
 
-      <section aria-labelledby="safety" className={`${CARD} space-y-2 p-5`}>
+      <section aria-labelledby="safety" className={`${SECTION} space-y-2`}>
         <h2 id="safety" className="m-0 font-display text-h4 text-ink">If sharing ever feels unsafe</h2>
         <p className="m-0 text-body-sm text-muted">
           You can stop everything with one tap above, and it takes effect immediately. If you are worried about your safety, call 112 (emergency) or the Women Helpline 181.
@@ -248,7 +248,7 @@ function YourSharing({ data, reload }: { data: PartnerSharingStatus; reload: () 
         </p>
       </section>
 
-      <section aria-labelledby="never-shared" className={`${CARD} space-y-2 p-5`}>
+      <section aria-labelledby="never-shared" className={`${SECTION} space-y-2`}>
         <h2 id="never-shared" className="m-0 font-display text-h4 text-ink">What can never be shared</h2>
         <ul className="m-0 list-disc space-y-1 pl-5 text-body-sm text-muted">
           {data.never_shared.map((x) => <li key={x}>{x}</li>)}

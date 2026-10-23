@@ -5,6 +5,7 @@ import type { RangeId, TabId, ViewRange } from "./format";
 import { AiPanel, ApiPanel, LogsPanel, OverviewPanel, SettingsPanel } from "./panels";
 import { LivePanel } from "./panels-live";
 import { ModerationPanel } from "./panels-moderation";
+import { PlaybookPanel } from "./panels-playbook";
 import { OverallPanel } from "./panels-overall";
 
 export type TabSpec = { ranges: "standard" | "overall" | "none"; render: (range: ViewRange) => ReactNode };
@@ -17,5 +18,6 @@ export const PANELS: Record<TabId, TabSpec> = {
   api: { ranges: "standard", render: (r) => <ApiPanel range={r as RangeId} /> },
   logs: { ranges: "standard", render: (r) => <LogsPanel range={r as RangeId} /> },
   moderation: { ranges: "none", render: () => <ModerationPanel /> },
+  playbook: { ranges: "none", render: () => <PlaybookPanel /> },
   settings: { ranges: "none", render: () => <SettingsPanel /> },
 };

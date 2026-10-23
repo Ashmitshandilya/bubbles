@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
+import { describeBubble, layoutBubbles, type BubbleSignal } from "../../app/lib/bubbles-layout";
 
 export function Page({ eyebrow, title, lede, wide = false, children }: { eyebrow?: string; title?: string; lede?: string; wide?: boolean; children?: ReactNode }) {
   return (
@@ -128,5 +129,37 @@ export function TwoBubbles({ you = "you", other, paired }: { you?: string; other
       <text x="70" y="64" textAnchor="middle" fontSize="13" fill="currentColor" opacity="0.85">{you}</text>
       <text x="250" y="64" textAnchor="middle" fontSize="13" fill="currentColor" opacity="0.85">{paired && other ? other.slice(0, 10) : "someone"}</text>
     </svg>
+  );
+}
+
+/** The signature visual: one soft bubble per signal. Size is amount, drift is trend, an empty outline means no entries. Each is a button that opens detail. */
+export function LivingBubbles({ signals, onOpen, width = 360 }: { signals: BubbleSignal[]; onOpen?: (id: string) => void; width?: number }) {
+  const placed = layoutBubbles(signals, width);
+  return (
+    <ul className="pearl-bubbles" style={{ maxWidth: width }}>
+      {placed.map((b, i) => (
+        <li key={b.id}>
+          <button type="button" className="pearl-bubble" onClick={() => onOpen?.(b.id)} aria-label={describeBubble(signals[i])}>
+            <svg viewBox={`0 0 ${b.r * 2 + 4} ${b.r * 2 + 4}`} width={b.r * 2 + 4} height={b.r * 2 + 4} aria-hidden="true" style={{ transform: `translateY(${b.drift}px)` }}>
+              <circle cx={b.r + 2} cy={b.r + 2} r={b.r} fill={b.empty ? "none" : b.color} fillOpacity={b.empty ? 0 : 0.28} stroke={b.empty ? "currentColor" : b.color}
+                strokeOpacity={b.empty ? 0.5 : 0.9} strokeWidth="1.5" strokeDasharray={b.empty ? "4 5" : undefined} />
+            </svg>
+            <span className="pearl-bubble-label">{b.label}</span>
+            {b.empty && <span className="pearl-bubble-gap">no entries</span>}
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Patterns: two signals joined by a soft line, the plain sentence, and how sure we are in words. */
+export function Thread({ from, to, sentence, sure, onOpen }: { from: string; to: string; sentence: string; sure: string; onOpen?: () => void }) {
+  return (
+    <div className="pearl-thread">
+      <p className="pearl-thread-ends" aria-hidden="true"><span>{from}</span><i /><span>{to}</span></p>
+      <p className="pearl-thread-text">{sentence}</p>
+      <p className="pearl-note">{sure}{onOpen && <> · <button type="button" className="pearl-link" onClick={onOpen}>See the days</button></>}</p>
+    </div>
   );
 }

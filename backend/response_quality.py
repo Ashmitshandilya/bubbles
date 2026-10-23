@@ -56,10 +56,31 @@ _UNIT_NUMBER = re.compile(
     r"\b(\d+(?:\.\d+)?)\s?(?:/\s?10\b|%|hours?\b|hrs?\b|h\b|kg\b|kgs\b|bpm\b|mmhg\b|steps\b|kcal\b|calories\b|days?\b|minutes?\b|mins?\b|glasses\b|litres?\b|liters?\b|cm\b)", re.I)
 
 
+_HOURS_MINUTES = re.compile(r"\b(\d+)\s?h(?:ours?|rs?)?\s*(\d{1,2})\s?m(?:in(?:ute)?s?)?\b", re.I)
+
+
+def _grounded_values(grounding: str) -> list[float]:
+    """Every number the model was given, plus "7h 15m" read as 7.25 hours."""
+    values = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", grounding or "")]
+    values += [int(h) + int(m) / 60.0 for h, m in _HOURS_MINUTES.findall(grounding or "")]
+    return values
+
+
 def ungrounded_numbers(text: str, grounding: str) -> list[str]:
-    """Numbers with a unit or a 'x/10' in the reply that appear nowhere in the context the model was given or in the user's message."""
-    seen = set(re.findall(r"\d+(?:\.\d+)?", grounding or ""))
-    return sorted({m for m in _UNIT_NUMBER.findall(text or "") if m not in seen and m not in {"1", "2", "3"}})
+    """Numbers with a unit or a 'x/10' in the reply that appear nowhere in the context the model was given or in the user's message.
+    A number that is a sensible rounding of a given one ("about 6 hours" for 6.2) is grounded; a sum or an average of given numbers is not
+    (the voice rules say never to invent a figure, so those are flagged for a look)."""
+    given = _grounded_values(grounding)
+    out = set()
+    for raw in _UNIT_NUMBER.findall(text or ""):
+        n = float(raw)
+        if raw in {"1", "2", "3"}:
+            continue
+        has_decimal = "." in raw
+        tolerance = 0.06 if has_decimal else 0.5   # a whole number may be a rounding to the nearest one; a decimal must match to a tenth
+        if not any(abs(n - g) <= tolerance for g in given):
+            out.add(raw)
+    return sorted(out)
 
 
 # What a person may ask for that Bubbles will not help with: making someone jealous, checking up on them in secret, testing them, guilting them.

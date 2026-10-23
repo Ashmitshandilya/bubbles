@@ -107,7 +107,7 @@ data class TalkState(
     val notice: String? = null,
 )
 
-class TalkViewModel(private val api: Api) : ViewModel() {
+class TalkViewModel(private val api: Api, private val mode: String = "talk") : ViewModel() {
     private val _state = MutableStateFlow(TalkState())
     val state: StateFlow<TalkState> = _state
     private var conversationId: String? = null
@@ -116,6 +116,7 @@ class TalkViewModel(private val api: Api) : ViewModel() {
     init { load() }
 
     fun load() = viewModelScope.launch {
+        if (mode == "orbit") { _state.update { it.copy(loading = false, notice = null, msgs = emptyList()) }; return@launch }   // a Heart-to-heart starts as a blank thread of its own
         try {
             val latest = api.latestChat()
             conversationId = latest.conversation?.id?.ifBlank { null }
@@ -135,7 +136,7 @@ class TalkViewModel(private val api: Api) : ViewModel() {
         _state.update { it.copy(sending = true, notice = null) }
         viewModelScope.launch {
             try {
-                val r = api.chat(clean, UUID.randomUUID().toString(), conversationId)
+                val r = api.chat(clean, UUID.randomUUID().toString(), conversationId, mode.takeIf { it == "orbit" })
                 conversationId = r.conversationId ?: conversationId
                 val urgent = r.safety.level == "RED" || r.kind == "emergency"
                 _state.update { it.copy(sending = false, msgs = it.msgs + Msg(r.messageId ?: UUID.randomUUID().toString(), false, r.response, urgent, r.consentAsk, harbor = r.harbor?.shown(), suggestions = r.suggestions.filter { it.isNotBlank() && it != "Open in Heart-to-heart" }.take(3))) }
@@ -160,8 +161,9 @@ class TalkViewModel(private val api: Api) : ViewModel() {
 }
 
 @Composable
-fun TalkScreen(api: Api) {
-    val vm = viewModel<TalkViewModel>(key = "talk${`in`.heybubbles.app.ui.LocalEpoch.current}") { TalkViewModel(api) }
+fun TalkScreen(api: Api, mode: String = "talk", onBack: (() -> Unit)? = null) {
+    val vm = viewModel<TalkViewModel>(key = "talk$mode${`in`.heybubbles.app.ui.LocalEpoch.current}") { TalkViewModel(api, mode) }
+    if (onBack != null) androidx.activity.compose.BackHandler { onBack() }
     val s by vm.state.collectAsState()
     val list = rememberLazyListState()
     val haptic = LocalHapticFeedback.current
@@ -183,7 +185,7 @@ fun TalkScreen(api: Api) {
     }
 
     Column(Modifier.fillMaxWidth().imePadding()) {
-        ScreenTitle("Talk", "How are you today?")
+        if (mode == "orbit") ScreenTitle("Orbit", "Heart-to-heart") else ScreenTitle("Talk", "How are you today?")
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when {
                 s.loading -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { Typing() }

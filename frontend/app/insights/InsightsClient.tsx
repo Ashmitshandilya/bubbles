@@ -3,9 +3,9 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
+import { Thread } from "../../components/pearl";
 import {
   BTN_SECONDARY,
-  CARD,
   ErrorCard,
   HubPage,
   PILL,
@@ -25,7 +25,6 @@ import {
   emptyProgressLine,
   loggedDaysLine,
   sentence,
-  strengthSteps,
   topic,
   whatToTry,
   type Association,
@@ -94,8 +93,9 @@ function Patterns() {
     <div className="space-y-8">
       <header className="bubbles-rise flex flex-wrap items-center gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-h1 text-ink">Patterns</h1>
-          <p className="mt-1 text-body font-semibold text-muted">
+          <p className="pearl-eyebrow">Threads</p>
+          <h1 className="pearl-title">Patterns</h1>
+          <p className="mt-2 text-body font-semibold text-muted">
             What keeps showing up in your logs, in plain words, with how sure Bubbles is.
           </p>
         </div>
@@ -127,7 +127,7 @@ function Patterns() {
           {patterns.status === "loading" && (
             <div className="space-y-3" role="status" aria-label="Looking for patterns">
               {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-40 rounded-3xl" />
+                <Skeleton key={i} className="h-24 rounded-2xl" />
               ))}
             </div>
           )}
@@ -136,7 +136,7 @@ function Patterns() {
           )}
           {analysis && cards.length === 0 && <EmptyPatterns logs={analysis.event_count ?? 0} days={days} />}
           {cards.length > 0 && (
-            <ul className="bubbles-stagger m-0 list-none space-y-4 p-0">
+            <ul className="bubbles-stagger m-0 list-none p-0">
               {visible.map((card) => (
                 <li key={card.key}>
                   <PatternCardView card={card} days={days} />
@@ -157,7 +157,7 @@ function Patterns() {
             <ErrorCard title="Your trend didn't load" message={trend.message} onRetry={reloadTrend} />
           )}
           {trend.status === "ready" && <TrendView analysis={trend.data.analysis ?? {}} days={days} />}
-          <div className={`${CARD} p-5`}>
+          <div className="border-t border-[color:var(--hairline)] pt-5">
             <h2 className="font-display text-h4 text-ink">Curious about a pattern?</h2>
             <p className="mt-1 text-body-sm text-muted">Bubbles can talk it through with you and help you decide what to track next.</p>
             <Link href="/companion" className={`${BTN_SECONDARY} mt-3 no-underline`}>
@@ -195,20 +195,6 @@ function Disclosure({ title, context, children }: { title: string; context?: str
   );
 }
 
-function StrengthBar({ strength }: { strength: string }) {
-  const steps = strengthSteps(strength);
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <div role="img" aria-label={`${strength} link, ${steps} of 3`} className="flex gap-1">
-        {[1, 2, 3].map((n) => (
-          <span key={n} className={`h-2.5 flex-1 rounded-full ${n <= steps ? "bg-bubbles-grape" : "bg-line"}`} />
-        ))}
-      </div>
-      <span className="text-body-sm font-extrabold capitalize text-ink">{strength} link</span>
-    </div>
-  );
-}
-
 function DirectionRow({ direction }: { direction: string | undefined }) {
   const info = directionInfo(direction);
   if (!info) return null;
@@ -230,40 +216,20 @@ function AssociationCard({ item }: { item: Association }) {
   const [x, y] = item.domains ?? [];
   const pair = x && y ? `${topic(x)} and ${topic(y)}` : "this link";
   return (
-    <article className={`${CARD} flex h-full flex-col gap-4 p-5 sm:p-6`}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={`${PILL} bg-tint-grape text-bubbles-grape-deep`}>May be linked</span>
-        {item.status === "repeated_pattern" && <span className={`${PILL} bg-tint-mint text-bubbles-mint-deep`}>Seen in two periods</span>}
-      </div>
+    <article className="flex flex-col gap-3 border-b border-[color:var(--hairline)] py-6">
+      <Thread
+        from={x ? humanize(topic(x)) : "Noticed"}
+        to={y ? humanize(topic(y)) : "In your logs"}
+        sentence={`${sentence(item.text)}.`}
+        sure={`${item.strength.charAt(0).toUpperCase()}${item.strength.slice(1)} link${item.status === "repeated_pattern" ? ", seen in two periods" : ""}`}
+      />
 
-      {item.domains && item.domains.length > 1 && (
-        <ul className="m-0 flex list-none flex-wrap items-center gap-2 p-0" aria-label="What was compared">
-          {item.domains.slice(0, 2).map((key, i) => {
-            const tone = TONE[toneFor(`${key} ${topic(key)}`)];
-            return (
-              <li key={key} className="flex items-center gap-2">
-                {i > 0 && <span className="text-body-sm font-extrabold text-muted" aria-hidden="true">+</span>}
-                <span className={`${PILL} ${tone.chip}`}>
-                  <span className={`h-2 w-2 rounded-full ${tone.dot}`} aria-hidden="true" />
-                  {humanize(topic(key))}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <h3 className="m-0 font-display text-h4 text-ink">{sentence(item.text)}.</h3>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <StrengthBar strength={item.strength} />
-        <DirectionRow direction={item.direction} />
-      </div>
+      <DirectionRow direction={item.direction} />
 
       <p className="m-0 text-body-sm text-muted">Based on {item.n_days} days where both were logged. An association in your logs, not a cause.</p>
 
-      <div className="rounded-2xl border border-dashed border-line-strong p-4">
-        <p className="m-0 text-label font-extrabold text-ink-soft">What to try</p>
+      <div className="border-l-2 border-[color:var(--gold-line)] pl-4">
+        <p className="pearl-eyebrow">What to try</p>
         <p className="m-0 mt-1 text-body-sm text-ink">{whatToTry(item)}</p>
       </div>
 
@@ -308,7 +274,7 @@ function AssociationsEmpty({ data, days }: { data: AssociationsResponse; days: n
   const logged = loggedDaysLine(data.data_days);
   const others = gaps.filter((gap) => gap.id !== progress?.id).slice(0, 3);
   return (
-    <div className={`${CARD} flex flex-col gap-4 p-5 sm:p-6`}>
+    <div className="flex flex-col gap-4 py-2">
       <div className="flex flex-wrap items-center gap-4">
         <BubblesMascot size={64} mood="resting" animated={false} />
         <div className="min-w-[12rem] flex-1">
@@ -370,7 +336,7 @@ function LinksSection() {
       {links.status === "loading" && <Skeleton className="h-28 rounded-3xl" />}
       {links.status === "error" && <ErrorCard title="Links didn't load" message={links.message} onRetry={reload} />}
       {links.status === "ready" && insights.length > 0 && (
-        <ul className="bubbles-stagger m-0 grid list-none gap-4 p-0 md:grid-cols-2">
+        <ul className="bubbles-stagger m-0 flex list-none flex-col p-0">
           {insights.map((item) => (
             <li key={item.id}>
               <AssociationCard item={item} />
@@ -389,12 +355,12 @@ function PatternCardView({ card, days }: { card: PatternCard; days: number }) {
       ? { id: card.id, days, fetch: false, base: toDetail({ kind: "pattern", item: card.source.item, days }) }
       : { id: card.id, days, fetch: false, base: toDetail({ kind: "correlation", item: card.source.item, days }) };
   return (
-    <article className={`${CARD} p-5 sm:p-6`}>
+    <article className="border-b border-[color:var(--hairline)] py-6">
       <div className="flex flex-wrap items-center gap-2">
         <span className={`${PILL} ${CONFIDENCE_PILL[card.confidence]}`}>{card.confidence} confidence</span>
         <span className="text-chip font-bold text-muted">{card.window}</span>
       </div>
-      <h3 className="mt-3 text-h3 text-ink">{card.headline}</h3>
+      <h3 className="mt-3 font-display text-h3 text-ink">{card.headline}</h3>
       <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0" aria-label="Signals involved">
         {card.signals.map((signal) => {
           const tone = TONE[toneFor(signal.toneKey)];
@@ -435,7 +401,7 @@ function PatternCardView({ card, days }: { card: PatternCard; days: number }) {
 function EmptyPatterns({ logs, days }: { logs: number; days: number }) {
   const few = logs < 14;
   return (
-    <div className={`${CARD} p-6 text-center sm:p-8`}>
+    <div className="py-6 text-center">
       <BubblesMascot size={88} mood="resting" animated={false} className="mx-auto" />
       <h3 className="mt-3 text-h3 text-ink">
         {few ? "Bubbles needs about two weeks of logs to spot patterns" : "Nothing repeats often enough yet"}
@@ -476,7 +442,7 @@ function TrendView({ analysis, days }: { analysis: NonNullable<LongitudinalRespo
   return (
     <>
       {total > 0 && (
-        <figure className={`${CARD} m-0 p-5`}>
+        <figure className="m-0 border-b border-[color:var(--hairline)] pb-5">
           <figcaption>
             <span className="block font-display text-h4 text-ink">Your logging rhythm</span>
             <span className="block text-body-sm text-muted">
@@ -512,7 +478,7 @@ function TrendView({ analysis, days }: { analysis: NonNullable<LongitudinalRespo
       )}
 
       {domains.length > 0 && (
-        <div className={`${CARD} p-5`}>
+        <div className="pt-2">
           <h2 className="font-display text-h4 text-ink">What Bubbles can see</h2>
           <p className="text-body-sm text-muted">Gaps stay gaps. Bubbles never reads missing logs as &ldquo;fine&rdquo;.</p>
           <ul className="m-0 mt-3 flex list-none flex-wrap gap-2 p-0">

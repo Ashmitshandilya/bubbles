@@ -1,5 +1,6 @@
 "use client";
 
+import { groupByMode } from "./history";
 import { Fragment, useEffect, useId, useRef } from "react";
 import { BubblesMascot } from "../../components/BubblesMascot";
 import { TONE, type Tone } from "../../components/hub/HubKit";
@@ -56,6 +57,8 @@ export interface ConversationSummary {
   id: string;
   title: string;
   when: string;
+  /** "orbit" for a Heart-to-heart thread. */
+  mode?: "talk" | "orbit";
 }
 
 export const ICONS = {
@@ -260,7 +263,6 @@ function eventLabel(event: ExtractedHealthEvent) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-const btn = "bubbles-press inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-full px-4 text-body-sm font-extrabold disabled:cursor-not-allowed disabled:opacity-60";
 
 /** "Should I save these?": explicit user confirmation before AI-proposed events count. The card flips as soon as a button is pressed. */
 function EventCard({
@@ -286,22 +288,17 @@ function EventCard({
   if (resolved) {
     if (saved.length) {
       return (
-        <div ref={resultRef} tabIndex={-1} role="status" className="bubbles-pop-in flex items-center gap-3 rounded-3xl border border-line bg-surface px-4 py-3 outline-offset-4">
-          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tint-grape text-bubbles-grape-deep">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-          </span>
-          <div className="min-w-0">
-            <strong className="block font-display text-h4 text-ink">{recordSaved ? "Saved to your health record" : "Saved"}</strong>
-            <span className="block text-body-sm text-ink-soft">
-              {saved.map(eventLabel).join(", ")}
-              {skipped.length ? ` · skipped ${skipped.length}` : ""}
-            </span>
-          </div>
+        <div ref={resultRef} tabIndex={-1} role="status" className="bubbles-pop-in pearl-note outline-offset-4" style={{ margin: 0 }}>
+          <span aria-hidden="true" className="mr-1 inline-block align-[-3px]"><Icon d={ICONS.check} size={16} strokeWidth={3} /></span>
+          <strong className="font-semibold text-ink">{recordSaved ? "Saved to your health record" : "Saved"}</strong>
+          {" · "}
+          {saved.map(eventLabel).join(", ")}
+          {skipped.length ? ` · skipped ${skipped.length}` : ""}
         </div>
       );
     }
     return (
-      <div ref={resultRef} tabIndex={-1} role="status" className="rounded-3xl border border-line bg-surface px-4 py-3 text-body-sm text-ink-soft outline-offset-4">
+      <div ref={resultRef} tabIndex={-1} role="status" className="pearl-note outline-offset-4" style={{ margin: 0 }}>
         {withdrawn.length === decidable.length
           ? "Bubbles withdrew this after your correction. Nothing was saved."
           : "Okay, nothing from this message was saved."}
@@ -313,10 +310,10 @@ function EventCard({
   return (
     <section
       aria-label="Health details Bubbles noticed"
-      className="flex flex-col gap-3 rounded-3xl border border-dashed border-bubbles-lilac bg-surface px-4 py-4 shadow-sm sm:px-5"
+      className="flex flex-col gap-2 border-l-2 border-[color:var(--gold-line)] pl-4"
     >
-      <h3 className="m-0 font-display text-h4 font-semibold">
-        {decidable.length ? `Should I save ${many ? "these" : "this"}?` : "Bubbles noticed"}
+      <h3 className="pearl-eyebrow">
+        {decidable.length ? `Noted. Should I keep ${many ? "these" : "this"}?` : "Bubbles noticed"}
       </h3>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {events.map((event, idx) => {
@@ -327,7 +324,7 @@ function EventCard({
           const denied = event.notPresent.length > 0;
           const struck = state === "retracted" ? "line-through" : "";
           return (
-            <li key={event.id ?? `${event.eventType}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface px-3 py-2">
+            <li key={event.id ?? `${event.eventType}-${idx}`} className="flex flex-wrap items-center justify-between gap-2 py-1">
               <div data-private className="min-w-0 text-body-sm">
                 {denied ? (
                   <>
@@ -355,11 +352,11 @@ function EventCard({
               {state === "checking" && <span className="text-body-sm font-extrabold text-ink-soft">Checking…</span>}
               {many && event.isConfirmable && event.id && !state && (
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => onDecide([event.id!], true)} className={`${btn} bg-tint-grape text-bubbles-grape-deep`} aria-label={`Save ${eventLabel(event)}`}>
-                    Save
+                  <button type="button" onClick={() => onDecide([event.id!], true)} className="pearl-link" aria-label={`Keep ${eventLabel(event)}`}>
+                    Keep
                   </button>
-                  <button type="button" onClick={() => onDecide([event.id!], false)} className={`${btn} text-ink-soft`} aria-label={`Don't save ${eventLabel(event)}`}>
-                    Skip
+                  <button type="button" onClick={() => onDecide([event.id!], false)} className="pearl-link" style={{ color: "var(--ink-soft)" }} aria-label={`Not right: ${eventLabel(event)}`}>
+                    Not right
                   </button>
                 </div>
               )}
@@ -369,12 +366,11 @@ function EventCard({
       </ul>
       {pendingIds.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => onDecide(pendingIds, true)} className={`${btn} bg-bubbles-grape text-white bubbles-glow`}>
-            <Icon d={ICONS.check} size={16} strokeWidth={3} />
-            {pendingIds.length === 1 ? "Yes, save it" : "Yes, save all"}
+          <button type="button" onClick={() => onDecide(pendingIds, true)} className="pearl-link">
+            {pendingIds.length === 1 ? "Keep" : "Keep all"}
           </button>
-          <button type="button" onClick={() => onDecide(pendingIds, false)} className={`${btn} text-ink-soft hover:text-ink`}>
-            Don&apos;t save
+          <button type="button" onClick={() => onDecide(pendingIds, false)} className="pearl-link" style={{ color: "var(--ink-soft)" }}>
+            Not right
           </button>
         </div>
       )}
@@ -626,7 +622,7 @@ export function BubblesReply({
           )}
         </div>
       )}
-      <div data-private className="flex flex-col gap-3 rounded-[20px_20px_20px_8px] border border-line bg-surface px-5 py-4 text-body leading-relaxed text-ink shadow-sm">
+      <div data-private className="flex flex-col gap-3 py-1 text-body leading-relaxed text-ink [overflow-wrap:anywhere]">
         <MessageBody content={message.content} />
         <EvidenceRow evidence={message.evidence ?? []} confidence={message.confidence} />
       </div>
@@ -640,14 +636,14 @@ export function BubblesReply({
         <ReplyFeedback feedback={feedback} busy={feedbackBusy} failed={feedbackFailed} onRate={onRate} />
       )}
       {chips.length > 0 && onChip && (
-        <div role="group" aria-label="Suggested follow-ups" className="flex flex-wrap gap-2">
+        <div role="group" aria-label="Suggested follow-ups" className="flex flex-col items-start">
           {chips.map((chip, i) => (
             <button
               key={`${i}-${chip}`}
               type="button"
               disabled={chipsDisabled}
               onClick={() => onChip(chip)}
-              className="bubbles-press min-h-[44px] rounded-full border border-bubbles-grape/20 bg-surface px-4 text-left text-body-sm font-extrabold text-bubbles-grape-deep hover:border-bubbles-grape disabled:cursor-not-allowed disabled:opacity-60"
+              className="pearl-link text-left disabled:cursor-not-allowed disabled:opacity-60"
             >
               {chip}
             </button>
@@ -707,26 +703,33 @@ export function ConversationList({
         <p className="m-0 px-1.5 text-body-sm text-ink-soft">No chats yet. Your chats with Bubbles will appear here.</p>
       )}
       {state !== "loading" && items.length > 0 && (
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {items.map((c) => {
-            const active = c.id === activeId;
-            return (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(c.id)}
-                  aria-current={active ? "true" : undefined}
-                  className={`flex min-h-[48px] w-full flex-col gap-0.5 rounded-2xl px-3.5 py-2.5 text-left transition-colors ${
-                    active ? "bg-tint-pink" : "hover:bg-blush"
-                  }`}
-                >
-                  <strong className="block w-full truncate text-body-sm font-extrabold text-ink">{c.title}</strong>
-                  <span className="text-chip text-ink-soft">{c.when}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <>
+          {groupByMode(items).map((group) => (
+            <section key={group.label ?? "all"} aria-label={group.label ?? "Chats"}>
+              {group.label && <h3 className="m-0 px-1.5 pb-1 pt-3 text-label font-extrabold uppercase tracking-wide text-ink-soft">{group.label}</h3>}
+              <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                {group.items.map((c) => {
+                  const active = c.id === activeId;
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelect(c.id)}
+                        aria-current={active ? "true" : undefined}
+                        className={`flex min-h-[48px] w-full flex-col gap-0.5 rounded-2xl px-3.5 py-2.5 text-left transition-colors ${
+                          active ? "bg-tint-pink" : "hover:bg-blush"
+                        }`}
+                      >
+                        <strong className="block w-full truncate text-body-sm font-extrabold text-ink">{c.title}</strong>
+                        <span className="text-chip text-ink-soft">{c.when}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </>
       )}
     </div>
   );

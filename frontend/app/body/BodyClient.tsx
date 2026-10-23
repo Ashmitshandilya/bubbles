@@ -3,7 +3,7 @@
 import { Component, useEffect, useMemo, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { CARD, ErrorCard, HubPage, Skeleton, useBubblesQuery } from "../../components/hub/HubKit";
+import { SECTION, ErrorCard, HubPage, Skeleton, useBubblesQuery } from "../../components/hub/HubKit";
 import { useExperience } from "../../components/Providers";
 import { BodyFallback2D } from "../../components/anatomy/BodyFallback2D";
 import { OrganList } from "../../components/anatomy/OrganList";
@@ -48,7 +48,7 @@ export function BodyClient() {
 /** A profile that chose no body map: say so plainly and show how to change it. Nothing is loaded or drawn. */
 function BodyMapOff() {
   return (
-    <section className={`${CARD} bubbles-rise max-w-2xl p-6 sm:p-8`} aria-labelledby="body-off-title">
+    <section className={`${SECTION} bubbles-rise max-w-2xl`} aria-labelledby="body-off-title">
       <h1 id="body-off-title" className="text-h2 text-ink">The body map is switched off</h1>
       <p className="mt-2 text-body text-muted">
         Your setup says Bubbles should not show a body map for you. Everything else in Bubbles works the same. You can change this any time.
@@ -113,7 +113,7 @@ function BodyMap() {
       {query.status === "error" && <ErrorCard title="Your body map didn't load" message={query.message} onRetry={reload} />}
 
       {query.status === "ready" && organs.length === 0 && (
-        <p className={`${CARD} p-6 text-body text-muted`}>Bubbles has no body map for you yet. Try again in a little while.</p>
+        <p className={`${SECTION} text-body text-muted`}>Bubbles has no body map for you yet. Try again in a little while.</p>
       )}
 
       {query.status === "ready" && organs.length > 0 && (
@@ -129,7 +129,7 @@ function BodyMap() {
           )}
 
           {nothingYet && (
-            <section className={`${CARD} flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6`} aria-labelledby="body-empty-title">
+            <section className={`${SECTION} flex flex-wrap items-center justify-between gap-4`} aria-labelledby="body-empty-title">
               <div className="max-w-xl">
                 <h2 id="body-empty-title" className="text-h4 text-ink">
                   Nothing to map yet

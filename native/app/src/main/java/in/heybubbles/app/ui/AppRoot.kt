@@ -145,6 +145,7 @@ private fun Home(api: Api, repo: Repo, session: Session) {
                     label = "screen",
                 ) { _ ->
                 when {
+                    section == "orbit" -> `in`.heybubbles.app.ui.screens.orbit.OrbitScreen(api, onBack = { section = null })
                     section == "cycle" -> CycleScreen(api, onBack = { section = null })
                     section == "patterns" -> PatternsScreen(api, onBack = { section = null })
                     section == "care" -> CareScreen(api, repo, onBack = { section = null })

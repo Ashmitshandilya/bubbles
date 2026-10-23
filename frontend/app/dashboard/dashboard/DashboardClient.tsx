@@ -12,25 +12,19 @@ import { LoadingBubbles } from "../../../components/hub/HubKit";
 import { isSupabaseConfigured } from "../../../lib/supabase";
 import { SafetyBanner, type SafetyLevel } from "./SafetyBanner";
 import { LivingSignalMap } from "./LivingSignalMap";
-import {
-  AlsoList, BodyMapCard, ComingUp, Greeting, MoreFold, Patterns, QuickLog, SignalTiles, TodayBrief,
-  tileFromCycle, tileFromSignal, type HeroState, type Tile,
-} from "./TodaySections";
+import { BodyMapRow, ComingUp, LogInput, MoreFold, Patterns, QuickLog, WorthALook, comingUpRows } from "./TodaySections";
+import { Lede, LivingBubbles, Row, Rows, Section } from "../../../components/pearl";
 import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
 import { NutrientNudges } from "./NutrientNudges";
-import { readNudges, type Nudge } from "../../lib/nutrients";
+import { type Nudge } from "../../lib/nutrients";
 import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
 import { LastUpdatedCard } from "./LastUpdatedCard";
 import { pickLastUpdate } from "../../lib/data-sync";
 import { WeekRecapCard } from "./WeekRecapCard";
 import { buildWeekRecap } from "./recap";
-import {
-  WINDOW_DAYS, buildPatterns, buildTodayItems, greeting, readTracker, summarizeCycle, summarizeSignal, upcomingVisits,
-  type SignalSummary,
-} from "./today";
-import type {
-  IntelligenceBrief, LivingMapData, Loadable, ProfileData, SignalSlug, TrackerEntry, TrackerResponse, WeeklyInsights,
-} from "./types";
+import { TODAY_PATH, bubbleSignals, readBundle } from "./bundle";
+import { SIGNAL_META, buildPatterns, buildTodayItems, greeting, summarizeCycle, summarizeSignal, upcomingVisits, type SignalSummary } from "./today";
+import type { IntelligenceBrief, LivingMapData, Loadable, ProfileData, SignalSlug, TrackerEntry, TrackerResponse, WeeklyInsights } from "./types";
 
 // Only brand-new accounts see the tour, so its code loads on demand instead of with the Today screen.
 const FirstRunTour = dynamic(() => import("../../onboarding/FirstRunTour").then((m) => m.FirstRunTour), { ssr: false });
@@ -38,10 +32,7 @@ const FirstRunTour = dynamic(() => import("../../onboarding/FirstRunTour").then(
 
 const DAILY = ["sleep", "mood", "activity", "hydration", "nutrition"] as const;
 const TILE_ORDER: SignalSlug[] = ["cycle", "sleep", "mood", "activity", "hydration", "nutrition"];
-// The cycle summary (average length, next period) is computed from the entries in the window, so Today asks for the
-// same year the Cycle page does; a shorter window would show a different average than the page it links to.
-const CYCLE_DAYS = 365;
-// Today fires a dozen reads at once and several of them scan a few weeks of events. A slow answer is not an
+// Today is one call (GET /today) that reads everything side by side on the server, and some of it scans a few weeks of events. A slow answer is not an
 // unreachable server: allow it time instead of letting the default 15 s abort flip the whole app to "offline".
 // retries: 0 so a hung read fails once ("Try again") rather than replaying for minutes.
 const TODAY_LIMITS = { timeoutMs: 30_000, retries: 0 } as const;
@@ -70,6 +61,8 @@ export function DashboardClient() {
   const [weekly, setWeekly] = useState<Loadable<WeeklyInsights>>(LOADING);
   const [livingMap, setLivingMap] = useState<Loadable<LivingMapData>>(LOADING);
   const [nudges, setNudges] = useState<Nudge[]>([]);
+  const [lede, setLede] = useState<string | null>(null);
+  const [orbitQuestion, setOrbitQuestion] = useState<{ text?: string; answered?: boolean } | null>(null);
   const [water, setWater] = useState<WaterState>("idle");
   const [serverLastUpdate, setServerLastUpdate] = useState<string | null>(null);
   const seenVersion = useRef(dataVersion);
@@ -102,28 +95,25 @@ export function DashboardClient() {
         () => { if (alive && !quiet) set({ status: "error" }); },
       );
     }
-    const post = (days: number): RequestInit => ({ method: "POST", body: JSON.stringify({ days }) });
-
-    for (const slug of TILE_ORDER) {
-      settle(get<unknown>(`/health/${slug}?days=${slug === "cycle" ? CYCLE_DAYS : WINDOW_DAYS}`).then(readTracker), (value) =>
-        setTrackers((current) => ({ ...current, [slug]: value })),
-      );
-    }
-    settle(get<unknown>("/health/visits").then((r) => readTracker(r).entries), setVisits);
-    settle(get<{ brief: IntelligenceBrief }>("/intelligence/brief", post(14)).then((r) => r.brief), setBrief);
-    settle(get<{ insights: WeeklyInsights }>("/insights/weekly").then((r) => r.insights), setWeekly);
-    settle(get<{ map: LivingMapData }>("/intelligence/living-map?days=14").then((r) => r.map), setLivingMap);
-    get<unknown>("/nutrients/nudges").then(
-      (r) => { if (alive) setNudges(readNudges(r)); },
-      () => { /* an extra: the row simply stays out of Today */ },
+    // One call carries everything Today shows. A part the server could not read is missing from it and shows as a gap or "Try again".
+    const bundle = get<unknown>(TODAY_PATH).then(readBundle);
+    const part = <T,>(read: (b: ReturnType<typeof readBundle>) => T | undefined) => bundle.then((b) => {
+      const value = read(b);
+      if (value === undefined) throw new Error("part missing");
+      return value;
+    });
+    for (const slug of TILE_ORDER) settle(part((b) => b.trackers[slug]), (value) => setTrackers((current) => ({ ...current, [slug]: value })));
+    settle(part((b) => b.visits), setVisits);
+    settle(part((b) => b.brief), setBrief);
+    settle(part((b) => b.weekly), setWeekly);
+    settle(part((b) => b.livingMap), setLivingMap);
+    bundle.then(
+      (b) => { if (alive) { setNudges(b.nudges); setProfile(b.profile ?? null); setLede(b.lede?.text ?? null); setOrbitQuestion(b.orbit?.question ?? null); } },
+      () => { /* every part above shows its own error; the greeting and lede fall back to neutral */ },
     );
     get<{ last_update?: string | null; summary?: { last_update?: string } }>("/health/summary?last_only=true").then(
       (r) => { if (alive) setServerLastUpdate(r.last_update ?? r.summary?.last_update ?? null); },
       () => { /* the card falls back to what this browser saw */ },
-    );
-    get<{ profile?: ProfileData | null }>("/profile").then(
-      (r) => { if (alive) setProfile(r.profile ?? null); },
-      () => { /* greeting falls back to a neutral form */ },
     );
     return () => { alive = false; };
   }, [token, reloadKey, dataVersion]);
@@ -200,21 +190,10 @@ export function DashboardClient() {
   const cycle = showCycle && trackers.cycle.status === "ready" ? summarizeCycle(trackers.cycle.data, now) : null;
   const briefData = brief.status === "ready" ? brief.data : null;
 
-  const trackersLoading = TILE_ORDER.some((slug) => trackers[slug].status === "loading");
-  const trackersFailed = TILE_ORDER.every((slug) => trackers[slug].status === "error");
   const items = buildTodayItems(signals, cycle, briefData?.actions ?? [], briefData?.state?.deviations);
-  const heroState: HeroState =
-    trackersLoading || brief.status === "loading" ? "loading"
-    : trackersFailed ? "error"
-    : !signals.some((s) => s.logged) && !cycle?.logged ? "empty"
-    : items.length ? "items" : "clear";
-
-  const tiles = TILE_ORDER.filter((slug) => showCycle || slug !== "cycle").map((slug): Tile => {
-    const pending = { slug, state: trackers[slug].status === "error" ? "error" : "loading" } as const;
-    if (slug === "cycle") return cycle ? tileFromCycle(cycle) : pending;
-    const summary = signals.find((s) => s.slug === slug);
-    return summary ? tileFromSignal(summary) : pending;
-  });
+  const comingVisits = visits.status === "ready" ? upcomingVisits(visits.data, now) : null;
+  const nextUp = comingUpRows(cycle, comingVisits)[0];
+  const bubbles = bubbleSignals(signals);
 
   const patterns = buildPatterns(weekly.status === "ready" ? weekly.data.insights ?? [] : [], briefData?.state?.correlations?.items ?? []);
   const patternsState = weekly.status === "loading" || brief.status === "loading" ? "loading" : weekly.status === "error" && brief.status === "error" ? "error" : "ready";
@@ -222,7 +201,6 @@ export function DashboardClient() {
   // ponytail: no endpoint the dashboard reads exposes the user's current triage level (only /chat replies do),
   // and companion.safety_note is generic guidance, so the page stays GREEN. Feed `level` once /intelligence/brief returns it.
   const safety: { level: SafetyLevel; reasons: string[] } = { level: "GREEN", reasons: [] };
-  const showMascot = safety.level !== "RED";
 
   const name = (profile?.display_name ?? user?.display_name ?? "").trim().split(/\s+/)[0]?.slice(0, 40);
   const date = now.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
@@ -239,29 +217,38 @@ export function DashboardClient() {
         <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
 
         <main id="main" className="bubbles-stagger mx-auto flex w-full max-w-[1180px] flex-1 flex-col gap-6 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
-          <Greeting title={name ? `${greeting(now)}, ${name}` : greeting(now)} date={date} cycleDay={cycle?.day} />
-
           {safety.level !== "GREEN" && <SafetyBanner level={safety.level} reasons={safety.reasons} />}
 
           <InsightSheetProvider>
 
           {isNativeApp && <AppHome />}
 
-          <LastUpdatedCard update={pickLastUpdate(lastUpdate, serverLastUpdate)} />
+          <div className="pearl-page wide" style={{ padding: 0, maxWidth: 720, margin: "0 auto", width: "100%" }}>
+            <p className="pearl-eyebrow">{date}{cycle?.day ? ` · Cycle day ${cycle.day}` : ""}</p>
+            <h1 className="pearl-title">{name ? `${greeting(now)}, ${name}.` : `${greeting(now)}.`}</h1>
+            {lede ? <Lede>{lede}</Lede> : brief.status === "error" && trackers.sleep.status === "error" ? (
+              <Lede>Bubbles couldn&apos;t load today. Your data is safe. <button type="button" onClick={reload} className="pearl-link">Try again</button></Lede>
+            ) : null}
 
-          <TodayBrief state={heroState} items={items} showMascot={showMascot} onRetry={reload} onAddWater={addWater} waterBusy={water === "saving"} />
+            <Section label="Today's signals">
+              <LivingBubbles signals={bubbles} onOpen={(id) => router.push(SIGNAL_META[id as SignalSlug].href)} />
+            </Section>
 
-          <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} />
+            <LogInput />
+            <QuickLog onAddWater={addWater} waterBusy={water === "saving"} status={waterStatus} cycle={showCycle} />
 
-          <SignalTiles tiles={tiles} />
+            <Section label="Worth a look">
+              <WorthALook items={items} onAddWater={addWater} waterBusy={water === "saving"} />
+              <Rows>
+                {nextUp && <Row label="Coming up" value={`${nextUp.label}, ${nextUp.value}`} href={nextUp.href} />}
+                <Row label="Orbit" value={orbitQuestion?.answered === false ? "Today's question is waiting" : undefined} href="/orbit" />
+              </Rows>
+            </Section>
 
-          {/* Everything else is one tap away: Today opens on a single next step, the quick logs and the week. */}
-          <div className="flex flex-col gap-3">
-            {items.length > 1 && (
-              <MoreFold title="Also worth a look" hint={String(items.length - 1)}>
-                <AlsoList items={items.slice(1)} onAddWater={addWater} waterBusy={water === "saving"} />
-              </MoreFold>
-            )}
+            <LastUpdatedCard update={pickLastUpdate(lastUpdate, serverLastUpdate)} />
+
+          {/* Everything else is one tap away. */}
+          <div className="flex flex-col" style={{ marginTop: 28 }}>
             <MoreFold title="Patterns" hint={patternsState === "ready" && patterns.length ? String(patterns.length) : undefined}>
               <Patterns
                 state={patternsState}
@@ -293,7 +280,8 @@ export function DashboardClient() {
             <MoreFold title="What Bubbles picked up from chat">
               <LivingSignalMap state={livingMap.status} map={livingMap.status === "ready" ? livingMap.data : null} onRetry={reload} />
             </MoreFold>
-            {showBodyMap && !isNativeApp && <BodyMapCard />}
+            {showBodyMap && !isNativeApp && <BodyMapRow />}
+          </div>
           </div>
           </InsightSheetProvider>
 

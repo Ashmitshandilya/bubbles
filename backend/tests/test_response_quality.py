@@ -119,3 +119,17 @@ def test_numbers_are_only_checked_when_a_grounding_text_is_passed():
     assert "ungrounded_number" not in lint("You slept 4 hours.")
     assert "ungrounded_number" in lint("You slept 4 hours.", grounding="")
     assert "ungrounded_number" not in lint("You slept 4 hours.", grounding="sleep 4 hours", user_message="")
+
+
+def test_ungrounded_number_check_has_a_low_false_positive_rate_on_grounded_replies():
+    """WP9.3: the check stays log-only until real replies show a false-positive rate of 1 percent or less. This is the labelled set it is measured on
+    (hand-written, so it shows the mechanism, not the live rate): every reply built from its own grounding must pass, every invented figure must be flagged."""
+    import json
+    from pathlib import Path
+    rows = [json.loads(l) for l in (Path(__file__).parent / "eval" / "grounded_numbers.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    clean = [r for r in rows if r["expect"] == "clean"]
+    bad = [r for r in rows if r["expect"] == "flag"]
+    false_positives = [r["reply"] for r in clean if "ungrounded_number" in lint(r["reply"], grounding=r["grounding"], user_message=r["user"])]
+    misses = [r["reply"] for r in bad if "ungrounded_number" not in lint(r["reply"], grounding=r["grounding"], user_message=r["user"])]
+    assert len(false_positives) / len(clean) <= 0.01, false_positives
+    assert not misses, misses

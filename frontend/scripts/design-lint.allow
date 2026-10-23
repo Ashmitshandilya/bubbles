@@ -1,0 +1,8 @@
+# path  rule  reason. Violations from before the Pearl restyle; each WP3.x removes the lines for its folders.
+app/admin/panels-live.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
+app/admin/panels-moderation.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
+app/admin/panels-overall.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
+app/admin/panels.tsx tile-grid  internal admin console: data panels, outside the signed-in product restyle
+app/hydration/HydrationClient.tsx tile-grid  amount choices in the log form (a pick-one control, not a tile summary)
+app/login/page.tsx tile-grid  segmented sign-in control (a pick-one tab list, not a tile summary)
+components/cycle/YearView.tsx tile-grid  the year view is twelve months of a calendar, not stat tiles

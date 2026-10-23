@@ -92,3 +92,11 @@ and the person can switch 3D off (remembered). **Real-phone speed is unmeasured.
 Built: sign-in, first-run setup, tour, Today, Talk, Track (8 trackers, offline), Cycle, Patterns, Care, Community, reminders, Your choices, Delete my data, Delete my account, Fitness (food log, diet, workouts, strict transformation with screening, progress, body setup), Partner sharing, 3D body map, light/dark.
 Not done: real-phone test (especially body-map speed), release rebuild copied to `D:\coco\release-native-3.0.0`, `DECISIONS.md` entries for the new features (add in PR #52), Play Console steps (`PLAY_LISTING.md`), more Compose UI tests (the sign-in screen has four, run with `./gradlew.bat connectedDebugAndroidTest` on a phone or the emulator), a TalkBack pass on a real phone, a Fitness unit test for the response parsers if they grow.
 Open ideas: Room instead of the encrypted JSON queue if offline needs to cover more than tracker entries; show queued entries in the history list; a measured performance budget for the body map; native-side e2e in CI against the preview server.
+
+## Screens added in the 2026-10 renovation
+
+- **Today** reads `GET /today` through `data/TodayBundle.kt` (`parseToday`, tested in `TodayBundleTest`): the lede sentence, the data gaps, the safety note and the Orbit question all come from the server.
+- **Orbit** (`ui/screens/orbit/OrbitScreen.kt`, `data/Orbit.kt`): home, Heart-to-heart, Help me reply, Before I text them, rituals, After a fight, Understand them, Feeling unsafe at home. `FLAG_SECURE` is set while Orbit is open.
+- **How Bubbles understands you** (`UnderstandingScreen.kt`) and the **Stars lens** (`StarsScreen.kt`, `data/Stars.kt`, tested in `StarsLogicTest`) are under Me. The server works out everything; the app checks the form and shows the answer.
+- The notice version (`AuthRules.NOTICE_VERSION`) must match `backend/consent.py` `POLICY_VERSION` (a test compares them).
+

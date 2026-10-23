@@ -7,6 +7,7 @@ import {
   BTN_PRIMARY,
   BTN_SECONDARY,
   CARD,
+  SECTION,
   ErrorCard,
   HubPage,
   Icon,
@@ -375,7 +376,7 @@ function DoctorPrep() {
 
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           {/* Questions */}
-          <section aria-labelledby="questions-title" className={`${CARD} p-5 sm:p-6`}>
+          <section aria-labelledby="questions-title" className={`${SECTION}`}>
             <h2 id="questions-title" className="text-h3 text-ink">
               Questions to ask
             </h2>
@@ -475,7 +476,7 @@ function DoctorPrep() {
 
         {/* Records on file: each one scannable, each one a gap when empty. */}
         <Fold title="Records on file">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="flex flex-col gap-2">
             {RECORD_SECTIONS.map((section) => (
               <RecordCard key={section.kind} section={section} entries={lists[section.kind]} query={queries[section.kind][0]} onRetry={queries[section.kind][1]} labNotes={labNotes} />
             ))}
@@ -571,7 +572,7 @@ function RecordCard({
   const rows = entries ? recordRows(section.kind, entries) : [];
   const shown = rows.slice(0, 4);
   return (
-    <section aria-labelledby={`rec-${section.kind}`} className={`${CARD} flex flex-col p-5`}>
+    <section aria-labelledby={`rec-${section.kind}`} className={`${SECTION} flex flex-col`}>
       <div className="flex items-center gap-2 text-bubbles-sky-deep">
         <span className="shrink-0">
           <Icon id={section.icon} />

@@ -6,7 +6,7 @@ import { useApi, useAuth, useExperience } from "../../components/Providers";
 import {
   BTN_PRIMARY,
   BTN_SECONDARY,
-  CARD,
+  SECTION,
   ErrorCard,
   HubPage,
   Icon,
@@ -171,6 +171,9 @@ function Me() {
           <Link href="/profile/understanding" className={`${BTN_SECONDARY} no-underline`}>
             How Bubbles understands you
           </Link>
+          <Link href="/profile/stars" className={`${BTN_SECONDARY} no-underline`}>
+            Stars lens
+          </Link>
           <Link href="/settings" className={`${BTN_SECONDARY} no-underline`}>
             Settings
           </Link>
@@ -178,7 +181,7 @@ function Me() {
         </div>
       </header>
 
-      <section aria-labelledby="details-title" className={`${CARD} p-5`}>
+      <section aria-labelledby="details-title" className={`${SECTION}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="details-title" className="text-h4 text-ink">Your details</h2>
           {profile && <span className={`${PILL} ${TONE.mint.chip}`}>{coreSet} of {details.length} set</span>}
@@ -210,7 +213,7 @@ function Me() {
         )}
       </section>
 
-      <section aria-labelledby="memory-title" className={`${CARD} p-5`}>
+      <section aria-labelledby="memory-title" className={`${SECTION}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="memory-title" className="text-h4 text-ink">What Bubbles remembers</h2>
           {pill(countLabel(memory?.L1_pending), "to review", "sky")}
