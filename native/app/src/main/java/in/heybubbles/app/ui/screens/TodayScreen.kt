@@ -197,6 +197,7 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
         Spacer(Modifier.height(20.dp))
         Eyebrow("Explore", Modifier.padding(horizontal = 24.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         val explore = buildList {
+            add(Triple("orbit", "Orbit" to "Your closest people", Bubbles.TintGrape to Bubbles.GrapeDeep))
             if (sections?.contains("cycle") == true) add(Triple("cycle", "Cycle" to "Where you are in it", Bubbles.TintPink to Bubbles.PinkDeep))
             add(Triple("patterns", "Patterns" to "What your logs say", Bubbles.TintGrape to Bubbles.GrapeDeep))
             if (sections?.contains("care") == true) add(Triple("care", "Care" to "Get ready for a visit", Bubbles.TintMint to Bubbles.MintDeep))
