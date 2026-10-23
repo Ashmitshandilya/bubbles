@@ -1,5 +1,13 @@
 package `in`.heybubbles.app.ui.screens
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
+import android.net.Uri
+import android.view.WindowManager
+import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -10,6 +18,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,6 +79,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import `in`.heybubbles.app.data.Api
+import `in`.heybubbles.app.data.Harbor
 import `in`.heybubbles.app.data.friendly
 import `in`.heybubbles.app.ui.ChatBubbleIcon
 import `in`.heybubbles.app.ui.components.BubbleGradient
@@ -66,7 +89,14 @@ import `in`.heybubbles.app.ui.components.ScreenTitle
 import `in`.heybubbles.app.ui.theme.Bubbles
 import java.util.UUID
 
-data class Msg(val id: String, val fromUser: Boolean, val text: String, val urgent: Boolean = false, val consentAsk: Boolean = false, val failed: Boolean = false)
+data class Msg(
+    val id: String, val fromUser: Boolean, val text: String, val urgent: Boolean = false, val consentAsk: Boolean = false, val failed: Boolean = false,
+    /** A Safe Harbor reply (someone close to the person hurts or frightens them): drawn as plain text with its own help button and choices. */
+    val harbor: Harbor? = null,
+)
+
+/** The screen hides itself from screenshots and the recent-apps preview while a Safe Harbor reply is in the conversation. */
+fun keepsSecret(msgs: List<Msg>): Boolean = msgs.any { it.harbor != null }
 
 data class TalkState(
     val loading: Boolean = true,
@@ -88,7 +118,7 @@ class TalkViewModel(private val api: Api) : ViewModel() {
             val latest = api.latestChat()
             conversationId = latest.conversation?.id?.ifBlank { null }
             _state.update { it.copy(loading = false, notice = null, msgs = latest.messages.map { m ->
-                Msg(m.id, m.role == "user", m.content, urgent = m.safetyLevel == "RED")
+                Msg(m.id, m.role == "user", m.content, urgent = m.safetyLevel == "RED", harbor = if (m.role == "user") null else m.harbor?.shown())
             }) }
         } catch (e: Exception) {
             _state.update { it.copy(loading = false, notice = e.friendly()) }
@@ -106,7 +136,7 @@ class TalkViewModel(private val api: Api) : ViewModel() {
                 val r = api.chat(clean, UUID.randomUUID().toString(), conversationId)
                 conversationId = r.conversationId ?: conversationId
                 val urgent = r.safety.level == "RED" || r.kind == "emergency"
-                _state.update { it.copy(sending = false, msgs = it.msgs + Msg(r.messageId ?: UUID.randomUUID().toString(), false, r.response, urgent, r.consentAsk)) }
+                _state.update { it.copy(sending = false, msgs = it.msgs + Msg(r.messageId ?: UUID.randomUUID().toString(), false, r.response, urgent, r.consentAsk, harbor = r.harbor?.shown())) }
             } catch (e: Exception) {
                 _state.update { it.copy(sending = false, notice = e.friendly()) }
             }
@@ -134,6 +164,16 @@ fun TalkScreen(api: Api) {
     val list = rememberLazyListState()
     val haptic = LocalHapticFeedback.current
     var draft by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf("") }
+    var helpFor by remember { mutableStateOf<Harbor?>(null) }
+
+    // FLAG_SECURE: no screenshots and a blank recent-apps card while this screen holds a Safe Harbor reply. Cleared when the screen is left.
+    val secret = keepsSecret(s.msgs)
+    val view = LocalView.current
+    DisposableEffect(secret) {
+        val window = view.context.findActivity()?.window
+        if (secret) window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { if (secret) window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+    }
 
     LaunchedEffect(s.msgs.size, s.sending) {
         val last = s.msgs.size + (if (s.sending) 1 else 0) - 1
@@ -148,7 +188,13 @@ fun TalkScreen(api: Api) {
                 s.msgs.isEmpty() && s.notice == null -> EmptyTalk { draft = it }
                 else -> LazyColumn(state = list, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(s.msgs, key = { it.id }) { m ->
-                        Bubble(m)
+                        val harbor = m.harbor
+                        if (harbor != null && !m.urgent) {
+                            HarborReply(m, harbor, showChoices = !s.sending && m.id == s.msgs.last().id, onHelp = { helpFor = harbor }, onPick = { vm.send(it) })
+                        } else {
+                            Bubble(m)
+                            if (harbor != null) HelpPill { helpFor = harbor }
+                        }
                         if (m.consentAsk) ConsentRow(onYes = { vm.answerConsent(true) }, onNo = { vm.answerConsent(false) })
                     }
                     if (s.sending) item { Row(Modifier.padding(start = 4.dp)) { Typing() } }
@@ -166,6 +212,70 @@ fun TalkScreen(api: Api) {
             vm.send(draft); draft = ""
         }
     }
+
+    helpFor?.let { HelpSheet(it) { helpFor = null } }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/** Opens the phone app with the number filled in. It never dials by itself: the person presses call. */
+private fun dial(context: Context, number: String) {
+    try {
+        context.startActivity(Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    } catch (_: ActivityNotFoundException) {
+        Toast.makeText(context, "This device has no phone app. The number is $number.", Toast.LENGTH_LONG).show()
+    }
+}
+
+/** A Safe Harbor reply: plain text, no bubble, no mascot, no tint. One quiet button for the people who can help, then the choices. */
+@Composable
+private fun HarborReply(m: Msg, harbor: Harbor, showChoices: Boolean, onHelp: () -> Unit, onPick: (String) -> Unit) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.height(IntrinsicSize.Min)) {
+            Box(Modifier.width(2.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outline))
+            Text(
+                m.text,
+                Modifier.padding(start = 14.dp).semantics { contentDescription = "Bubbles said: " + m.text },
+                style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        HelpPill(onHelp)
+        if (showChoices) harbor.actions.forEach { a ->
+            Pill(a.label, MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.onSurface, Modifier.heightIn(min = 48.dp)) { onPick(a.label) }
+        }
+    }
+}
+
+@Composable
+private fun HelpPill(onClick: () -> Unit) {
+    Pill("People who can help", MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, Modifier.heightIn(min = 48.dp), onClick)
+}
+
+/** Every resource with a Call button that opens the dialler. A row with no number (a local number, a person you trust) is words only. */
+@Composable
+private fun HelpSheet(harbor: Harbor, onClose: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text("People who can help") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                harbor.resources.forEach { r ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(r.name, style = MaterialTheme.typography.titleSmall)
+                        if (r.note.isNotBlank()) Text(r.note, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (r.number.isNotEmpty()) Button({ dial(context, r.number) }, Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Call ${r.number}") }
+                    }
+                }
+                Text("Nothing is dialled for you. You choose whether to call.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = { TextButton(onClose) { Text("Close") } },
+    )
 }
 
 @Composable

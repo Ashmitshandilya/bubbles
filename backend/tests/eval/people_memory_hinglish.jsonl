@@ -1,0 +1,227 @@
+{"text": "mera boyfriend Ashmit hai", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: the headline Hinglish form"}
+{"text": "Mera boyfriend Ashmit hai.", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: sentence case and a full stop"}
+{"text": "mera bf Rohan hai", "expect": [{"name": "Rohan", "relation": "boyfriend"}], "note": "statement: bf"}
+{"text": "meri girlfriend Riya hai", "expect": [{"name": "Riya", "relation": "girlfriend"}], "note": "statement: girlfriend"}
+{"text": "meri gf Priya hai", "expect": [{"name": "Priya", "relation": "girlfriend"}], "note": "statement: gf"}
+{"text": "Meri Girlfriend Riya Hai", "expect": [{"name": "Riya", "relation": "girlfriend"}], "note": "statement: title case everywhere, Hai is not part of the name"}
+{"text": "mera bf Ashmit h", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: text-speak h for hai"}
+{"text": "mera pati Rahul hai", "expect": [{"name": "Rahul", "relation": "husband"}], "note": "statement: pati"}
+{"text": "meri patni Sunita hai", "expect": [{"name": "Sunita", "relation": "wife"}], "note": "statement: patni"}
+{"text": "meri biwi Neha hai", "expect": [{"name": "Neha", "relation": "wife"}], "note": "statement: biwi"}
+{"text": "mera gharwala Suresh hai", "expect": [{"name": "Suresh", "relation": "husband"}], "note": "statement: gharwala"}
+{"text": "meri gharwali Kavita hai", "expect": [{"name": "Kavita", "relation": "wife"}], "note": "statement: gharwali"}
+{"text": "meri mummy Sunita hai", "expect": [{"name": "Sunita", "relation": "mother"}], "note": "statement: mummy"}
+{"text": "meri maa Geeta hai", "expect": [{"name": "Geeta", "relation": "mother"}], "note": "statement: maa"}
+{"text": "mere papa Rajesh hain", "expect": [{"name": "Rajesh", "relation": "father"}], "note": "statement: papa with hain"}
+{"text": "mera bhai Karan hai", "expect": [{"name": "Karan", "relation": "brother"}], "note": "statement: bhai"}
+{"text": "mera bhaiya Vikram hai", "expect": [{"name": "Vikram", "relation": "brother"}], "note": "statement: bhaiya"}
+{"text": "meri behen Priya hai", "expect": [{"name": "Priya", "relation": "sister"}], "note": "statement: behen"}
+{"text": "meri didi Anjali hai", "expect": [{"name": "Anjali", "relation": "sister"}], "note": "statement: didi"}
+{"text": "mera dost Rahul hai", "expect": [{"name": "Rahul", "relation": "friend"}], "note": "statement: dost"}
+{"text": "meri saheli Pooja hai", "expect": [{"name": "Pooja", "relation": "friend"}], "note": "statement: saheli"}
+{"text": "mera beta Aarav hai", "expect": [{"name": "Aarav", "relation": "son"}], "note": "statement: beta"}
+{"text": "meri beti Anaya hai", "expect": [{"name": "Anaya", "relation": "daughter"}], "note": "statement: beti"}
+{"text": "meri saas Kamla hai", "expect": [{"name": "Kamla", "relation": "mother-in-law"}], "note": "statement: saas"}
+{"text": "mere sasur Mohan hain", "expect": [{"name": "Mohan", "relation": "father-in-law"}], "note": "statement: sasur"}
+{"text": "mere nana Hari hain", "expect": [{"name": "Hari", "relation": "grandfather"}], "note": "statement: nana"}
+{"text": "meri nani Savitri hai", "expect": [{"name": "Savitri", "relation": "grandmother"}], "note": "statement: nani"}
+{"text": "mere dada Ramesh hain", "expect": [{"name": "Ramesh", "relation": "grandfather"}], "note": "statement: dada"}
+{"text": "meri dadi Shanti hai", "expect": [{"name": "Shanti", "relation": "grandmother"}], "note": "statement: dadi"}
+{"text": "mere chacha Ajay hain", "expect": [{"name": "Ajay", "relation": "uncle"}], "note": "statement: chacha"}
+{"text": "meri chachi Seema hai", "expect": [{"name": "Seema", "relation": "aunt"}], "note": "statement: chachi"}
+{"text": "mera mama Rakesh hai", "expect": [{"name": "Rakesh", "relation": "uncle"}], "note": "statement: Hinglish mama is the mother's brother, not a mum"}
+{"text": "meri mami Rekha hai", "expect": [{"name": "Rekha", "relation": "aunt"}], "note": "statement: mami"}
+{"text": "meri bua Usha hai", "expect": [{"name": "Usha", "relation": "aunt"}], "note": "statement: bua"}
+{"text": "mera devar Sandeep hai", "expect": [{"name": "Sandeep", "relation": "brother-in-law"}], "note": "statement: devar"}
+{"text": "meri nanad Ritu hai", "expect": [{"name": "Ritu", "relation": "sister-in-law"}], "note": "statement: nanad"}
+{"text": "mera kutta Bruno hai", "expect": [{"name": "Bruno", "relation": "dog"}], "note": "statement: kutta"}
+{"text": "meri billi Mithi hai", "expect": [{"name": "Mithi", "relation": "cat"}], "note": "statement: billi"}
+{"text": "mera boyfriend ka naam Ashmit hai", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: ka naam"}
+{"text": "meri girlfriend ka naam riya hai", "expect": [{"name": "Riya", "relation": "girlfriend"}], "note": "statement: a lower case name is fine when ka naam says it is a name"}
+{"text": "meri mummy ka naam sunita hai", "expect": [{"name": "Sunita", "relation": "mother"}], "note": "statement: lower case name"}
+{"text": "mere pati ka naam Rahul Sharma hai", "expect": [{"name": "Rahul Sharma", "relation": "husband"}], "note": "statement: two word name"}
+{"text": "mere papa ka naam Ramesh Kumar hai", "expect": [{"name": "Ramesh Kumar", "relation": "father"}], "note": "statement: two word name"}
+{"text": "mera kutta ka naam Happy hai", "expect": [{"name": "Happy", "relation": "dog"}], "note": "statement: a name that is also a common word"}
+{"text": "meri billi ka naam Lucky hai", "expect": [{"name": "Lucky", "relation": "cat"}], "note": "statement: a name that is also a common word"}
+{"text": "mera dost Sunny hai", "expect": [{"name": "Sunny", "relation": "friend"}], "note": "statement: Sunny is a name, not the weather"}
+{"text": "meri behen Rose hai", "expect": [{"name": "Rose", "relation": "sister"}], "note": "statement: Rose is a name, not a flower"}
+{"text": "Ashmit mera boyfriend hai", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: name first"}
+{"text": "Riya meri behen hai", "expect": [{"name": "Riya", "relation": "sister"}], "note": "statement: name first"}
+{"text": "Rahul mera dost hai", "expect": [{"name": "Rahul", "relation": "friend"}], "note": "statement: name first"}
+{"text": "Sunita meri mummy hain", "expect": [{"name": "Sunita", "relation": "mother"}], "note": "statement: name first with hain"}
+{"text": "Bruno mera kutta hai", "expect": [{"name": "Bruno", "relation": "dog"}], "note": "statement: name first"}
+{"text": "Hey Bubbles Ashmit mera boyfriend hai", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: a greeting in front of the name is not part of it"}
+{"text": "mera dost Rahul bimar hai", "expect": [{"name": "Rahul", "relation": "friend"}], "note": "statement: Rahul is saved as a friend, the illness is not the user's and is not saved"}
+{"text": "mera boyfriend Ashmit hai aur meri behen Priya hai", "expect": [{"name": "Ashmit", "relation": "boyfriend"}, {"name": "Priya", "relation": "sister"}], "note": "statement: two people in one message"}
+{"text": "mera kutta Bruno hai aur meri billi Mithi hai", "expect": [{"name": "Bruno", "relation": "dog"}, {"name": "Mithi", "relation": "cat"}], "note": "statement: two pets"}
+{"text": "mera boyfriend Ashmit hai, mera koi doosra boyfriend nahi hai", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: the no belongs to the second clause"}
+{"text": "my dog is called Bruno, mera bhai Karan hai", "expect": [{"name": "Bruno", "relation": "dog"}, {"name": "Karan", "relation": "brother"}], "note": "mixed: English and Hinglish together"}
+{"text": "my boyfriend is Ashmit", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "mixed: plain English still works"}
+{"text": "मेरे पति का नाम राहुल है", "expect": [{"name": "राहुल", "relation": "husband"}], "note": "statement: Devanagari ka naam"}
+{"text": "मेरी बहन का नाम प्रिया है", "expect": [{"name": "प्रिया", "relation": "sister"}], "note": "statement: Devanagari ka naam"}
+{"text": "मेरी माँ का नाम सुनीता है", "expect": [{"name": "सुनीता", "relation": "mother"}], "note": "statement: Devanagari ka naam"}
+{"text": "मेरे दोस्त का नाम अमित है", "expect": [{"name": "अमित", "relation": "friend"}], "note": "statement: Devanagari ka naam"}
+{"text": "मेरे कुत्ते का नाम ब्रूनो है", "expect": [{"name": "ब्रूनो", "relation": "dog"}], "note": "statement: Devanagari pet"}
+{"text": "मेरे पति का नाम राहुल शर्मा है", "expect": [{"name": "राहुल शर्मा", "relation": "husband"}], "note": "statement: Devanagari two word name"}
+{"text": "राहुल मेरा दोस्त है", "expect": [{"name": "राहुल", "relation": "friend"}], "note": "statement: Devanagari name first"}
+{"text": "प्रिया मेरी बहन है", "expect": [{"name": "प्रिया", "relation": "sister"}], "note": "statement: Devanagari name first"}
+{"text": "मेरे चाचा का नाम अजय है", "expect": [{"name": "अजय", "relation": "uncle"}], "note": "statement: Devanagari chacha"}
+{"text": "मेरे मामा का नाम राकेश है", "expect": [{"name": "राकेश", "relation": "uncle"}], "note": "statement: Devanagari mama is the mother's brother"}
+{"text": "mera boyfriend राहुल hai", "expect": [{"name": "राहुल", "relation": "boyfriend"}], "note": "mixed: a Devanagari name inside a Latin sentence"}
+{"text": "मेरा boyfriend Ashmit है", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "mixed: Devanagari possessive, Latin name"}
+{"text": "मेरा बॉयफ्रेंड Ashmit है", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "mixed: Devanagari relation, Latin name"}
+{"text": "meri behen ka naam प्रिया hai", "expect": [{"name": "प्रिया", "relation": "sister"}], "note": "mixed: Latin sentence, Devanagari name"}
+{"text": "मेरे पति का नाम Rahul है", "expect": [{"name": "Rahul", "relation": "husband"}], "note": "mixed: Devanagari sentence, Latin name"}
+{"text": "mera boyfriend kaun hai?", "expect": [], "note": "question: the Accept case"}
+{"text": "mera boyfriend kaun hai", "expect": [], "note": "question: no question mark"}
+{"text": "kya mera boyfriend Ashmit hai?", "expect": [], "note": "question: kya in front"}
+{"text": "kya mera boyfriend Ashmit hai", "expect": [], "note": "question: kya in front, no question mark"}
+{"text": "mera boyfriend Ashmit hai kya?", "expect": [], "note": "question: kya at the end"}
+{"text": "mera boyfriend Ashmit hai kya", "expect": [], "note": "question: kya at the end, no question mark"}
+{"text": "mera boyfriend Ashmit hai na?", "expect": [], "note": "question: a tag question"}
+{"text": "meri behen ka naam kya hai?", "expect": [], "note": "question: asking for the name"}
+{"text": "mere pati ka naam kya hai", "expect": [], "note": "question: asking for the name, no question mark"}
+{"text": "kya Rahul mera dost hai?", "expect": [], "note": "question: name first"}
+{"text": "Rahul mera dost hai kya", "expect": [], "note": "question: name first, kya at the end"}
+{"text": "tumhe pata hai mera boyfriend kaun hai?", "expect": [], "note": "question: do you know"}
+{"text": "mera boyfriend Ashmit hai?", "expect": [], "note": "question: a question mark alone"}
+{"text": "मेरा बॉयफ्रेंड कौन है?", "expect": [], "note": "question: Devanagari"}
+{"text": "क्या राहुल मेरा दोस्त है?", "expect": [], "note": "question: Devanagari name first"}
+{"text": "मेरे पति का नाम क्या है?", "expect": [], "note": "question: Devanagari asking for the name"}
+{"text": "kya tum jaante ho mera boyfriend kaun hai", "expect": [], "note": "question: long form"}
+{"text": "mera koi boyfriend nahi hai", "expect": [], "note": "negation: the Accept case"}
+{"text": "meri koi behen nahi hai", "expect": [], "note": "negation: no sister"}
+{"text": "mera boyfriend nahi hai", "expect": [], "note": "negation: no boyfriend"}
+{"text": "mera koi dost nahi hai", "expect": [], "note": "negation: no friends"}
+{"text": "mera boyfriend Ashmit nahi hai", "expect": [], "note": "negation: not Ashmit"}
+{"text": "Ashmit mera boyfriend nahi hai", "expect": [], "note": "negation: name first"}
+{"text": "Rahul mera dost nahi hai", "expect": [], "note": "negation: name first"}
+{"text": "meri girlfriend Riya nahi hai", "expect": [], "note": "negation: not Riya"}
+{"text": "mera boyfriend ka naam Ashmit nahi hai", "expect": [], "note": "negation: ka naam"}
+{"text": "mujhe nahi lagta mera boyfriend Ashmit hai", "expect": [], "note": "negation: I do not think so"}
+{"text": "मेरा कोई बॉयफ्रेंड नहीं है", "expect": [], "note": "negation: Devanagari"}
+{"text": "राहुल मेरा दोस्त नहीं है", "expect": [], "note": "negation: Devanagari name first"}
+{"text": "मेरे पति का नाम राहुल नहीं है", "expect": [], "note": "negation: Devanagari ka naam"}
+{"text": "usne kaha mera boyfriend Ashmit hai", "expect": [], "note": "report: the Accept case"}
+{"text": "Riya ne bola Ashmit mera boyfriend hai", "expect": [], "note": "report: name first"}
+{"text": "mummy ne bataya mera boyfriend Ashmit hai", "expect": [], "note": "report: bataya"}
+{"text": "wo kehti hai ki mera dost Rahul hai", "expect": [], "note": "report: kehti hai"}
+{"text": "unhone kaha ki Rahul mera dost hai", "expect": [], "note": "report: unhone kaha"}
+{"text": "she said mera boyfriend Ashmit hai", "expect": [], "note": "report: English said, Hinglish fact"}
+{"text": "usne kaha \"mera boyfriend Ashmit hai\"", "expect": [], "note": "report: quoted"}
+{"text": "उसने कहा मेरे पति का नाम राहुल है", "expect": [], "note": "report: Devanagari"}
+{"text": "मम्मी ने बताया राहुल मेरा दोस्त है", "expect": [], "note": "report: Devanagari name first"}
+{"text": "agar mera boyfriend Ashmit hota", "expect": [], "note": "hedge: agar"}
+{"text": "shayad mera boyfriend Ashmit hai", "expect": [], "note": "hedge: shayad"}
+{"text": "shayad Ashmit mera boyfriend hai", "expect": [], "note": "hedge: shayad, name first"}
+{"text": "agar Rahul mera dost hai to", "expect": [], "note": "hedge: agar, name first"}
+{"text": "socho mera boyfriend Ashmit hai", "expect": [], "note": "hedge: suppose"}
+{"text": "jab mera boyfriend Ashmit aata hai", "expect": [], "note": "hedge: when"}
+{"text": "mere pati ka naam shayad Rahul hai", "expect": [], "note": "hedge: shayad inside the sentence"}
+{"text": "शायद मेरे पति का नाम राहुल है", "expect": [], "note": "hedge: Devanagari shayad"}
+{"text": "अगर राहुल मेरा दोस्त है", "expect": [], "note": "hedge: Devanagari agar"}
+{"text": "what if mera boyfriend Ashmit hai?", "expect": [], "note": "hedge: English what if"}
+{"text": "mera boyfriend Ashmit tha", "expect": [], "note": "hedge: tha, somebody from before"}
+{"text": "Ashmit mera boyfriend tha", "expect": [], "note": "hedge: tha, name first"}
+{"text": "meri gf naraz hai", "expect": [], "note": "no name: a mood, not a person"}
+{"text": "mera boyfriend busy hai", "expect": [], "note": "no name: a state"}
+{"text": "mera boyfriend theek hai", "expect": [], "note": "no name: a state"}
+{"text": "meri behen teacher hai", "expect": [], "note": "no name: a job"}
+{"text": "mera bhai Delhi mein hai", "expect": [], "note": "no name: a place with a capital letter"}
+{"text": "mera bhai Mumbai me rehta hai", "expect": [], "note": "no name: a place"}
+{"text": "mera dost Monday ko aayega", "expect": [], "note": "no name: a day"}
+{"text": "meri mummy ghar pe hai", "expect": [], "note": "no name: a place"}
+{"text": "mera dost bimar hai", "expect": [], "note": "no name: an illness is not a person"}
+{"text": "mera kutta bimar hai", "expect": [], "note": "no name: a sick pet with no name"}
+{"text": "meri behen ka naam hai", "expect": [], "note": "no name: the name is missing"}
+{"text": "Wo mera dost hai", "expect": [], "note": "no name: a pronoun with a capital letter"}
+{"text": "Yeh mera bhai hai", "expect": [], "note": "no name: a pronoun with a capital letter"}
+{"text": "वो मेरा दोस्त है", "expect": [], "note": "no name: a Devanagari pronoun"}
+{"text": "ये मेरी बहन है", "expect": [], "note": "no name: a Devanagari pronoun"}
+{"text": "मेरी बहन टीचर है", "expect": [], "note": "no name: a Devanagari job, no capital letter to tell it from a name"}
+{"text": "मेरी बीवी नाराज़ है", "expect": [], "note": "no name: a Devanagari mood"}
+{"text": "Ashmit mera ex boyfriend hai", "expect": [], "note": "no name: an ex is not the current partner"}
+{"text": "mera ex boyfriend Ashmit hai", "expect": [], "note": "no name: an ex is not the current partner"}
+{"text": "his boyfriend Ashmit hai", "expect": [], "note": "no name: somebody else's boyfriend"}
+{"text": "uska boyfriend Ashmit hai", "expect": [], "note": "no name: somebody else's boyfriend"}
+{"text": "Riya ka boyfriend Ashmit hai", "expect": [], "note": "no name: Riya's boyfriend"}
+{"text": "mera boyfriend ashmit hai", "expect": [], "note": "no name: without ka naam a lower case word is not trusted as a name, same as English"}
+{"text": "meri behen Priya naraz hai", "expect": [{"name": "Priya", "relation": "sister"}], "note": "statement: a mood word and hai after the name is still an introduction"}
+{"text": "mera bhai Karan busy hai", "expect": [{"name": "Karan", "relation": "brother"}], "note": "statement: a mood word and hai after the name"}
+{"text": "mera dost Rahul theek hai", "expect": [{"name": "Rahul", "relation": "friend"}], "note": "statement: a mood word and hai after the name"}
+{"text": "mera boyfriend Ashmit.", "expect": [{"name": "Ashmit", "relation": "boyfriend"}], "note": "statement: nothing after the name but a full stop"}
+{"text": "mera dost Rahul Sharma hai", "expect": [{"name": "Rahul Sharma", "relation": "friend"}], "note": "statement: two word name before hai"}
+{"text": "Mera Bhai Karan Hai", "expect": [{"name": "Karan", "relation": "brother"}], "note": "statement: title case everywhere, Hai is not part of the name"}
+{"text": "meri behen Priya hai, mera bhai Karan hai", "expect": [{"name": "Priya", "relation": "sister"}, {"name": "Karan", "relation": "brother"}], "note": "statement: two people with a comma"}
+{"text": "मेरा दोस्त Rahul बीमार है", "expect": [{"name": "Rahul", "relation": "friend"}], "note": "mixed: Devanagari sentence, Latin name, mood word"}
+{"text": "mera boyfriend Ashmit ni hai", "expect": [], "note": "negation: text-speak ni"}
+{"text": "mera boyfriend Ashmit nai hai", "expect": [], "note": "negation: text-speak nai"}
+{"text": "mera boyfriend Ashmit naa hai", "expect": [], "note": "negation: text-speak naa"}
+{"text": "mera boyfriend Ashmit na hai", "expect": [], "note": "negation: text-speak na"}
+{"text": "mera boyfriend ka naam Ashmit ni hai", "expect": [], "note": "negation: ka naam with text-speak ni"}
+{"text": "mera boyfriend ka naam Ashmit na hai", "expect": [], "note": "negation: ka naam with text-speak na"}
+{"text": "Riya keh rahi thi mera boyfriend Ashmit hai", "expect": [], "note": "report: keh rahi thi"}
+{"text": "mummy bol rahi thi mera boyfriend Ashmit hai", "expect": [], "note": "report: bol rahi thi"}
+{"text": "wo samajhta hai mera boyfriend Ashmit hai", "expect": [], "note": "report: samajhta hai"}
+{"text": "Riya ne puchha mera boyfriend Ashmit hai", "expect": [], "note": "report: puchha"}
+{"text": "Riya ke hisaab se mera boyfriend Ashmit hai", "expect": [], "note": "report: hisaab se"}
+{"text": "unka kehna hai mera boyfriend Ashmit hai", "expect": [], "note": "report: kehna hai"}
+{"text": "uske anusaar mera boyfriend Ashmit hai", "expect": [], "note": "report: anusaar"}
+{"text": "Riya keh rahi thi Ashmit mera boyfriend hai", "expect": [], "note": "report: keh rahi thi, name first"}
+{"text": "उसके अनुसार राहुल मेरा दोस्त है", "expect": [], "note": "report: Devanagari anusaar"}
+{"text": "kaash mera boyfriend Ashmit hota", "expect": [], "note": "hedge: kaash"}
+{"text": "mera boyfriend Ashmit hota toh", "expect": [], "note": "hedge: hota toh"}
+{"text": "mera boyfriend Ashmit ho sakta hai", "expect": [], "note": "hedge: ho sakta hai"}
+{"text": "mera boyfriend Ashmit ho jaye", "expect": [], "note": "hedge: ho jaye"}
+{"text": "mera boyfriend Ashmit ban jayega", "expect": [], "note": "hedge: ban jayega"}
+{"text": "like, mera boyfriend Ashmit hai, but only in my dreams", "expect": [], "note": "hedge: only in my dreams"}
+{"text": "kaash Ashmit mera boyfriend hota", "expect": [], "note": "hedge: kaash, name first"}
+{"text": "mere pati ka naam Rahul ho sakta hai", "expect": [], "note": "hedge: ho sakta hai, ka naam"}
+{"text": "काश मेरे पति का नाम राहुल है", "expect": [], "note": "hedge: Devanagari kaash"}
+{"text": "mera dost बीमार hai", "expect": [], "note": "no name: a Devanagari state after a Latin sentence start"}
+{"text": "meri behen नाराज\u093c hai", "expect": [], "note": "no name: a Devanagari mood, nukta typed as its own sign"}
+{"text": "meri behen नारा\u095b hai", "expect": [], "note": "no name: a Devanagari mood, nukta in the one-character form"}
+{"text": "mera boyfriend अभी ghar pe hai", "expect": [], "note": "no name: a Devanagari time"}
+{"text": "mera bhai दिल्ली me hai", "expect": [], "note": "no name: a Devanagari place"}
+{"text": "mera dost घर pe hai", "expect": [], "note": "no name: a Devanagari place"}
+{"text": "meri behen टीचर hai", "expect": [], "note": "no name: a Devanagari job after a Latin sentence start"}
+{"text": "mera boyfriend कल hai", "expect": [], "note": "no name: a Devanagari day"}
+{"text": "mera bhai Goa gaya hai", "expect": [], "note": "no name: a place with a capital letter"}
+{"text": "mera bhai Dubai gaya hai", "expect": [], "note": "no name: a place with a capital letter"}
+{"text": "mera bhai Dubai hai", "expect": [], "note": "no name: a place straight before hai"}
+{"text": "meri behen Canada jaa rahi hai", "expect": [], "note": "no name: a country"}
+{"text": "meri behen Pregnant hai", "expect": [], "note": "no name: a state with a capital letter"}
+{"text": "meri behen Diabetic hai", "expect": [], "note": "no name: a state with a capital letter"}
+{"text": "mera dost Depressed hai", "expect": [], "note": "no name: a state with a capital letter"}
+{"text": "mera dost Bilkul theek hai", "expect": [], "note": "no name: an adverb with a capital letter"}
+{"text": "mera dost Instagram use karta hai", "expect": [], "note": "no name: an app"}
+{"text": "meri mummy Hospital gayi hain", "expect": [], "note": "no name: a place must not replace the mother's saved name"}
+{"text": "mera boyfriend Office gaya hai", "expect": [], "note": "no name: a place must not replace the partner's saved name"}
+{"text": "mera bhai Karan kal aa raha hai", "expect": [], "note": "unsure: more words after the name than the rules trust, so nothing is saved"}
+{"text": "mera bhai Rahul Dubai gaya hai", "expect": [], "note": "unsure: a name and a place, nothing is saved rather than the name Rahul Dubai"}
+{"text": "meri behen Priya Delhi mein rehti hai", "expect": [], "note": "unsure: more words after the name than the rules trust"}
+{"text": "mera pati Rahul mujhe maar dalega", "expect": [], "note": "disclosure: a name next to a threat must reach the model, not the remembered line"}
+{"text": "mera boyfriend Ashmit mujhe maarta hai", "expect": [], "note": "disclosure: a name next to violence"}
+{"text": "mera pati Rahul mujhe peetta hai", "expect": [], "note": "disclosure: a name next to violence"}
+{"text": "mera boyfriend Ashmit mujhe gala dabata hai", "expect": [], "note": "disclosure: a name next to violence"}
+{"text": "mera dost Rahul ne zeher kha liya hai", "expect": [], "note": "disclosure: a name next to self-harm"}
+{"text": "meri behen Priya ko uska pati maarta hai", "expect": [], "note": "disclosure: a name next to violence"}
+{"text": "mere papa Suresh mujhe dhamkate hain", "expect": [], "note": "disclosure: a name next to a threat"}
+{"text": "my mother in law's name is Kamla", "expect": [{"name": "Kamla", "relation": "mother-in-law"}], "note": "statement: mother in law typed without hyphens"}
+{"text": "My Mother In Law is called Sheela", "expect": [{"name": "Sheela", "relation": "mother-in-law"}], "note": "statement: mother in law, capitals"}
+{"text": "my father in law's name is Ramesh", "expect": [{"name": "Ramesh", "relation": "father-in-law"}], "note": "statement: father in law typed without hyphens"}
+{"text": "mere bete ka naam Aarav hai", "expect": [{"name": "Aarav", "relation": "son"}], "note": "statement: bete is the oblique form of beta"}
+{"text": "मेरे बेटे का नाम आरव है", "expect": [{"name": "आरव", "relation": "son"}], "note": "statement: Devanagari बेटे"}
+{"text": "mera boyfriend Tanmay hai lekin shayad hum breakup kar lein", "expect": [{"name": "Tanmay", "relation": "boyfriend"}], "note": "statement: the maybe belongs to a second clause"}
+{"text": "mere husband ka naam Aman nahi balki Arman hai", "expect": [{"name": "Arman", "relation": "husband"}], "note": "statement: a correction keeps the new name"}
+{"text": "I wish my husband was Shah Rukh", "expect": [], "note": "hedge: an English wish saves nothing"}
+{"text": "maybe my best friend is Sana", "expect": [], "note": "hedge: an English maybe saves nothing"}
+{"text": "perhaps my boyfriend is Karan", "expect": [], "note": "hedge: an English perhaps saves nothing"}
+{"text": "mera pati Mohit hai ya Rohit, yaad nahi aa raha", "expect": [], "note": "unsure: two names and a forgotten one"}
+{"text": "pata nahi mera pati Mohit hai ya Rohit", "expect": [], "note": "unsure: the person says they do not know"}
+{"text": "my boyfriend is Muslim", "expect": [], "note": "adjective or identity word after a capital letter is not a name"}
+{"text": "mera pati Violent hai", "expect": [], "note": "adjective or identity word after a capital letter is not a name"}
+{"text": "mera boyfriend Abusive hai", "expect": [], "note": "adjective or identity word after a capital letter is not a name"}
+{"text": "mera pati Alcoholic hai", "expect": [], "note": "adjective or identity word after a capital letter is not a name"}
+{"text": "mera pati Drunk hai", "expect": [], "note": "adjective or identity word after a capital letter is not a name"}
+{"text": "my husband is Hindu", "expect": [], "note": "adjective or identity word after a capital letter is not a name"}

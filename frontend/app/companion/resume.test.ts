@@ -37,6 +37,26 @@ describe("mapMessageRows", () => {
     expect(reply.healthEvents?.[0]).toMatchObject({ id: "e1", status: "confirmed" });
   });
 
+  it("brings a stored Safe Harbor reply back with its resources and choices", () => {
+    const harbor = {
+      tier: 2,
+      mode: "disclosure",
+      step: "options",
+      resources: [{ name: "Emergency services", number: "112", note: "Free." }],
+      actions: [{ id: "talk_more", label: "I want to talk more" }],
+    };
+    const [plain, shown] = mapMessageRows(
+      [
+        { id: "a0", role: "assistant", content: "Hello." },
+        { id: "a1", role: "assistant", content: "I'm so sorry.", kind: "safe_harbor", harbor },
+      ],
+      "c1"
+    );
+    expect(plain.harbor).toBeUndefined();
+    expect(shown.harbor?.resources[0].number).toBe("112");
+    expect(shown.harbor?.actions[0].label).toBe("I want to talk more");
+  });
+
   it("survives junk rows and a non-array", () => {
     expect(mapMessageRows(null, "c1")).toEqual([]);
     const [m] = mapMessageRows([42], "c1");

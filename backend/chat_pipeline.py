@@ -5,9 +5,9 @@ Python over an injected ``db`` handle so it is unit-testable without FastAPI.
 
 Flow for one user message:
 
-1. ``analyze_turn``   - semantic facts, safety state, correction?, contradictions, daily-log metrics
-2. ``route_turn``     - emergency | correction | clarification | daily_log | ai
-3. build the reply    - deterministic copy for the first four (no model call, no health data
+1. ``analyze_turn``   - semantic facts, safety state, Safe Harbor (partner or family violence), correction?, contradictions, daily-log metrics
+2. ``route_turn``     - emergency | safe_harbor | correction | clarification | daily_log | ai
+3. build the reply    - deterministic copy for all but the last (no model call, no health data
                         leaves the server); the model only handles the "ai" route, with a
                         controlled context (recent turns + explicit user state + labelled evidence)
 4. save               - rule-built events (explicit values only) and AI-proposed events after
@@ -34,6 +34,8 @@ from event_filters import clean_data
 from health_event_pipeline import prepare_db_row
 from memory_manager import extract_explicit_personal_facts
 from people_memory import recall_target, remembered_reply
+import safe_harbor
+from safe_harbor import Harbor, HarborContext
 from health_semantics import CRISIS, Fact, analyze, concept_for_text, display_name, net_state, split_sentences
 from safety_engine import (
     CRISIS_LINES, POTENTIAL, SafetyAssessment, assess_safety, clarification_response, emergency_response, urgent_fallback_response,
@@ -50,7 +52,7 @@ MENSTRUAL_CONCEPTS = {"cramps", "spotting"}
 NON_SYMPTOM_CONCEPTS = {"period", "medication_use"}
 
 MAX_STORED_EVENTS = 100   # per reply; anything beyond is counted in metadata.health_events_more so the card can say "N more"
-KINDS = ("reply", "clarification", "emergency", "correction_ack", "daily_log_summary")
+KINDS = ("reply", "clarification", "emergency", "correction_ack", "daily_log_summary", "safe_harbor")
 
 
 def _name(concept: str) -> str:
@@ -203,7 +205,7 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
     meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
     events = [dict(e) for e in meta.get("health_events") or [] if isinstance(e, dict)] if isinstance(meta.get("health_events"), list) else []
     overlay_event_status(db, user_id, [events])   # a replay must not bring back cards the person already settled
-    return {
+    replay = {
         "response": row.get("content") or "",
         "sentiment": "neutral",
         "kind": meta.get("kind") if meta.get("kind") in KINDS else "reply",
@@ -217,6 +219,9 @@ def find_stored_reply(db: Any, user_id: str, conversation_id: str, user_message_
         "evidence": [],
         "replayed": True,
     }
+    if isinstance(meta.get("harbor"), dict):
+        replay["harbor"] = {k: v for k, v in meta["harbor"].items() if k in ("tier", "mode", "step", "resources", "actions")}   # same as first time; nothing recomputed, no state written twice
+    return replay
 
 
 def message_age_hours(row: dict[str, Any], now: datetime | None = None) -> float | None:
@@ -233,7 +238,8 @@ def message_age_hours(row: dict[str, Any], now: datetime | None = None) -> float
 
 def conversation_block(history: list[dict[str, Any]], max_chars: int = 2400, *, now: datetime | None = None) -> str:
     lines: list[str] = []
-    for row in history[-8:]:
+    hidden = safe_harbor.hidden_message_ids(history)   # Safe Harbor turns are private: they never reach the outside model, not even as "earlier"
+    for row in [r for r in history if str(r.get("id") or "") not in hidden][-8:]:
         content = " ".join(str(row.get("content") or "").split())
         meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
         if row.get("role") == "bubbles" and (meta.get("safety") or {}).get("retracted"):
@@ -308,6 +314,7 @@ class Turn:
     timings_ms: dict[str, float] = field(default_factory=dict)
     pause_strict_plan: bool = False
     last_reply: dict[str, Any] | None = None   # the newest Bubbles message in this conversation (content + metadata)
+    harbor: Harbor = field(default_factory=Harbor)   # partner or family violence: tier, whether this is a follow-up, what to store (safe_harbor.py)
 
 
 def history_user_facts(history: list[dict[str, Any]], now: datetime | None = None) -> list[Fact]:
@@ -327,7 +334,7 @@ def history_user_facts(history: list[dict[str, Any]], now: datetime | None = Non
     return out
 
 
-def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | None = None) -> Turn:
+def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | None = None, harbor_ctx: HarborContext | None = None) -> Turn:
     t0 = time.perf_counter()
     try:
         facts: list[Fact] | None = analyze(text)
@@ -355,6 +362,13 @@ def analyze_turn(text: str, history: list[dict[str, Any]], *, now: datetime | No
         log = DailyLog(log_date=(now or datetime.now(timezone.utc)).date().isoformat())
     turn = Turn(text, facts, safety, correction, conflicts, log, history_facts)
     turn.last_reply = next((r for r in reversed(history) if r.get("role") == "bubbles"), None)
+    try:
+        turn.harbor = safe_harbor.assess(text, history, harbor_ctx, now=now)
+    except Exception as error:  # noqa: BLE001 - if the rules themselves fail, a plain keyword look decides (a fixed reply beats sending the message to a model)
+        _log_failure("safe_harbor", error)
+        turn.harbor = safe_harbor.fail_safe(text)
+    if turn.harbor.followup and turn.harbor.followup != "urgent" and (facts or log.is_daily_log):
+        turn.harbor = turn.harbor.without_followup()   # a plain health message inside a Safe Harbor conversation is answered as usual
     turn.route = route_turn(turn)
     turn.timings_ms = {"semantics_ms": round((t1 - t0) * 1000, 1), "turn_ms": round((time.perf_counter() - t0) * 1000, 1)}
     return turn
@@ -369,6 +383,8 @@ def route_turn(turn: Turn) -> str:
     state = turn.safety.state
     if state == "EMERGENCY":
         return "emergency"
+    if turn.harbor.deterministic:
+        return "safe_harbor"   # partner or family violence (tier 2 and up) and the follow-ups after it: fixed copy, never an outside model
     if turn.correction.is_correction:
         return "correction"
     if state == POTENTIAL:
@@ -539,14 +555,19 @@ def first_name(user: Any) -> str | None:
 
 
 def reply_kind(route: str) -> str:
-    return {"emergency": "emergency", "correction": "correction_ack", "clarification": "clarification",
+    return {"emergency": "emergency", "safe_harbor": "safe_harbor", "correction": "correction_ack", "clarification": "clarification",
             "daily_log": "daily_log_summary", "fitness_support": "fitness_support", "fitness_answer": "fitness_answer"}.get(route, "reply")
 
 
 def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> str:
     route, safety = turn.route, turn.safety
     if route == "emergency":
-        return emergency_response(safety)
+        text = emergency_response(safety)
+        if turn.harbor.tier >= 2:
+            text += "\n\n" + safe_harbor.resource_line(turn.harbor)   # "he hit me and I want to die": the crisis reply first, then the numbers for being unsafe at home
+        return text
+    if route == "safe_harbor":
+        return safe_harbor.reply(turn.harbor, seed=turn.text, medical=safety.state == "URGENT")
     if route == "small_talk":
         return small_talk_reply(turn.text, name=name)
     if route == "remembered":

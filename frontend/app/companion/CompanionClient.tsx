@@ -19,6 +19,7 @@ import {
   upsertById,
 } from "../lib/bubbles-events";
 import { readAsk } from "../lib/ask-handoff";
+import { adaptHarbor } from "../lib/safe-harbor";
 import { chatErrorMessage, isTimeoutError, needsFreshMessageId, resetsConversation } from "../lib/chat-flow";
 import { clearDecline, readDecline, writeDecline } from "./decline";
 import {
@@ -264,6 +265,7 @@ export function CompanionClient() {
             : [],
           healthEvents: adaptHealthEvents(body?.health_events, body?.health_event_ids),
           consentRequired: body?.consent_required === true && body?.consent_ask !== false, // a recent "No" gets a calm line, not the card again
+          harbor: adaptHarbor(body?.harbor) ?? undefined,
         };
         // The user's bubble takes the server id; the correction (if any) withdraws the earlier warning in place;
         // the reply is upserted so a replayed response can never render twice.
@@ -666,6 +668,7 @@ export function CompanionClient() {
   const urgent = lastReply !== undefined && isUrgentMessage(lastReply);
   // Caution replies hide the header mascot too: no mascot near a safety banner.
   const caution = lastReply?.safetyLevel === "AMBER" && !lastReply.retracted;
+  const harborVoice = lastReply?.harbor !== undefined; // the Safe Harbor voice has no mascot, in the header or while it is thinking
   // Follow-up chips sit under the newest reply only, and only while nothing is in flight. Never under an urgent or
   // withdrawn reply. Backend suggestions win; the static set is only for a calm, ordinary reply.
   const tail = messages.at(-1);
@@ -673,7 +676,9 @@ export function CompanionClient() {
   const chipsFor = calmTail?.id;
   const chips = !calmTail
     ? []
-    : calmTail.suggestions?.length
+    : calmTail.harbor
+      ? calmTail.harbor.actions.map((a) => a.label) // Safe Harbor: only its own choices, never the ordinary follow-ups
+      : calmTail.suggestions?.length
       ? calmTail.suggestions.slice(0, 3)
       : calmTail.safetyLevel === "GREEN" && (calmTail.kind === undefined || calmTail.kind === "reply")
         ? FOLLOW_UPS
@@ -720,7 +725,7 @@ export function CompanionClient() {
         <section aria-label="Chat with Bubbles" className="flex min-w-0 flex-1 flex-col">
           <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b-2 border-line bg-blush px-4 py-3 lg:px-7 lg:py-4">
             <div className="flex min-w-0 items-center gap-3">
-              {!urgent && !caution && <BubblesMascot size={44} animated={false} />}
+              {!urgent && !caution && !harborVoice && <BubblesMascot size={44} animated={false} />}
               <h1 className="m-0 font-display text-h3 font-semibold leading-tight text-ink lg:text-h2">Bubbles</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -841,7 +846,7 @@ export function CompanionClient() {
                     />
                   )
                 )}
-                {sending && (partial ? <PartialReply text={stream.text} /> : <ThinkingBubble calm={loaderCalm(stream)} />)}
+                {sending && (partial ? <PartialReply text={stream.text} /> : <ThinkingBubble calm={loaderCalm(stream) && !harborVoice} />)}
               </ol>
             </div>
           </div>

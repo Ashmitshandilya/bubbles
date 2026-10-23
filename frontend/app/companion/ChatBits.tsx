@@ -20,6 +20,8 @@ import {
 } from "../lib/bubbles-events";
 import { cardView, eventState, type Decisions } from "./event-decisions";
 import { pickSources } from "./evidence";
+import { HarborChips, HarborHelp } from "./HarborReply";
+import type { Harbor } from "../lib/safe-harbor";
 import { FEEDBACK_REASONS, isRatableId, type Feedback, type FeedbackReason, type Rating } from "./feedback";
 
 export type { SafetyLevel };
@@ -46,6 +48,8 @@ export interface ChatMessage {
   healthEvents?: ExtractedHealthEvent[];
   /** This reply is the question about using an outside AI model: the answer is waiting for a yes. */
   consentRequired?: boolean;
+  /** A Safe Harbor reply (someone close to the person hurts or frightens them): drawn as plain text with its own help button and choices. */
+  harbor?: Harbor;
 }
 
 export interface ConversationSummary {
@@ -578,6 +582,20 @@ export function BubblesReply({
         <div className="border border-line bg-surface px-5 py-4 text-body leading-relaxed text-ink sm:px-6">
           <MessageBody content={message.content} />
         </div>
+        {message.harbor && <HarborHelp harbor={message.harbor} />}
+      </li>
+    );
+  }
+
+  if (message.harbor) {
+    // Safe Harbor: plain text, no mascot, no tint, no card. The same text a person would get from a calm friend, and the ways to reach people.
+    return (
+      <li data-kind="safe_harbor" className="flex w-full flex-col gap-4 self-start sm:max-w-[min(92%,44rem)]">
+        <div data-private className="border-l-2 border-line-strong py-1 pl-4 text-body leading-relaxed text-ink [overflow-wrap:anywhere]">
+          <MessageBody content={message.content} />
+        </div>
+        <HarborHelp harbor={message.harbor} />
+        {onChip && <HarborChips labels={chips} disabled={chipsDisabled} onPick={onChip} />}
       </li>
     );
   }
