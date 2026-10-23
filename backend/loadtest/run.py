@@ -22,6 +22,7 @@ SCENARIO = [
     ("POST", "/companion/daily", {"days": 7}),
     ("POST", "/intelligence/state", {"days": 30}),
     ("POST", "/patterns/analyze", {"days": 30}),
+    ("GET", "/today?days=14", None),                                          # the one call Today makes
 ]
 
 

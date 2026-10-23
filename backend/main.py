@@ -1584,8 +1584,27 @@ def _fitness_text(user_id: str, message: str) -> str:
         return "I couldn't look that up right now. You can find it under Fitness in the menu."
 
 
+# One request may need the same events for several parts (the Today bundle asks for the brief, the week and the living map). While a request
+# holds a memo, a read that a longer earlier read already covers is answered from it instead of asking the database again.
+_EVENT_MEMO: contextvars.ContextVar[dict | None] = contextvars.ContextVar("event_memo", default=None)
+
+
+def _memoised_events(user_id: str, days: int) -> list[dict] | None:
+    memo = _EVENT_MEMO.get()
+    if memo is None:
+        return None
+    for (uid, have_days), rows in memo.items():
+        if uid == user_id and have_days >= days:
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+            return [dict(r) for r in rows if str(r.get("ingested_at") or r.get("created_at") or "") >= cutoff]   # the recording time, as the database filtered on
+    return None
+
+
 def _get_user_health_events(user_id: str, days: int = 30) -> list[dict]:
     days = max(1, min(days, 730))
+    held = _memoised_events(user_id, days)
+    if held is not None:
+        return held
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     try:
         result = (
@@ -1609,6 +1628,9 @@ def _get_user_health_events(user_id: str, days: int = 30) -> list[dict]:
                     row["created_at"] = moment.isoformat()
             except Exception:
                 continue
+        memo = _EVENT_MEMO.get()
+        if memo is not None:
+            memo[(user_id, days)] = [dict(r) for r in rows]   # copies, so a caller changing its rows cannot change what the next part is given
         return rows
     except Exception as error:
         from logging_util import logger
@@ -1653,8 +1675,8 @@ TODAY_TRACKERS = ("cycle", "sleep", "mood", "activity", "hydration", "nutrition"
 @app.get("/today")
 def today_bundle(authorization: str | None = Header(default=None), days: int = Query(default=14, ge=1, le=90)):
     """Everything Today shows in one call. Each part is read side by side and fails alone: a part that could not be read is null
-    (a gap), never a guess. The old per-part routes stay for other screens. ponytail: no server cache yet; add a per-user 60 s
-    TTLCache invalidated on writes if the warm p95 misses 400 ms."""
+    (a gap), never a guess. The old per-part routes stay for other screens. The health events the brief, the week and the living map all
+    need are read once. ponytail: no server cache yet; add a per-user TTLCache invalidated on writes if the load test asks for it."""
     import association_insights
     import association_loader
     import orbit
@@ -1676,16 +1698,21 @@ def today_bundle(authorization: str | None = Header(default=None), days: int = Q
     def tracker(slug):
         return safe(lambda: list_domain(supabase, slug, DOMAINS[slug], uid, 365 if slug == "cycle" else 30))
 
-    parts = together(
-        *[tracker(slug) for slug in TODAY_TRACKERS],
-        safe(lambda: list_domain(supabase, "visits", DOMAINS["visits"], uid, 365)),
-        safe(lambda: intelligence_brief(InteractionRequest(days=days), authorization).model_dump()["brief"]),
-        safe(lambda: weekly_insights(authorization).model_dump()["insights"]),
-        safe(lambda: living_signal_map(authorization, 14).model_dump()["map"]),
-        safe(lambda: __import__("deficiency_api").load(supabase, uid)),
-        safe(lambda: profile_api(authorization)),
-        safe(lambda: orbit.home(supabase, uid)),
-    )
+    token = _EVENT_MEMO.set({})
+    try:
+        _get_user_health_events(uid, 30)   # once, before the parts fan out; the parts below take their window from it
+        parts = together(
+            *[tracker(slug) for slug in TODAY_TRACKERS],
+            safe(lambda: list_domain(supabase, "visits", DOMAINS["visits"], uid, 365)),
+            safe(lambda: intelligence_brief(InteractionRequest(days=days), authorization).model_dump()["brief"]),
+            safe(lambda: weekly_insights(authorization).model_dump()["insights"]),
+            safe(lambda: living_signal_map(authorization, 14).model_dump()["map"]),
+            safe(lambda: __import__("deficiency_api").load(supabase, uid)),
+            safe(lambda: profile_api(authorization)),
+            safe(lambda: orbit.home(supabase, uid)),
+        )
+    finally:
+        _EVENT_MEMO.reset(token)
     n = len(TODAY_TRACKERS)
     trackers = dict(zip(TODAY_TRACKERS, parts[:n]))
     visits, brief, weekly, living, nudges, profile, orbit_home = parts[n:]
