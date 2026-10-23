@@ -64,7 +64,7 @@ export function RhythmPanel({ overview }: { overview: SleepOverview }) {
   const { regularity, debt, streak, last_night: last, average_hours: avg, goal } = overview;
   return (
     <Panel title="Your rhythm" kicker="Regularity, debt and streak">
-      <dl className="m-0 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className="m-0 flex flex-col">
         <Stat label="Last night" value={last ? formatHours(last.hours) : null} note={last?.score != null ? `score ${last.score}` : undefined} />
         <Stat label="Average" value={avg != null ? formatHours(avg) : null} note={`goal ${formatHours(goal.hours)}`} />
         <Stat label="Bed and wake times" value={regularity ? `±${regularity.minutes} min` : null} gap="A few more nights" note={regularity ? (regularity.basis === "times" ? "usual swing" : "swing in hours slept") : undefined} />
@@ -89,12 +89,12 @@ export function RhythmPanel({ overview }: { overview: SleepOverview }) {
 
 function Stat({ label, value, note, gap }: { label: string; value: string | null; note?: string; gap?: string }) {
   return (
-    <div className={`flex min-w-0 flex-col gap-1 rounded-[20px] border bg-surface p-3 ${value === null ? "border-dashed border-[#C9B6F2]" : "border-[#E7E0EC]"}`}>
+    <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5 border-b border-[color:var(--hairline)] py-3">
       <dt className="text-body-sm font-extrabold text-bubbles-grape-deep">{label}</dt>
-      <dd className="m-0 break-words">
-        {value === null ? <span className="font-display text-h4 text-muted">{gap ?? "Not logged yet"}</span> : <span className="font-display text-metric text-default">{value}</span>}
+      <dd className="m-0 break-words text-right">
+        {value === null ? <span className="text-body-sm text-muted">{gap ?? "Not logged yet"}</span> : <span className="font-display text-h4 text-default">{value}</span>}
       </dd>
-      {note && <dd className="m-0 text-body-sm font-semibold text-muted">{note}</dd>}
+      {note && <dd className="m-0 w-full text-body-sm font-semibold text-muted">{note}</dd>}
     </div>
   );
 }

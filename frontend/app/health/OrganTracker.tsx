@@ -112,9 +112,9 @@ export function OrganTracker() {
       </div>
 
       {query.status === "loading" && (
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3" role="status" aria-label="Loading body systems">
+        <div className="mt-6 flex flex-col gap-2" role="status" aria-label="Loading body systems">
           {Array.from({ length: 9 }, (_, i) => (
-            <Skeleton key={i} className="h-16 rounded-2xl" />
+            <Skeleton key={i} className="h-12 rounded-2xl" />
           ))}
         </div>
       )}
@@ -177,7 +177,7 @@ export function OrganTracker() {
           )}
 
           <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <ul className="bubbles-stagger m-0 grid list-none content-start grid-cols-2 gap-3 p-0 xl:grid-cols-3" aria-label="Body systems">
+            <ul className="bubbles-stagger m-0 flex list-none flex-col content-start p-0" aria-label="Body systems">
               {systems.map((system) => {
                 const isSelected = system.organ === selected.organ;
                 const status = STATUS[system.status] ?? STATUS.unknown;
@@ -187,8 +187,8 @@ export function OrganTracker() {
                       type="button"
                       aria-pressed={isSelected}
                       onClick={() => setPicked(system.organ)}
-                      className={`bubbles-lift flex min-h-[64px] w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left ${
-                        isSelected ? "border-bubbles-grape bg-tint-grape" : "border-line bg-surface hover:border-line-strong"
+                      className={`flex min-h-[56px] w-full items-center gap-3 border-b border-[color:var(--hairline)] px-2 py-3 text-left ${
+                        isSelected ? "bg-tint-grape" : "hover:bg-blush"
                       }`}
                     >
                       <span className={`h-3.5 w-3.5 shrink-0 rounded-full ${status.dot}`} aria-hidden="true" />

@@ -7,7 +7,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useApi } from "../../components/Providers";
-import { BTN_PRIMARY, BTN_SECONDARY, CARD, Icon, Skeleton, TONE, type Tone } from "../../components/hub/HubKit";
+import { BTN_SECONDARY, Icon, Skeleton, TONE, type Tone } from "../../components/hub/HubKit";
 import { readEntries } from "../lib/api-adapters";
 import { PULSE_WINDOW_DAYS, buildPulse, lastLoggedText, rollupToday, type Pulse } from "../lib/track-pulse";
 
@@ -74,7 +74,7 @@ export function QuickLog({ items }: { items: QuickItem[] }) {
         <h2 id="daily-title" className="sr-only">
           Quick log
         </h2>
-        <ul className="bubbles-stagger m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-3">
+        <ul className="bubbles-stagger m-0 flex list-none flex-col p-0">
           {items.map((item) => (
             <li key={item.id}>
               <Tile item={item} pulses={OWN_DATA.has(item.id) ? undefined : pulses} />
@@ -88,13 +88,13 @@ export function QuickLog({ items }: { items: QuickItem[] }) {
 
 function TodayStrip({ items, pulses, onRetry }: { items: QuickItem[]; pulses: PulseMap | null; onRetry: () => void }) {
   if (!pulses) {
-    return <Skeleton className="h-[112px] rounded-3xl" />;
+    return <Skeleton className="h-[72px] rounded-2xl" />;
   }
   const roll = rollupToday(items.map((i) => ({ label: i.title, pulse: pulses[i.id] ?? null })));
 
   if (roll.checked === 0) {
     return (
-      <div role="status" className={`${CARD} flex flex-wrap items-center gap-3 p-5`}>
+      <div role="status" className="flex flex-wrap items-center gap-3 py-2">
         <p className="m-0 min-w-[12rem] flex-1 text-body-sm text-muted">
           Couldn&apos;t check today&apos;s logs just now.
         </p>
@@ -107,7 +107,7 @@ function TodayStrip({ items, pulses, onRetry }: { items: QuickItem[]; pulses: Pu
 
   const openItems = items.filter((i) => roll.open.includes(i.title));
   return (
-    <section aria-labelledby="today-title" className={`${CARD} p-5`}>
+    <section aria-labelledby="today-title" className="border-b border-[color:var(--hairline)] pb-5">
       <h2 id="today-title" className="m-0 font-display text-h4 text-ink">
         Today: {roll.done.length} of {roll.checked} logged
       </h2>
@@ -153,24 +153,19 @@ function Tile({ item, pulses }: { item: QuickItem; pulses: PulseMap | null | und
   else hint = lastLoggedText(pulse);
 
   return (
-    <div className={`${CARD} flex h-full flex-col gap-3 p-3.5 sm:p-4`}>
-      <div className="flex items-center gap-3">
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${TONE[item.tone].bubble}`}>
-          <Icon id={item.id} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <Link href={`/${item.id}`} className="-my-[11px] inline-block py-[11px] font-display text-h4 text-ink no-underline hover:underline">
-            {item.title}
-          </Link>
-          {hint && (
-            <p className={`m-0 truncate text-chip font-bold ${doneToday ? TONE[item.tone].ink : "text-muted"}`}>{hint}</p>
-          )}
-        </div>
+    <div className="flex items-center gap-3 border-b border-[color:var(--hairline)] py-3">
+      <span aria-hidden="true" className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${TONE[item.tone].bubble}`}>
+        <Icon id={item.id} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <Link href={`/${item.id}`} className="-my-[11px] inline-block py-[11px] font-display text-h4 text-ink no-underline hover:underline">
+          {item.title}
+        </Link>
+        {hint && (
+          <p className={`m-0 truncate text-chip font-bold ${doneToday ? TONE[item.tone].ink : "text-muted"}`}>{hint}</p>
+        )}
       </div>
-      <Link
-        href={ownData ? `/${item.id}` : `/${item.id}?log=1`}
-        className={`${doneToday || ownData ? BTN_SECONDARY : BTN_PRIMARY} mt-auto w-full no-underline`}
-      >
+      <Link href={ownData ? `/${item.id}` : `/${item.id}?log=1`} className="pearl-link no-underline" style={{ textDecoration: "none" }}>
         {ownData ? "Open" : doneToday ? "Log more" : "Log"}
       </Link>
     </div>
