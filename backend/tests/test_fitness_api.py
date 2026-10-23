@@ -354,3 +354,11 @@ def test_custom_foods_cannot_be_used_to_distort_intake(env):
     for b in bad:
         r = c.post("/fitness/foods/custom", json=b, headers=H1)
         assert r.status_code == 422 and isinstance(r.json()["detail"], str), b
+
+
+def test_summary_carries_readiness_in_words_and_never_a_score(env):
+    c, _ = env
+    put_profile(c)
+    r = c.get("/fitness/summary", headers=H1).json()["readiness"]
+    assert set(r) == {"level", "label", "reasons"} and r["reasons"]
+    assert r["level"] in (None, "go", "moderate", "recovery")

@@ -60,6 +60,16 @@ function Hub() {
         </section>
       )}
 
+      {s.readiness && (
+        <Section title="How ready you look today">
+          <p className="m-0 font-display text-h3 text-ink">{s.readiness.label}</p>
+          <ul className="m-0 mt-2 flex list-none flex-col gap-1 p-0 text-body-sm text-muted">
+            {s.readiness.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+          </ul>
+          <p className="m-0 mt-2 text-body-sm text-muted">A guide to effort from your own logs, not a medical check. How you feel comes first.</p>
+        </Section>
+      )}
+
       {t !== null && s.budget && (
         <Section title="Today" aside={<EstimateLabel />}>
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">

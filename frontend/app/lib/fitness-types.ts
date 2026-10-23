@@ -61,6 +61,8 @@ export interface Summary {
   has_workout_plan: boolean;
   /** false when nothing has been logged today: show "not logged", never a 0 that reads as "ate nothing" */
   intake_logged?: boolean;
+  /** How ready the person looks to train today, in words with the reasons. `level` is null when nothing recent was logged. */
+  readiness?: { level: "go" | "moderate" | "recovery" | null; label: string; reasons: string[] };
   review: Review;
   latest_weight_kg: number | null;
   budget?: Budget;
