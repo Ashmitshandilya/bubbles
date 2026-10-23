@@ -28,7 +28,7 @@ from ttl_cache import TTLCache
 KIND = "consent"            # the older single yes: document kind / key
 KEY = "ai_chat"
 VERSION = "2026-10b"        # text version of ai_chat_processing (kept so an old yes keeps its meaning). Bump when what is sent changes.
-POLICY_VERSION = "2026-10-16"
+POLICY_VERSION = "2026-10-23"
 """Version of the privacy notice (frontend/app/lib/privacy-notice-version.ts must match; a test pins it)."""
 
 TABLE = "consent_events"

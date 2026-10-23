@@ -5,6 +5,7 @@
  */
 import { adaptHealthEvents, adaptReplySafety } from "../lib/bubbles-events";
 import { askHandle } from "../lib/ask-handoff";
+import { adaptHarbor } from "../lib/safe-harbor";
 import type { ChatMessage } from "./ChatBits";
 
 export interface Entry {
@@ -36,6 +37,7 @@ export function mapMessageRows(rows: unknown, conversationId: string): ChatMessa
       ...adaptReplySafety(m.safety, m.safety_level, m.kind),
       healthEvents: adaptHealthEvents(m.health_events, undefined),
       consentRequired: m.consent_required === true,
+      harbor: adaptHarbor(m.harbor) ?? undefined, // a reload shows the same Safe Harbor reply
     };
   });
 }

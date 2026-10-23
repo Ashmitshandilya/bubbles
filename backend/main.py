@@ -56,6 +56,7 @@ from onboarding_api import build_router as build_onboarding_router
 import consent as consent_module
 from consent import chat_prompt, consent_needed_reply, has_ai_consent, persist_chat_events
 from mind_chat import loneliness_no_consent_reply, mind_support_block
+import safe_harbor
 from import_api import build_router as build_import_router
 from cycle_api import build_router as build_cycle_router
 from partner_sharing import build_router as build_partner_router
@@ -702,7 +703,7 @@ _chat_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_CHAT_RATE_LIMIT", "30")
 # the person's own context is waited for longer and logged, never dropped quietly.
 RAG_BUDGET_S = max(0.5, float(os.getenv("CHAT_RAG_BUDGET_S", "2.0")))
 CONTEXT_BUDGET_S = max(2.0, float(os.getenv("CHAT_CONTEXT_BUDGET_S", "8.0")))
-_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup", "recall", "remembered"}
+_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup", "recall", "remembered"} | {"safe_harbor"}
 
 
 def _debug_trace_enabled() -> bool:
@@ -735,6 +736,7 @@ class _ChatState:
     consent_required: bool = False
     fresh: bool = False   # the user message was just created (not a retry), so none of its events exist yet
     timings: dict = field(default_factory=dict)
+    harbor_ctx: Any = None   # the Safe Harbor documents read for this message (safe_harbor.HarborContext), reused when the state is written
     early: dict | None = None   # a finished answer (empty message, replay of a retry): nothing more to compute
 
     @property
@@ -810,8 +812,10 @@ def _chat_prepare(user, user_id: str, request: ChatRequest) -> _ChatState:
     explicit_facts = extract_explicit_personal_facts(user_message)
     state.memory_saved = persist_explicit_facts(user_id, state.user_message_id, explicit_facts)
 
-    # ---- 1. understand: facts (negation, tense, who, severity), safety state, correction, contradictions, daily log
-    turn = analyze_turn(user_message, history)
+    # ---- 1. understand: facts (negation, tense, who, severity), safety state, Safe Harbor, correction, contradictions, daily log
+    # The Safe Harbor documents are read only when this message or the last reply needs them (a tier 2 message, or a conversation already in that voice).
+    state.harbor_ctx = safe_harbor.load_context(supabase, user_id, conversation_id, user_message, history, message_id=state.user_message_id)
+    turn = analyze_turn(user_message, history, harbor_ctx=state.harbor_ctx)
     state.turn = turn
     state.name = first_name(user)
     state.timings = dict(turn.timings_ms)
@@ -919,7 +923,9 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         if state.consent_required:
             # An urgent message still gets the fixed urgent text, not a question about AI models.
             consent_ask = chat_prompt(supabase, user_id, name)   # declined within 14 days: a calm line, no card
-            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (loneliness_no_consent_reply(turn, name) or consent_ask["reply"])
+            lite = safe_harbor.lite_fixed_reply(turn.harbor)   # control or fear told with no yes to AI: a kind fixed line first, then the usual ask
+            response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (
+                loneliness_no_consent_reply(turn, name) or (f"{lite}\n\n{consent_ask['reply']}" if lite else consent_ask["reply"]))
         else:
             response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
         if turn.route in {"fitness_support", "fitness_answer"}:
@@ -932,7 +938,8 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         # The person's own context, the evidence lookup and the tone settings do not depend on each other: started together, after the
         # safety gate (evidence is never fetched before it, and only for topics the person actually raised, never for denied or other
         # people's symptoms).
-        query = evidence_query(turn.facts, user_message)
+        # Hurtful or controlling treatment at home (Safe Harbor tier 1) and other people's stories are not health topics: nothing is looked up for them.
+        query = "" if (turn.harbor.tier >= 1 or turn.harbor.about_other) else evidence_query(turn.facts, user_message)
         ctx_job = submit(_context_stage, user_id, user_message)
         rag_job = submit(_evidence_stage, user_id, query) if query else None
         style_job = submit_io(settled, chat_cache.style_block, supabase, user_id)
@@ -973,7 +980,8 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             user_message,
             memory_context=memory_context,
             evidence_context=evidence_context,
-            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if style else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else ""),
+            safety_context=safety_instruction(safety) + "\n\n" + response_style_instruction() + (("\n\n" + style) if style else "") + (("\n\n" + mind) if (mind := mind_support_block(turn)) else "")
+            + (("\n\n" + harbor_block) if (harbor_block := safe_harbor.model_block(turn.harbor)) else ""),
             conversation_context=conversation_context,
         )
         stage["ai"] = _ms(t0)
@@ -1009,7 +1017,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
                 response_text += "\n\n" + note
 
     # ---- 2b. a plainly stated weight or height is saved now, so every screen shows it without a Save tap
-    if not state.consent_required and turn.route != "correction" and safety.level != "RED":
+    if not state.consent_required and turn.route not in ("correction", "safe_harbor") and safety.level != "RED":
         from body_stats import auto_save_body_stats
         saved_notes = auto_save_body_stats(supabase, user_id, user_message, persisted)
         if saved_notes:
@@ -1024,9 +1032,18 @@ def _chat_respond(state: _ChatState, defer) -> dict:
                                evidence_ids=evidence_ids, conflicts=turn.conflicts, trace=semantic_trace(turn), package=package_audit_meta)
     if state.consent_required:
         metadata["consent_required"] = True   # so the card survives a replay and a reload
+    # Safe Harbor: the resources and choices travel with the reply (and are stored with it, so a reload and a retry show the same); a crisis reply that
+    # was followed by the numbers for being unsafe at home carries them too. Stored harbor replies are also what keeps these turns out of the model's context.
+    harbor_shown = None
+    if turn.route == "safe_harbor" or (turn.route == "emergency" and turn.harbor.tier >= 2):
+        harbor_shown = safe_harbor.payload(turn.harbor, explicit=turn.route == "emergency")
+        metadata["harbor"] = {**harbor_shown, "lang": turn.harbor.lang, "child": turn.harbor.child_at_risk}
     bubbles_message_id = _persist_chat_message(
         user_id=user_id, conversation_id=state.conversation_id, role="bubbles", content=response_text, metadata=metadata,
     )
+    if turn.harbor.step or turn.harbor.pause_partner_signals:
+        # After the reply is saved (a retry then replays it and never gets here twice): the conversation's Safe Harbor state and the person's flag.
+        safe_harbor.record(supabase, user_id, state.conversation_id, user_message_id, turn.harbor, keep_voice=turn.route == "safe_harbor", ctx=state.harbor_ctx)
     if turn.route == "correction":
         outcome = apply_correction(supabase, user_id=user_id, conversation_id=state.conversation_id, correction=turn.correction,
                                    correction_message_id=bubbles_message_id, history=state.history)
@@ -1044,7 +1061,8 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             "retracted_event_ids": rejected_ids, "kept_event_ids": kept_ids,
         }
         safety_dict = safety_payload(safety, correction=correction_payload if correction_payload["retracted_message_id"] else None)
-    defer(_after_turn, state.conversation_id, user_id, turn.route, safety.state, len(persisted), timings)
+    # A log line tied to a user id must not say that someone told Bubbles they were hurt: Safe Harbor turns are logged as plain "deterministic" ones.
+    defer(_after_turn, state.conversation_id, user_id, "deterministic" if (harbor_shown or turn.harbor.deterministic) else turn.route, safety.state, len(persisted), timings)
     try:
         ops_telemetry.note(**{f"stage_{name}_ms": ms for name, ms in stage.items()}, stage_post_ms=_ms(post_started))
     except Exception:  # noqa: BLE001 - telemetry never interrupts a reply
@@ -1079,6 +1097,8 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             for row in shown_evidence(evidence_results)
         ],
     }
+    if harbor_shown:
+        payload["harbor"] = harbor_shown
     if _debug_trace_enabled():
         payload["debug"] = {"route": turn.route, "timings_ms": timings, "trace": semantic_trace(turn),
                             "facts": [f.to_dict(include_text=True) for f in turn.facts][:40]}
@@ -1267,6 +1287,8 @@ def _conversation_messages(user_id: str, conversation_id: str, limit: int, befor
                 out["health_events_more"] = meta["health_events_more"]   # cards beyond the stored cap: the UI says "N more"
         if meta.get("consent_required") is True:
             out["consent_required"] = True
+        if isinstance(meta.get("harbor"), dict):
+            out["harbor"] = {k: v for k, v in meta["harbor"].items() if k in ("tier", "mode", "step", "resources", "actions")}   # a reload shows the same Safe Harbor reply
         return out
 
     return {

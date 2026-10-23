@@ -84,6 +84,19 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>Safe Harbor: if you are hurt at home</h2>
+        <p>
+          If you tell Bubbles that a partner or someone in your family is hitting or choking you, pushing you hard or against something, forcing sex, threatening to kill you or using a weapon, Bubbles answers by itself, in fixed
+          wording written in advance. That message is never sent to an outside AI, even if you turned that choice on. The same is true if you tell Bubbles that you hit your partner or your child. It
+          never appears in a notification, and it is never shown to a partner you are connected with.
+        </p>
+        <p>
+          Bubbles recognises these messages by their wording, so it can miss some. Other worries about home, such as feeling controlled or afraid, are treated like any other chat: they go to an
+          outside AI only if you turned that choice on.
+        </p>
+      </section>
+
+      <section>
         <h2>Where your data is kept</h2>
         <p>
           Your data is stored in a managed database hosted in South Korea (Seoul). The app is served from Vercel and the API runs on Render in Singapore. These providers
