@@ -106,6 +106,7 @@ NOTES: dict[str, tuple[str, str]] = {
     "orbit_checkin": ("you said so in a check-in", "you said so in {n} check-ins"),
     "association": ("your own logs show it", "your own logs show it"),
     "confirmed": ("you told us it is right", "you told us it is right"),
+    "stars": ("it is a traditional association in your Stars lens", "it is a traditional association in your Stars lens"),
 }
 
 _STRESS = (

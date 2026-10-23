@@ -110,6 +110,26 @@ export default function PrivacyPage() {
       </section>
 
       <section>
+        <h2>Helping improve Bubbles (optional, off by default)</h2>
+        <p>
+          If you turn on &ldquo;Help improve Bubbles with de-identified examples&rdquo; in Your choices, and you rate one of Bubbles&apos; replies to a simple question about the app (for example &ldquo;what can you do?&rdquo;), Bubbles
+          may keep that reply with every name, number, date, place, email and link removed. It never keeps your message, and nothing in it points to you. A short code lets Bubbles count how many different people found a kind of reply
+          helpful; the code changes every month and cannot be turned back into who you are. Kept examples are deleted after 90 days. Only when at least 20 different people found the same kind of reply helpful does the owner of
+          Bubbles read it, and a reply is only ever used again if the owner approves it. It is never used for health, safety or relationship advice. You can turn this off at any time, and it does not change how Bubbles answers you.
+        </p>
+      </section>
+
+      <section>
+        <h2>Stars lens (optional, off by default)</h2>
+        <p>
+          If you turn on the Stars lens in Your choices, Bubbles keeps your birth date, an optional birth time and a birth place chosen from a list on its own server. Nothing is sent to a map or astrology service. From them it works
+          out a traditional Moon sign, nakshatra and Sun sign (and the ascendant, if you give a birth time) and shows a few traditional words. It is for fun and reflection and never predicts anything, and Bubbles never uses it for
+          health, safety or relationship decisions. Each word is checked against what Bubbles has seen about you, and only where your own history agrees can it change how Bubbles words things. Turning it off, or withdrawing the choice,
+          deletes your birth date, time and place and what the lens added to how Bubbles understands you.
+        </p>
+      </section>
+
+      <section>
         <h2>Country, gender and relationship questions</h2>
         <p>
           Setup can ask which country you live in, your state in India, how you describe yourself, whether you are in a relationship and who you live with. You can skip any of them. Your country picks the emergency numbers

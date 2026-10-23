@@ -404,7 +404,8 @@ def test_the_run_sends_due_reminders_and_returns_only_counts(client, monkeypatch
     med_schedule(db)
     at_noon(monkeypatch)
     body = run(client).json()
-    assert body == {"status": "success", "checked": 1, "created": 1, "revoked": 0, "errors": 0, "partial": False, "rollups": body["rollups"]}
+    assert body == {"status": "success", "checked": 1, "created": 1, "revoked": 0, "errors": 0, "partial": False, "rollups": body["rollups"], "playbook": body["playbook"]}
+    assert set(body["playbook"]) == {"drafts_made"} and isinstance(body["playbook"]["drafts_made"], int)   # counts only
     assert fcm.tokens == [TOK_A]
     assert U1 not in json.dumps(body) and TOK_A not in json.dumps(body)
 

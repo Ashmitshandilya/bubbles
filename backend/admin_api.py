@@ -77,12 +77,17 @@ def _keyless_health_pool() -> bool:
     return ai_provider.ALLOW_KEYLESS_AI and ai_provider.ALLOW_KEYLESS_HEALTH_DATA
 
 
+class PlaybookChange(BaseModel):
+    action: str
+    guidance_text: str | None = None
+
+
 class SettingChange(BaseModel):
     key: str
     value: bool | int
 
 
-def build_admin_router(database_report: Callable[[], dict[str, Any]]) -> APIRouter:
+def build_admin_router(database_report: Callable[[], dict[str, Any]], db: Any = None) -> APIRouter:
     router = APIRouter(prefix="/admin", include_in_schema=False, dependencies=[Depends(_admin)])
 
     @router.get("/me")
@@ -242,6 +247,24 @@ def build_admin_router(database_report: Callable[[], dict[str, Any]]) -> APIRout
         since, _until = _window(range_)
         rows, capped, source = ops_telemetry.stored_events(since, ["audit"])
         return {"status": "success", **_meta(source, capped, range_), "events": rows[:limit]}
+
+    @router.get("/playbook")
+    def playbook_list():
+        import playbook
+        return {"status": "success", "generated_at": _now().isoformat(), **playbook.admin_list(db)}
+
+    @router.post("/playbook/{entry_id}")
+    def playbook_change(entry_id: str, change: PlaybookChange, admin_id: str = Depends(_admin)):
+        import playbook
+        if not re.fullmatch(r"[0-9a-fA-F-]{8,40}", entry_id):
+            raise HTTPException(status_code=404, detail="Not Found")
+        try:
+            result = playbook.admin_apply(db, entry_id, change.action, change.guidance_text)
+        except ValueError as error:
+            code = str(error)
+            raise HTTPException(status_code=404 if code == "not_found" else 422, detail={"code": code, "message": "That change is not allowed."}) from error
+        ops_telemetry.record("audit", action=f"playbook_{change.action}", target="playbook", new=1, outcome="done", actor=admin_id)
+        return {"status": "success", **result}
 
     @router.post("/cache/clear")
     def clear_caches(admin_id: str = Depends(_admin)):

@@ -171,6 +171,9 @@ function Me() {
           <Link href="/profile/understanding" className={`${BTN_SECONDARY} no-underline`}>
             How Bubbles understands you
           </Link>
+          <Link href="/profile/stars" className={`${BTN_SECONDARY} no-underline`}>
+            Stars lens
+          </Link>
           <Link href="/settings" className={`${BTN_SECONDARY} no-underline`}>
             Settings
           </Link>

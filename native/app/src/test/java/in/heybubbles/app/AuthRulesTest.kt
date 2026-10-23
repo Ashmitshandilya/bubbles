@@ -26,6 +26,6 @@ class AuthRulesTest {
 
     @Test fun linksOpenOnTheRealSiteAndTheNoticeVersionMatchesTheServer() {
         assertEquals("https://heybubbles.in/callback?next=password", AuthRules.RESET_URL)
-        assertEquals("2026-10-23c", AuthRules.NOTICE_VERSION)   // backend/consent.py POLICY_VERSION
+        assertEquals("2026-11a", AuthRules.NOTICE_VERSION)   // backend/consent.py POLICY_VERSION
     }
 }

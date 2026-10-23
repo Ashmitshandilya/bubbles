@@ -24,6 +24,7 @@ KNOWN: dict[str, str] = {
     "20261016_bubbles_ops_funnel": "Admin keeps onboarding funnel steps and crash counts for 90 days",
     "20261016_bubbles_consent_ledger": "Consent history table (until then it is kept as signed documents)",
     "20261016_bubbles_community": "Community posts, comments and moderation",
+    "20261101_bubbles_playbook": "Playbook: de-identified reply examples people agreed to share, and the entries you approve",
 }
 
 _cache = TTLCache("schema_status", ttl_s=60, max_entries=2)   # migration names only, no user data

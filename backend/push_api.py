@@ -35,6 +35,12 @@ def run_once(db: Any) -> dict[str, Any]:
         out["rollups"] = "done"
     except Exception:  # noqa: BLE001
         out["rollups"] = "failed"
+    try:   # the Playbook: purge old de-identified candidates, then draft entries for the owner to review (counts only)
+        import playbook
+
+        out["playbook"] = playbook.maintain(db)
+    except Exception:  # noqa: BLE001
+        out["playbook"] = "failed"
     return out
 
 

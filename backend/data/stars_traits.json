@@ -1,0 +1,82 @@
+{
+  "_note": "Traditional temperament associations, written in plain words from classical Jyotish descriptions. They are a tradition, not a measurement: controlled studies find charts do not predict personality better than chance. Bubbles uses them only to choose words, and only when the person's own history agrees. `maps_to` links an association to one Person Model value; most map to nothing.",
+  "rashi": {
+    "Mesha": {"english": "Aries", "items": [
+      {"text": "quick to start things", "maps_to": null},
+      {"text": "tackles a problem head-on", "maps_to": {"trait": "conflict_style", "value": "pursues"}},
+      {"text": "needs to move to feel well", "maps_to": null}]},
+    "Vrishabha": {"english": "Taurus", "items": [
+      {"text": "steady and patient", "maps_to": null},
+      {"text": "values comfort, routine and good food", "maps_to": null},
+      {"text": "slow to change course once settled", "maps_to": null}]},
+    "Mithuna": {"english": "Gemini", "items": [
+      {"text": "curious and talkative", "maps_to": null},
+      {"text": "talks things through when stressed", "maps_to": {"trait": "stress_response", "value": "talks_it_out"}},
+      {"text": "likes variety", "maps_to": null}]},
+    "Karka": {"english": "Cancer", "items": [
+      {"text": "feels things deeply", "maps_to": {"trait": "reassurance_need", "value": "high"}},
+      {"text": "home-loving and protective of family", "maps_to": null},
+      {"text": "caring, and remembers kindness", "maps_to": null}]},
+    "Simha": {"english": "Leo", "items": [
+      {"text": "warm and generous", "maps_to": null},
+      {"text": "likes to be appreciated", "maps_to": null},
+      {"text": "a natural organiser of others", "maps_to": null}]},
+    "Kanya": {"english": "Virgo", "items": [
+      {"text": "careful, practical and detail-minded", "maps_to": null},
+      {"text": "keeps busy and works through stress", "maps_to": {"trait": "stress_response", "value": "keeps_busy"}},
+      {"text": "can be hard on themselves", "maps_to": null}]},
+    "Tula": {"english": "Libra", "items": [
+      {"text": "looks for balance and fairness", "maps_to": null},
+      {"text": "sociable and diplomatic", "maps_to": null},
+      {"text": "dislikes open conflict", "maps_to": null}]},
+    "Vrishchika": {"english": "Scorpio", "items": [
+      {"text": "intense and private", "maps_to": null},
+      {"text": "keeps feelings inside when stressed", "maps_to": {"trait": "stress_response", "value": "goes_quiet"}},
+      {"text": "deeply loyal", "maps_to": null}]},
+    "Dhanu": {"english": "Sagittarius", "items": [
+      {"text": "optimistic and adventurous", "maps_to": null},
+      {"text": "honest, sometimes bluntly", "maps_to": null},
+      {"text": "values freedom", "maps_to": null}]},
+    "Makara": {"english": "Capricorn", "items": [
+      {"text": "disciplined and responsible", "maps_to": null},
+      {"text": "works through stress by staying busy", "maps_to": {"trait": "stress_response", "value": "keeps_busy"}},
+      {"text": "patient with long goals", "maps_to": null}]},
+    "Kumbha": {"english": "Aquarius", "items": [
+      {"text": "an independent thinker", "maps_to": null},
+      {"text": "needs space first when things get tense", "maps_to": {"trait": "conflict_style", "value": "withdraws"}},
+      {"text": "friendly and idealistic", "maps_to": null}]},
+    "Meena": {"english": "Pisces", "items": [
+      {"text": "gentle and imaginative", "maps_to": null},
+      {"text": "takes in other people's feelings", "maps_to": null},
+      {"text": "needs quiet time to recover", "maps_to": null}]}
+  },
+  "nakshatra": {
+    "Ashwini": ["swift to begin", "drawn to helping and healing", "restless when idle"],
+    "Bharani": ["carries responsibility with determination", "feels things strongly", "values fairness"],
+    "Krittika": ["sharp and honest", "protective of others", "holds high standards"],
+    "Rohini": ["charming and creative", "loves beauty and comfort", "grows best with stability"],
+    "Mrigashira": ["curious and always searching", "gentle in manner", "restless for the next thing to learn"],
+    "Ardra": ["feels emotional storms, then clarity", "analytical and determined", "values honesty"],
+    "Punarvasu": ["resilient and hopeful", "returns to centre after setbacks", "generous and trusting"],
+    "Pushya": ["nurturing and dependable", "devoted to people and duty", "likes order"],
+    "Ashlesha": ["perceptive and guarded", "reads people well", "private about feelings"],
+    "Magha": ["dignified and respectful of tradition", "cares about family and roots", "wants to be taken seriously"],
+    "Purva Phalguni": ["warm and sociable", "enjoys rest and pleasure", "creative and affectionate"],
+    "Uttara Phalguni": ["reliable and helpful", "a steady friend", "values commitments"],
+    "Hasta": ["skilled with their hands", "practical with a quick wit", "resourceful"],
+    "Chitra": ["creative with an eye for design", "likes to stand out a little", "careful about appearance and craft"],
+    "Swati": ["independent and flexible", "adapts like a reed in the wind", "values personal freedom"],
+    "Vishakha": ["determined and goal-driven", "persistent once committed", "wants to finish what they start"],
+    "Anuradha": ["a loyal friend", "cooperative and warm", "works well in a group"],
+    "Jyeshtha": ["protective and capable", "wants to be relied on", "feels responsible for others"],
+    "Mula": ["likes to get to the root of things", "frank and investigative", "can let go and start again"],
+    "Purva Ashadha": ["enthusiastic and persuasive", "believes in people", "carries on after setbacks"],
+    "Uttara Ashadha": ["principled and persistent", "slow to start, hard to stop", "values duty"],
+    "Shravana": ["a good listener", "likes to learn and pass it on", "attentive to others"],
+    "Dhanishta": ["rhythmic, lively and ambitious", "sociable", "likes to be useful"],
+    "Shatabhisha": ["private and self-reliant", "drawn to research and healing", "needs time alone"],
+    "Purva Bhadrapada": ["intense and idealistic", "committed to what they believe", "can swing between enthusiasm and withdrawal"],
+    "Uttara Bhadrapada": ["calm and deep", "compassionate", "patient with others"],
+    "Revati": ["gentle and caring", "protective of the vulnerable", "dreamy and kind"]
+  }
+}

@@ -8,13 +8,16 @@ Reads and writes only the signed ``person_model`` document of the signed-in pers
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any, Callable
 
-from fastapi import APIRouter, Body, Header, HTTPException
+from fastapi import APIRouter, Body, Header, HTTPException, Query
 from starlette.concurrency import run_in_threadpool
 
+import consent
+import doc_store
 import person_model as pm
+import stars_lens
 
 INTRO_EMPTY = "Bubbles is still getting to know you."
 
@@ -71,5 +74,74 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         uid = await uid_of(authorization)
         await run_in_threadpool(pm.wipe, db, uid)
         return _view(pm.new_model(), datetime.now(timezone.utc))
+
+    # ---- Stars lens: opt-in, a traditional lens that only ever helps choose words ---------------------------------------------------
+    def _stars_state(uid: str, now: datetime) -> dict[str, Any]:
+        granted = consent.is_granted(db, uid, "stars_lens")
+        saved = doc_store.get(db, uid, stars_lens.KIND, stars_lens.KEY) or {}
+        out: dict[str, Any] = {"status": "success", "intro": stars_lens.TRADITION_LINE, "consent": granted, "enabled": bool(granted and saved.get("birth_date"))}
+        if out["enabled"]:
+            place = stars_lens.city(str(saved.get("city_id")))
+            if place:
+                chart = stars_lens.compute_chart(date.fromisoformat(saved["birth_date"]), saved.get("birth_time"), place)
+                out.update(stars_lens.view(chart, pm.load(db, uid), now))
+                out["birth"] = {"date": saved["birth_date"], "time": saved.get("birth_time"), "place": {"id": place["id"], "name": place["name"], "country": place["country"]}}
+        return out
+
+    @router.get("/me/stars")
+    async def stars(authorization: str | None = Header(default=None)):
+        uid = await uid_of(authorization)
+        return await run_in_threadpool(_stars_state, uid, datetime.now(timezone.utc))
+
+    @router.get("/me/stars/places")
+    async def stars_places(q: str = Query("", max_length=40), authorization: str | None = Header(default=None)):
+        await uid_of(authorization)
+        return {"status": "success", "places": stars_lens.search_cities(q)}
+
+    @router.put("/me/stars")
+    async def stars_save(payload: dict = Body(...), authorization: str | None = Header(default=None)):
+        uid = await uid_of(authorization)
+        if not await run_in_threadpool(consent.is_granted, db, uid, "stars_lens"):
+            raise HTTPException(status_code=403, detail="Say yes to the Stars lens first")
+        try:
+            birth = date.fromisoformat(str(payload.get("birth_date") or ""))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Enter your birth date")
+        if birth > date.today():
+            raise HTTPException(status_code=422, detail="Your birth date cannot be in the future")
+        place = stars_lens.city(str(payload.get("city_id") or ""))
+        if place is None:
+            raise HTTPException(status_code=422, detail="Choose your birth place from the list")
+        birth_time = payload.get("birth_time") or None
+        try:
+            chart = stars_lens.compute_chart(birth, birth_time, place)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail="Enter the birth time as HH:MM, or leave it empty if you do not know it" if str(error) == "bad_time"
+                                else "Birth years from 1900 to 2100 are supported")
+        now = datetime.now(timezone.utc)
+
+        def save() -> dict[str, Any]:
+            doc_store.put(db, uid, stars_lens.KIND, stars_lens.KEY, {"birth_date": birth.isoformat(), "birth_time": birth_time, "city_id": place["id"], "saved_at": now.isoformat()})
+            model = pm.load(db, uid, fresh=True)
+            stars_lens.apply_priors(model, chart, now)
+            pm.save(db, uid, model)
+            return _stars_state(uid, now)
+
+        return await run_in_threadpool(save)
+
+    @router.delete("/me/stars")
+    async def stars_off(authorization: str | None = Header(default=None)):
+        """Turn the lens off: the birth date, time and place are deleted, and so are the hints it added to what Bubbles knows about you."""
+        uid = await uid_of(authorization)
+        now = datetime.now(timezone.utc)
+
+        def off() -> dict[str, Any]:
+            doc_store.delete(db, uid, stars_lens.KIND, stars_lens.KEY)
+            model = pm.load(db, uid, fresh=True)
+            stars_lens.clear_priors(model)
+            pm.save(db, uid, model)
+            return _stars_state(uid, now)
+
+        return await run_in_threadpool(off)
 
     return router

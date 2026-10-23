@@ -573,7 +573,7 @@ app.include_router(build_organ_map_router(get_authenticated_user, supabase))
 app.include_router(build_deficiency_router(get_authenticated_user, supabase))
 app.include_router(build_community_router(get_authenticated_user, supabase))   # /community/* and /admin/community/* (off until COMMUNITY_ALIAS_SECRET is set)
 app.include_router(build_schema_router(supabase))
-app.include_router(build_admin_router(lambda: _database_report()))   # /admin/*: gated in the middleware (_admin_gate)
+app.include_router(build_admin_router(lambda: _database_report(), supabase))   # /admin/*: gated in the middleware (_admin_gate)
 
 
 # --------------------------------------------------
@@ -924,6 +924,19 @@ def _evidence_stage(user_id: str, query: str) -> tuple[list[dict], float]:
 
 
 _MEMORY_ORDER = ("personal", "person_model", "open_threads", "values", "metrics", "associations", "nutrient_hint")
+def _playbook_block(user_message: str, turn: Any) -> str:
+    """One approved Playbook entry for a plain app question (never health, safety, Safe Harbor or relationship advice), or ''. Never raises."""
+    try:
+        import playbook
+        from orbit import _lang
+        if turn.route != "ai" or playbook.blocked_route(turn.route):
+            return ""
+        intent = playbook.intent_of(user_message)
+        return playbook.block_for_prompt(playbook.approved_for(supabase, intent, {"en": "english"}.get(_lang(user_message), _lang(user_message)))) if intent else ""
+    except Exception:  # noqa: BLE001 - the Playbook is an extra; a reply never depends on it
+        return ""
+
+
 _LEARNING_ROUTES = frozenset({"ai", "orbit", "small_talk", "daily_log", "recall", "remembered"})
 
 
@@ -1017,6 +1030,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             *context_blocks,
             *(orbit_blocks(turn, state.history) if turn.route == "orbit" else []),
             ("evidence", evidence_context, 11),
+            ("playbook", _playbook_block(user_message, turn), 12),
         ])
         try:
             state.people = people_job.result(timeout=CONTEXT_BUDGET_S) or {}
@@ -1038,7 +1052,7 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             memory_context=sent_memory,
             evidence_context=evidence_context,
             safety_context="\n\n".join(filter(None, [kept.get("safety", ""), response_style_instruction(turn.country), kept.get("setup_style", ""), kept.get("mind", ""), kept.get("harbor", ""),
-                                                       kept.get("orbit", ""), pattern_cards])),
+                                                       kept.get("orbit", ""), pattern_cards, kept.get("playbook", "")])),
             conversation_context=sent_conversation,
         )
         if state.people and not is_degraded(ai_result):   # put the names back before anything is checked, saved or shown
