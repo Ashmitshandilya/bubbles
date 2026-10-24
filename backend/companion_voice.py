@@ -19,7 +19,7 @@ _NOT_FOR_THIS = re.compile(
     r"pregnan\w+|medicine|medication|tablets?|doctor|hospital|diagnos\w+|"
     r"disorder|disease|illness|syndrome|condition|depress\w*|bipolar|ocd|ptsd|schizo\w*|adhd|autis\w*|do\s+i\s+have|am\s+i\s+(?:sick|ill|mad|crazy)|"
     r"har\s+din|roz|hamesha|lagatar|kai\s+(?:hafte|mahine)|hafto|mahino|"
-    r"mar\s+jana|jeena\s+nahi|jaan\s+de)\b", re.I)
+    r"drinking|drunk|alcohol|can'?t\s+eat|for\s+days|no\s+reason\s+to\s+live|mar\s+jana|jeena\s+nahi|jaan\s+de)\b", re.I)
 # a feeling someone else has is not the person's own: "my mother feels very sad" goes to the model, "I miss my mom" stays
 _THIRD_PERSON = re.compile(r"\b(?:my\s+(?:mother|mom|mum|father|dad|friend|brother|sister|husband|wife|boyfriend|girlfriend|partner|son|daughter|boss|colleague|neighbou?r)|he|she|they|his|her|their)\b", re.I)
 _FIRST_PERSON = re.compile(r"\b(?:i|i'm|im|i've|ive|i'd|me|myself|main|mujhe|mera|meri|mere|maine)\b", re.I)
@@ -27,13 +27,13 @@ _FIRST_PERSON = re.compile(r"\b(?:i|i'm|im|i've|ive|i'd|me|myself|main|mujhe|mer
 _STRESS = re.compile(r"\b(?:stress(?:ed|ful)?|overwhelm\w*|burn(?:ed|t)\s*out|swamped|too\s+much\s+(?:work|on\s+my\s+plate)|tension|tensed|pressure\s+(?:at|of)\s+(?:work|college|exams?))\b|\bstressed\s+out\b", re.I)
 _JOY = re.compile(
     r"\b(?:got\s+(?:the|a)\s+(?:job|promotion|offer|internship|raise)|promoted|i\s+passed|passed\s+my|cleared\s+(?:my|the)|so\s+happy|really\s+happy|feeling\s+(?:great|amazing|fantastic|wonderful|"
-    r"so\s+good|really\s+good)|great\s+day|good\s+news|excited|proud\s+of\s+myself|nailed\s+it|did\s+it|best\s+day|khush|bahut\s+khush|maza\s+aa\s+raha|grateful|thankful|nice\s+day|good\s+mood|great\s+workout|feel\s+amazing)\b", re.I)
+    r"so\s+good|really\s+good)|great\s+day|good\s+news|excited|(?:feeling|so|really)\s+proud|(?:felt|feel|feeling)\s+(?:so\s+)?calm|feel\s+so\s+much\s+better|(?:feel|feeling)\s+(?:really\s+)?(?:motivated|hopeful)|so\s+relieved|proud\s+of\s+myself|nailed\s+it|did\s+it|best\s+day|khush|bahut\s+khush|maza\s+aa\s+raha|grateful|thankful|nice\s+day|good\s+mood|great\s+workout|feel\s+amazing)\b", re.I)
 _TIRED = re.compile(r"\b(?:so\s+tired|very\s+tired|really\s+tired|exhausted|drained|wiped\s+out|worn\s+out|thak\s+gaya|thak\s+gayi|bahut\s+thak|thaka\s+hua|thaki\s+hui|energy\s+nahi)\b", re.I)
 # softer everyday feelings that carry no symptom: nerves, missing home or family, an ordinary hard day (each needs a first-person cue, checked above)
-_NERVOUS = re.compile(r"\b(?:nervous|worried\s+about|anxious\s+about|jittery|on\s+edge)\b", re.I)
+_NERVOUS = re.compile(r"\b(?:nervous|worried\s+about|anxious\s+about|scared\s+about|jittery|on\s+edge)\b", re.I)
 _MISSING = re.compile(r"\bmiss(?:ing)?\s+(?:my\s+)?(?:family|home|hometown|parents|friends|college|school|ghar)\b|\bghar\s+ki\s+yaad\b", re.I)
 _LOWISH = re.compile(
-    r"\b(?:feel(?:ing)?\s+like\s+crying|want\s+to\s+cry|(?:such\s+a\s+)?(?:hard|tough|rough|bad)\s+day|feel(?:ing)?\s+(?:kind\s+of\s+)?empty|bored\s+and\s+(?:a\s+bit\s+)?down|need\s+a\s+hug|"
+    r"\b(?:feel(?:ing)?\s+like\s+crying|want\s+to\s+cry|(?:such\s+a\s+)?(?:hard|tough|rough|bad)\s+day|feel(?:ing)?\s+(?:kind\s+of\s+)?empty|frustrated\s+with\s+myself|feeling\s+(?:kind\s+of\s+)?lost|feel\s+(?:a\s+bit\s+)?stuck|cried\s+(?:a\s+little|today)|today\s+felt\s+heavy|(?:aaj\s+ka\s+)?din\s+bahut\s+bura|bored\s+and\s+(?:a\s+bit\s+)?down|need\s+a\s+hug|"
     r"udaas\w*|man\s+nahi\s+lag\s+raha)\b", re.I)
 _QUESTION_FOR_INFO = re.compile(r"\b(?:how\s+(?:to|can|do|much|many)|what\s+(?:is|are|should)|why|tips?|advice|suggest|which|kaise|kya\s+karu)\b", re.I)
 

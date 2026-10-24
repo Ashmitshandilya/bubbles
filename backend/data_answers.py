@@ -36,7 +36,7 @@ _QUESTION = re.compile(
 # advice and "why" questions are for the model, which then gets these numbers as facts
 _NOT_A_DATA_QUESTION = re.compile(
     r"\bhow\s+(?:can|do|to|should|could|would)\b|\bwhat\s+should\b|\bwhy\b|\btips?\b|\badvice\b|\bimprove\b|\bhelp\s+me\b|\bsuggest|\bsleep(?:ing)?\s+better\b(?!\s+than)|\bsleep\s+more\b|"
-    r"\bkaise\b|\bkya\s+karu\b|\bkarna\s+chahiye\b|\bkyun\b|\bkyu\b|\bshould\s+i\b|\bcan\s+i\b|\bhow\s+much\s+(?:should|do\s+i\s+need|is\s+too)\b|\bneed\s+to\b|\bdo\s+i\s+need\b|\bhow\s+(?:much|many)\s+\w+\s+(?:should|do\s+i\s+need|is\s+(?:too|enough|good))\b", re.I)
+    r"\bapnea\b|\bdeficien\w+|\bcan\s+you\b|\bfix\b|\bdisorder\b|\bkaise\b|\bkya\s+karu\b|\bkarna\s+chahiye\b|\bkyun\b|\bkyu\b|\bshould\s+i\b|\bcan\s+i\b|\bhow\s+much\s+(?:should|do\s+i\s+need|is\s+too)\b|\bneed\s+to\b|\bdo\s+i\s+need\b|\bhow\s+(?:much|many)\s+\w+\s+(?:should|do\s+i\s+need|is\s+(?:too|enough|good))\b", re.I)
 _LAST = re.compile(r"\blast\s+night\b|\btoday\b|\byesterday\b|\bthis\s+morning\b|\baaj\b|\bkal\s+raat\b|\bkal\b|\braat\s+ko\b", re.I)
 _LAST_WEEK = re.compile(r"\blast\s+week\b|\bpichle\s+hafte\b", re.I)
 _MONTH = re.compile(r"\bmonth\b|\b30\s+days\b|\bmahine\b|\bmahina\b", re.I)

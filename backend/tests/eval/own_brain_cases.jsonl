@@ -67,7 +67,7 @@
 {"text": "gussa kaise control karu?", "expect": "knowledge"}
 {"text": "ghar ki bahut yaad aa rahi hai kya karu?", "expect": "knowledge"}
 {"text": "subah jaldi uthna kaise start karu?", "expect": "knowledge"}
-{"text": "roz kitna paani peena chahiye?", "expect": "knowledge"}
+{"text": "ek din mein kitna paani peena chahiye?", "expect": "knowledge"}
 {"text": "interview ka tension kaise kam karu?", "expect": "knowledge"}
 {"text": "dopahar mein neend aati hai kya karu?", "expect": "knowledge"}
 {"text": "zyada paani kaise piye?", "expect": "knowledge"}
@@ -282,3 +282,154 @@
 {"text": "he hits me when I am low on energy", "expect": "other"}
 {"text": "my partner controls my money and I feel trapped", "expect": "other"}
 {"text": "I feel low and I have no reason to live", "expect": "other"}
+{"text": "how many hours did I sleep last night?", "expect": "own_data"}
+{"text": "what time did I go to bed this week on average?", "expect": "own_data"}
+{"text": "was I active today?", "expect": "own_data"}
+{"text": "how was my water intake yesterday?", "expect": "own_data"}
+{"text": "did I drink enough water today?", "expect": "own_data"}
+{"text": "how much did I walk this week?", "expect": "own_data"}
+{"text": "what's my average mood this month?", "expect": "own_data"}
+{"text": "was my mood better yesterday than today?", "expect": "own_data"}
+{"text": "how's my sleep trending?", "expect": "own_data"}
+{"text": "show me my sleep for the last 7 days", "expect": "own_data"}
+{"text": "what was my worst sleep night this month?", "expect": "own_data"}
+{"text": "how many nights did I sleep under 6 hours?", "expect": "own_data"}
+{"text": "how long did I exercise this week?", "expect": "own_data"}
+{"text": "how many days did I work out this week?", "expect": "own_data"}
+{"text": "what's my total exercise time this month?", "expect": "own_data"}
+{"text": "how much water did I drink on average this week?", "expect": "own_data"}
+{"text": "which day did I drink the most water?", "expect": "own_data"}
+{"text": "have I slept more this week than last week?", "expect": "own_data"}
+{"text": "mera sleep pichle hafte kaisa raha?", "expect": "own_data"}
+{"text": "kal maine kitna paani piya?", "expect": "own_data"}
+{"text": "is mahine meri activity kaisi rahi?", "expect": "own_data"}
+{"text": "aaj maine kitni der exercise ki?", "expect": "own_data"}
+{"text": "meri neend is hafte theek rahi?", "expect": "own_data"}
+{"text": "pichle hafte ka mood batao", "expect": "own_data"}
+{"text": "mera paani ka average kitna hai?", "expect": "own_data"}
+{"text": "kal raat main kitne ghante soya?", "expect": "own_data"}
+{"text": "what are some tips for better focus while studying?", "expect": "knowledge"}
+{"text": "how to relax before bed?", "expect": "knowledge"}
+{"text": "what foods help with sleep?", "expect": "knowledge"}
+{"text": "how do I stay hydrated at work?", "expect": "knowledge"}
+{"text": "how to deal with stress at work?", "expect": "knowledge"}
+{"text": "how to stop snacking at night?", "expect": "knowledge"}
+{"text": "any ideas for a quick healthy lunch?", "expect": "knowledge"}
+{"text": "how to start meditating?", "expect": "knowledge"}
+{"text": "how can I stay active at a desk job?", "expect": "knowledge"}
+{"text": "what helps with a stiff neck from sleeping badly?", "expect": "knowledge"}
+{"text": "how to get better sleep when it is hot?", "expect": "knowledge"}
+{"text": "tips for staying motivated to exercise?", "expect": "knowledge"}
+{"text": "how to deal with exam pressure?", "expect": "knowledge"}
+{"text": "what are good stretches for the morning?", "expect": "knowledge"}
+{"text": "how do I build a morning routine?", "expect": "knowledge"}
+{"text": "how to calm my mind before sleep?", "expect": "knowledge"}
+{"text": "what is a good evening routine?", "expect": "knowledge"}
+{"text": "how to beat the afternoon slump?", "expect": "knowledge"}
+{"text": "how can I eat more vegetables?", "expect": "knowledge"}
+{"text": "ideas for healthy snacks at work?", "expect": "knowledge"}
+{"text": "how much fibre should I eat?", "expect": "knowledge"}
+{"text": "what are good sources of protein for vegetarians?", "expect": "knowledge"}
+{"text": "how to deal with a bad day?", "expect": "knowledge"}
+{"text": "how to feel more energetic in the morning?", "expect": "knowledge"}
+{"text": "any tips for travel tiredness?", "expect": "knowledge"}
+{"text": "raat ko neend kaise aaye?", "expect": "knowledge"}
+{"text": "paani zyada kaise piye?", "expect": "knowledge"}
+{"text": "padhai mein focus kaise karu?", "expect": "knowledge"}
+{"text": "subah energy kaise laye?", "expect": "knowledge"}
+{"text": "kaam ke stress se kaise deal karu?", "expect": "knowledge"}
+{"text": "healthy nashta kya hota hai?", "expect": "knowledge"}
+{"text": "dopahar ki neend kaise bhagayein?", "expect": "knowledge"}
+{"text": "I had the best day today", "expect": "companion"}
+{"text": "I'm feeling really proud", "expect": "companion"}
+{"text": "today I felt so calm", "expect": "companion"}
+{"text": "I got a promotion today!", "expect": "companion"}
+{"text": "I feel so much better today", "expect": "companion"}
+{"text": "I'm so anxious before my presentation", "expect": "companion"}
+{"text": "I feel really down tonight", "expect": "companion"}
+{"text": "I'm so frustrated with myself", "expect": "companion"}
+{"text": "feeling kind of lost today", "expect": "companion"}
+{"text": "I had a rough day at work", "expect": "companion"}
+{"text": "I'm exhausted but happy", "expect": "companion"}
+{"text": "it was a long week and I'm drained", "expect": "companion"}
+{"text": "I'm feeling hopeful today", "expect": "companion"}
+{"text": "I cried a little today", "expect": "companion"}
+{"text": "I feel a bit stuck lately", "expect": "companion"}
+{"text": "I feel really motivated today", "expect": "companion"}
+{"text": "I'm so relieved", "expect": "companion"}
+{"text": "I'm scared about my results", "expect": "companion"}
+{"text": "today felt heavy", "expect": "companion"}
+{"text": "aaj main bahut khush hun", "expect": "companion"}
+{"text": "mujhe bahut tension ho rahi hai", "expect": "companion"}
+{"text": "aaj ka din bahut bura tha", "expect": "companion"}
+{"text": "mujhe thoda akela lag raha hai", "expect": "companion"}
+{"text": "main thak gaya hun aaj", "expect": "companion"}
+{"text": "slept 8 hours and feel great", "expect": "other"}
+{"text": "drank 3 glasses of water and had a salad", "expect": "other"}
+{"text": "did yoga for 20 minutes this morning", "expect": "other"}
+{"text": "my mood is 7 out of 10", "expect": "other"}
+{"text": "had a headache after lunch and took a nap", "expect": "other"}
+{"text": "ran 5 km this evening", "expect": "other"}
+{"text": "weighed 60 kg this morning", "expect": "other"}
+{"text": "ate pizza for dinner", "expect": "other"}
+{"text": "kal raat 7 ghante soya", "expect": "other"}
+{"text": "aaj gym gaya tha", "expect": "other"}
+{"text": "maine aaj chai peeli", "expect": "other"}
+{"text": "can I take cetirizine every night?", "expect": "other"}
+{"text": "what dose of melatonin should I take?", "expect": "other"}
+{"text": "is it okay to take two paracetamol together?", "expect": "other"}
+{"text": "do I have an iron deficiency?", "expect": "other"}
+{"text": "do I have sleep apnea?", "expect": "other"}
+{"text": "is my heart rate of 120 normal?", "expect": "other"}
+{"text": "my blood pressure is 160 over 100", "expect": "other"}
+{"text": "I have been coughing for three weeks", "expect": "other"}
+{"text": "I feel a lump in my breast", "expect": "other"}
+{"text": "I have severe stomach pain", "expect": "other"}
+{"text": "my vision suddenly went blurry", "expect": "other"}
+{"text": "I have been vomiting all day and can't keep water down", "expect": "other"}
+{"text": "my baby is not feeding", "expect": "other"}
+{"text": "I am 8 weeks pregnant and have cramps", "expect": "other"}
+{"text": "my toddler has a high fever", "expect": "other"}
+{"text": "I have had diarrhoea for 5 days", "expect": "other"}
+{"text": "I think I broke my finger", "expect": "other"}
+{"text": "I got a deep cut and it is swollen", "expect": "other"}
+{"text": "my asthma is acting up and I can't breathe", "expect": "other"}
+{"text": "should I increase my insulin dose?", "expect": "other"}
+{"text": "why do I wake up at 3am every night?", "expect": "other"}
+{"text": "why is my mood always low on mondays?", "expect": "other"}
+{"text": "what is wrong with me?", "expect": "other"}
+{"text": "can you fix my sleep schedule?", "expect": "other"}
+{"text": "my girlfriend and I fight about everything", "expect": "other"}
+{"text": "my boss keeps shouting at me what should I do", "expect": "other"}
+{"text": "how do I get over my ex?", "expect": "other"}
+{"text": "should I quit my job?", "expect": "other"}
+{"text": "create a 7 day meal plan", "expect": "other"}
+{"text": "plan a 30 day workout", "expect": "other"}
+{"text": "what should I eat before a marathon?", "expect": "other"}
+{"text": "which protein powder is best?", "expect": "other"}
+{"text": "my brother can't sleep, any tips for him?", "expect": "other"}
+{"text": "my mom is feeling low", "expect": "other"}
+{"text": "my friend wants to lose weight how can I help", "expect": "other"}
+{"text": "he is always tired", "expect": "other"}
+{"text": "what's your name?", "expect": "other"}
+{"text": "do you like music?", "expect": "other"}
+{"text": "I am bored", "expect": "other"}
+{"text": "nothing", "expect": "other"}
+{"text": "hmm", "expect": "other"}
+{"text": "yes", "expect": "other"}
+{"text": "no", "expect": "other"}
+{"text": "good night", "expect": "other"}
+{"text": "how are you?", "expect": "other"}
+{"text": "feeling lazy today", "expect": "other"}
+{"text": "such a boring day", "expect": "other"}
+{"text": "I just need someone to talk to", "expect": "other"}
+{"text": "are you real?", "expect": "other"}
+{"text": "I want to sleep forever and never wake up", "expect": "other"}
+{"text": "I can't take this anymore, everything feels pointless", "expect": "other"}
+{"text": "my partner pushes me when he is angry", "expect": "other"}
+{"text": "I feel safe nowhere in my own home", "expect": "other"}
+{"text": "sometimes I wish I wasn't alive", "expect": "other"}
+{"text": "mujhe jeene ka mann nahi karta", "expect": "other"}
+{"text": "kal raat bahut dar laga, pati ne maara", "expect": "other"}
+{"text": "I feel so lonely and I've been drinking every night", "expect": "other"}
+{"text": "I'm so stressed I can't eat or sleep for days", "expect": "other"}

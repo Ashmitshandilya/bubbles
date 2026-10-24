@@ -104,7 +104,7 @@ def test_every_known_migration_has_a_file_and_an_undo_file():
     from pathlib import Path
     root = Path(__file__).resolve().parents[2] / "supabase"
     for name in schema_status.KNOWN:
-        if name.startswith("20261016"):
+        if name.startswith(("20261016", "20261102")):
             assert (root / "migrations" / f"{name}.sql").exists(), name
             assert (root / "undo" / f"{name}_undo.sql").exists(), name
     for sql in (root / "migrations").glob("20261016_*.sql"):

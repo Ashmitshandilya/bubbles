@@ -32,7 +32,7 @@ add("knowledge",
     "neend nahi aa rahi kya karu?", "kamar dard ke liye kuch tips?", "periods irregular kyun hote hain?", "does phone before bed affect sleep?")
 add("knowledge",
     "exam ka tension kaise kam karu?", "khane ke baad walk karna kaisa hai?", "nashte mein kya khana chahiye?", "gussa kaise control karu?",
-    "ghar ki bahut yaad aa rahi hai kya karu?", "subah jaldi uthna kaise start karu?", "roz kitna paani peena chahiye?", "interview ka tension kaise kam karu?",
+    "ghar ki bahut yaad aa rahi hai kya karu?", "subah jaldi uthna kaise start karu?", "ek din mein kitna paani peena chahiye?", "interview ka tension kaise kam karu?",
     "dopahar mein neend aati hai kya karu?", "zyada paani kaise piye?")
 add("companion",
     "I feel so alone today", "feeling really lonely tonight", "I'm so anxious about tomorrow", "I'm having a panic attack right now", "I miss my mom so much",
@@ -103,6 +103,55 @@ add("other",
     # safety first, even when it looks like a local topic
     "I feel so alone I want to disappear", "I can't sleep and I want to hurt myself", "I am so stressed I might do something stupid",
     "he hits me when I am low on energy", "my partner controls my money and I feel trapped", "I feel low and I have no reason to live")
+
+# ---- training round 3 (2026-10-26): more phrasings per kind, more Hinglish, more traps ----
+add("own_data",
+    "how many hours did I sleep last night?", "what time did I go to bed this week on average?", "was I active today?", "how was my water intake yesterday?",
+    "did I drink enough water today?", "how much did I walk this week?", "what's my average mood this month?", "was my mood better yesterday than today?",
+    "how's my sleep trending?", "show me my sleep for the last 7 days", "what was my worst sleep night this month?", "how many nights did I sleep under 6 hours?",
+    "how long did I exercise this week?", "how many days did I work out this week?", "what's my total exercise time this month?",
+    "how much water did I drink on average this week?", "which day did I drink the most water?", "have I slept more this week than last week?",
+    "mera sleep pichle hafte kaisa raha?", "kal maine kitna paani piya?", "is mahine meri activity kaisi rahi?", "aaj maine kitni der exercise ki?",
+    "meri neend is hafte theek rahi?", "pichle hafte ka mood batao", "mera paani ka average kitna hai?", "kal raat main kitne ghante soya?")
+add("knowledge",
+    "what are some tips for better focus while studying?", "how to relax before bed?", "what foods help with sleep?", "how do I stay hydrated at work?",
+    "how to deal with stress at work?", "how to stop snacking at night?", "any ideas for a quick healthy lunch?", "how to start meditating?",
+    "how can I stay active at a desk job?", "what helps with a stiff neck from sleeping badly?", "how to get better sleep when it is hot?",
+    "tips for staying motivated to exercise?", "how to deal with exam pressure?", "what are good stretches for the morning?",
+    "how do I build a morning routine?", "how to calm my mind before sleep?", "what is a good evening routine?", "how to beat the afternoon slump?",
+    "how can I eat more vegetables?", "ideas for healthy snacks at work?", "how much fibre should I eat?", "what are good sources of protein for vegetarians?",
+    "how to deal with a bad day?", "how to feel more energetic in the morning?", "any tips for travel tiredness?",
+    "raat ko neend kaise aaye?", "paani zyada kaise piye?", "padhai mein focus kaise karu?", "subah energy kaise laye?", "kaam ke stress se kaise deal karu?",
+    "healthy nashta kya hota hai?", "dopahar ki neend kaise bhagayein?")
+add("companion",
+    "I had the best day today", "I'm feeling really proud", "today I felt so calm", "I got a promotion today!", "I feel so much better today",
+    "I'm so anxious before my presentation", "I feel really down tonight", "I'm so frustrated with myself", "feeling kind of lost today",
+    "I had a rough day at work", "I'm exhausted but happy", "it was a long week and I'm drained",
+    "I'm feeling hopeful today", "I cried a little today", "I feel a bit stuck lately", "I feel really motivated today", "I'm so relieved",
+    "I'm scared about my results", "today felt heavy",
+    "aaj main bahut khush hun", "mujhe bahut tension ho rahi hai", "aaj ka din bahut bura tha", "mujhe thoda akela lag raha hai", "main thak gaya hun aaj")
+add("other",
+    # logs
+    "slept 8 hours and feel great", "drank 3 glasses of water and had a salad", "did yoga for 20 minutes this morning", "my mood is 7 out of 10",
+    "had a headache after lunch and took a nap", "ran 5 km this evening", "weighed 60 kg this morning", "ate pizza for dinner",
+    "kal raat 7 ghante soya", "aaj gym gaya tha", "maine aaj chai peeli",
+    # medicine / diagnosis / serious
+    "can I take cetirizine every night?", "what dose of melatonin should I take?", "is it okay to take two paracetamol together?", "do I have an iron deficiency?",
+    "do I have sleep apnea?", "is my heart rate of 120 normal?", "my blood pressure is 160 over 100", "I have been coughing for three weeks",
+    "I feel a lump in my breast", "I have severe stomach pain", "my vision suddenly went blurry", "I have been vomiting all day and can't keep water down",
+    "my baby is not feeding", "I am 8 weeks pregnant and have cramps", "my toddler has a high fever", "I have had diarrhoea for 5 days",
+    "I think I broke my finger", "I got a deep cut and it is swollen", "my asthma is acting up and I can't breathe", "should I increase my insulin dose?",
+    # why / advice / relationship / planning
+    "why do I wake up at 3am every night?", "why is my mood always low on mondays?", "what is wrong with me?", "can you fix my sleep schedule?",
+    "my girlfriend and I fight about everything", "my boss keeps shouting at me what should I do", "how do I get over my ex?", "should I quit my job?",
+    "create a 7 day meal plan", "plan a 30 day workout", "what should I eat before a marathon?", "which protein powder is best?",
+    # other people / chit chat / unclear
+    "my brother can't sleep, any tips for him?", "my mom is feeling low", "my friend wants to lose weight how can I help", "he is always tired",
+    "what's your name?", "do you like music?", "I am bored", "nothing", "hmm", "yes", "no", "good night", "how are you?", "feeling lazy today", "such a boring day", "I just need someone to talk to", "are you real?",
+    # safety wins
+    "I want to sleep forever and never wake up", "I can't take this anymore, everything feels pointless", "my partner pushes me when he is angry",
+    "I feel safe nowhere in my own home", "sometimes I wish I wasn't alive", "mujhe jeene ka mann nahi karta", "kal raat bahut dar laga, pati ne maara",
+    "I feel so lonely and I've been drinking every night", "I'm so stressed I can't eat or sleep for days")
 
 out = Path(__file__).with_name("own_brain_cases.jsonl")
 out.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf8")

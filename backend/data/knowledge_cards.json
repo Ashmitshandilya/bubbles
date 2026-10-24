@@ -85,7 +85,8 @@
     "how much water do i need",
     "kitna paani peena chahiye",
     "how much water to drink",
-    "roz kitna paani"
+    "roz kitna paani",
+    "kitna paani peena chahiye"
    ],
    "answer": "There isn't one number for everyone. Many adults feel well on roughly 6 to 8 glasses of fluids a day, more in heat or when active.",
    "tips": [
@@ -364,7 +365,6 @@
     "stress relief tips",
     "how to relax",
     "tension kaise kam karu",
-    "tension kaise kam",
     "ghabrahat kaise kam"
    ],
    "answer": "When you're wound up, slow breathing with a long breath out tells your body it can settle.",
@@ -491,7 +491,8 @@
     "feel sleepy after lunch",
     "energy kaise badhaye",
     "dopahar mein neend",
-    "lunch ke baad neend"
+    "lunch ke baad neend",
+    "dopahar ki neend"
    ],
    "answer": "An afternoon dip is very common. It's partly the body's rhythm and partly what and when we eat.",
    "tips": [
@@ -820,7 +821,8 @@
     "increase my water intake",
     "water habit",
     "zyada paani kaise",
-    "paani peena bhool"
+    "paani peena bhool",
+    "paani zyada kaise"
    ],
    "answer": "It is easiest to drink more when water is simply in front of you and tied to things you already do.",
    "tips": [
@@ -1106,6 +1108,483 @@
    ],
    "clinician": "If anxiety stops you from doing things you want to do, talking to a professional can help.",
    "followup": "Want to practise a few questions together?"
+  },
+  {
+   "id": "focus_study",
+   "title": "Focus while studying",
+   "concepts": [],
+   "triggers": [
+    "better focus while studying",
+    "focus while studying",
+    "stay focused while studying",
+    "improve my focus",
+    "padhai mein focus",
+    "focus kaise karu"
+   ],
+   "answer": "Focus comes in short stretches, so working in blocks usually beats long marathons.",
+   "tips": [
+    "Try 25 to 40 minutes of one task, then a 5 minute break away from your phone.",
+    "Put the phone out of reach, not just on silent.",
+    "Start with the hardest topic while your mind is fresh.",
+    "Drink water and keep a small snack nearby so hunger doesn't pull you away."
+   ],
+   "clinician": "If you often can't concentrate even when rested and calm, it is worth mentioning to a doctor.",
+   "followup": "Want a simple plan for a study block?"
+  },
+  {
+   "id": "sleep_foods",
+   "title": "Foods and sleep",
+   "concepts": [],
+   "triggers": [
+    "foods help with sleep",
+    "what foods help with sleep",
+    "food for better sleep",
+    "what to eat before bed",
+    "eat before sleeping"
+   ],
+   "answer": "A light, early dinner usually helps sleep more than any single food.",
+   "tips": [
+    "Finish a big meal 2 to 3 hours before bed.",
+    "If you're hungry at night, a small snack like a banana, curd or a few nuts is fine.",
+    "Keep caffeine to the morning and early afternoon.",
+    "Heavy, spicy or very sugary food late at night can make sleep lighter."
+   ],
+   "clinician": "If poor sleep keeps going for weeks, a doctor can help look for the reason.",
+   "followup": "Shall we look at your sleep this week?"
+  },
+  {
+   "id": "hydrate_work",
+   "title": "Staying hydrated at work",
+   "concepts": [],
+   "triggers": [
+    "stay hydrated at work",
+    "hydrated at work",
+    "drink water at work",
+    "water while working",
+    "drink water during work"
+   ],
+   "answer": "The easiest way is to make water visible and attached to things you already do.",
+   "tips": [
+    "Keep a bottle on your desk and refill it at set times, like each hour.",
+    "Have a glass when you arrive, after each meeting, and with every meal.",
+    "Tea, coffee and fruit all count a little, but plain water is the base.",
+    "Pale yellow urine is a rough sign you're doing well."
+   ],
+   "clinician": "If you're very thirsty all the time even while drinking enough, mention it to a doctor.",
+   "followup": "Want me to set a gentle water reminder?"
+  },
+  {
+   "id": "work_stress",
+   "title": "Stress at work",
+   "concepts": [],
+   "triggers": [
+    "stress at work",
+    "deal with work stress",
+    "work pressure",
+    "stress from work",
+    "kaam ka stress",
+    "kaam ka tension",
+    "kaam ke stress"
+   ],
+   "answer": "Work stress eases when the load feels smaller and you get real breaks.",
+   "tips": [
+    "Write down everything on your mind, then pick the one thing that matters most today.",
+    "Take a short walk or stretch away from your desk at least once.",
+    "Say no or ask for a new deadline where you can, early rather than late.",
+    "Keep a clear end to the day: close the laptop and do one thing just for you."
+   ],
+   "clinician": "If stress is affecting your sleep, health or mood for weeks, talking to a professional is a good step.",
+   "followup": "Want to talk through what's weighing on you most?"
+  },
+  {
+   "id": "night_snacking",
+   "title": "Night snacking",
+   "concepts": [],
+   "triggers": [
+    "stop snacking at night",
+    "snacking at night",
+    "late night snacking",
+    "late night cravings",
+    "night cravings"
+   ],
+   "answer": "Night snacking is often about habit, boredom or an early dinner, so a few small changes help.",
+   "tips": [
+    "Eat a proper dinner with protein and fibre so you aren't hungry later.",
+    "Decide on one planned snack, plated, rather than eating from the packet.",
+    "Brush your teeth after dinner as a signal that eating is done.",
+    "Try water or herbal tea first; sometimes it's thirst or boredom."
+   ],
+   "clinician": "If eating at night feels out of control or upsets you, a doctor or counsellor can help.",
+   "followup": "Want some healthy snack ideas?"
+  },
+  {
+   "id": "quick_lunch",
+   "title": "Quick healthy lunch",
+   "concepts": [],
+   "triggers": [
+    "quick healthy lunch",
+    "healthy lunch ideas",
+    "lunch ideas",
+    "what to eat for lunch",
+    "easy healthy lunch"
+   ],
+   "answer": "A good lunch has some protein, some fibre and something filling, and it doesn't need to be fancy.",
+   "tips": [
+    "Dal or rajma with rice or roti and a salad or sabzi.",
+    "Curd with a roti wrap of paneer, egg or chickpeas and vegetables.",
+    "Vegetable khichdi or poha with sprouts and a side of curd.",
+    "Keep it light enough that you aren't sleepy an hour later."
+   ],
+   "clinician": "If you have a medical condition with food rules, follow what your doctor or dietitian advised.",
+   "followup": "Want a few ideas for dinner too?"
+  },
+  {
+   "id": "meditation_start",
+   "title": "Starting to meditate",
+   "concepts": [],
+   "triggers": [
+    "start meditating",
+    "how to meditate",
+    "begin meditation",
+    "meditation for beginners",
+    "start meditation"
+   ],
+   "answer": "Start tiny: two to five minutes is enough, and a wandering mind is normal, not failure.",
+   "tips": [
+    "Sit comfortably and follow your breath in and out.",
+    "When you notice your mind has wandered, gently come back. That is the practice.",
+    "Pick the same time daily, like after waking or before bed.",
+    "Guided audio can help in the first weeks."
+   ],
+   "clinician": "If quiet time makes you feel more anxious or distressed, stop and speak to a professional.",
+   "followup": "Want a one-minute breathing exercise right now?"
+  },
+  {
+   "id": "desk_active",
+   "title": "Staying active at a desk job",
+   "concepts": [],
+   "triggers": [
+    "stay active at a desk job",
+    "active at a desk job",
+    "move more at work",
+    "desk job exercise",
+    "active while working"
+   ],
+   "answer": "Little and often works best: break up long sitting with a minute or two of movement.",
+   "tips": [
+    "Stand and stretch or walk for 2 minutes every 30 to 45 minutes.",
+    "Take calls standing or walking, and use the stairs when you can.",
+    "Walk after lunch, even 10 minutes.",
+    "A short walk or stretch routine at day's end counts too."
+   ],
+   "clinician": "If you have pain, dizziness or a health condition, check with a doctor before starting something new.",
+   "followup": "Want a quick desk stretch routine?"
+  },
+  {
+   "id": "stiff_neck",
+   "title": "Stiff neck from sleeping",
+   "concepts": [],
+   "triggers": [
+    "stiff neck from sleeping",
+    "stiff neck",
+    "neck stiffness",
+    "woke up with a stiff neck",
+    "neck pain from sleeping"
+   ],
+   "answer": "A stiff neck after sleeping usually settles in a few days with gentle care.",
+   "tips": [
+    "Move gently within comfort; avoid forcing or cracking it.",
+    "A warm compress or warm shower can loosen the muscles.",
+    "Try slow side-to-side and chin-to-chest stretches, stopping if they hurt.",
+    "Check your pillow height so your neck stays in line with your spine."
+   ],
+   "clinician": "See a doctor if the pain is severe, spreads to your arm, comes with numbness, fever or a headache, or follows an injury.",
+   "followup": "Want a few gentle neck stretches?"
+  },
+  {
+   "id": "hot_sleep",
+   "title": "Sleeping in the heat",
+   "concepts": [],
+   "triggers": [
+    "sleep when it is hot",
+    "sleep in hot weather",
+    "sleeping in the heat",
+    "too hot to sleep",
+    "better sleep when it is hot",
+    "garmi mein neend"
+   ],
+   "answer": "A cooler body helps sleep, so the aim is to lose heat before and during the night.",
+   "tips": [
+    "Take a lukewarm shower before bed.",
+    "Use light cotton sheets and clothes, and a fan or cooler pointed so air moves over you.",
+    "Keep the room dark and shut out the afternoon sun.",
+    "Sip water in the evening but avoid big drinks right before bed."
+   ],
+   "clinician": "If heat makes you feel dizzy, confused or unwell, that needs medical attention.",
+   "followup": "Want other tips for a better night's sleep?"
+  },
+  {
+   "id": "exercise_motivation2",
+   "title": "Staying motivated to exercise",
+   "concepts": [],
+   "triggers": [
+    "motivated to exercise",
+    "stay motivated to exercise",
+    "motivation to work out",
+    "keep exercising",
+    "exercise motivation",
+    "stay consistent with exercise"
+   ],
+   "answer": "Motivation follows action, so make it small, scheduled and enjoyable.",
+   "tips": [
+    "Pick something you actually like, even a walk or dance.",
+    "Set a tiny minimum, like 10 minutes, and stop there on bad days.",
+    "Fix a time and lay out clothes the night before.",
+    "Track streaks or exercise with a friend."
+   ],
+   "clinician": "If you have a health condition or pain, check with a doctor before ramping up.",
+   "followup": "Want to set a small weekly goal together?"
+  },
+  {
+   "id": "exam_pressure",
+   "title": "Exam pressure",
+   "concepts": [],
+   "triggers": [
+    "exam pressure",
+    "deal with exam pressure",
+    "pressure of exams"
+   ],
+   "answer": "Exam pressure drops when the work feels broken into small, doable pieces.",
+   "tips": [
+    "List topics and spread them across the days you have left.",
+    "Study in focused blocks with short breaks, and sleep properly; memory depends on it.",
+    "Do a few past papers under time to build confidence.",
+    "Take a short walk or breathing break when your mind spins."
+   ],
+   "clinician": "If worry about exams feels overwhelming or you can't eat or sleep, talk to someone you trust or a counsellor.",
+   "followup": "Want a simple revision plan?"
+  },
+  {
+   "id": "morning_stretch",
+   "title": "Morning stretches",
+   "concepts": [],
+   "triggers": [
+    "morning stretches",
+    "stretches for the morning",
+    "stretch in the morning",
+    "good stretches for the morning",
+    "morning stretch routine"
+   ],
+   "answer": "A few minutes of gentle stretching wakes the body up without any equipment.",
+   "tips": [
+    "Reach your arms overhead and stretch tall, then roll your shoulders.",
+    "Do slow neck tilts, a cat-cow on the floor, and a gentle forward fold.",
+    "Hold each stretch for 20 to 30 seconds and breathe slowly.",
+    "Never stretch into sharp pain."
+   ],
+   "clinician": "If you have an injury or ongoing pain, ask a doctor or physiotherapist what's safe.",
+   "followup": "Want a 5-minute routine?"
+  },
+  {
+   "id": "morning_routine",
+   "title": "Morning routine",
+   "concepts": [],
+   "triggers": [
+    "build a morning routine",
+    "morning routine",
+    "start my day well",
+    "better mornings",
+    "how to start the day"
+   ],
+   "answer": "A good morning routine is short and repeatable rather than perfect.",
+   "tips": [
+    "Wake at about the same time daily.",
+    "Drink water, get some daylight, and move a little.",
+    "Eat a proper breakfast and look at your plan for the day before opening social media.",
+    "Prepare the night before: clothes, bag and a to-do list."
+   ],
+   "clinician": "If you often wake exhausted despite enough sleep, a doctor can check for causes.",
+   "followup": "Want a simple evening routine too?"
+  },
+  {
+   "id": "evening_routine",
+   "title": "Evening wind-down",
+   "concepts": [],
+   "triggers": [
+    "evening routine",
+    "good evening routine",
+    "wind down in the evening",
+    "wind down at night",
+    "relax before sleep",
+    "calm my mind before sleep"
+   ],
+   "answer": "A steady wind-down tells your body that the day is ending.",
+   "tips": [
+    "Dim lights and put screens away 30 to 60 minutes before bed.",
+    "Do something calm: a warm shower, reading, stretching or soft music.",
+    "Write tomorrow's tasks down so your mind can let go.",
+    "Keep the same bedtime most nights."
+   ],
+   "clinician": "If racing thoughts or poor sleep last for weeks, speak to a doctor.",
+   "followup": "Want some breathing steps for bedtime?"
+  },
+  {
+   "id": "eat_vegetables",
+   "title": "Eating more vegetables",
+   "concepts": [],
+   "triggers": [
+    "eat more vegetables",
+    "more veggies",
+    "how to eat more vegetables",
+    "add more vegetables",
+    "sabzi zyada"
+   ],
+   "answer": "The trick is to add vegetables to meals you already like.",
+   "tips": [
+    "Add grated or chopped veg to parathas, dal, omelettes and rice.",
+    "Start lunch and dinner with a salad or soup.",
+    "Keep cut veg and curd dip ready as a snack.",
+    "Aim for different colours across the day."
+   ],
+   "clinician": "If you have digestive problems or a special diet, ask a doctor or dietitian.",
+   "followup": "Want some veg-rich recipes?"
+  },
+  {
+   "id": "fibre_amount",
+   "title": "How much fibre",
+   "concepts": [],
+   "triggers": [
+    "how much fibre",
+    "how much fiber",
+    "fibre should i eat",
+    "fiber should i eat",
+    "daily fibre",
+    "daily fiber"
+   ],
+   "answer": "Most adults do well with roughly 25 to 30 grams of fibre a day, built up gradually.",
+   "tips": [
+    "Choose whole grains, dal, beans, fruit with skin, vegetables and nuts.",
+    "Increase slowly and drink more water to avoid bloating.",
+    "Swap one refined item, like white rice or maida, for a whole version.",
+    "Check packaged food labels if you want a number."
+   ],
+   "clinician": "If you have bowel disease or digestive trouble, ask your doctor before changing fibre a lot.",
+   "followup": "Want some high-fibre meal ideas?"
+  },
+  {
+   "id": "bad_day",
+   "title": "Getting through a bad day",
+   "concepts": [],
+   "triggers": [
+    "deal with a bad day",
+    "bad day tips",
+    "get through a bad day",
+    "cope with a bad day",
+    "after a bad day",
+    "when everything goes wrong"
+   ],
+   "answer": "On a bad day, aim for small kindnesses to yourself rather than fixing everything.",
+   "tips": [
+    "Take a few slow breaths and drink some water.",
+    "Do one small thing you can finish, like a short walk or tidying a corner.",
+    "Talk to someone you trust, or write down what happened.",
+    "Eat something and go to bed a little earlier."
+   ],
+   "clinician": "If bad days are becoming most days, or you feel hopeless, please talk to a professional or someone you trust.",
+   "followup": "Want to tell me what happened?"
+  },
+  {
+   "id": "morning_energy",
+   "title": "Energy in the morning",
+   "concepts": [],
+   "triggers": [
+    "more energetic in the morning",
+    "energetic in the morning",
+    "energy in the morning",
+    "wake up energetic",
+    "feel fresh in the morning",
+    "subah energy"
+   ],
+   "answer": "Morning energy mostly comes from steady sleep, light and movement.",
+   "tips": [
+    "Keep a fixed sleep and wake time, even on weekends.",
+    "Get daylight and a glass of water soon after waking.",
+    "Move for a few minutes, like stretching or a short walk.",
+    "Have a breakfast with protein rather than only sugar."
+   ],
+   "clinician": "If you wake up tired every day despite enough sleep, a doctor can check for reasons.",
+   "followup": "Want to look at your sleep this week?"
+  },
+  {
+   "id": "travel_tiredness",
+   "title": "Travel tiredness",
+   "concepts": [],
+   "triggers": [
+    "travel tiredness",
+    "tired after travel",
+    "tired from travelling",
+    "tired from travel",
+    "jet lag tips",
+    "recover from travel"
+   ],
+   "answer": "Travel tiredness fades with rest, water, light and a gentle return to routine.",
+   "tips": [
+    "Drink water and eat regular, light meals.",
+    "Get daylight at the new local times to reset your body clock.",
+    "Keep a short early night rather than a long nap.",
+    "Move a little: a walk helps."
+   ],
+   "clinician": "If you feel unwell, have swelling in one leg or chest symptoms after a long trip, see a doctor.",
+   "followup": "Want tips for sleeping better after a trip?"
+  },
+  {
+   "id": "bloating_comfort",
+   "title": "Bloating",
+   "concepts": [
+    "bloating"
+   ],
+   "triggers": [
+    "tips for bloating",
+    "bloating tips",
+    "relieve bloating",
+    "reduce bloating",
+    "bloated stomach",
+    "feeling bloated"
+   ],
+   "answer": "Bloating usually eases with simple habits around eating and movement.",
+   "tips": [
+    "Eat slowly and chew well; avoid gulping air with fizzy drinks.",
+    "Take a gentle walk after meals.",
+    "Notice whether certain foods like beans, onions or milk bother you.",
+    "Sip warm water or ginger or fennel tea."
+   ],
+   "clinician": "See a doctor if bloating is persistent, painful, comes with weight loss, blood in stool or vomiting.",
+   "followup": "Want me to help track what you eat?"
+  },
+  {
+   "id": "cold_cough_tips",
+   "title": "Cold and cough comfort",
+   "concepts": [
+    "cough",
+    "sore_throat"
+   ],
+   "triggers": [
+    "tips for a cold and cough",
+    "cold and cough tips",
+    "cold and cough",
+    "cough and cold",
+    "cough tips",
+    "soothe a cough"
+   ],
+   "answer": "A cold and cough usually settle by themselves in a week or so with rest and comfort care.",
+   "tips": [
+    "Rest and drink plenty of warm fluids.",
+    "Warm water with honey and ginger can soothe a sore throat (honey not for babies under one).",
+    "Steam inhalation or a humid room can ease a blocked nose.",
+    "Wash hands often and cover coughs."
+   ],
+   "clinician": "See a doctor if you have trouble breathing, high fever, chest pain, or symptoms lasting more than 10 days or getting worse.",
+   "followup": "Want some tips for sleeping with a cold?"
   }
  ]
 }

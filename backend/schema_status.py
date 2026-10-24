@@ -24,6 +24,7 @@ KNOWN: dict[str, str] = {
     "20261016_bubbles_ops_funnel": "Admin keeps onboarding funnel steps and crash counts for 90 days",
     "20261016_bubbles_consent_ledger": "Consent history table (until then it is kept as signed documents)",
     "20261016_bubbles_community": "Community posts, comments and moderation",
+    "20261102_bubbles_data_links": "Every person's data is tied to one account (deleting it removes all of it) and a daily view joins sleep, mood, water and activity",
     "20261101_bubbles_playbook": "Playbook: de-identified reply examples people agreed to share, and the entries you approve",
 }
 
