@@ -4,12 +4,47 @@ import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../../components/Providers";
 import { BTN_SECONDARY, ErrorCard, HubPage, Skeleton } from "../../../components/hub/HubKit";
 import { actionBody, joinWords, readUnderstanding, type Understanding } from "./understanding";
+import { readLearned, type LearnedRow } from "./learned";
 
 export function UnderstandingClient() {
   return (
     <HubPage title="How Bubbles understands you">
       <Understood />
+      <Learned />
     </HubPage>
+  );
+}
+
+/** The loop that checks Bubbles against your own days: each guess is scored when the day has happened. */
+function Learned() {
+  const { fetchBubbles } = useApi();
+  const [rows, setRows] = useState<LearnedRow[]>([]);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const response = await fetchBubbles("/me/predictions");
+        if (live && response.ok) setRows(readLearned(await response.json()));
+      } catch {
+        /* a gap, not an error: this section simply stays out */
+      }
+    })();
+    return () => { live = false; };
+  }, [fetchBubbles]);
+  if (rows.length === 0) return null;
+  return (
+    <section className="mx-auto mt-12 max-w-2xl" aria-labelledby="learned-title">
+      <h2 id="learned-title" className="m-0 font-display text-h3 text-ink">What Bubbles is checking about you</h2>
+      <p className="mt-1 text-body-sm text-muted">Bubbles guesses from your own history, then marks itself against what you log. It only uses a link once it has held up for you.</p>
+      <ul className="m-0 mt-4 list-none p-0">
+        {rows.map((r) => (
+          <li key={r.id} className="border-t border-[color:var(--hairline)] py-4 first:border-t-0">
+            <p className="m-0 text-body text-ink">{r.title}</p>
+            <p className="mt-0.5 text-body-sm text-muted">{r.record}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

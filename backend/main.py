@@ -888,6 +888,8 @@ def _context_stage(user_id: str, user_message: str, first_message: bool = False)
             if brain_facts.mentions_relationship(user_message):   # a fight and a bad night are read side by side
                 tension = association_loader._orbit_series(supabase, user_id, today, 30).get("orbit_tension", {})
                 extra.append(brain_facts.tension_line([d for d, v in tension.items() if v == 1.0], today))
+            import doc_store as _docs, prediction_ledger as _pl
+            extra.extend(_pl.record_lines(_docs.get(supabase, user_id, "prediction_ledger", "main") or {}))   # what this person's own days have proven
             parts.append(("own_facts", brain_facts.sheet(series, today, names, extra), 6))
     except Exception:  # noqa: BLE001 - an extra: the reply goes out without it
         pass
@@ -1770,19 +1772,21 @@ def today_bundle(authorization: str | None = Header(default=None), days: int = Q
             safe(lambda: __import__("deficiency_api").load(supabase, uid)),
             safe(lambda: profile_api(authorization)),
             safe(lambda: orbit.home(supabase, uid)),
+            safe(lambda: __import__("prediction_api").run(supabase, uid)),   # the self-checking loop runs by itself each time Today opens
         )
     finally:
         _EVENT_MEMO.reset(token)
         _STATE_MEMO.reset(state_token)
     n = len(TODAY_TRACKERS)
     trackers = dict(zip(TODAY_TRACKERS, parts[:n]))
-    visits, brief, weekly, living, nudges, profile, orbit_home = parts[n:]
+    visits, brief, weekly, living, nudges, profile, orbit_home, learned = parts[n:]
     cached = association_loader.cached(uid)   # never waits: an empty cache simply means no pattern line today
     lines = association_insights.chat_lines(cached) if cached else []
     waiting = bool(orbit_home and (orbit_home.get("question") or {}).get("answered") is False)
-    lede = today_brief.pick(uid=uid, day=datetime.now(timezone.utc).date().isoformat(), association=lines[0] if lines else None, orbit_waiting=waiting)
+    lede = today_brief.pick(uid=uid, day=datetime.now(timezone.utc).date().isoformat(), association=lines[0] if lines else None, orbit_waiting=waiting,
+                           learned=((learned or {}).get("today") or [None])[0])
     return {"status": "success", "lede": lede, "trackers": trackers, "visits": visits, "brief": brief, "weekly": weekly,
-            "living_map": living, "nudges": nudges, "profile": profile, "orbit": orbit_home}
+            "living_map": living, "nudges": nudges, "profile": profile, "orbit": orbit_home, "learned": learned}
 
 
 app.include_router(build_insights_router(get_authenticated_user, supabase))   # GET /insights/{id}; after /insights/weekly so that path wins
