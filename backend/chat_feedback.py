@@ -46,6 +46,10 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         rows = (db.table("chat_messages").select("id,role").eq("id", message_id).eq("user_id", uid).limit(1).execute().data or [])
         return bool(rows) and str(rows[0].get("role", "")).lower() in BUBBLES_ROLES
 
+    def reply_words(uid: str, message_id: str) -> int:
+        rows = (db.table("chat_messages").select("content").eq("id", message_id).eq("user_id", uid).limit(1).execute().data or [])
+        return len(str(rows[0].get("content") or "").split()) if rows else 0
+
     @router.post("/chat/feedback", status_code=201)
     async def rate_reply(request: Request, authorization: str | None = Header(None)):
         uid = await uid_of(authorization)
@@ -70,6 +74,11 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         payload = {"rating": rating, "reason": reason, "at": datetime.now(timezone.utc).isoformat()}
         await run_in_threadpool(doc_store.put, db, uid, KIND, message_id, payload)
         await run_in_threadpool(person_model.observe_feedback, db, uid, rating, reason)   # never raises; "too long" twice becomes a trait
+        if rating == "up":
+            try:
+                await run_in_threadpool(lambda: person_model.observe_liked(db, uid, reply_words(uid, message_id)))   # a word count only, never the text
+            except Exception:  # noqa: BLE001 - learning is best effort
+                pass
         await run_in_threadpool(brain_stats.from_feedback, db, uid, message_id, rating)   # never raises; counts a thumbs on one of Bubbles' own local answers
         await run_in_threadpool(playbook.capture_from_feedback, db, uid, message_id, rating)   # never raises; needs a yes and a plain app question
         return {"status": "success", "message_id": message_id, "rating": rating, "reason": reason}

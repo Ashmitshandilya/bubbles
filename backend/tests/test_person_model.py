@@ -325,3 +325,12 @@ def test_what_is_read_from_chat_needs_the_yes_to_chat_details():
     assert stored(no) is None
     pm.observe_setup(no, USER, {"tone": "calm_direct"}, NOW)      # what the person chose in setup is theirs to give: no extra yes
     assert stored(no) is not None
+
+
+def test_liked_replies_whisper_a_length_hint_from_the_word_count_only(db):
+    pm.observe_liked(db, USER, 0, NOW)
+    assert stored(db) is None
+    pm.observe_liked(db, USER, 30, NOW)
+    pm.observe_liked(db, USER, 200, NOW)
+    ev = pm.load(db, USER, fresh=True)["traits"]["reply_length"]["evidence"]
+    assert [e["value"] for e in ev] == ["short", "detailed"] and all(e["weight"] == 0.5 and e["note"] == "liked_reply" for e in ev)
