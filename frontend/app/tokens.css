@@ -551,3 +551,10 @@
 .pearl-bubbles > li:nth-child(n+5) { animation-delay: 280ms; }
 .pearl-bubble:active .pearl-bubble-svg { transition-duration: 90ms; }
 @media (prefers-reduced-motion: reduce) { .pearl-bubbles > li { animation: pearl-fade 200ms linear both; animation-delay: 0ms !important; } }
+
+/* Reading polish: balanced headings, no lonely last words, figures that line up, and a skip link for keyboard users */
+h1, h2, h3 { text-wrap: balance; }
+p, li { text-wrap: pretty; }
+.pearl-bubble-value, [class*="font-display"] { font-variant-numeric: lining-nums tabular-nums; }
+.pearl-skip { position: absolute; left: 12px; top: -64px; z-index: 90; padding: 10px 16px; border-radius: 10px; background: var(--ink); color: #fff; font-weight: 600; transition: top 180ms cubic-bezier(0.16, 1, 0.3, 1); }
+.pearl-skip:focus { top: 12px; }
