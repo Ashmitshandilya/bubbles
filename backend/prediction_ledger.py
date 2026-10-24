@@ -12,10 +12,12 @@ from statistics import mean, median
 from typing import Any
 
 Series = dict[date, float | None]
-# (x, y, lag_days, what y is called, what a low x is called)
-LINKS: list[tuple[str, str, int, str, str]] = [
-    ("sleep_hours", "mood", 0, "mood", "a short night"),
-    ("activity_minutes", "sleep_hours", 1, "sleep", "a quiet day"),
+# (x, y, lag_days, what y is called, what a low x is called, what a high x is called). Only series association_loader.load_some can read.
+LINKS: list[tuple[str, str, int, str, str, str]] = [
+    ("sleep_hours", "mood", 0, "mood", "a short night", "a long night"),
+    ("activity_minutes", "sleep_hours", 1, "sleep", "a quiet day", "a busy day"),
+    ("hydration_ml", "mood", 0, "mood", "a low-water day", "a high-water day"),
+    ("sleep_hours", "activity_minutes", 0, "movement", "a short night", "a long night"),
 ]
 MIN_PAIRS = 14
 MIN_GROUP = 5
@@ -69,7 +71,7 @@ def make(series: dict[str, Series], today: date, ledger: dict[str, Any]) -> list
     """New guesses for today, one per link, never twice for the same link and day."""
     have = {(e["link"][0], e["link"][1], e["made_on"]) for e in ledger.get("entries", [])}
     out = []
-    for x, y, lag, _name, _low in LINKS:
+    for x, y, lag, *_ in LINKS:
         if (x, y, today.isoformat()) in have:
             continue
         guess = forecast(series.get(x, {}), series.get(y, {}), lag, today)
@@ -117,8 +119,18 @@ def line(ledger: dict[str, Any], guess: dict[str, Any]) -> str:
     if not meta or t["status"] != "earned":
         return ""
     below = guess["x_now"] < guess["x_usual"]
-    lead = meta[4] if below else meta[4].replace("a short night", "a long night").replace("a quiet day", "a busy day")
+    lead = meta[4] if below else meta[5]
     return f"In your own history, {lead} is usually followed by {meta[3]} {guess['expected']} than your usual (right {t['right']} of {t['of']} times)."
+
+
+def record_lines(ledger: dict[str, Any]) -> list[str]:
+    """What this person's own days have proven, as short lines for the model's facts sheet (earned links only, newest record)."""
+    out = []
+    for x, y, _lag, ylabel, low, _high in LINKS:
+        t = trust(ledger, x, y)
+        if t["status"] == "earned":
+            out.append(f"- Bubbles' own guesses about how {low} affects their {ylabel} have been right {t['right']} of {t['of']} times for this person (a link in their logs, never a cause)")
+    return out
 
 
 def prune(ledger: dict[str, Any]) -> dict[str, Any]:

@@ -749,3 +749,7 @@ Docs: `docs/admin/README.md` (named exception, Add another admin, rollup and cro
 ## 2026-10-25: Bubbles checks its own guesses (prediction ledger)
 
 - `prediction_ledger.py` + `GET /me/predictions` (`prediction_api.py`): from a person's own history Bubbles makes small guesses (a short night, then a lower mood than their usual; a quiet day, then shorter sleep), waits, and scores them against what was logged. A link is only spoken once it has been right at least 65% of 6 or more scored guesses for that person, and is doubted below 50%. One signed `prediction_ledger` document of dates, numbers and counts, no words; no model is involved. Not yet shown in the app: next step is a line on Today or Patterns.
+
+## 2026-10-25: the learning loop runs by itself and shows itself
+
+- `/today` now runs `prediction_api.run` as one of its parallel parts (fails alone, as null): guesses are scored and made every time Today opens, with no cron. A guess the person's own days have proven (right 65% of 6+) becomes the lede (`kind: "learned"`), ahead of general patterns; earned links also reach the model's facts sheet (`prediction_ledger.record_lines`). Four links now: sleep to mood, activity to next sleep, water to mood, sleep to movement. The "How Bubbles understands you" page shows each link and its record ("right 8 of 10 guesses").

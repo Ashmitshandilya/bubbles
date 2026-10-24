@@ -86,3 +86,9 @@ def test_the_route_scores_yesterdays_guess_and_stores_only_numbers(env, monkeypa
     stored = doc_store.get(env.db, USER, "prediction_ledger", "main")
     assert stored["stats"]["sleep_hours->mood"] == {"hit": 1, "miss": 0}
     assert not any(isinstance(v, str) and len(v) > 30 for e in stored["entries"] for v in e.values() if not isinstance(v, list))
+
+
+def test_the_facts_sheet_gets_only_earned_links():
+    ledger = {"stats": {"sleep_hours->mood": {"hit": 8, "miss": 2}, "hydration_ml->mood": {"hit": 1, "miss": 5}}}
+    lines = pl.record_lines(ledger)
+    assert len(lines) == 1 and "right 8 of 10" in lines[0] and "never a cause" in lines[0]

@@ -62,12 +62,15 @@ def warm_line(uid: str, day: str) -> str:
 
 
 def pick(*, uid: str, day: str, safety: str | None = None, open_thread: str | None = None,
-         association: str | None = None, cycle_line: str | None = None, orbit_waiting: bool = False) -> dict:
+         association: str | None = None, cycle_line: str | None = None, orbit_waiting: bool = False,
+         learned: str | None = None) -> dict:
     """``{"kind", "text"}``. ``safety`` is the level word of a non-GREEN state (the banner carries the detail)."""
     if safety and safety.upper() not in ("GREEN", "NONE", ""):
         return {"kind": "safety", "text": "Your last message is the thing to look after first. The notice above has the steps."}
     if open_thread and open_thread.strip():
         return {"kind": "thread", "text": _short(open_thread)}
+    if learned and learned.strip():   # a guess this person's own days have proven right, said before any general pattern
+        return {"kind": "learned", "text": _short(learned)}
     if association and association.strip():
         return {"kind": "pattern", "text": _short(tidy_association(association))}
     if cycle_line and cycle_line.strip():

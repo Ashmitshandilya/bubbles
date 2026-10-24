@@ -31,3 +31,10 @@ def test_a_pattern_becomes_one_friendly_sentence():
     assert out["kind"] == "pattern"
     assert out["text"] == "On days after you slept longer, your logged mood tended to be higher. That's from your own logs, not a cause."
     assert "(" not in out["text"] and "their" not in out["text"]
+
+
+def test_a_proven_personal_guess_comes_before_a_general_pattern():
+    out = tb.pick(uid="u", day="d", association="On days after you slept longer, your logged mood tended to be higher (60 days logged).",
+                  learned="In your own history, a short night is usually followed by mood lower than your usual (right 8 of 10 times).")
+    assert out["kind"] == "learned" and "right 8 of 10" in out["text"]
+    assert tb.pick(uid="u", day="d", safety="RED", learned="x")["kind"] == "safety"
