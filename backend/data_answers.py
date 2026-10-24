@@ -24,7 +24,7 @@ TOPIC_WORDS: dict[str, tuple[str, ...]] = {
     "sleep": ("sleep", "slept", "sleeping", "neend", "soya", "soyi", "so paya", "so payi"),
     "mood": ("mood",),
     "water": ("water", "hydrat", "paani", "pani"),
-    "activity": ("activity", "active", "workout", "exercise", "exercised", "walk", "walked", "walking", "movement"),
+    "activity": ("activity", "active", "workout", "exercise", "exercised", "walk", "walked", "walking", "movement", "move", "moved", "moving"),
 }
 
 _ASKS_ABOUT_ME = re.compile(
@@ -41,7 +41,7 @@ _LAST = re.compile(r"\blast\s+night\b|\btoday\b|\byesterday\b|\bthis\s+morning\b
 _LAST_WEEK = re.compile(r"\blast\s+week\b|\bpichle\s+hafte\b", re.I)
 _MONTH = re.compile(r"\bmonth\b|\b30\s+days\b|\bmahine\b|\bmahina\b", re.I)
 _TWO_WEEKS = re.compile(r"\b(?:2|two)\s+weeks\b|\b14\s+days\b|\bfortnight\b", re.I)
-_BEST = re.compile(r"\bbest\b|\bmost\b|\bhighest\b|\blongest\b|\bsabse\s+(?:acha|accha|zyada)\b", re.I)
+_BEST = re.compile(r"\bbest\b|\bmost\b|\bhighest\b|\blongest\b|\bhappiest\b|\bsabse\s+(?:acha|accha|zyada)\b", re.I)
 _WORST = re.compile(r"\bworst\b|\bleast\b|\blowest\b|\bshortest\b|\bsabse\s+(?:kam|bura)\b", re.I)
 _COMPARE = re.compile(r"\bcompar\w+|\bbetter\s+than\b|\bworse\s+than\b|\bimprov\w+\b|\btrend\b|\bgetting\s+(?:better|worse)\b|\bbadh\b|\bghat\b", re.I)
 _ENOUGH = re.compile(r"\benough\b|\bkaafi\b|\bkafi\b|\bpurana\b|\bpura\b", re.I)

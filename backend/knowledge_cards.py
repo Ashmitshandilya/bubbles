@@ -28,7 +28,10 @@ _NEEDS_CARE = re.compile(
     r"for\s+(?:weeks|months|years|days)|since\s+(?:weeks|months|days|last\s+(?:week|month))|every\s+day|all\s+the\s+time|getting\s+worse|"
     r"pregnan\w+|trimester|baby|infant|newborn|toddler|child|kids?|elderly|diabet\w+|cancer|tumou?r|lump|hiv|surgery|injur\w+|fracture|broken|"
     r"heart|disease|hypertension|blood\s+pressure|bp|asthma|thyroid|kidney|liver|epilep\w+|copd|arthritis|anemi\w+|anaemi\w+|disorder|har\s+din|roz|lagatar|"
+    r"which\s+(?:vitamins?|supplements?)|should\s+i\s+take|do\s+something\s+(?:stupid|drastic|crazy|rash)|"
     r"suicid\w+|self[- ]harm|kill|die|dying|hopeless|worthless)\b", re.I)
+# a question about someone else ("my sister cannot sleep what should she do") is not answered from a card written for the person themselves
+_OTHER_PERSON = re.compile(r"\b(?:my\s+(?:mother|mom|mum|father|dad|friend|brother|sister|husband|wife|boyfriend|girlfriend|partner|son|daughter|boss|colleague)|he|she|they|his|her|their)\b", re.I)
 
 
 def _norm(text: str) -> str:
@@ -59,7 +62,7 @@ def _score(text: str, card: dict[str, Any]) -> int:
 def match(text: str, active_concepts: Iterable[str] = ()) -> dict[str, Any] | None:
     """The one card that answers this message, or None (leave it to the model)."""
     t = _norm(text)
-    if not t or len(t) > 200 or _NEEDS_CARE.search(t):
+    if not t or len(t) > 200 or _NEEDS_CARE.search(t) or _OTHER_PERSON.search(t):
         return None
     scored = sorted(((_score(t, c), c) for c in cards()), key=lambda sc: -sc[0])
     top_score, top = scored[0]

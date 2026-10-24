@@ -587,3 +587,7 @@ Please confirm these ranges, and whether any further item type (for example weig
 ## Personal guess checking (2026-10-25), awaiting review
 
 `backend/prediction_ledger.py`. Bubbles makes small guesses from a person's own history and scores them against what they log. It speaks a link only after at least 6 scored guesses with a hit rate of 65% or more, and stops using it below 50%. Wording is always "in your own history", never a cause, and never advice. Please confirm the thresholds and the four links (sleep and mood, activity and next sleep, water and mood, sleep and movement).
+
+### Own Brain, 15 more self-care cards (2026-10-25), awaiting clinician sign-off
+
+Added to `backend/data/knowledge_cards.json`: sleep_routine, energy_foods, drink_more_water, healthy_breakfast, overthinking_night, wake_early, nap_length, calcium_foods, screen_time, homesick, anger_handling, balanced_plate, study_burnout, beginner_exercise, interview_nerves. Same rules as the first set: general self-care only, no doses, no diagnoses, each names when to see a clinician. Please read them in the file.

@@ -753,3 +753,8 @@ Docs: `docs/admin/README.md` (named exception, Add another admin, rollup and cro
 ## 2026-10-25: the learning loop runs by itself and shows itself
 
 - `/today` now runs `prediction_api.run` as one of its parallel parts (fails alone, as null): guesses are scored and made every time Today opens, with no cron. A guess the person's own days have proven (right 65% of 6+) becomes the lede (`kind: "learned"`), ahead of general patterns; earned links also reach the model's facts sheet (`prediction_ledger.record_lines`). Four links now: sleep to mood, activity to next sleep, water to mood, sleep to movement. The "How Bubbles understands you" page shows each link and its record ("right 8 of 10 guesses").
+
+## 2026-10-25: training round for the own brain, and a fresh start
+
+- Eval set grown from 154 to 274 labelled messages (new phrasings, Hinglish, and traps that look local but are not). The round found and fixed: a "might do something stupid" message answered as small talk (now goes to the model path), a third-person question answered from a card ("my sister cannot sleep"), and a supplement question answered from a card. 15 more self-care cards and softer feelings (nerves, missing home, a hard day, gratitude) added. Result: 0 wrong local answers, own_data 100%, knowledge 96%, companion 100%.
+- All 11 accounts in live Supabase were deleted at the owner's request (no backup), cascading to every user-keyed table; `consent_events` is append-only by design and still holds 5 orphan rows (owner can delete them in the SQL editor). One new admin account was created; its id must be added to `BUBBLES_ADMIN_USER_IDS` on Render.
