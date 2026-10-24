@@ -172,6 +172,13 @@ class Api(private val session: Session) {
     suspend fun chat(message: String, messageId: String, conversationId: String?, mode: String? = null): ChatReply =
         json.decodeFromString(send("POST", "/chat", json.encodeToString(ChatBody.serializer(), ChatBody(message, messageId, conversationId, mode))))
 
+    /** Save (true) or skip (false) the things Bubbles asked about in chat. */
+    suspend fun confirmEvents(ids: List<String>, confirmed: Boolean) {
+        if (ids.isEmpty()) return
+        val decisions = ids.joinToString(",") { """{"id":"$it","confirmed":$confirmed}""" }
+        send("POST", "/health-events/confirmation", """{"decisions":[$decisions]}""")
+    }
+
     /** GET /health/<slug>?days=N, newest first. */
     suspend fun entries(slug: String, days: Int): List<Entry> {
         return parseEntries(json.parseToJsonElement(get("/health/$slug?days=$days")).jsonObject)
