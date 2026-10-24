@@ -101,3 +101,11 @@ def test_the_newest_checked_guess_is_said_plainly_hit_or_miss_and_old_ones_are_n
     assert "did not hold" in pl.checked({"entries": [old, miss]}, TODAY)
     assert "it held" in pl.checked({"entries": [{**miss, "scored": "hit"}]}, TODAY)
     assert pl.checked({"entries": [old]}, TODAY) == ""
+
+
+def test_every_link_reads_series_the_loader_can_serve_and_has_distinct_wording():
+    import inspect, association_loader
+    src = inspect.getsource(association_loader.load_some)
+    for x, y, lag, ylabel, low, high in pl.LINKS:
+        assert f'"{x}"' in src and f'"{y}"' in src and lag in (0, 1) and low != high and ylabel
+    assert len({(x, y) for x, y, *_ in pl.LINKS}) == len(pl.LINKS)
