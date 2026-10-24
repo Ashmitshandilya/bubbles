@@ -232,7 +232,7 @@ function LoginForm() {
         <p className="m-0 text-body text-ink-soft">{heading.body}</p>
       </div>
 
-      <div className="rounded-[24px] border border-line bg-surface p-6 shadow-md sm:p-8">
+      <div className="rounded-[28px] bg-surface p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_0_0_5px_rgba(30,27,46,0.02),0_0_0_6px_var(--hairline),0_40px_60px_-36px_rgba(30,27,46,0.22)] sm:p-8">
         {secondStep ? (
           <form onSubmit={handleSecondStep} className="flex flex-col gap-4">
             <p className="m-0 text-body font-semibold text-ink-soft">
@@ -362,7 +362,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="bubbles-press mt-2 inline-flex min-h-[56px] items-center justify-center gap-2 rounded-full bg-bubbles-pink-ink px-6 text-[1.0625rem] font-extrabold text-white bubbles-glow disabled:cursor-wait disabled:opacity-70"
+            className="group bubbles-press mt-2 inline-flex min-h-[56px] items-center justify-center gap-3 rounded-full bg-ink py-2 pl-7 pr-2 text-[1.0625rem] font-semibold text-white transition-[transform,background-color] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-bubbles-pink-ink disabled:cursor-wait disabled:opacity-70"
           >
             {loading ? (
               <>
@@ -381,6 +381,9 @@ function LoginForm() {
               "Email me a password link"
             ) : (
               "Email me a link"
+            )}
+            {!loading && (
+              <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-y-px group-hover:translate-x-1 group-hover:scale-105">&rarr;</span>
             )}
           </button>
         </form>
