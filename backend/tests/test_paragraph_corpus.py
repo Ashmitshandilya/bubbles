@@ -48,6 +48,9 @@ def test_the_events_in_a_day_are_found_and_nothing_is_invented(text, must, must_
     assert not (must_not & got), (text, "invented", must_not & got)
 
 
-@pytest.mark.xfail(reason="a distance with no minutes (ran 5 km) is not logged yet: exercise needs a duration", strict=True)
-def test_a_run_given_only_as_a_distance_is_a_known_gap():
-    assert "exercise" in _types("Went for a run this evening and ran 5 km, feeling good.")
+def test_a_run_given_only_as_a_distance_is_logged_with_an_estimated_time():
+    turn = cp.analyze_turn("Went for a run this evening and ran 5 km, feeling good.", [])
+    ev = [e for e in cp.build_rule_events(turn, "m1") if e["event_type"] == "exercise"]
+    assert ev, "distance-only run not logged"
+    data = ev[0].get("data") or ev[0].get("payload") or ev[0]
+    assert "5.0" in str(data) and "True" in str(data)

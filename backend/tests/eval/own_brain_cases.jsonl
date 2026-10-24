@@ -61,6 +61,16 @@
 {"text": "kamar dard ke liye kuch tips?", "expect": "knowledge"}
 {"text": "periods irregular kyun hote hain?", "expect": "knowledge"}
 {"text": "does phone before bed affect sleep?", "expect": "knowledge"}
+{"text": "exam ka tension kaise kam karu?", "expect": "knowledge"}
+{"text": "khane ke baad walk karna kaisa hai?", "expect": "knowledge"}
+{"text": "nashte mein kya khana chahiye?", "expect": "knowledge"}
+{"text": "gussa kaise control karu?", "expect": "knowledge"}
+{"text": "ghar ki bahut yaad aa rahi hai kya karu?", "expect": "knowledge"}
+{"text": "subah jaldi uthna kaise start karu?", "expect": "knowledge"}
+{"text": "roz kitna paani peena chahiye?", "expect": "knowledge"}
+{"text": "interview ka tension kaise kam karu?", "expect": "knowledge"}
+{"text": "dopahar mein neend aati hai kya karu?", "expect": "knowledge"}
+{"text": "zyada paani kaise piye?", "expect": "knowledge"}
 {"text": "I feel so alone today", "expect": "companion"}
 {"text": "feeling really lonely tonight", "expect": "companion"}
 {"text": "I'm so anxious about tomorrow", "expect": "companion"}

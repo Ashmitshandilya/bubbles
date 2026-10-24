@@ -123,6 +123,23 @@ def line(ledger: dict[str, Any], guess: dict[str, Any]) -> str:
     return f"In your own history, {lead} is usually followed by {meta[3]} {guess['expected']} than your usual (right {t['right']} of {t['of']} times)."
 
 
+def checked(ledger: dict[str, Any], today: date, days: int = 3) -> str:
+    """The newest guess scored in the last few days, as one honest sentence (a miss is said as plainly as a hit); empty when none."""
+    best = None
+    for e in ledger.get("entries", []):
+        if e.get("scored") in ("hit", "miss") and 0 <= (today - date.fromisoformat(e["target"])).days <= days:
+            if best is None or e["target"] > best["target"]:
+                best = e
+    if not best:
+        return ""
+    meta = next((m for m in LINKS if m[0] == best["link"][0] and m[1] == best["link"][1]), None)
+    if not meta:
+        return ""
+    lead = meta[4] if best["x_now"] < best["x_usual"] else meta[5]
+    verdict = "and it held" if best["scored"] == "hit" else "and it did not hold this time"
+    return f"Bubbles guessed your {meta[3]} would run {best['expected']} than usual after {lead}, {verdict}."
+
+
 def record_lines(ledger: dict[str, Any]) -> list[str]:
     """What this person's own days have proven, as short lines for the model's facts sheet (earned links only, newest record)."""
     out = []

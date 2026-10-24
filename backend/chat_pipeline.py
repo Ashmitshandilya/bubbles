@@ -808,7 +808,9 @@ def build_rule_events(turn: Turn, message_id: str | None, *, now: datetime | Non
         types = mt.get("exercise_types") or []
         name = _EXERCISE_NAME.get(types[0], types[0]) if len(types) == 1 else "exercise"
         add("exercise", {"name": name, "activity": ", ".join(types) or name, "duration_minutes": mt["exercise_minutes"],
-                         "minutes": mt["exercise_minutes"], "unit": "min"}, 0.9, metric="exercise")
+                         "minutes": mt["exercise_minutes"], "unit": "min",
+                         **({"distance_km": mt["exercise_distance_km"], "minutes_estimated": True} if mt.get("exercise_minutes_estimated") else {})},
+            0.7 if mt.get("exercise_minutes_estimated") else 0.9, metric="exercise")
 
     # ---- body / vitals (one reading per event, already converted to kg / Celsius)
     if "weight_kg" in mt:

@@ -11,6 +11,7 @@ export interface TodayLede { kind: string; text: string }
 
 export interface TodayBundle {
   lede?: TodayLede;
+  checked?: string;
   trackers: Partial<Record<SignalSlug, TrackerResponse>>;
   visits?: TrackerEntry[];
   brief?: IntelligenceBrief;
@@ -33,6 +34,7 @@ export function readBundle(raw: unknown): TodayBundle {
   const profile = object(body.profile);
   return {
     lede: typeof lede?.text === "string" && lede.text ? { kind: String(lede.kind ?? "warm"), text: lede.text } : undefined,
+    checked: typeof (object(body.learned)?.checked) === "string" ? String(object(body.learned)?.checked) : undefined,
     trackers,
     visits: object(body.visits) ? readTracker(body.visits).entries : undefined,
     brief: object(body.brief) as IntelligenceBrief | undefined,
