@@ -100,6 +100,7 @@ NOTES: dict[str, tuple[str, str]] = {
     "too_long": ("you marked a reply too long", "you marked {n} replies too long"),
     "worried_me": ("you said a reply worried you", "you said {n} replies worried you"),
     "unclear": ("you said a reply was unclear", "you said {n} replies were unclear"),
+    "liked_reply": ("you liked a reply of this length", "you liked {n} replies of this length"),
     "message_language": ("it is how you write", "it is how you write in most messages"),
     "message_time": ("you chat at these times", "you chat at these times"),
     "stress_phrase": ("you said so", "you have said so {n} times"),
@@ -448,6 +449,16 @@ def observe_feedback(db: Any, uid: str, rating: str, reason: str | None, now: da
     now = now or datetime.now(timezone.utc)
     trait, value = {"too_long": ("reply_length", "short"), "worried_me": ("tone", "gentle_warm"), "unclear": ("wording", "simple")}[reason]
     _apply(db, uid, lambda m: add_evidence(m, trait, value, "feedback", reason, 1.0, now))
+
+
+def observe_liked(db: Any, uid: str, words: int, now: datetime | None = None) -> None:
+    """After a thumbs-up: the length of the reply that helped is a quiet hint about the length the person likes (half the weight of a thumbs-down
+    reason, so it takes several to matter). Only a word count is used; the reply text is never stored."""
+    if words <= 0:
+        return
+    now = now or datetime.now(timezone.utc)
+    value = "short" if words <= 45 else "detailed" if words >= 150 else "balanced"
+    _apply(db, uid, lambda m: add_evidence(m, "reply_length", value, "feedback", "liked_reply", 0.5, now))
 
 
 def _may_learn_from_chat(db: Any, uid: str) -> bool:
