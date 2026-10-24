@@ -98,3 +98,13 @@ The optional SQL function `bubbles_tracker_stamps` was not added: the concurrent
 - No live schema export or EXPLAIN against real data (no database access from the sandbox). The EXPLAIN queries are in the migration files.
 - No CHECK constraint on `extracted_health_events.extraction_status` (optional in the brief). Add it as `NOT VALID` only after `select extraction_status, count(*) from extracted_health_events group by 1` shows only the five known values.
 - The 214 archived tables were not re-audited.
+
+## 7. Live table list (read through the Data API on 2026-10-26, after the fresh start)
+
+44 tables are visible in `public`: 33 carry a `user_id` (activity, allergies, chat, community bans/blocks/reactions, consent, doctor visits, exercise, extracted events, family history, health events, hydration, labs, conditions, reports, medications, memory, cycles, mood, notifications, ovulation and pregnancy tests, rl, sleep, supplements, symptoms, preferences, vaccinations, vitals, weight); the others are the profile (`id` is the account), the RAG corpus, community posts and comments (author column), admin settings, ops events and rollups, and the migration register. The Data API does not show foreign keys to `auth.users`, so what is live must be confirmed with the SQL in section 1.
+
+`20261102_bubbles_data_links.sql` (owner applies, safe to run twice, has an undo file):
+- adds `user_id -> auth.users(id) on delete cascade` wherever it is missing, removing orphan rows first (`consent_events` is skipped for the cleanup because it is append-only);
+- adds `public.bubbles_daily_facts`, one row per person per UTC day with sleep, mood, water and activity side by side (service role only).
+
+The backend still reads the real tables and computes local days itself; the view is for analysis and the admin portal.
