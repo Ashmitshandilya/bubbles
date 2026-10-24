@@ -17,9 +17,9 @@ CARDS_FILE = Path(__file__).with_name("data") / "knowledge_cards.json"
 
 #: symptoms that may be present in the message and still be answered with comfort care (the card's own concepts are added to these)
 COMFORT_CONCEPTS = frozenset({"headache", "cramps", "period", "back_pain", "muscle_pain", "bloating", "constipation", "cough", "sore_throat", "eye_strain",
-                              "dry_eyes", "fatigue", "insomnia", "nausea", "anxiety", "loneliness", "low_mood"})
+                              "dry_eyes", "fatigue", "insomnia", "nausea", "anxiety", "loneliness", "low_mood", "separation_anxiety"})
 
-_ASKS = re.compile(r"\?|\b(?:how|what|which|tips?|ideas?|help|helps|remedy|remedies|relief|relieve|ease|advice|suggest\w*|should|can i|kaise|kya|batao|bata do|karu|karun|best way)\b", re.I)
+_ASKS = re.compile(r"\?|\b(?:how|what|which|ways?\s+to|tips?|ideas?|help|helps|remedy|remedies|relief|relieve|ease|advice|suggest\w*|should|can i|kaise|kya|batao|bata do|karu|karun|best way)\b", re.I)
 # anything that needs a clinician or a pharmacist, or a person who needs particular care, is not answered from a card
 _NEEDS_CARE = re.compile(
     r"\b(?:mg|ml|tablets?|pills?|dose|doses|dosage|capsules?|syrup|injection|antibiotics?|painkillers?|paracetamol|ibuprofen|aspirin|crocin|dolo|combiflam|medicine|medication|"
@@ -32,6 +32,8 @@ _NEEDS_CARE = re.compile(
     r"suicid\w+|self[- ]harm|kill|die|dying|hopeless|worthless)\b", re.I)
 # a question about someone else ("my sister cannot sleep what should she do") is not answered from a card written for the person themselves
 _OTHER_PERSON = re.compile(r"\b(?:my\s+(?:mother|mom|mum|father|dad|friend|brother|sister|husband|wife|boyfriend|girlfriend|partner|son|daughter|boss|colleague)|he|she|they|his|her|their)\b", re.I)
+# a question tied to the person's own days ("how many glasses of water today") is about their data, not a general card
+_ABOUT_THEIR_DAYS = re.compile(r"\b(?:today|yesterday|last\s+night|this\s+(?:week|month)|last\s+(?:week|month)|aaj|kal\s+raat|is\s+hafte|pichle\s+hafte)\b", re.I)
 
 
 def _norm(text: str) -> str:
@@ -62,7 +64,7 @@ def _score(text: str, card: dict[str, Any]) -> int:
 def match(text: str, active_concepts: Iterable[str] = ()) -> dict[str, Any] | None:
     """The one card that answers this message, or None (leave it to the model)."""
     t = _norm(text)
-    if not t or len(t) > 200 or _NEEDS_CARE.search(t) or _OTHER_PERSON.search(t):
+    if not t or len(t) > 200 or _NEEDS_CARE.search(t) or _OTHER_PERSON.search(t) or _ABOUT_THEIR_DAYS.search(t):
         return None
     scored = sorted(((_score(t, c), c) for c in cards()), key=lambda sc: -sc[0])
     top_score, top = scored[0]
