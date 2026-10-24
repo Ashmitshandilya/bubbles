@@ -19,6 +19,9 @@ const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve
  * The first-run tour: a few coach marks over Today. It starts once (never seen) or when Today is opened with ?tour=1 (Settings > Replay tour),
  * can be skipped at any point (button or Esc), keeps keyboard focus inside the card and does not animate for people who asked for less motion.
  */
+// Set once the server has said the tour was seen (or it was just finished), so Today does not ask on every visit.
+let tourSeenThisSession = false;
+
 export function FirstRunTour() {
   const { fetchBubbles } = useApi();
   const { session } = useAuth();
@@ -40,12 +43,15 @@ export function FirstRunTour() {
     let alive = true;
     (async () => {
       const replay = new URLSearchParams(window.location.search).get("tour") === "1";
-      let seen: boolean | null = null;
-      try {
-        const response = await fetchRef.current("/onboarding/tour");
-        if (response.ok) seen = (await response.json()).seen === true;
-      } catch {
-        /* unknown: do not start */
+      let seen: boolean | null = tourSeenThisSession && !replay ? true : null;   // answered "seen" already in this tab: no need to ask again on every visit to Today
+      if (seen === null) {
+        try {
+          const response = await fetchRef.current("/onboarding/tour");
+          if (response.ok) seen = (await response.json()).seen === true;
+          if (seen === true) tourSeenThisSession = true;
+        } catch {
+          /* unknown: do not start */
+        }
       }
       if (!alive || !shouldStart(seen, replay)) return;
       for (let tries = 0; tries < 20 && alive && !targetOf(TOUR_STEPS[0]); tries++) await sleep(300);   // Today may still be loading
@@ -82,6 +88,7 @@ export function FirstRunTour() {
   }, [step]);
 
   const finish = useCallback((skipped: boolean) => {
+    tourSeenThisSession = true;
     void fetchRef.current("/onboarding/tour", { method: "PUT", body: outcomeBody(skipped) }).catch(() => undefined);
     if (opener.current?.isConnected) opener.current.focus();
   }, []);

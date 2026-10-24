@@ -69,13 +69,12 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
 
     init {
         load()
-        viewModelScope.launch { if (repo.entries.value.isEmpty()) repo.loadAll() }
+        // No separate load of every tracker: the one /today call carries the ones Today shows, and the Track screen loads the rest when it opens.
     }
 
     /** Pull to refresh: today's check-in, the patterns and every tracker. */
     fun refresh() {
         load()
-        viewModelScope.launch { repo.loadAll() }
     }
 
     fun load() {
@@ -88,6 +87,7 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
                     val patterns = async { runCatching { api.associations() }.getOrNull() }
                     api.today() to patterns.await()
                 }
+                repo.seed(bundle.trackers)
                 _state.update {
                     TodayState(
                         loading = false, today = bundle,

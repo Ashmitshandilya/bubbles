@@ -18,6 +18,8 @@ data class TodayBundle(
     val safetyNote: String = "",
     val orbitQuestionWaiting: Boolean = false,
     val displayName: String? = null,
+    /** The tracker entries the server already read for Today, by slug. A tracker it could not read is absent (never an empty list). */
+    val trackers: Map<String, List<Entry>> = emptyMap(),
 )
 
 private fun JsonElement?.obj(): JsonObject? = this as? JsonObject
@@ -44,5 +46,16 @@ fun parseToday(root: JsonObject): TodayBundle {
         safetyNote = brief?.get("companion").obj()?.get("safety_note").text().orEmpty(),
         orbitQuestionWaiting = (orbitQuestion?.get("answered") as? JsonPrimitive)?.booleanOrNull == false,
         displayName = name,
+        trackers = root["trackers"].obj()?.mapNotNull { (slug, v) -> v.obj()?.let { slug to parseEntries(it) } }?.toMap().orEmpty(),
     )
+}
+
+/** The entries of one tracker answer (`{"entries": [...]}`), newest first. Rows without an id are skipped. Shared by GET /health/<slug> and GET /today. */
+fun parseEntries(root: JsonObject): List<Entry> {
+    val rows = root["entries"] as? JsonArray ?: return emptyList()
+    return rows.mapNotNull { el ->
+        val o = el as? JsonObject ?: return@mapNotNull null
+        val id = (o["id"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+        Entry(id, (o["date"] as? JsonPrimitive)?.contentOrNull.orEmpty(), o)
+    }.sortedByDescending { it.date }
 }

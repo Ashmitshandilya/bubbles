@@ -174,13 +174,7 @@ class Api(private val session: Session) {
 
     /** GET /health/<slug>?days=N, newest first. */
     suspend fun entries(slug: String, days: Int): List<Entry> {
-        val root = json.parseToJsonElement(get("/health/$slug?days=$days")).jsonObject
-        val rows = root["entries"] as? kotlinx.serialization.json.JsonArray ?: return emptyList()
-        return rows.mapNotNull { el ->
-            val o = el as? JsonObject ?: return@mapNotNull null
-            val id = (o["id"] as? JsonPrimitive)?.content ?: return@mapNotNull null
-            Entry(id, (o["date"] as? JsonPrimitive)?.content.orEmpty(), o)
-        }.sortedByDescending { it.date }
+        return parseEntries(json.parseToJsonElement(get("/health/$slug?days=$days")).jsonObject)
     }
 
     /** POST /health/<slug>. No date is sent, so the server stamps "now". */
