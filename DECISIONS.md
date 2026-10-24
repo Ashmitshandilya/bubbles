@@ -15,6 +15,11 @@ Entry template:
 - Notes: trade-offs, rejected options, follow-ups
 ```
 
+### 2026-10-26 · Rounds 4 and 5: labelled set to 662, 79 cards, stricter guards (PRs #84, #85)
+- What:  the labelled set grew to 662 cases (zero wrong local answers, zero misses), 79 self-care cards; new guards: a feeling or question about someone else (him, them, "my brother") is never answered by the friend voice, despair and drinking wording and "every day" go to the model, and a card never answers a question about the person's own days (today, this week), which is their data.
+- Why:   owner asked to keep training; each round found real gaps (typos, no punctuation, Hinglish, third person).
+- How to add: write the labelled cases first in `tests/eval/make_own_brain_cases.py`, run `python tests/eval/make_own_brain_cases.py`, fix the detector, keep "wrong local" at zero. Cards need two-word triggers and no trigger shared with another card (a tie leaves the answer to the model).
+
 ### 2026-10-26 · Round 3: more links, thumbs-up learning, labelled set, schema links (PRs #79-#82)
 - What:  distance-only exercise ("ran 5 km") is logged with an estimated time (flagged, confidence 0.7); Today shows the newest checked guess; the ledger has 7 links (mood to sleep and movement, screen day to sleep added); a thumbs-up adds a half-weight reply-length hint from the word count only; 68 knowledge cards, 435 labelled cases (0 wrong local answers); migration 20261102 adds missing user_id foreign keys with cascade and `bubbles_daily_facts`.
 - Why:   owner asked for deeper intelligence, visible self-checking and correlated data.
