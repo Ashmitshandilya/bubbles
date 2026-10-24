@@ -561,3 +561,10 @@ already stored.
 - Today/Patterns closed row (frontend) is not built; API shape is ready. Android: no native work.
 - Clinical sign-off: rules, thresholds (30-day window, 2 days per sign, 90-day quiet lab, 365-day freshness, 2 heavy days) and
   sentence templates are in deficiency_map.py; fold into the clinical packet.
+
+## Own Brain: self-care cards and friend-voice replies (2026-10-25), awaiting clinician sign-off
+
+- `backend/data/knowledge_cards.json`: 32 general self-care cards (sleep, caffeine, water, headache and cramp comfort, eye strain, back and neck, iron and protein foods, digestion, acidity, calming breathing, exam stress, walking, exercise start, afternoon energy, screens at night, cold comfort, nausea comfort, PMS mood, hair fall, acne, dark circles, sunlight, snacks, cutting down alcohol or smoking, loneliness). Each has a "when to see a clinician" line (a few harmless lifestyle cards have none). No doses, no medicine, no diagnosis. Please check every tip and every clinician line.
+- What keeps a card from answering: any dose or medicine word, severity or long duration, pregnancy or a baby, a chronic condition word (heart, diabetes, thyroid, kidney, asthma and others), a red-flag word, or two topics at once. These guards are in `knowledge_cards._NEEDS_CARE`.
+- `backend/companion_voice.py`: fixed supportive replies for stress, worry, panic, loneliness, missing someone, a low day, tiredness and good news (English and Hinglish). Panic replies always carry the line about getting medical help. Anything with hopelessness, harm, severity, long duration, a diagnosis question, a number, medicine or someone else's feelings is not answered there.
+- `backend/data_answers.py`: sleep guide of 7 to 9 hours and movement guide of 150 minutes a week, quoted as "what most adults do well on" with "how rested you feel matters more".

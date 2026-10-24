@@ -201,22 +201,22 @@ def _post(chat, text):
     return chat.client.post("/chat", json={"message": text}, headers={"Authorization": "Bearer tok"})
 
 
-def test_chat_loneliness_without_ai_consent_gets_the_supportive_reply_and_the_card(chat):
+def test_chat_loneliness_is_answered_by_bubbles_itself_with_no_yes_to_a_model_and_no_model_call(chat):
     r = _post(chat, "I feel so lonely lately")
     assert r.status_code == 200
     body = r.json()
-    assert body["consent_required"] is True and "Loneliness check-in" in body["response"] and chat.seen == []
+    assert body["consent_required"] is False and body["response"].rstrip().endswith("?") and chat.seen == []
 
 
-def test_chat_anxiety_without_consent_still_gets_only_the_consent_wall(chat):
-    body = _post(chat, "I am anxious about the exam").json()
-    assert body["consent_required"] is True and "Loneliness check-in" not in body["response"] and chat.seen == []
+def test_chat_anxiety_that_asks_for_an_explanation_still_waits_for_the_yes(chat):
+    body = _post(chat, "why am I so anxious about the exam?").json()
+    assert body["consent_required"] is True and chat.seen == []
 
 
 def test_chat_with_consent_gives_the_model_the_mind_block_in_the_safety_context(chat):
     import consent
     consent.set_ai_chat(chat.db, "00000000-0000-0000-0000-000000000001", True)
-    assert _post(chat, "I feel so lonely lately").status_code == 200
+    assert _post(chat, "why do I feel so lonely lately?").status_code == 200
     assert "MIND SUPPORT" in chat.seen[0]["safety_context"]
     chat.seen.clear()
     _post(chat, "I had a headache today")

@@ -77,6 +77,45 @@ def _orbit_series(db: Any, uid: str, today: date, days: int) -> dict[str, dict[d
     return {"orbit_tension": {d: 1.0 if d in tension else 0.0 for d in span}, "orbit_connection": {d: 1.0 if d in connection else 0.0 for d in span}}
 
 
+def local_today(tz_offset_minutes: int | None = None) -> date:
+    off = W.tz_offset(tz_offset_minutes) if tz_offset_minutes is not None else (W.request_tz() or 0)
+    return W.local_now(datetime.now(timezone.utc), off).date()
+
+
+def load_some(db: Any, uid: str, names: set[str], days: int = 60, tz_offset_minutes: int | None = None) -> tuple[dict[str, dict[date, float | None]], date]:
+    """Only the named daily series (sleep_hours, mood, hydration_ml, activity_minutes), read side by side, and the person's local today. For a chat
+    question about one thing: it should not wait for a dozen reads it does not need. A series that cannot be read is simply absent."""
+    from parallel import together
+    off = W.tz_offset(tz_offset_minutes) if tz_offset_minutes is not None else (W.request_tz() or 0)
+    today = W.local_now(datetime.now(timezone.utc), off).date()
+
+    def sleep() -> dict[str, dict[date, float | None]]:
+        nights = S.nightly(S.load_entries(db, uid, days + 2), {}, today)
+        return {"sleep_hours": {date.fromisoformat(n["date"]): n["hours"] for n in nights}}
+
+    def mood() -> dict[str, dict[date, float | None]]:
+        return {"mood": ai._mood(Mind.per_day_moods(Mind.load_mood_entries(db, uid, days), off))}
+
+    jobs = {"sleep_hours": sleep, "mood": mood,
+            "activity_minutes": lambda: {"activity_minutes": _daily(db, uid, "activity", days, off, "duration", "sum")},
+            "hydration_ml": lambda: {"hydration_ml": _daily(db, uid, "hydration", days, off, "volume", "sum")}}
+
+    def safe(job):
+        def run():
+            try:
+                return job()
+            except Exception:  # noqa: BLE001 - an unreadable series is absent, never an error for the others
+                return {}
+        return run
+
+    wanted = [n for n in jobs if n in names]
+    out: dict[str, dict[date, float | None]] = {}
+    if wanted:
+        for part in together(*[safe(jobs[n]) for n in wanted]):
+            out.update(part)
+    return {k: v for k, v in out.items() if v}, today
+
+
 def load_series(db: Any, uid: str, days: int = 90, tz_offset_minutes: int | None = None) -> dict[str, dict[date, float | None]]:
     off = W.tz_offset(tz_offset_minutes) if tz_offset_minutes is not None else (W.request_tz() or 0)
     today = W.local_now(datetime.now(timezone.utc), off).date()

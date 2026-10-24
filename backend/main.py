@@ -50,6 +50,9 @@ from chat_feedback import build_router as build_chat_feedback_router
 from understanding_api import build_router as build_understanding_router
 from orbit import build_router as build_orbit_router
 import doc_store
+import brain
+import brain_facts
+import brain_stats
 import name_privacy
 import open_threads
 import person_model
@@ -714,7 +717,7 @@ _chat_limiter = RateLimiter(limit=int(os.getenv("BUBBLES_CHAT_RATE_LIMIT", "30")
 # the person's own context is waited for longer and logged, never dropped quietly.
 RAG_BUDGET_S = max(0.5, float(os.getenv("CHAT_RAG_BUDGET_S", "2.0")))
 CONTEXT_BUDGET_S = max(2.0, float(os.getenv("CHAT_CONTEXT_BUDGET_S", "8.0")))
-_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup", "recall", "remembered"} | {"safe_harbor", "orbit_redirect"}
+_DETERMINISTIC_ROUTES = {"emergency", "correction", "clarification", "daily_log", "fitness_support", "fitness_answer", "small_talk", "safety_followup", "recall", "remembered"} | {"safe_harbor", "orbit_redirect", "own_data", "knowledge", "companion"}
 
 
 def _debug_trace_enabled() -> bool:
@@ -838,6 +841,8 @@ def _chat_prepare(user, user_id: str, request: ChatRequest) -> _ChatState:
     state.mode = request.mode
     turn = analyze_turn(user_message, history, harbor_ctx=state.harbor_ctx, mode=request.mode)
     turn.country = ident.get("country")
+    if turn.brain and brain_stats.deferred(supabase, user_id, turn.brain["key"]):
+        turn.route, turn.brain = "ai", None   # this kind of local answer keeps missing for this person: the model handles it for them (learned from their thumbs)
     state.turn = turn
     state.name = first_name(user)
     state.timings = dict(turn.timings_ms)
@@ -871,6 +876,14 @@ def _context_stage(user_id: str, user_message: str, first_message: bool = False)
     parts.append(("person_model", person_model.prompt_block(supabase, user_id), 4))   # never raises
     if first_message:
         parts.append(("open_threads", open_threads.prompt_block(supabase, user_id), 5))   # never raises; only when a conversation starts
+    try:   # what Bubbles already worked out from their logs for what this message touches: the model explains and connects instead of recalling
+        names = brain_facts.series_needed(user_message)
+        if names:
+            import association_loader
+            series, today = association_loader.load_some(supabase, user_id, names)
+            parts.append(("own_facts", brain_facts.sheet(series, today, names), 6))
+    except Exception:  # noqa: BLE001 - an extra: the reply goes out without it
+        pass
     from latest_values_block import latest_values_block
     parts.append(("values", latest_values_block(supabase, user_id), 7))   # the trackers' own newest entries, so a value saved anywhere is what Companion says
 
@@ -924,7 +937,7 @@ def _evidence_stage(user_id: str, query: str) -> tuple[list[dict], float]:
     return results, _ms(t0)
 
 
-_MEMORY_ORDER = ("personal", "person_model", "open_threads", "values", "metrics", "associations", "nutrient_hint")
+_MEMORY_ORDER = ("personal", "person_model", "open_threads", "own_facts", "values", "metrics", "associations", "nutrient_hint")
 def _playbook_block(user_message: str, turn: Any) -> str:
     """One approved Playbook entry for a plain app question (never health, safety, Safe Harbor or relationship advice), or ''. Never raises."""
     try:
@@ -938,7 +951,7 @@ def _playbook_block(user_message: str, turn: Any) -> str:
         return ""
 
 
-_LEARNING_ROUTES = frozenset({"ai", "orbit", "small_talk", "daily_log", "recall", "remembered"})
+_LEARNING_ROUTES = frozenset({"ai", "orbit", "small_talk", "daily_log", "recall", "remembered", "own_data", "knowledge", "companion"})
 
 
 def _after_turn(conversation_id: str, user_id: str, route: str, state_name: str, event_count: int, timings: dict) -> None:
@@ -982,6 +995,8 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             response_text = _fitness_text(user_id, user_message)
         elif turn.route == "recall" and not state.consent_required:
             response_text = _recall_text(user_id, user_message, name)
+        elif turn.route in brain.ROUTES and turn.brain and not state.consent_required:
+            response_text = brain.respond(supabase, user_id, turn.brain, user_message, name=name)   # the person's own data, a reviewed card, or the friend voice
         elif turn.route == "remembered" and not state.consent_required and not state.memory_saved:
             response_text = "I couldn't save that just now. Would you tell me again in a moment?"   # never say "I'll remember" when nothing was saved
     else:
@@ -1116,6 +1131,8 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         metadata["consent_required"] = True   # so the card survives a replay and a reload
     suggestions = suggestions_for(turn, consent_required=state.consent_required)
     metadata["suggestions"] = suggestions
+    if turn.brain and turn.route in brain.ROUTES:
+        metadata["brain"] = {"key": turn.brain["key"], "route": turn.route}   # so a thumbs on this reply teaches Bubbles which local answers help this person
     # Safe Harbor: the resources and choices travel with the reply (and are stored with it, so a reload and a retry show the same); a crisis reply that
     # was followed by the numbers for being unsafe at home carries them too. Stored harbor replies are also what keeps these turns out of the model's context.
     harbor_shown = None
