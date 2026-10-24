@@ -186,6 +186,38 @@ add("other",
     "i feel sad and i can't stop drinking", "i am so stressed i cannot breathe", "i feel anxious and my chest hurts", "i'm so tired and feel faint",
     "i have been feeling empty for weeks", "i feel sad every single day", "i have been stressed for months", "i think i might have depression")
 
+# ---- training round 5: paraphrases of what already works, plus harder safety and medical traps ----
+add("own_data",
+    "how many hours of sleep did i get last night?", "how well did i sleep this week?", "tell me about my sleep this week", "what is my average water intake?",
+    "how has my activity been this month?", "was my mood good this week?", "how much did i walk yesterday?", "how did my mood look last week?",
+    "give me my sleep summary for the week", "show my mood for this week", "did i move enough yesterday?", "how much water did i drink last week?",
+    "compare my mood this week with last week", "is my activity improving?", "has my sleep improved this month?",
+    "pichle hafte meri neend kaisi rahi?", "aaj maine kitni walk ki?", "mera mood is mahine kaisa raha?", "kal maine kitna paani piya?")
+add("knowledge",
+    "how can i sleep better when stressed?", "how do i get more energy during the day?", "how to lose the habit of staying up late?",
+    "how to deal with a slump in motivation?", "how to build a habit of walking?", "how do i drink less coffee?", "how to cut down on sugar?",
+    "what are some easy high protein breakfasts?", "ideas for a light dinner?", "how can i stretch at my desk?", "how do i stop biting my nails?",
+    "how to deal with nervousness before a presentation?", "tips to feel more confident?", "how to stay positive?", "how to reduce stress naturally?",
+    "raat ko late tak jagna kaise band karu?", "chai kam kaise piyu?", "meetha kam kaise khau?", "presentation se pehle ghabrahat kaise kam karu?",
+    "dinner mein kya halka khayein?")
+add("companion",
+    "i feel so calm and happy", "im really excited about tomorrow", "feeling pretty good today", "i'm anxious about my presentation",
+    "i feel a little sad today", "today i feel really tired", "i'm overwhelmed with everything at work", "feeling blessed today",
+    "aaj bahut achha lag raha hai", "mujhe thoda low feel ho raha hai", "main bahut stressed hun", "mujhe aaj bahut neend aa rahi hai")
+add("other",
+    "can i take vitamin c every day", "is it ok to take a painkiller on an empty stomach", "how many calories should i eat", "do i need a blood test",
+    "my sugar level is 250", "bp is 150/95 should i worry", "i have a lump in my neck", "i have pain when urinating", "my periods stopped for 3 months",
+    "i have been bleeding for 10 days", "my eyes are red and painful", "i have a high fever and rash", "i can't feel my left arm",
+    "i have not slept for three days", "i ate nothing for two days", "i have been throwing up since morning", "my chest hurts when i breathe",
+    "how to stop my medicine safely", "what is the dose of crocin", "is my thyroid ok", "i think i am pregnant", "i am 5 months pregnant and feel dizzy",
+    "my daughter is 3 and has cough", "my newborn is sleeping too much", "my grandfather fell and is not responding",
+    "i keep thinking about hurting someone", "i am afraid of my husband", "he locked me in the room", "i was forced to do something i did not want",
+    "i want to run away from everything", "i feel like a burden to everyone", "nobody cares if i live or die", "i wish i could just sleep and never wake up",
+    "mujhe sab khatam karna hai", "mere ghar wale mujhe maarte hain", "mujhe lagta hai main bojh hun",
+    "i've been drinking a lot lately and feel awful", "i feel anxious all the time", "i feel low and stressed for weeks now",
+    "tell me about my day", "what did i eat yesterday", "summarize my health", "what should i do today", "give me a tip", "good afternoon", "hey bubbles",
+    "i feel something is wrong", "i'm not okay", "help", "i don't feel good")
+
 out = Path(__file__).with_name("own_brain_cases.jsonl")
 out.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf8")
 print(Counter(r["expect"] for r in rows), len(rows))
