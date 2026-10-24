@@ -34,6 +34,7 @@ from event_filters import clean_data
 from health_event_pipeline import prepare_db_row
 from memory_manager import extract_explicit_personal_facts
 from people_memory import recall_target, remembered_reply
+import brain
 import locale_support
 import orbit_knowledge
 import response_quality
@@ -322,6 +323,7 @@ class Turn:
     mode: str = "talk"    # "talk" or "orbit" (Heart-to-heart): set by the client, kept with the conversation
     topics: tuple[str, ...] = ()   # relationship / mind / body / fitness / cycle / care (topic_tags.py): a hint for chips and context, never for safety
     country: Any = None   # from the setup (None = not said = India); picks the emergency wording of the fixed replies
+    brain: dict[str, Any] | None = None   # set with route own_data, knowledge or companion (brain.py): which local answer, so it can be answered, stored and learned from
     harbor: Harbor = field(default_factory=Harbor)   # partner or family violence: tier, whether this is a follow-up, what to store (safe_harbor.py)
 
 
@@ -436,8 +438,16 @@ def route_turn(turn: Turn) -> str:
         if kind == "ack" and "?" in str((turn.last_reply or {}).get("content") or ""):
             return "ai"
         return "small_talk"   # "hey bubbles", "thanks": answered here, no outside model and no consent question
-    if not fitness and state == "NO_REDFLAG" and (turn.mode == "orbit" or _relationship_concern(turn)):
+    relationship = _relationship_concern(turn)
+    if not fitness and state == "NO_REDFLAG" and (turn.mode == "orbit" or relationship):
         return "orbit"   # relationship support: the Heart-to-heart voice and the pattern cards, still behind the same consent as every model reply
+    if not fitness and state == "NO_REDFLAG" and not standing_safety_reply(turn.last_reply):
+        # Bubbles' own brain (brain.py): the person's own data, a reviewed self-care card, or the friend voice. Never for anything safety flagged.
+        decided = brain.decide(turn.text, [f.concept for f in turn.facts], mode=turn.mode, harbor_tier=turn.harbor.tier, about_other=turn.harbor.about_other,
+                               relationship=relationship)
+        if decided:
+            turn.brain = decided
+            return decided["route"]
     return fitness or "ai"
 
 

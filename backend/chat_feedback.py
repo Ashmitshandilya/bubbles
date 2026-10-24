@@ -15,6 +15,7 @@ from starlette.concurrency import run_in_threadpool
 
 import doc_store
 import person_model
+import brain_stats
 import playbook
 
 KIND = "chat_feedback"
@@ -69,6 +70,7 @@ def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:
         payload = {"rating": rating, "reason": reason, "at": datetime.now(timezone.utc).isoformat()}
         await run_in_threadpool(doc_store.put, db, uid, KIND, message_id, payload)
         await run_in_threadpool(person_model.observe_feedback, db, uid, rating, reason)   # never raises; "too long" twice becomes a trait
+        await run_in_threadpool(brain_stats.from_feedback, db, uid, message_id, rating)   # never raises; counts a thumbs on one of Bubbles' own local answers
         await run_in_threadpool(playbook.capture_from_feedback, db, uid, message_id, rating)   # never raises; needs a yes and a plain app question
         return {"status": "success", "message_id": message_id, "rating": rating, "reason": reason}
 
