@@ -293,7 +293,7 @@ function DoctorPrep() {
         </div>
 
         {/* Visit-ready summary: what changed since the last visit, from data already on file. */}
-        <section aria-labelledby="ready-title" className="bubbles-rise rounded-[24px] bg-tint-sky p-5 text-ink sm:p-8">
+        <section aria-labelledby="ready-title" className="bubbles-rise border-b border-[color:var(--hairline)] pb-8 pt-2 text-ink">
           <div className="flex flex-wrap items-start gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-label text-bubbles-sky-deep">Doctor prep</p>
@@ -393,7 +393,7 @@ function DoctorPrep() {
                   const on = !skipped.has(question);
                   return (
                     <li key={question}>
-                      <label className={`flex min-h-[48px] cursor-pointer items-start gap-3 rounded-2xl px-3 py-2 ${on ? "bg-tint-grape" : "bg-blush"}`}>
+                      <label className={`flex min-h-[48px] cursor-pointer items-start gap-3 border-b border-[color:var(--hairline)] px-1 py-2 ${on ? "" : "opacity-60"}`}>
                         <input type="checkbox" checked={on} onChange={() => toggleQuestion(question)} className="mt-1 h-6 w-6 shrink-0 accent-[var(--bubbles-grape)]" />
                         <span className={`pt-0.5 text-body ${on ? "text-ink" : "text-muted"}`}>
                           <span className="sr-only">Question {i + 1}: </span>
