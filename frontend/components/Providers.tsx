@@ -269,6 +269,8 @@ const HEALTH_LIMITS: FetchBubblesOptions = { timeoutMs: 8000, retries: 0 };
 const FIRST_HEALTH_LIMITS: FetchBubblesOptions = { timeoutMs: 65000, retries: 0 };
 /** Show "waking up" instead of nothing once the first probe has been quiet this long. */
 const WAKING_AFTER_MS = 5000;
+/** A /health answer this recent is not asked for again when the session arrives right after the page opens. */
+const RECENT_PROBE_MS = 30_000;
 
 type ApiContextType = {
   apiStatus: "checking" | "online" | "offline";
@@ -320,6 +322,7 @@ function ApiProviderOwn({ children }: { children: ReactNode }) {
   const [lastUpdate, setLastUpdate] = useState<LastUpdate | null>(null);
   const [waking, setWaking] = useState(false);
   const firstProbeDone = useRef(false);
+  const lastProbeOkAt = useRef(0);
   const wasWaking = useRef(false);
   // The latest probe (set below) and the one in flight, so many failed calls at once share one /health check.
   const probeRef = useRef<() => Promise<boolean>>(async () => false);
@@ -496,6 +499,7 @@ function ApiProviderOwn({ children }: { children: ReactNode }) {
     try {
       const response = await askHealth();
       setHealth(parseHealth(await response.json().catch(() => null)));
+      lastProbeOkAt.current = Date.now();
       // Calls that ran while the host slept failed quietly; tell the data hooks to load again.
       if (wasWaking.current) setReconnects((n) => n + 1);
       return true;
@@ -519,8 +523,10 @@ function ApiProviderOwn({ children }: { children: ReactNode }) {
     probeRef.current = probe;
   }, [probe]);
 
-  // Check on mount and whenever the session changes.
+  // Check on mount and whenever the session changes. The session arrives just after mount, which changes `probe` once: a probe that
+  // answered a moment ago is not asked again (it was a second /health on every page load).
   useEffect(() => {
+    if (firstProbeDone.current && statusRef.current === "online" && Date.now() - lastProbeOkAt.current < RECENT_PROBE_MS) return;
     void probe();
   }, [probe]);
 

@@ -57,10 +57,23 @@ export type Query<T> =
  * GET `path`, or POST it with `body`. Keeps showing old data while refreshing. A failed query says why (server
  * stopped, slow, database needs its permission update, signed out) and reloads by itself once Bubbles reconnects.
  */
+// The last good answer per person and request, in memory only (never written to disk). Opening a page again shows it at once while a fresh
+// answer loads behind it. One person's entries never serve another (the key holds the user), and nothing is kept once nobody is signed in.
+const LAST_GOOD_MAX = 80;
+const lastGood = new Map<string, unknown>();
+function remember(key: string, data: unknown) {
+  lastGood.delete(key);
+  lastGood.set(key, data);
+  if (lastGood.size > LAST_GOOD_MAX) lastGood.delete(lastGood.keys().next().value as string);
+}
+
 export function useBubblesQuery<T>(path: string, body?: object): [Query<T>, () => void] {
   const { fetchBubbles, reconnects, dataVersion } = useApi();
-  const [state, setState] = useState<Query<T>>({ status: "loading" });
+  const { user, loading: authLoading } = useAuth();
+  const userId = (user as { id?: string } | null)?.id ?? "";
   const payload = body ? JSON.stringify(body) : undefined;
+  const memoKey = `${userId}|${path}|${payload ?? ""}`;
+  const [state, setState] = useState<Query<T>>(() => (userId && lastGood.has(memoKey) ? { status: "ready", data: lastGood.get(memoKey) as T } : { status: "loading" }));
   const latest = useRef(0);
   const current = useRef(state);
 
@@ -76,15 +89,20 @@ export function useBubblesQuery<T>(path: string, body?: object): [Query<T>, () =
         return;
       }
       const data = (await response.json()) as T;
+      if (userId) remember(memoKey, data);
       if (id === latest.current) setState({ status: "ready", data });
     } catch (error) {
       if (id === latest.current) setState({ status: "error", message: classifyFailure(failureFromError(error)).message });
     }
-  }, [fetchBubbles, path, payload]);
+  }, [fetchBubbles, path, payload, userId, memoKey]);
 
   useEffect(() => {
     void load();
   }, [load, dataVersion]);
+
+  useEffect(() => {
+    if (!userId && !authLoading) lastGood.clear();
+  }, [userId, authLoading]);
 
   useEffect(() => {
     current.current = state;

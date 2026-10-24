@@ -159,5 +159,6 @@ def test_living_map_uses_bounded_events():
     living_map_func = source[living_map_start:living_map_end]
     assert '_bounded_events(str(user.id), days * 2)' in living_map_func
     # Should pass events (not user.id string) to both processing functions
-    assert 'build_health_state(events, days=days)' in living_map_func
+    assert '_health_state(events, days)' in living_map_func   # build_health_state through the helper that shares it inside one Today request
+    assert 'build_health_state(events, days=days)' in source[source.index('def _health_state'):source.index('def _get_user_health_events')]
     assert 'analyze_longitudinal(events, days=days)' in living_map_func

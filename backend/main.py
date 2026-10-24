@@ -1,4 +1,5 @@
 import contextvars
+import copy
 import hashlib
 import json
 import os
@@ -1600,6 +1601,20 @@ def _memoised_events(user_id: str, days: int) -> list[dict] | None:
     return None
 
 
+_STATE_MEMO: contextvars.ContextVar[dict | None] = contextvars.ContextVar("state_memo", default=None)
+
+
+def _health_state(events: list[dict], days: int) -> dict:
+    """build_health_state, shared inside one Today request: the brief and the living map both build it from the same events and window."""
+    memo = _STATE_MEMO.get()
+    if memo is None:
+        return build_health_state(events, days=days)
+    key = (days, len(events), tuple(str(e.get("id")) for e in events[:3]), tuple(str(e.get("id")) for e in events[-3:]))
+    if key not in memo:
+        memo[key] = build_health_state(events, days=days)
+    return copy.deepcopy(memo[key])   # a copy, so one part tidying its answer cannot change what the next part is given
+
+
 def _get_user_health_events(user_id: str, days: int = 30) -> list[dict]:
     days = max(1, min(days, 730))
     held = _memoised_events(user_id, days)
@@ -1698,7 +1713,7 @@ def today_bundle(authorization: str | None = Header(default=None), days: int = Q
     def tracker(slug):
         return safe(lambda: list_domain(supabase, slug, DOMAINS[slug], uid, 365 if slug == "cycle" else 30))
 
-    token = _EVENT_MEMO.set({})
+    token, state_token = _EVENT_MEMO.set({}), _STATE_MEMO.set({})
     try:
         _get_user_health_events(uid, 30)   # once, before the parts fan out; the parts below take their window from it
         parts = together(
@@ -1713,6 +1728,7 @@ def today_bundle(authorization: str | None = Header(default=None), days: int = Q
         )
     finally:
         _EVENT_MEMO.reset(token)
+        _STATE_MEMO.reset(state_token)
     n = len(TODAY_TRACKERS)
     trackers = dict(zip(TODAY_TRACKERS, parts[:n]))
     visits, brief, weekly, living, nudges, profile, orbit_home = parts[n:]
@@ -1972,7 +1988,7 @@ def intelligence_brief(
     days = max(1, min(request.days, 90))
     user_id = str(user.id)
     events = _bounded_events(user_id, days * 2)
-    state = build_health_state(events, days=days)
+    state = _health_state(events, days)
     learning = build_learning_snapshot(events, days=min(days * 3, 90))
     companion = build_daily_companion(state, learning)
 
@@ -2033,7 +2049,7 @@ def intelligence_brief(
 def living_signal_map(authorization: str | None = Header(default=None), days: int = Query(default=14, ge=1, le=90)):
     user = get_authenticated_user(authorization)
     events = _bounded_events(str(user.id), days * 2)
-    state_payload = build_health_state(events, days=days)
+    state_payload = _health_state(events, days)
     analysis = analyze_longitudinal(events, days=days)
     correlations = analysis.get("correlations", []) if isinstance(analysis, dict) else []
     map_data = build_living_signal_map(state_payload, correlations=correlations)

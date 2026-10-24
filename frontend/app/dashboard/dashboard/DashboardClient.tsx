@@ -11,20 +11,24 @@ import { useAuth, useApi, useExperience } from "../../../components/Providers";
 import { LoadingBubbles } from "../../../components/hub/HubKit";
 import { isSupabaseConfigured } from "../../../lib/supabase";
 import { SafetyBanner, type SafetyLevel } from "./SafetyBanner";
-import { LivingSignalMap } from "./LivingSignalMap";
-import { BodyMapRow, ComingUp, LogInput, MoreFold, Patterns, QuickLog, WorthALook, comingUpRows } from "./TodaySections";
+import { BodyMapRow, ComingUp, LogInput, MoreFold, QuickLog, WorthALook, comingUpRows } from "./TodaySections";
 import { Lede, LivingBubbles, Row, Rows, Section } from "../../../components/pearl";
-import { PartnerCard, WholeHealthCards } from "./WholeHealthCards";
-import { NutrientNudges } from "./NutrientNudges";
 import { type Nudge } from "../../lib/nutrients";
 import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
 import { LastUpdatedCard } from "./LastUpdatedCard";
 import { pickLastUpdate } from "../../lib/data-sync";
-import { WeekRecapCard } from "./WeekRecapCard";
 import { buildWeekRecap } from "./recap";
 import { TODAY_PATH, bubbleSignals, readBundle } from "./bundle";
 import { SIGNAL_META, buildPatterns, buildTodayItems, greeting, summarizeCycle, summarizeSignal, upcomingVisits, type SignalSummary } from "./today";
 import type { IntelligenceBrief, LivingMapData, Loadable, ProfileData, SignalSlug, TrackerEntry, TrackerResponse, WeeklyInsights } from "./types";
+
+// What sits behind a closed fold loads when the fold is opened, not with the Today screen.
+const Patterns = dynamic(() => import("./TodayPatterns").then((m) => m.Patterns), { ssr: false });
+const LivingSignalMap = dynamic(() => import("./LivingSignalMap").then((m) => m.LivingSignalMap), { ssr: false });
+const WholeHealthCards = dynamic(() => import("./WholeHealthCards").then((m) => m.WholeHealthCards), { ssr: false });
+const PartnerCard = dynamic(() => import("./WholeHealthCards").then((m) => m.PartnerCard), { ssr: false });
+const NutrientNudges = dynamic(() => import("./NutrientNudges").then((m) => m.NutrientNudges), { ssr: false });
+const WeekRecapCard = dynamic(() => import("./WeekRecapCard").then((m) => m.WeekRecapCard), { ssr: false });
 
 // Only brand-new accounts see the tour, so its code loads on demand instead of with the Today screen.
 const FirstRunTour = dynamic(() => import("../../onboarding/FirstRunTour").then((m) => m.FirstRunTour), { ssr: false });
@@ -40,6 +44,11 @@ const LOADING = { status: "loading" } as const;
 const allLoading = () => Object.fromEntries(TILE_ORDER.map((slug) => [slug, LOADING])) as Record<SignalSlug, Loadable<TrackerResponse>>;
 
 type WaterState = "idle" | "saving" | "saved" | "error";
+type Bundle = ReturnType<typeof readBundle>;
+
+// The last good answer, kept in memory only (never written to disk) so coming back to Today shows it at once while a fresh one loads behind it.
+// It belongs to one person and is dropped the moment nobody is signed in.
+let snapshot: { uid: string; bundle: Bundle } | null = null;
 
 function Shell({ children }: { children: ReactNode }) {
   return <main className="flex min-h-dvh items-center justify-center bg-blush p-6 text-center">{children}</main>;
@@ -66,6 +75,8 @@ export function DashboardClient() {
   const [water, setWater] = useState<WaterState>("idle");
   const [serverLastUpdate, setServerLastUpdate] = useState<string | null>(null);
   const seenVersion = useRef(dataVersion);
+  const restored = useRef(false);
+  const userId = (user as { id?: string } | null)?.id;
   // fetchBubbles changes identity on every auth event (token refresh, tab refocus). Loading is keyed on the token, so
   // those events do not blank the page with skeletons and refire a dozen requests.
   const fetchRef = useRef(fetchBubbles);
@@ -81,8 +92,18 @@ export function DashboardClient() {
     if (!isSupabaseConfigured || !token) return;
     let alive = true;
     // A change made elsewhere (another screen, tab or Companion) refreshes quietly: what is on screen stays until the newer answer replaces it.
-    const quiet = seenVersion.current !== dataVersion;
+    const earlier = userId && snapshot?.uid === userId && !restored.current ? snapshot.bundle : null;
+    const quiet = seenVersion.current !== dataVersion || earlier !== null;
     seenVersion.current = dataVersion;
+    if (earlier) {
+      restored.current = true;
+      setTrackers((current) => Object.fromEntries(TILE_ORDER.map((slug) => [slug, earlier.trackers[slug] ? { status: "ready", data: earlier.trackers[slug] } : current[slug]])) as typeof current);
+      if (earlier.visits) setVisits({ status: "ready", data: earlier.visits });
+      if (earlier.brief) setBrief({ status: "ready", data: earlier.brief });
+      if (earlier.weekly) setWeekly({ status: "ready", data: earlier.weekly });
+      if (earlier.livingMap) setLivingMap({ status: "ready", data: earlier.livingMap });
+      setNudges(earlier.nudges); setProfile(earlier.profile ?? null); setLede(earlier.lede?.text ?? null); setOrbitQuestion(earlier.orbit?.question ?? null);
+    }
     const get = async <T,>(path: string, init?: RequestInit): Promise<T> => {
       const response = await fetchRef.current(path, init, TODAY_LIMITS);
       if (!response.ok) throw new Error(`${path} failed with ${response.status}`);
@@ -96,7 +117,7 @@ export function DashboardClient() {
       );
     }
     // One call carries everything Today shows. A part the server could not read is missing from it and shows as a gap or "Try again".
-    const bundle = get<unknown>(TODAY_PATH).then(readBundle);
+    const bundle = get<unknown>(TODAY_PATH).then(readBundle).then((b) => { if (userId) snapshot = { uid: userId, bundle: b }; return b; });
     const part = <T,>(read: (b: ReturnType<typeof readBundle>) => T | undefined) => bundle.then((b) => {
       const value = read(b);
       if (value === undefined) throw new Error("part missing");
@@ -116,7 +137,11 @@ export function DashboardClient() {
       () => { /* the card falls back to what this browser saw */ },
     );
     return () => { alive = false; };
-  }, [token, reloadKey, dataVersion]);
+  }, [token, reloadKey, dataVersion, userId]);
+
+  useEffect(() => {
+    if (!userId && !authLoading) snapshot = null;
+  }, [userId, authLoading]);
 
   useEffect(() => {
     if (water !== "saved" && water !== "error") return;

@@ -44,4 +44,13 @@ class TodayBundleTest {
     @Test fun theProfileMayComeInEitherShape() {
         assertEquals("Asha", parse("""{"profile":{"display_name":"Asha"}}""").displayName)
     }
+
+    @Test fun theTrackerEntriesTodayAlreadyReadAreKeptNewestFirst() {
+        val b = parse("""{"trackers":{"sleep":{"entries":[{"id":"a","date":"2026-10-22","duration":6.5},{"id":"b","date":"2026-10-23","duration":7.0},{"date":"2026-10-24"}]},
+            "mood":null,"hydration":{"entries":[]}}}""")
+        assertEquals(setOf("sleep", "hydration"), b.trackers.keys)                 // a tracker the server could not read is absent, never empty
+        assertEquals(listOf("b", "a"), b.trackers["sleep"]!!.map { it.id })       // newest first; a row without an id is skipped
+        assertEquals(7.0, b.trackers["sleep"]!!.first().number("duration")!!, 0.0)
+        assertTrue(b.trackers["hydration"]!!.isEmpty())                           // read, and nothing logged: that is an answer
+    }
 }

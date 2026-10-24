@@ -101,7 +101,14 @@ class TrackViewModel(private val api: Api, private val repo: Repo) : ViewModel()
         viewModelScope.launch { repo.entries.collect { e -> _state.update { it.copy(entries = e) } } }
         viewModelScope.launch { repo.loading.collect { l -> _state.update { it.copy(loading = l) } } }
         viewModelScope.launch { repo.pending.collect { n -> _state.update { it.copy(pending = n, notice = if (n == 0) null else it.notice) } } }
-        if (repo.entries.value.isEmpty()) loadAll()
+        loadMissing()
+    }
+
+    /** Only what Today has not already loaded. */
+    private fun loadMissing() {
+        viewModelScope.launch {
+            if (!repo.loadMissing() && repo.entries.value.isEmpty()) _state.update { it.copy(error = "Can't reach Bubbles. Check your connection.") }
+        }
     }
 
     fun loadAll() {

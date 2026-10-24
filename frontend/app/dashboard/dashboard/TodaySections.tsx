@@ -3,11 +3,9 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Gap, Row, Rows, Thread } from "../../../components/pearl";
+import { Gap, Row, Rows } from "../../../components/pearl";
 import { askHref } from "../../lib/ask-handoff";
-import { DetailsButton } from "../../insights/InsightDetailSheet";
-import { toDetail } from "../../insights/detail";
-import { formatDay, PATTERN_DAYS, SIGNAL_META, type CycleInfo, type PatternItem, type TodayItem } from "./today";
+import { formatDay, SIGNAL_META, type CycleInfo, type TodayItem } from "./today";
 import type { SignalSlug, TrackerEntry } from "./types";
 
 // ── Primitives ─────────────────────────────────────────────────────────────
@@ -128,31 +126,6 @@ export function QuickLog({ onAddWater, waterBusy, status, cycle = true }: { onAd
 }
 
 // ── Patterns + coming up ───────────────────────────────────────────────────
-
-export function Patterns({ state, items, note, onRetry }: { state: "loading" | "error" | "ready"; items: PatternItem[]; note?: string; onRetry: () => void }) {
-  return (
-    <div>
-      {state === "loading" && <Gap>Looking for patterns…</Gap>}
-      {state === "error" && (
-        <Gap>
-          Bubbles couldn&apos;t load patterns right now. <button type="button" onClick={onRetry} className="pearl-link"><Icon name="refresh" size={14} /> Try again</button>
-        </Gap>
-      )}
-      {state === "ready" && items.length === 0 && <Gap>Not enough data yet. Patterns show once you&apos;ve logged for a week or two.</Gap>}
-      {state === "ready" && items.map((item) => (
-        <div key={item.id} data-private>
-          <Thread from="Noticed" to="In your logs" sentence={item.title} sure={item.pill.text} />
-          {item.detail && <p className="pearl-note">{item.detail}</p>}
-          <DetailsButton
-            headline={item.title}
-            target={() => ({ id: item.insightId ?? null, days: PATTERN_DAYS, fetch: Boolean(item.insightId), base: toDetail({ kind: "today", item: item.source }) })}
-          />
-        </div>
-      ))}
-      {note && <p className="pearl-note">{note}</p>}
-    </div>
-  );
-}
 
 /** Rows for what is next: the period window and any booked visits. Always returns the rows, so Today can also show the first one up top. */
 export function comingUpRows(cycle: CycleInfo | null, visits: TrackerEntry[] | null): Array<{ id: string; label: string; value: string; href: string }> {

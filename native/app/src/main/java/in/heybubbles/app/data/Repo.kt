@@ -64,6 +64,25 @@ class Repo(private val api: Api, private val queue: OfflineQueue? = null) {
     private val _loading = MutableStateFlow(true)
     val loading: StateFlow<Boolean> = _loading
 
+    /** Fills in trackers the server already sent (Today's one call), so Today does not ask for each of them again. A tracker not in `fresh` keeps what it had. */
+    fun seed(fresh: Map<String, List<Entry>>) {
+        if (fresh.isEmpty()) return
+        _entries.update { it + fresh }
+        _loading.value = false
+    }
+
+    /** Loads only the trackers that have not been loaded yet (the Track screen opens after Today has seeded a few). Returns true if every one answered or none was missing. */
+    suspend fun loadMissing(days: Int = WINDOW_DAYS): Boolean = coroutineScope {
+        val missing = (Trackers.all + Trackers.records).filter { it.slug !in _entries.value }
+        if (missing.isEmpty()) return@coroutineScope true
+        _loading.value = true
+        val results = missing.map { spec -> async { spec.slug to runCatching { api.entries(spec.slug, days) }.getOrNull() } }.awaitAll()
+        val ok = results.filter { it.second != null }
+        _entries.update { it + ok.associate { (slug, list) -> slug to list!! } }
+        _loading.value = false
+        ok.size == results.size || _entries.value.isNotEmpty()
+    }
+
     /** Loads every tracker; returns true if at least one answered. A tracker that fails keeps what it had. */
     suspend fun loadAll(days: Int = WINDOW_DAYS): Boolean = coroutineScope {
         _loading.value = true

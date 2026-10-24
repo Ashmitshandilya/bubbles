@@ -51,3 +51,16 @@ provider (Gemini plus the OpenAI-compatible pool), changing the model's output c
 the dose scrubber, attribution strip and lints on each finished sentence, with a property test against recorded replies and a manual check on live
 providers. None of that can be verified without live keys and recorded replies, and half-built streaming risks unguarded text reaching a person.
 `/chat/stream` therefore still waits for the whole reply and sends it sentence by sentence, with every guard applied first.
+
+## Smoothness pass (2026-10-24, branch `perf/smoothness`)
+
+Done:
+
+- [x] **Revisiting a page shows it at once.** Today keeps its last good answer in memory only (never on disk, dropped the moment nobody is signed in) and refreshes quietly behind it; every page that uses the shared query hook does the same, keyed by person and request. Measured in the browser: coming back to Today after 25 s shows it in about 160 ms with no skeletons (before, a skeleton screen until `/today` answered).
+- [x] **One `/health` probe on load, not two.** The probe re-ran when the sign-in session arrived a moment after the page opened; a probe that answered in the last 30 s is not repeated.
+- [x] **No tour question on every visit to Today.** `/onboarding/tour` is asked once per tab.
+- [x] **Today's first load is lighter.** The Patterns, Living map, Whole health, Partner, Nutrient and Week folds are loaded when opened (`/dashboard` first-load JS 247 kB to 236 kB).
+- [x] **`/today` does less work.** The health events and the health state that the brief, the week and the living map share are built once per request (single user 97 ms to 75 ms; checked by tests that each part still equals its own route's answer).
+- [x] **Android launch asks for less.** Today seeds the tracker entries it already received in `/today` into the shared repository instead of loading every tracker and record (about 15 requests fewer at launch); the Track screen loads only what is still missing (`Repo.loadMissing`).
+
+Not done (needs the owner's data or a bigger change): the per-user server cache of the bundle, a smaller auth client (bundle size), true streaming, Lighthouse on a real phone.
