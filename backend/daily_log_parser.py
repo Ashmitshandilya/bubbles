@@ -41,6 +41,7 @@ def _num(text: str) -> float:
 _SLEEP_HM = re.compile(
     r"(?:slept|sleep(?:ing)?|asleep|sleep (?:duration|time|total))\D{0,25}?(\d{1,2})\s*" + _HR_U + r"\s*(?:and\s*)?(?:(\d{1,2})\s*" + _MIN_U + r")?", _I)
 _SLEEP_HM_REV = re.compile(r"(\d{1,2})\s*" + _HR_U + r"\s*(?:and\s*)?(?:(\d{1,2})\s*" + _MIN_U + r")?\s*(?:of\s+)?sleep\b", _I)
+_SLEEP_HINGLISH = re.compile(r"(\d{1,2}(?:\.\d)?)\s*(?:ghante|ghanta|ghanton)\s*(?:tak\s+)?(?:soya|soyi|so\s+paya|so\s+payi|neend\s+li)\b", re.I)
 _SLEEP_DEC = re.compile(r"(?:slept|sleep(?:ing)?)\D{0,15}?" + _NUM + r"\s*" + _HR_U + r"|" + _NUM + r"\s*" + _HR_U + r"\s*(?:of\s+)?sleep\b", _I)
 _TIME = r"(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?"
 _BEDTIME = re.compile(r"(?:went to (?:bed|sleep)|bed ?time|in bed|bed at|bed|fell asleep|lights out|slept at|asleep at)\s*(?:at|around|by|~|:)?\s*" + _TIME, _I)
@@ -89,7 +90,9 @@ _EX_H = re.compile(r"\b(\d(?:\.\d)?)\s*" + _HR_U + r"\s*(?:of\s+)?(" + _EXERCISE
 # "Gym for 1 hour 15 minutes" / "1 hour 15 minutes of yoga": hours plus optional minutes
 _EX_HM_B = re.compile(r"\b(" + _EXERCISE_WORDS + r")\s*(?:for|:)?\s*(\d(?:\.\d)?)\s*" + _HR_U + r"(?:\s*(?:and\s*)?(\d{1,2})\s*" + _MIN_U + r")?", _I)
 _EX_HM_A = re.compile(r"\b(\d(?:\.\d)?)\s*" + _HR_U + r"\s*(?:and\s*)?(\d{1,2})\s*" + _MIN_U + r"\s*(?:of\s+)?(" + _EXERCISE_WORDS + r")\b", _I)
-_WEIGHT = re.compile(r"(?:weight|weigh(?:ed|s)?)\D{0,12}?(\d{2,3}(?:\.\d+)?)\s*(kg|kgs|lbs?|pounds)\b", _I)
+_WEIGHT = re.compile(r"(?:weight|weigh(?:ed|s)?)\D{0,24}?(\d{2,3}(?:\.\d+)?)\s*(kg|kgs|lbs?|pounds)\b", _I)
+# a number that is a wish or somebody's advice, not a reading: "should be 55 kg someday", "my goal is 60 kg", "want to reach 58 kg"
+_WEIGHT_WISH = re.compile(r"\b(?:should|ought\s+to|want\s+to|wanna|goal|target|aim(?:ing)?|ideal|someday|one\s+day|hope|wish|trying\s+to\s+(?:reach|get\s+to))\b", _I)
 _HR = re.compile(r"(?:resting\s+)?(?:\bhr\b|heart rate|pulse)\D{0,8}?(\d{2,3})(?:\s*bpm)?", _I)
 _BP = re.compile(r"(?:\bbp\b|blood pressure)\D{0,8}?(\d{2,3})\s*/\s*(\d{2,3})", _I)
 _TEMP = re.compile(r"\b(?:temp(?:erature)?\D{0,8}?|fever\D{0,12}?)(\d{2,3}(?:\.\d+)?)\s*°?\s*([cf])?\b", _I)
@@ -290,6 +293,10 @@ def parse_daily_log(text: str, facts: Iterable[Fact] = (), *, now: datetime | No
         m = _SLEEP_DEC.search(t)
         if m:
             minutes = round(_num(m.group(1) or m.group(2)) * 60)
+        else:
+            hi = _SLEEP_HINGLISH.search(t)   # "6 ghante soya"
+            if hi:
+                minutes = round(_num(hi.group(1)) * 60)
     if minutes is not None and 30 <= minutes <= 18 * 60:
         mt["sleep_minutes"] = int(minutes)
         d.add("sleep")
@@ -437,7 +444,7 @@ def parse_daily_log(text: str, facts: Iterable[Fact] = (), *, now: datetime | No
 
     # ---- body / vitals
     wm = _WEIGHT.search(t)
-    if wm:
+    if wm and not _WEIGHT_WISH.search(t[max(0, wm.start() - 40):wm.end()]):
         w = float(wm.group(1))
         kg = round(w * 0.45359237, 1) if wm.group(2).lower().startswith(("lb", "pound")) else round(w, 1)
         if 20 <= kg <= 400:
