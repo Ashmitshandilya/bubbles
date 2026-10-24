@@ -14,7 +14,7 @@ from typing import Iterable
 # what the message must NOT contain for the friend voice to answer it on its own
 _NOT_FOR_THIS = re.compile(
     r"\b(?:hopeless|worthless|no\s+point|give\s+up|giving\s+up|can'?t\s+go\s+on|don'?t\s+want\s+to\s+(?:live|be\s+here|exist)|end\s+it|kill|die|dying|suicid\w+|self[- ]?harm|"
-    r"hurt\s+myself|cut\s+myself|abuse\w*|hits?\s+me|beat\w*|assault\w*|rape\w*|unsafe|threat\w*|"
+    r"hurt\s+myself|cut\s+myself|do\s+something\s+(?:stupid|drastic|crazy|rash|silly)|might\s+do\s+something|trapped|controls?\s+my|disappear\w*|abuse\w*|hits?\s+me|beat\w*|assault\w*|rape\w*|unsafe|threat\w*|"
     r"for\s+(?:weeks|months|years)|since\s+(?:weeks|months|years)|every\s+day|all\s+the\s+time|always|never\s+(?:feel|happy)|"
     r"pregnan\w+|medicine|medication|tablets?|doctor|hospital|diagnos\w+|"
     r"disorder|disease|illness|syndrome|condition|depress\w*|bipolar|ocd|ptsd|schizo\w*|adhd|autis\w*|do\s+i\s+have|am\s+i\s+(?:sick|ill|mad|crazy)|"
@@ -27,8 +27,14 @@ _FIRST_PERSON = re.compile(r"\b(?:i|i'm|im|i've|ive|i'd|me|myself|main|mujhe|mer
 _STRESS = re.compile(r"\b(?:stress(?:ed|ful)?|overwhelm\w*|burn(?:ed|t)\s*out|swamped|too\s+much\s+(?:work|on\s+my\s+plate)|tension|tensed|pressure\s+(?:at|of)\s+(?:work|college|exams?))\b|\bstressed\s+out\b", re.I)
 _JOY = re.compile(
     r"\b(?:got\s+(?:the|a)\s+(?:job|promotion|offer|internship|raise)|promoted|i\s+passed|passed\s+my|cleared\s+(?:my|the)|so\s+happy|really\s+happy|feeling\s+(?:great|amazing|fantastic|wonderful|"
-    r"so\s+good|really\s+good)|great\s+day|good\s+news|excited|proud\s+of\s+myself|nailed\s+it|did\s+it|best\s+day|khush|bahut\s+khush|maza\s+aa\s+raha)\b", re.I)
-_TIRED = re.compile(r"\b(?:so\s+tired|very\s+tired|really\s+tired|exhausted|drained|wiped\s+out|worn\s+out|thak\s+gaya|thak\s+gayi|bahut\s+thak|energy\s+nahi)\b", re.I)
+    r"so\s+good|really\s+good)|great\s+day|good\s+news|excited|proud\s+of\s+myself|nailed\s+it|did\s+it|best\s+day|khush|bahut\s+khush|maza\s+aa\s+raha|grateful|thankful|nice\s+day|good\s+mood|great\s+workout|feel\s+amazing)\b", re.I)
+_TIRED = re.compile(r"\b(?:so\s+tired|very\s+tired|really\s+tired|exhausted|drained|wiped\s+out|worn\s+out|thak\s+gaya|thak\s+gayi|bahut\s+thak|thaka\s+hua|thaki\s+hui|energy\s+nahi)\b", re.I)
+# softer everyday feelings that carry no symptom: nerves, missing home or family, an ordinary hard day (each needs a first-person cue, checked above)
+_NERVOUS = re.compile(r"\b(?:nervous|worried\s+about|anxious\s+about|jittery|on\s+edge)\b", re.I)
+_MISSING = re.compile(r"\bmiss(?:ing)?\s+(?:my\s+)?(?:family|home|hometown|parents|friends|college|school|ghar)\b|\bghar\s+ki\s+yaad\b", re.I)
+_LOWISH = re.compile(
+    r"\b(?:feel(?:ing)?\s+like\s+crying|want\s+to\s+cry|(?:such\s+a\s+)?(?:hard|tough|rough|bad)\s+day|feel(?:ing)?\s+(?:kind\s+of\s+)?empty|bored\s+and\s+(?:a\s+bit\s+)?down|need\s+a\s+hug|"
+    r"udaas\w*|man\s+nahi\s+lag\s+raha)\b", re.I)
 _QUESTION_FOR_INFO = re.compile(r"\b(?:how\s+(?:to|can|do|much|many)|what\s+(?:is|are|should)|why|tips?|advice|suggest|which|kaise|kya\s+karu)\b", re.I)
 
 MIND_CONCEPTS = ("panic_attack", "separation_anxiety", "loneliness", "anxiety", "low_mood")
@@ -119,6 +125,12 @@ def concept_of(text: str, active_concepts: Iterable[str] = ()) -> str | None:
         return "stress"
     if _JOY.search(t):
         return "joy"
+    if _NERVOUS.search(t):
+        return "anxiety"
+    if _MISSING.search(t):
+        return "separation_anxiety"
+    if _LOWISH.search(t):
+        return "low_mood"
     return None
 
 

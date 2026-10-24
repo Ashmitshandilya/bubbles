@@ -1,155 +1,1075 @@
 {
-  "_note": "General self-care and lifestyle guidance for common, low-risk questions. No doses, no diagnoses, no medicine advice. Written plainly and checked for what a careful clinician would not object to; every card names when to see a clinician. These are listed in docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md (own-brain cards) as awaiting clinician sign-off.",
-  "cards": [
-    {"id": "sleep_cant_sleep", "title": "Falling asleep", "concepts": ["insomnia"],
-     "triggers": ["can't sleep", "cant sleep", "cannot sleep", "trouble sleeping", "trouble falling asleep", "how to fall asleep", "fall asleep faster", "neend nahi aa rahi", "neend nahi aati", "sleep faster"],
-     "answer": "A few small habits help most people settle: the body likes a steady rhythm and a calm, dim runway into bed.",
-     "tips": ["Keep a fixed wake-up time, even after a bad night. It anchors the whole rhythm.", "Dim the lights and put screens away for 30 to 60 minutes before bed.", "Keep caffeine to the morning and early afternoon.", "If you're awake and fretting after about 20 minutes, get up, do something quiet in low light, and go back when sleepy.", "A few slow breaths with a longer breath out can soften a busy mind."],
-     "clinician": "If sleep trouble lasts more than a few weeks, or it's affecting your days, a clinician can help look for the cause.", "followup": "Want me to keep an eye on your sleep logs for a few nights and see what lines up?"},
-    {"id": "sleep_how_much", "title": "How much sleep", "concepts": [],
-     "triggers": ["how much sleep do i need", "how many hours of sleep", "hours of sleep should", "how much sleep is enough", "kitni neend zaroori"],
-     "answer": "Most adults do well on about 7 to 9 hours. Teenagers usually need more, and some adults feel fine on a little less. How rested you feel matters more than the number.",
-     "tips": ["Notice how you feel at mid-morning: steady energy is a good sign.", "A regular bedtime and wake time often helps more than extra hours on weekends."],
-     "clinician": null, "followup": "I can show you your own average if you've been logging sleep. Want to see it?"},
-    {"id": "caffeine", "title": "Coffee, chai and caffeine", "concepts": [],
-     "triggers": ["is coffee bad", "how much coffee", "how much caffeine", "caffeine and sleep", "too much chai", "too much coffee", "chai or coffee", "coffee affect sleep"],
-     "answer": "For most healthy adults, a few cups of tea or coffee a day is fine. Caffeine stays in the body for hours, so the main trick is timing.",
-     "tips": ["Keep it to the morning and early afternoon if your sleep is light.", "If you feel jittery, fast-hearted or anxious after it, try a smaller cup or a gap between cups.", "Water alongside it keeps you comfortable through the day."],
-     "clinician": "If caffeine makes your heart race or you have a heart condition, check with your clinician about how much is right for you.", "followup": "Want me to compare the days you log caffeine with your sleep?"},
-    {"id": "water_how_much", "title": "How much water", "concepts": [],
-     "triggers": ["how much water should i drink", "how many glasses of water", "daily water intake", "how much water do i need", "kitna paani peena chahiye", "how much water to drink"],
-     "answer": "There isn't one number for everyone. Many adults feel well on roughly 6 to 8 glasses of fluids a day, more in heat or when active.",
-     "tips": ["Pale yellow pee and rarely feeling thirsty are good signs.", "Spread it through the day instead of catching up at night.", "Tea, milk, soups, buttermilk and fruit all count a little."],
-     "clinician": "If you're very thirsty all the time, or passing a lot more urine than usual, that's worth mentioning to a clinician.", "followup": "I can show your logged water for this week if you like."},
-    {"id": "headache_comfort", "title": "Easing a headache", "concepts": ["headache"],
-     "triggers": ["headache tips", "headache relief", "relieve a headache", "ease a headache", "get rid of a headache", "headache remedy", "headache home remedy", "sar dard", "headache what to do"],
-     "answer": "Many everyday headaches ease with a few comfort steps: water, rest and a quieter, dimmer space.",
-     "tips": ["Sip water. Mild dehydration is a common trigger.", "Rest somewhere dim and quiet, and rest your eyes from screens.", "A cool or warm compress on the forehead or neck can feel good.", "Gentle neck and shoulder stretches if you've been hunched over a screen.", "Notice meals, sleep and stress: they're common triggers, and your logs can help spot yours."],
-     "clinician": "Please get medical help right away for a sudden severe headache, one with fever and a stiff neck, confusion, weakness, or after a head injury. See a clinician if headaches are frequent, getting worse, or waking you at night.", "followup": "Want me to look at your sleep and water on the days you've logged headaches?"},
-    {"id": "cramps_comfort", "title": "Easing period cramps", "concepts": ["cramps", "period", "pelvic_pain"],
-     "triggers": ["period cramps", "period pain", "menstrual cramps", "cramps relief", "ease cramps", "relieve cramps", "cramps tips", "periods mein dard", "period ka dard"],
-     "answer": "Cramps are common, and gentle comfort steps help many people.",
-     "tips": ["Warmth: a hot water bag or warm bath on your lower belly.", "Light movement like a slow walk or gentle stretching.", "Warm drinks and regular, easy-to-digest meals.", "Rest when you can; a lower-pressure day is allowed."],
-     "clinician": "If the pain is severe, stops you doing your day, is getting worse over time, or comes with very heavy bleeding or fainting, please see a clinician.", "followup": "Want to log how this period feels so I can compare it with your last ones?"},
-    {"id": "period_irregular", "title": "Irregular periods", "concepts": ["period"],
-     "triggers": ["irregular periods", "periods are irregular", "late period", "periods late", "missed period", "why is my period late", "periods irregular kyun", "period nahi aaya"],
-     "answer": "Cycles can shift with stress, sleep changes, travel, illness, weight changes and hormonal factors. A single late month is common. Tracking helps you see your own pattern.",
-     "tips": ["Log your period start dates so a pattern shows over a few months.", "Notice big changes in sleep, stress or routine around the time.", "Pregnancy is a common reason for a missed period if it's possible for you."],
-     "clinician": "If your periods stop for three months, are very irregular for several months, or come with severe pain, heavy bleeding or other worries, see a clinician.", "followup": "I can look at your logged cycle dates with you. Want that?"},
-    {"id": "eye_strain", "title": "Tired or strained eyes", "concepts": ["eye_strain", "dry_eyes"],
-     "triggers": ["eye strain", "tired eyes", "eyes hurt from screen", "dry eyes tips", "screen eyes", "20-20-20 rule", "eyes feel tired", "aankhein thak gayi", "screen time eyes"],
-     "answer": "Long screen time makes us blink less, which dries and tires the eyes. A few habits help.",
-     "tips": ["The 20-20-20 habit: every 20 minutes, look at something about 20 feet away for 20 seconds.", "Blink on purpose, and keep the screen a bit below eye level and an arm's length away.", "Match your screen brightness to the room, and reduce glare.", "Sleep and water help your eyes too."],
-     "clinician": "If your vision changes suddenly, or you have eye pain, redness that doesn't settle, or flashes of light, see an eye specialist soon.", "followup": "If you track screen time in Eyes, I can compare it with how your eyes feel."},
-    {"id": "posture_back", "title": "Back and neck from sitting", "concepts": ["back_pain", "muscle_pain"],
-     "triggers": ["back pain from sitting", "desk back pain", "posture tips", "sitting all day", "neck pain from phone", "back ache tips", "back pain tips", "kamar dard"],
-     "answer": "Long hours in one position stiffen muscles. Small, frequent changes help more than one big fix.",
-     "tips": ["Stand, stretch or walk for a minute or two every 30 to 45 minutes.", "Keep your feet flat, hips back in the chair, and the screen at eye level.", "Gentle walking is usually better than total rest for everyday back aches.", "Warmth on tight muscles can feel soothing."],
-     "clinician": "See a clinician promptly if back pain comes with numbness, weakness in a leg, trouble passing urine or stool, fever, or follows a fall or injury, or if it lasts more than a few weeks.", "followup": "Want a gentle two-minute stretch routine for a desk break?"},
-    {"id": "iron_foods", "title": "Iron-rich foods", "concepts": ["fatigue"],
-     "triggers": ["iron rich foods", "foods rich in iron", "how to increase iron", "iron foods", "iron in diet", "iron vegetarian", "iron ke liye kya khayein", "increase hemoglobin food"],
-     "answer": "Iron comes from many everyday Indian foods, and a little planning helps your body absorb it.",
-     "tips": ["Plant sources: lentils and dals, rajma, chana, spinach and other greens, jaggery in small amounts, dates, sesame, and fortified cereals.", "Add vitamin C with the meal (lemon, amla, guava, orange, tomato) to help absorption.", "Tea and coffee right with meals can reduce absorption: leave an hour between.", "Non-vegetarian sources such as eggs, fish and meat are well absorbed."],
-     "clinician": "Only a blood test can tell if you're low in iron. If you feel very tired, breathless or look pale, or have heavy periods, ask a clinician about testing before taking supplements.", "followup": "Want some simple iron-friendly meal ideas for your day?"},
-    {"id": "protein_veg", "title": "Protein from vegetarian food", "concepts": [],
-     "triggers": ["vegetarian protein", "protein sources vegetarian", "how to get protein", "protein rich foods", "protein for vegetarians", "high protein veg", "protein kaise milega", "veg protein"],
-     "answer": "There are plenty of good vegetarian protein sources, and mixing them through the day works well.",
-     "tips": ["Dals, chana, rajma, chole and sprouts.", "Paneer, curd, milk, buttermilk and eggs if you eat them.", "Soya chunks, tofu and tempeh.", "Nuts, seeds, peanuts and peanut butter in small portions.", "Pair grains with pulses (dal-chawal, roti-dal): together they complement each other."],
-     "clinician": null, "followup": "If you log meals, I can show roughly where your protein comes from. Want that?"},
-    {"id": "fibre_digestion", "title": "Fibre and gut comfort", "concepts": ["constipation", "bloating"],
-     "triggers": ["constipation tips", "relieve constipation", "how to avoid constipation", "bloating tips", "relieve bloating", "stop bloating", "gas bloating remedy", "easy digestion", "kabz ke liye", "pet fula"],
-     "answer": "Digestion likes regular habits: fibre, fluids, movement and unhurried meals.",
-     "tips": ["Add fibre slowly: fruit, vegetables, whole grains, oats and pulses.", "Drink enough fluids through the day.", "A gentle walk after meals helps things move.", "Eat slowly and chew well; large fizzy drinks and very rushed meals can add to bloating.", "Notice which foods leave you uncomfortable, and note them in your log."],
-     "clinician": "See a clinician if you see blood in your stool, have severe or constant belly pain, unexplained weight loss, black stools, or changes that last more than a few weeks.", "followup": "Want me to look for patterns between what you eat and how you feel?"},
-    {"id": "acidity", "title": "Acidity and heartburn habits", "concepts": [],
-     "triggers": ["acidity tips", "acidity relief", "heartburn tips", "reduce acidity", "acid reflux habits", "gas and acidity", "acidity kaise kam"],
-     "answer": "Everyday acidity often eases with eating habits.",
-     "tips": ["Smaller, regular meals instead of long gaps and big plates.", "Leave 2 to 3 hours between dinner and lying down.", "Notice triggers: very spicy, oily or fried food, strong tea or coffee, and large late meals.", "Raising the head of your bed a little can help at night."],
-     "clinician": "See a clinician if acidity is frequent, you have trouble swallowing, black stools, vomiting, unexplained weight loss, or chest pain (chest pain needs urgent care).", "followup": "I can note which meals come before your acidity days if you log them."},
-    {"id": "stress_breathing", "title": "Calming down quickly", "concepts": ["anxiety"],
-     "triggers": ["calm down quickly", "how to calm down", "breathing exercise", "breathing technique", "relax quickly", "reduce stress quickly", "stress relief tips", "how to relax", "tension kaise kam karu"],
-     "answer": "When you're wound up, slow breathing with a long breath out tells your body it can settle.",
-     "tips": ["Breathe in through the nose for about 4, out slowly through the mouth for about 6 to 8. Repeat for a minute or two.", "Press your feet into the floor and name 5 things you can see: it brings you back to the room.", "Step outside or splash cool water on your face.", "Tell one person you trust that you're feeling stretched."],
-     "clinician": "If worry or panic keeps coming back, or gets in the way of daily life, talking to a clinician or counsellor can really help.", "followup": "Want me to walk you through the breathing, step by step, right now?"},
-    {"id": "exam_stress", "title": "Study and exam stress", "concepts": ["anxiety"],
-     "triggers": ["exam stress", "exam anxiety", "stress before exams", "study stress", "nervous before exam", "board exam tips", "exam ka tension", "how to study without stress"],
-     "answer": "Exam pressure is real, and the basics protect your focus: sleep, food, movement and short breaks.",
-     "tips": ["Study in blocks of 25 to 45 minutes with 5-minute breaks.", "Protect your sleep. Memory and focus lean on it a lot.", "Eat regular meals and drink water; a short walk resets your head.", "Write tomorrow's top three tasks tonight so your mind can rest.", "Talk to someone if the worry feels too big to carry alone."],
-     "clinician": "If anxiety feels overwhelming, or you can't eat or sleep for days, please reach out to someone you trust or a counsellor.", "followup": "Want a simple study-and-rest plan for tomorrow?"},
-    {"id": "post_meal_walk", "title": "Walking after meals", "concepts": [],
-     "triggers": ["walk after eating", "walking after meals", "post meal walk", "walk after dinner", "should i walk after eating", "khana khane ke baad walk"],
-     "answer": "A gentle 10 to 15 minute walk after meals is a kind habit for digestion and steady energy for many people.",
-     "tips": ["Keep it easy: a stroll, not exercise.", "After dinner it also helps you wind down.", "If you feel unwell walking after a big meal, rest a bit first."],
-     "clinician": null, "followup": "Want me to track your walks and see how you feel on those days?"},
-    {"id": "walking_steps", "title": "Walking for health", "concepts": [],
-     "triggers": ["how many steps", "steps per day", "10000 steps", "is walking enough", "benefits of walking", "walking benefits", "daily walk"],
-     "answer": "Walking is a great place to start. Research suggests benefits begin well below 10,000 steps, and steady daily movement matters more than a magic number.",
-     "tips": ["Aim for a bit more than your usual, then build slowly.", "Short walks add up: a few 10-minute walks count.", "Pair it with something you enjoy: a call, a podcast, a friend."],
-     "clinician": "If you have a heart condition, chest pain on effort, or other health worries, check with a clinician about the right level of activity.", "followup": "I can show your activity this week if you're logging it."},
-    {"id": "exercise_motivation", "title": "Getting started with exercise", "concepts": [],
-     "triggers": ["how to start exercising", "start working out", "get motivated to exercise", "exercise motivation", "workout motivation", "how to start a routine", "exercise shuru kaise"],
-     "answer": "The easiest way to start is smaller than you think, at a time you already have.",
-     "tips": ["Pick something you don't dread: walking, dancing, cycling, yoga, a sport.", "Start with 10 minutes, 3 days a week, and add a little each week.", "Attach it to something you already do (after chai, before a shower).", "Plan a gentle day for tired days: showing up still counts."],
-     "clinician": "If you've been inactive for a long time, have a health condition, or feel chest pain or dizziness with effort, check with a clinician first.", "followup": "Want me to help you plan a gentle first week?"},
-    {"id": "afternoon_slump", "title": "Low energy in the afternoon", "concepts": ["fatigue"],
-     "triggers": ["afternoon slump", "tired in the afternoon", "sleepy after lunch", "low energy afternoon", "how to boost energy", "boost my energy", "more energy", "feel sleepy after lunch", "energy kaise badhaye"],
-     "answer": "An afternoon dip is very common. It's partly the body's rhythm and partly what and when we eat.",
-     "tips": ["Get daylight and a short walk after lunch.", "Include protein and fibre at lunch, and go lighter on very heavy or sugary meals.", "Drink water: even mild dehydration can feel like tiredness.", "A 10 to 20 minute nap early in the afternoon, if you can, but not too late.", "Keep your sleep steady; it drives your energy more than anything."],
-     "clinician": "If you're tired most days despite good sleep, or it comes with other changes (weight, mood, breathlessness, heavy periods), a check-up is worth it.", "followup": "I can compare your energy days with your sleep and water. Want to look?"},
-    {"id": "screen_before_bed", "title": "Screens at night", "concepts": ["insomnia"],
-     "triggers": ["phone before bed", "screens before bed", "scroll before sleep", "blue light sleep", "night mode helps", "mobile before sleeping", "phone in bed"],
-     "answer": "Bright screens and exciting content late at night can push sleep later. The content often matters as much as the light.",
-     "tips": ["Aim for a screen-free half hour before bed.", "Charge your phone across the room so it isn't the last and first thing you touch.", "If you use it, dim it and pick something calm.", "Replace the habit with a book, a stretch or music."],
-     "clinician": null, "followup": "Want me to compare the nights you log late screens with how you slept?"},
-    {"id": "cold_comfort", "title": "Comfort care for a cold", "concepts": ["cough", "sore_throat"],
-     "triggers": ["cold tips", "common cold what helps", "cold remedy", "sore throat remedy", "sore throat relief", "cough home remedy", "relieve a cough", "cold and cough tips", "sardi khansi", "gala kharab"],
-     "answer": "Most colds settle on their own in a week or so. Comfort care helps while your body does the work.",
-     "tips": ["Rest and keep up warm fluids: water, soups, tea with honey (not for babies under one year).", "Steam or a warm shower can ease a blocked nose; gargling warm salt water can soothe a sore throat.", "Sleep with your head a little raised if you're blocked at night.", "Wash hands often and rest at home so it doesn't spread."],
-     "clinician": "See a clinician if you have trouble breathing, chest pain, a fever that lasts more than a few days, a very painful throat that makes swallowing hard, symptoms that last more than 10 days, or you have a long-term condition.", "followup": "Want me to keep a short log of how you feel each day?"},
-    {"id": "nausea_comfort", "title": "Settling a queasy stomach", "concepts": ["nausea"],
-     "triggers": ["upset stomach tips", "feeling nauseous what helps", "nausea relief", "settle my stomach", "queasy stomach", "ulti jaisa lag raha"],
-     "answer": "For a mild queasy stomach, go gently: small sips, plain food and rest.",
-     "tips": ["Small sips of water, ORS-style fluids or clear soups.", "Plain, bland foods when you're ready: rice, toast, banana, curd.", "Avoid very oily, spicy food for a day.", "Fresh air and resting upright can help."],
-     "clinician": "Get medical help if you can't keep fluids down, see blood in vomit or stool, have severe belly pain, signs of dehydration (very dark urine, dizziness), or it lasts more than a couple of days.", "followup": "Do you want me to check in on you later today?"},
-    {"id": "pms_mood", "title": "Mood before periods", "concepts": ["period"],
-     "triggers": ["pms mood", "mood swings before period", "irritable before period", "pms tips", "period mood swings", "pms symptoms help", "period se pehle chidchidapan"],
-     "answer": "Many people notice mood, sleep and energy shift in the days before a period. Seeing your own pattern makes it easier to plan around.",
-     "tips": ["Log mood and sleep for a few cycles to see when your harder days land.", "Keep regular meals, steady sleep and gentle movement in those days.", "Go easy on caffeine and alcohol if they make you jittery.", "Tell people close to you so they can be kind about it."],
-     "clinician": "If mood changes are severe, make you feel hopeless, or disrupt your life each month, please talk to a clinician: there is effective help.", "followup": "I can compare your logged mood across your cycle once there are a few cycles. Want me to?"},
-    {"id": "hair_fall", "title": "Hair fall", "concepts": [],
-     "triggers": ["hair fall", "hair loss tips", "hair falling", "reduce hair fall", "baal jhad rahe", "baal girna"],
-     "answer": "Some shedding every day is normal. Hair often sheds more after stress, illness, poor sleep or big diet changes, a few weeks to months later.",
-     "tips": ["Eat regular meals with protein, iron-rich foods and fruit and vegetables.", "Be gentle: avoid tight styles, harsh heat and rough towelling.", "Protect your sleep and manage stress where you can.", "Give changes a few months: hair cycles are slow."],
-     "clinician": "See a clinician or dermatologist if shedding is sudden or heavy, you see bald patches, or it comes with other changes like tiredness, period changes or weight changes. Blood tests can check for causes.", "followup": "Want a simple hair-friendly eating plan?"},
-    {"id": "skin_acne", "title": "Everyday acne care", "concepts": [],
-     "triggers": ["acne tips", "pimples tips", "how to reduce pimples", "acne care", "skin care for acne", "pimple kaise hataye", "face pe pimples"],
-     "answer": "Gentle and steady wins with acne.",
-     "tips": ["Wash your face twice a day with a mild cleanser, and don't scrub hard.", "Don't pick or squeeze: it can scar.", "Use non-oily moisturiser and sunscreen.", "Change pillowcases and clean your phone screen regularly.", "Notice patterns with sleep, stress, and your cycle."],
-     "clinician": "See a dermatologist if acne is painful, deep, leaving scars, or isn't improving after several weeks of gentle care.", "followup": "Want me to look at your logs for patterns on breakout days?"},
-    {"id": "dark_circles", "title": "Dark circles", "concepts": [],
-     "triggers": ["dark circles", "under eye circles", "dark circles tips", "aankhon ke neeche kale", "remove dark circles"],
-     "answer": "Dark circles often run in families, and sleep, screens, dehydration, allergies and tiredness can make them stand out more.",
-     "tips": ["Get steady sleep and drink enough water.", "A cool compress can freshen tired eyes.", "Use sunscreen around the eyes.", "If allergies make you rub your eyes, treating the allergy helps."],
-     "clinician": "If circles appear suddenly with swelling, or you have other worries, ask a clinician.", "followup": "Want me to check your sleep logs for the last week?"},
-    {"id": "sunlight_vitd", "title": "Sunlight and vitamin D", "concepts": [],
-     "triggers": ["vitamin d sunlight", "how much sun", "sunlight for vitamin d", "vitamin d foods", "get vitamin d", "dhoop vitamin d"],
-     "answer": "Sensible time outdoors helps, and some foods contribute a little. Many people in cities still run low, so testing is the only way to know.",
-     "tips": ["Short time outside in daylight most days, with arms and face exposed when it's comfortable, is a gentle habit.", "Foods: eggs, fish, fortified milk and cereals, and mushrooms exposed to sun.", "Use sunscreen for long spells outdoors."],
-     "clinician": "Ask a clinician about a blood test before starting supplements, and about the right amount for you.", "followup": "Want me to remind you to get some daylight each day?"},
-    {"id": "healthy_snacks", "title": "Easy healthy snacks", "concepts": [],
-     "triggers": ["healthy snack ideas", "healthy snacks", "what to snack on", "snack ideas", "evening snack healthy", "healthy snack options"],
-     "answer": "Aim for snacks with some protein or fibre so they hold you till the next meal.",
-     "tips": ["Roasted chana, makhana or peanuts.", "Fruit with a few nuts, or curd with fruit.", "Sprouts chaat, boiled egg, paneer cubes, or a vegetable sandwich.", "Buttermilk, coconut water or nimbu paani instead of sugary drinks."],
-     "clinician": null, "followup": "Want ideas matched to your day, like a pre-workout or an evening snack?"},
-    {"id": "alcohol_smoking", "title": "Cutting down alcohol or smoking", "concepts": [],
-     "triggers": ["quit smoking tips", "how to quit smoking", "cut down alcohol", "reduce drinking", "stop drinking alcohol tips", "cigarette chhodna", "smoking kaise chhode"],
-     "answer": "Wanting to cut down is a strong first step, and plans work better than willpower alone.",
-     "tips": ["Pick a start date and tell someone supportive.", "Notice your triggers (time, people, stress) and plan something else for those moments.", "Small steps count: fewer, later, then none.", "Expect cravings to pass in minutes: breathe, drink water, walk."],
-     "clinician": "A clinician can offer real support, including medicines and counselling, that make quitting much more likely. Stopping heavy drinking suddenly can be risky, so please get medical advice first.", "followup": "Would you like to set a gentle goal together?"},
-    {"id": "loneliness_connection", "title": "Feeling disconnected", "concepts": ["loneliness"],
-     "triggers": ["how to feel less lonely", "make friends", "feel more connected", "tips for loneliness", "feeling lonely tips", "akelapan kaise door"],
-     "answer": "Connection grows from small, repeated moments more than big gestures.",
-     "tips": ["Send one low-pressure message to someone you like: a meme, a photo, a how-are-you.", "Join something regular: a class, a walk group, a hobby circle, a volunteer shift.", "Pick up the phone for a short call instead of texting.", "Be kind to yourself on slow days."],
-     "clinician": "If loneliness is heavy or comes with a low mood that doesn't lift, please talk to someone you trust or a counsellor.", "followup": "Want to try a small reach-out together right now?"}
-  ]
+ "_note": "General self-care and lifestyle guidance for common, low-risk questions. No doses, no diagnoses, no medicine advice. Written plainly and checked for what a careful clinician would not object to; every card names when to see a clinician. These are listed in docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md (own-brain cards) as awaiting clinician sign-off.",
+ "cards": [
+  {
+   "id": "sleep_cant_sleep",
+   "title": "Falling asleep",
+   "concepts": [
+    "insomnia"
+   ],
+   "triggers": [
+    "can't sleep",
+    "cant sleep",
+    "cannot sleep",
+    "trouble sleeping",
+    "trouble falling asleep",
+    "how to fall asleep",
+    "fall asleep faster",
+    "neend nahi aa rahi",
+    "neend nahi aati",
+    "sleep faster"
+   ],
+   "answer": "A few small habits help most people settle: the body likes a steady rhythm and a calm, dim runway into bed.",
+   "tips": [
+    "Keep a fixed wake-up time, even after a bad night. It anchors the whole rhythm.",
+    "Dim the lights and put screens away for 30 to 60 minutes before bed.",
+    "Keep caffeine to the morning and early afternoon.",
+    "If you're awake and fretting after about 20 minutes, get up, do something quiet in low light, and go back when sleepy.",
+    "A few slow breaths with a longer breath out can soften a busy mind."
+   ],
+   "clinician": "If sleep trouble lasts more than a few weeks, or it's affecting your days, a clinician can help look for the cause.",
+   "followup": "Want me to keep an eye on your sleep logs for a few nights and see what lines up?"
+  },
+  {
+   "id": "sleep_how_much",
+   "title": "How much sleep",
+   "concepts": [],
+   "triggers": [
+    "how much sleep do i need",
+    "how many hours of sleep",
+    "hours of sleep should",
+    "how much sleep is enough",
+    "kitni neend zaroori"
+   ],
+   "answer": "Most adults do well on about 7 to 9 hours. Teenagers usually need more, and some adults feel fine on a little less. How rested you feel matters more than the number.",
+   "tips": [
+    "Notice how you feel at mid-morning: steady energy is a good sign.",
+    "A regular bedtime and wake time often helps more than extra hours on weekends."
+   ],
+   "clinician": null,
+   "followup": "I can show you your own average if you've been logging sleep. Want to see it?"
+  },
+  {
+   "id": "caffeine",
+   "title": "Coffee, chai and caffeine",
+   "concepts": [],
+   "triggers": [
+    "is coffee bad",
+    "how much coffee",
+    "how much caffeine",
+    "caffeine and sleep",
+    "too much chai",
+    "too much coffee",
+    "chai or coffee",
+    "coffee affect sleep"
+   ],
+   "answer": "For most healthy adults, a few cups of tea or coffee a day is fine. Caffeine stays in the body for hours, so the main trick is timing.",
+   "tips": [
+    "Keep it to the morning and early afternoon if your sleep is light.",
+    "If you feel jittery, fast-hearted or anxious after it, try a smaller cup or a gap between cups.",
+    "Water alongside it keeps you comfortable through the day."
+   ],
+   "clinician": "If caffeine makes your heart race or you have a heart condition, check with your clinician about how much is right for you.",
+   "followup": "Want me to compare the days you log caffeine with your sleep?"
+  },
+  {
+   "id": "water_how_much",
+   "title": "How much water",
+   "concepts": [],
+   "triggers": [
+    "how much water should i drink",
+    "how many glasses of water",
+    "daily water intake",
+    "how much water do i need",
+    "kitna paani peena chahiye",
+    "how much water to drink"
+   ],
+   "answer": "There isn't one number for everyone. Many adults feel well on roughly 6 to 8 glasses of fluids a day, more in heat or when active.",
+   "tips": [
+    "Pale yellow pee and rarely feeling thirsty are good signs.",
+    "Spread it through the day instead of catching up at night.",
+    "Tea, milk, soups, buttermilk and fruit all count a little."
+   ],
+   "clinician": "If you're very thirsty all the time, or passing a lot more urine than usual, that's worth mentioning to a clinician.",
+   "followup": "I can show your logged water for this week if you like."
+  },
+  {
+   "id": "headache_comfort",
+   "title": "Easing a headache",
+   "concepts": [
+    "headache"
+   ],
+   "triggers": [
+    "headache tips",
+    "headache relief",
+    "relieve a headache",
+    "ease a headache",
+    "get rid of a headache",
+    "headache remedy",
+    "headache home remedy",
+    "sar dard",
+    "headache what to do"
+   ],
+   "answer": "Many everyday headaches ease with a few comfort steps: water, rest and a quieter, dimmer space.",
+   "tips": [
+    "Sip water. Mild dehydration is a common trigger.",
+    "Rest somewhere dim and quiet, and rest your eyes from screens.",
+    "A cool or warm compress on the forehead or neck can feel good.",
+    "Gentle neck and shoulder stretches if you've been hunched over a screen.",
+    "Notice meals, sleep and stress: they're common triggers, and your logs can help spot yours."
+   ],
+   "clinician": "Please get medical help right away for a sudden severe headache, one with fever and a stiff neck, confusion, weakness, or after a head injury. See a clinician if headaches are frequent, getting worse, or waking you at night.",
+   "followup": "Want me to look at your sleep and water on the days you've logged headaches?"
+  },
+  {
+   "id": "cramps_comfort",
+   "title": "Easing period cramps",
+   "concepts": [
+    "cramps",
+    "period",
+    "pelvic_pain"
+   ],
+   "triggers": [
+    "period cramps",
+    "period pain",
+    "menstrual cramps",
+    "cramps relief",
+    "ease cramps",
+    "relieve cramps",
+    "cramps tips",
+    "periods mein dard",
+    "period ka dard"
+   ],
+   "answer": "Cramps are common, and gentle comfort steps help many people.",
+   "tips": [
+    "Warmth: a hot water bag or warm bath on your lower belly.",
+    "Light movement like a slow walk or gentle stretching.",
+    "Warm drinks and regular, easy-to-digest meals.",
+    "Rest when you can; a lower-pressure day is allowed."
+   ],
+   "clinician": "If the pain is severe, stops you doing your day, is getting worse over time, or comes with very heavy bleeding or fainting, please see a clinician.",
+   "followup": "Want to log how this period feels so I can compare it with your last ones?"
+  },
+  {
+   "id": "period_irregular",
+   "title": "Irregular periods",
+   "concepts": [
+    "period"
+   ],
+   "triggers": [
+    "irregular periods",
+    "periods are irregular",
+    "late period",
+    "periods late",
+    "missed period",
+    "why is my period late",
+    "periods irregular kyun",
+    "period nahi aaya"
+   ],
+   "answer": "Cycles can shift with stress, sleep changes, travel, illness, weight changes and hormonal factors. A single late month is common. Tracking helps you see your own pattern.",
+   "tips": [
+    "Log your period start dates so a pattern shows over a few months.",
+    "Notice big changes in sleep, stress or routine around the time.",
+    "Pregnancy is a common reason for a missed period if it's possible for you."
+   ],
+   "clinician": "If your periods stop for three months, are very irregular for several months, or come with severe pain, heavy bleeding or other worries, see a clinician.",
+   "followup": "I can look at your logged cycle dates with you. Want that?"
+  },
+  {
+   "id": "eye_strain",
+   "title": "Tired or strained eyes",
+   "concepts": [
+    "eye_strain",
+    "dry_eyes"
+   ],
+   "triggers": [
+    "eye strain",
+    "tired eyes",
+    "eyes hurt from screen",
+    "dry eyes tips",
+    "screen eyes",
+    "20-20-20 rule",
+    "eyes feel tired",
+    "aankhein thak gayi",
+    "screen time eyes"
+   ],
+   "answer": "Long screen time makes us blink less, which dries and tires the eyes. A few habits help.",
+   "tips": [
+    "The 20-20-20 habit: every 20 minutes, look at something about 20 feet away for 20 seconds.",
+    "Blink on purpose, and keep the screen a bit below eye level and an arm's length away.",
+    "Match your screen brightness to the room, and reduce glare.",
+    "Sleep and water help your eyes too."
+   ],
+   "clinician": "If your vision changes suddenly, or you have eye pain, redness that doesn't settle, or flashes of light, see an eye specialist soon.",
+   "followup": "If you track screen time in Eyes, I can compare it with how your eyes feel."
+  },
+  {
+   "id": "posture_back",
+   "title": "Back and neck from sitting",
+   "concepts": [
+    "back_pain",
+    "muscle_pain"
+   ],
+   "triggers": [
+    "back pain from sitting",
+    "desk back pain",
+    "posture tips",
+    "sitting all day",
+    "neck pain from phone",
+    "back ache tips",
+    "back pain tips",
+    "kamar dard",
+    "improve my posture",
+    "better posture",
+    "stretch my back",
+    "back stretches"
+   ],
+   "answer": "Long hours in one position stiffen muscles. Small, frequent changes help more than one big fix.",
+   "tips": [
+    "Stand, stretch or walk for a minute or two every 30 to 45 minutes.",
+    "Keep your feet flat, hips back in the chair, and the screen at eye level.",
+    "Gentle walking is usually better than total rest for everyday back aches.",
+    "Warmth on tight muscles can feel soothing."
+   ],
+   "clinician": "See a clinician promptly if back pain comes with numbness, weakness in a leg, trouble passing urine or stool, fever, or follows a fall or injury, or if it lasts more than a few weeks.",
+   "followup": "Want a gentle two-minute stretch routine for a desk break?"
+  },
+  {
+   "id": "iron_foods",
+   "title": "Iron-rich foods",
+   "concepts": [
+    "fatigue"
+   ],
+   "triggers": [
+    "iron rich foods",
+    "foods rich in iron",
+    "how to increase iron",
+    "iron foods",
+    "iron in diet",
+    "iron vegetarian",
+    "iron ke liye kya khayein",
+    "increase hemoglobin food"
+   ],
+   "answer": "Iron comes from many everyday Indian foods, and a little planning helps your body absorb it.",
+   "tips": [
+    "Plant sources: lentils and dals, rajma, chana, spinach and other greens, jaggery in small amounts, dates, sesame, and fortified cereals.",
+    "Add vitamin C with the meal (lemon, amla, guava, orange, tomato) to help absorption.",
+    "Tea and coffee right with meals can reduce absorption: leave an hour between.",
+    "Non-vegetarian sources such as eggs, fish and meat are well absorbed."
+   ],
+   "clinician": "Only a blood test can tell if you're low in iron. If you feel very tired, breathless or look pale, or have heavy periods, ask a clinician about testing before taking supplements.",
+   "followup": "Want some simple iron-friendly meal ideas for your day?"
+  },
+  {
+   "id": "protein_veg",
+   "title": "Protein from vegetarian food",
+   "concepts": [],
+   "triggers": [
+    "vegetarian protein",
+    "protein sources vegetarian",
+    "how to get protein",
+    "protein rich foods",
+    "protein for vegetarians",
+    "high protein veg",
+    "protein kaise milega",
+    "veg protein"
+   ],
+   "answer": "There are plenty of good vegetarian protein sources, and mixing them through the day works well.",
+   "tips": [
+    "Dals, chana, rajma, chole and sprouts.",
+    "Paneer, curd, milk, buttermilk and eggs if you eat them.",
+    "Soya chunks, tofu and tempeh.",
+    "Nuts, seeds, peanuts and peanut butter in small portions.",
+    "Pair grains with pulses (dal-chawal, roti-dal): together they complement each other."
+   ],
+   "clinician": null,
+   "followup": "If you log meals, I can show roughly where your protein comes from. Want that?"
+  },
+  {
+   "id": "fibre_digestion",
+   "title": "Fibre and gut comfort",
+   "concepts": [
+    "constipation",
+    "bloating"
+   ],
+   "triggers": [
+    "constipation tips",
+    "relieve constipation",
+    "how to avoid constipation",
+    "bloating tips",
+    "relieve bloating",
+    "stop bloating",
+    "gas bloating remedy",
+    "easy digestion",
+    "kabz ke liye",
+    "pet fula"
+   ],
+   "answer": "Digestion likes regular habits: fibre, fluids, movement and unhurried meals.",
+   "tips": [
+    "Add fibre slowly: fruit, vegetables, whole grains, oats and pulses.",
+    "Drink enough fluids through the day.",
+    "A gentle walk after meals helps things move.",
+    "Eat slowly and chew well; large fizzy drinks and very rushed meals can add to bloating.",
+    "Notice which foods leave you uncomfortable, and note them in your log."
+   ],
+   "clinician": "See a clinician if you see blood in your stool, have severe or constant belly pain, unexplained weight loss, black stools, or changes that last more than a few weeks.",
+   "followup": "Want me to look for patterns between what you eat and how you feel?"
+  },
+  {
+   "id": "acidity",
+   "title": "Acidity and heartburn habits",
+   "concepts": [],
+   "triggers": [
+    "acidity tips",
+    "acidity relief",
+    "heartburn tips",
+    "reduce acidity",
+    "acid reflux habits",
+    "gas and acidity",
+    "acidity kaise kam"
+   ],
+   "answer": "Everyday acidity often eases with eating habits.",
+   "tips": [
+    "Smaller, regular meals instead of long gaps and big plates.",
+    "Leave 2 to 3 hours between dinner and lying down.",
+    "Notice triggers: very spicy, oily or fried food, strong tea or coffee, and large late meals.",
+    "Raising the head of your bed a little can help at night."
+   ],
+   "clinician": "See a clinician if acidity is frequent, you have trouble swallowing, black stools, vomiting, unexplained weight loss, or chest pain (chest pain needs urgent care).",
+   "followup": "I can note which meals come before your acidity days if you log them."
+  },
+  {
+   "id": "stress_breathing",
+   "title": "Calming down quickly",
+   "concepts": [
+    "anxiety"
+   ],
+   "triggers": [
+    "calm down quickly",
+    "how to calm down",
+    "breathing exercise",
+    "breathing technique",
+    "relax quickly",
+    "reduce stress quickly",
+    "stress relief tips",
+    "how to relax",
+    "tension kaise kam karu"
+   ],
+   "answer": "When you're wound up, slow breathing with a long breath out tells your body it can settle.",
+   "tips": [
+    "Breathe in through the nose for about 4, out slowly through the mouth for about 6 to 8. Repeat for a minute or two.",
+    "Press your feet into the floor and name 5 things you can see: it brings you back to the room.",
+    "Step outside or splash cool water on your face.",
+    "Tell one person you trust that you're feeling stretched."
+   ],
+   "clinician": "If worry or panic keeps coming back, or gets in the way of daily life, talking to a clinician or counsellor can really help.",
+   "followup": "Want me to walk you through the breathing, step by step, right now?"
+  },
+  {
+   "id": "exam_stress",
+   "title": "Study and exam stress",
+   "concepts": [
+    "anxiety"
+   ],
+   "triggers": [
+    "exam stress",
+    "exam anxiety",
+    "stress before exams",
+    "study stress",
+    "nervous before exam",
+    "board exam tips",
+    "exam ka tension",
+    "how to study without stress"
+   ],
+   "answer": "Exam pressure is real, and the basics protect your focus: sleep, food, movement and short breaks.",
+   "tips": [
+    "Study in blocks of 25 to 45 minutes with 5-minute breaks.",
+    "Protect your sleep. Memory and focus lean on it a lot.",
+    "Eat regular meals and drink water; a short walk resets your head.",
+    "Write tomorrow's top three tasks tonight so your mind can rest.",
+    "Talk to someone if the worry feels too big to carry alone."
+   ],
+   "clinician": "If anxiety feels overwhelming, or you can't eat or sleep for days, please reach out to someone you trust or a counsellor.",
+   "followup": "Want a simple study-and-rest plan for tomorrow?"
+  },
+  {
+   "id": "post_meal_walk",
+   "title": "Walking after meals",
+   "concepts": [],
+   "triggers": [
+    "walk after eating",
+    "walking after meals",
+    "post meal walk",
+    "walk after dinner",
+    "should i walk after eating",
+    "khana khane ke baad walk"
+   ],
+   "answer": "A gentle 10 to 15 minute walk after meals is a kind habit for digestion and steady energy for many people.",
+   "tips": [
+    "Keep it easy: a stroll, not exercise.",
+    "After dinner it also helps you wind down.",
+    "If you feel unwell walking after a big meal, rest a bit first."
+   ],
+   "clinician": null,
+   "followup": "Want me to track your walks and see how you feel on those days?"
+  },
+  {
+   "id": "walking_steps",
+   "title": "Walking for health",
+   "concepts": [],
+   "triggers": [
+    "how many steps",
+    "steps per day",
+    "10000 steps",
+    "is walking enough",
+    "benefits of walking",
+    "walking benefits",
+    "daily walk"
+   ],
+   "answer": "Walking is a great place to start. Research suggests benefits begin well below 10,000 steps, and steady daily movement matters more than a magic number.",
+   "tips": [
+    "Aim for a bit more than your usual, then build slowly.",
+    "Short walks add up: a few 10-minute walks count.",
+    "Pair it with something you enjoy: a call, a podcast, a friend."
+   ],
+   "clinician": "If you have a heart condition, chest pain on effort, or other health worries, check with a clinician about the right level of activity.",
+   "followup": "I can show your activity this week if you're logging it."
+  },
+  {
+   "id": "exercise_motivation",
+   "title": "Getting started with exercise",
+   "concepts": [],
+   "triggers": [
+    "how to start exercising",
+    "start working out",
+    "get motivated to exercise",
+    "exercise motivation",
+    "workout motivation",
+    "how to start a routine",
+    "exercise shuru kaise"
+   ],
+   "answer": "The easiest way to start is smaller than you think, at a time you already have.",
+   "tips": [
+    "Pick something you don't dread: walking, dancing, cycling, yoga, a sport.",
+    "Start with 10 minutes, 3 days a week, and add a little each week.",
+    "Attach it to something you already do (after chai, before a shower).",
+    "Plan a gentle day for tired days: showing up still counts."
+   ],
+   "clinician": "If you've been inactive for a long time, have a health condition, or feel chest pain or dizziness with effort, check with a clinician first.",
+   "followup": "Want me to help you plan a gentle first week?"
+  },
+  {
+   "id": "afternoon_slump",
+   "title": "Low energy in the afternoon",
+   "concepts": [
+    "fatigue"
+   ],
+   "triggers": [
+    "afternoon slump",
+    "tired in the afternoon",
+    "sleepy after lunch",
+    "low energy afternoon",
+    "how to boost energy",
+    "boost my energy",
+    "more energy",
+    "feel sleepy after lunch",
+    "energy kaise badhaye"
+   ],
+   "answer": "An afternoon dip is very common. It's partly the body's rhythm and partly what and when we eat.",
+   "tips": [
+    "Get daylight and a short walk after lunch.",
+    "Include protein and fibre at lunch, and go lighter on very heavy or sugary meals.",
+    "Drink water: even mild dehydration can feel like tiredness.",
+    "A 10 to 20 minute nap early in the afternoon, if you can, but not too late.",
+    "Keep your sleep steady; it drives your energy more than anything."
+   ],
+   "clinician": "If you're tired most days despite good sleep, or it comes with other changes (weight, mood, breathlessness, heavy periods), a check-up is worth it.",
+   "followup": "I can compare your energy days with your sleep and water. Want to look?"
+  },
+  {
+   "id": "screen_before_bed",
+   "title": "Screens at night",
+   "concepts": [
+    "insomnia"
+   ],
+   "triggers": [
+    "phone before bed",
+    "screens before bed",
+    "scroll before sleep",
+    "blue light sleep",
+    "night mode helps",
+    "mobile before sleeping",
+    "phone in bed"
+   ],
+   "answer": "Bright screens and exciting content late at night can push sleep later. The content often matters as much as the light.",
+   "tips": [
+    "Aim for a screen-free half hour before bed.",
+    "Charge your phone across the room so it isn't the last and first thing you touch.",
+    "If you use it, dim it and pick something calm.",
+    "Replace the habit with a book, a stretch or music."
+   ],
+   "clinician": null,
+   "followup": "Want me to compare the nights you log late screens with how you slept?"
+  },
+  {
+   "id": "cold_comfort",
+   "title": "Comfort care for a cold",
+   "concepts": [
+    "cough",
+    "sore_throat"
+   ],
+   "triggers": [
+    "cold tips",
+    "common cold what helps",
+    "cold remedy",
+    "sore throat remedy",
+    "sore throat relief",
+    "cough home remedy",
+    "relieve a cough",
+    "cold and cough tips",
+    "sardi khansi",
+    "gala kharab"
+   ],
+   "answer": "Most colds settle on their own in a week or so. Comfort care helps while your body does the work.",
+   "tips": [
+    "Rest and keep up warm fluids: water, soups, tea with honey (not for babies under one year).",
+    "Steam or a warm shower can ease a blocked nose; gargling warm salt water can soothe a sore throat.",
+    "Sleep with your head a little raised if you're blocked at night.",
+    "Wash hands often and rest at home so it doesn't spread."
+   ],
+   "clinician": "See a clinician if you have trouble breathing, chest pain, a fever that lasts more than a few days, a very painful throat that makes swallowing hard, symptoms that last more than 10 days, or you have a long-term condition.",
+   "followup": "Want me to keep a short log of how you feel each day?"
+  },
+  {
+   "id": "nausea_comfort",
+   "title": "Settling a queasy stomach",
+   "concepts": [
+    "nausea"
+   ],
+   "triggers": [
+    "upset stomach tips",
+    "feeling nauseous what helps",
+    "nausea relief",
+    "settle my stomach",
+    "queasy stomach",
+    "ulti jaisa lag raha"
+   ],
+   "answer": "For a mild queasy stomach, go gently: small sips, plain food and rest.",
+   "tips": [
+    "Small sips of water, ORS-style fluids or clear soups.",
+    "Plain, bland foods when you're ready: rice, toast, banana, curd.",
+    "Avoid very oily, spicy food for a day.",
+    "Fresh air and resting upright can help."
+   ],
+   "clinician": "Get medical help if you can't keep fluids down, see blood in vomit or stool, have severe belly pain, signs of dehydration (very dark urine, dizziness), or it lasts more than a couple of days.",
+   "followup": "Do you want me to check in on you later today?"
+  },
+  {
+   "id": "pms_mood",
+   "title": "Mood before periods",
+   "concepts": [
+    "period"
+   ],
+   "triggers": [
+    "pms mood",
+    "mood swings before period",
+    "irritable before period",
+    "pms tips",
+    "period mood swings",
+    "pms symptoms help",
+    "period se pehle chidchidapan"
+   ],
+   "answer": "Many people notice mood, sleep and energy shift in the days before a period. Seeing your own pattern makes it easier to plan around.",
+   "tips": [
+    "Log mood and sleep for a few cycles to see when your harder days land.",
+    "Keep regular meals, steady sleep and gentle movement in those days.",
+    "Go easy on caffeine and alcohol if they make you jittery.",
+    "Tell people close to you so they can be kind about it."
+   ],
+   "clinician": "If mood changes are severe, make you feel hopeless, or disrupt your life each month, please talk to a clinician: there is effective help.",
+   "followup": "I can compare your logged mood across your cycle once there are a few cycles. Want me to?"
+  },
+  {
+   "id": "hair_fall",
+   "title": "Hair fall",
+   "concepts": [],
+   "triggers": [
+    "hair fall",
+    "hair loss tips",
+    "hair falling",
+    "reduce hair fall",
+    "baal jhad rahe",
+    "baal girna"
+   ],
+   "answer": "Some shedding every day is normal. Hair often sheds more after stress, illness, poor sleep or big diet changes, a few weeks to months later.",
+   "tips": [
+    "Eat regular meals with protein, iron-rich foods and fruit and vegetables.",
+    "Be gentle: avoid tight styles, harsh heat and rough towelling.",
+    "Protect your sleep and manage stress where you can.",
+    "Give changes a few months: hair cycles are slow."
+   ],
+   "clinician": "See a clinician or dermatologist if shedding is sudden or heavy, you see bald patches, or it comes with other changes like tiredness, period changes or weight changes. Blood tests can check for causes.",
+   "followup": "Want a simple hair-friendly eating plan?"
+  },
+  {
+   "id": "skin_acne",
+   "title": "Everyday acne care",
+   "concepts": [],
+   "triggers": [
+    "acne tips",
+    "pimples tips",
+    "how to reduce pimples",
+    "acne care",
+    "skin care for acne",
+    "pimple kaise hataye",
+    "face pe pimples"
+   ],
+   "answer": "Gentle and steady wins with acne.",
+   "tips": [
+    "Wash your face twice a day with a mild cleanser, and don't scrub hard.",
+    "Don't pick or squeeze: it can scar.",
+    "Use non-oily moisturiser and sunscreen.",
+    "Change pillowcases and clean your phone screen regularly.",
+    "Notice patterns with sleep, stress, and your cycle."
+   ],
+   "clinician": "See a dermatologist if acne is painful, deep, leaving scars, or isn't improving after several weeks of gentle care.",
+   "followup": "Want me to look at your logs for patterns on breakout days?"
+  },
+  {
+   "id": "dark_circles",
+   "title": "Dark circles",
+   "concepts": [],
+   "triggers": [
+    "dark circles",
+    "under eye circles",
+    "dark circles tips",
+    "aankhon ke neeche kale",
+    "remove dark circles"
+   ],
+   "answer": "Dark circles often run in families, and sleep, screens, dehydration, allergies and tiredness can make them stand out more.",
+   "tips": [
+    "Get steady sleep and drink enough water.",
+    "A cool compress can freshen tired eyes.",
+    "Use sunscreen around the eyes.",
+    "If allergies make you rub your eyes, treating the allergy helps."
+   ],
+   "clinician": "If circles appear suddenly with swelling, or you have other worries, ask a clinician.",
+   "followup": "Want me to check your sleep logs for the last week?"
+  },
+  {
+   "id": "sunlight_vitd",
+   "title": "Sunlight and vitamin D",
+   "concepts": [],
+   "triggers": [
+    "vitamin d sunlight",
+    "how much sun",
+    "sunlight for vitamin d",
+    "vitamin d foods",
+    "get vitamin d",
+    "dhoop vitamin d"
+   ],
+   "answer": "Sensible time outdoors helps, and some foods contribute a little. Many people in cities still run low, so testing is the only way to know.",
+   "tips": [
+    "Short time outside in daylight most days, with arms and face exposed when it's comfortable, is a gentle habit.",
+    "Foods: eggs, fish, fortified milk and cereals, and mushrooms exposed to sun.",
+    "Use sunscreen for long spells outdoors."
+   ],
+   "clinician": "Ask a clinician about a blood test before starting supplements, and about the right amount for you.",
+   "followup": "Want me to remind you to get some daylight each day?"
+  },
+  {
+   "id": "healthy_snacks",
+   "title": "Easy healthy snacks",
+   "concepts": [],
+   "triggers": [
+    "healthy snack ideas",
+    "healthy snacks",
+    "what to snack on",
+    "snack ideas",
+    "evening snack healthy",
+    "healthy snack options"
+   ],
+   "answer": "Aim for snacks with some protein or fibre so they hold you till the next meal.",
+   "tips": [
+    "Roasted chana, makhana or peanuts.",
+    "Fruit with a few nuts, or curd with fruit.",
+    "Sprouts chaat, boiled egg, paneer cubes, or a vegetable sandwich.",
+    "Buttermilk, coconut water or nimbu paani instead of sugary drinks."
+   ],
+   "clinician": null,
+   "followup": "Want ideas matched to your day, like a pre-workout or an evening snack?"
+  },
+  {
+   "id": "alcohol_smoking",
+   "title": "Cutting down alcohol or smoking",
+   "concepts": [],
+   "triggers": [
+    "quit smoking tips",
+    "how to quit smoking",
+    "cut down alcohol",
+    "reduce drinking",
+    "stop drinking alcohol tips",
+    "cigarette chhodna",
+    "smoking kaise chhode"
+   ],
+   "answer": "Wanting to cut down is a strong first step, and plans work better than willpower alone.",
+   "tips": [
+    "Pick a start date and tell someone supportive.",
+    "Notice your triggers (time, people, stress) and plan something else for those moments.",
+    "Small steps count: fewer, later, then none.",
+    "Expect cravings to pass in minutes: breathe, drink water, walk."
+   ],
+   "clinician": "A clinician can offer real support, including medicines and counselling, that make quitting much more likely. Stopping heavy drinking suddenly can be risky, so please get medical advice first.",
+   "followup": "Would you like to set a gentle goal together?"
+  },
+  {
+   "id": "loneliness_connection",
+   "title": "Feeling disconnected",
+   "concepts": [
+    "loneliness"
+   ],
+   "triggers": [
+    "how to feel less lonely",
+    "make friends",
+    "feel more connected",
+    "tips for loneliness",
+    "feeling lonely tips",
+    "akelapan kaise door"
+   ],
+   "answer": "Connection grows from small, repeated moments more than big gestures.",
+   "tips": [
+    "Send one low-pressure message to someone you like: a meme, a photo, a how-are-you.",
+    "Join something regular: a class, a walk group, a hobby circle, a volunteer shift.",
+    "Pick up the phone for a short call instead of texting.",
+    "Be kind to yourself on slow days."
+   ],
+   "clinician": "If loneliness is heavy or comes with a low mood that doesn't lift, please talk to someone you trust or a counsellor.",
+   "followup": "Want to try a small reach-out together right now?"
+  },
+  {
+   "id": "sleep_routine",
+   "title": "A bedtime routine",
+   "concepts": [],
+   "triggers": [
+    "sleep better at night",
+    "better sleep at night",
+    "bedtime routine",
+    "night routine",
+    "sleep routine"
+   ],
+   "answer": "Sleep likes a pattern. A short, repeatable wind-down tells your body the day is over.",
+   "tips": [
+    "Go to bed and wake up at about the same time, even on weekends.",
+    "Pick a wind-down you enjoy for 20 to 30 minutes: a warm wash, soft light, a few pages of a book.",
+    "Keep the room cool, dark and quiet, and keep the phone out of reach of the bed.",
+    "Eat dinner a couple of hours before bed if you can."
+   ],
+   "clinician": "If poor sleep goes on for more than a few weeks, or you snore loudly or stop breathing in your sleep, please talk to a clinician.",
+   "followup": "Want me to look at how your logged sleep has been moving lately?"
+  },
+  {
+   "id": "energy_foods",
+   "title": "Foods for steady energy",
+   "concepts": [],
+   "triggers": [
+    "good foods for energy",
+    "foods for energy",
+    "what to eat for energy",
+    "energy boosting food",
+    "kya khana chahiye jab energy kam ho",
+    "energy kam ho"
+   ],
+   "answer": "Steady energy usually comes from regular meals that mix a slow carbohydrate, some protein and something fresh, rather than from one special food.",
+   "tips": [
+    "Pair carbs with protein: roti with dal, poha with peanuts, fruit with curd or nuts.",
+    "Don't skip meals for long stretches; a small snack in between can smooth the afternoon.",
+    "Water and a short walk often help as much as another cup of tea.",
+    "Sleep is part of the answer too: a short night makes everything feel heavier."
+   ],
+   "clinician": "If you feel tired most days despite sleep and meals, a clinician can check things like iron or thyroid.",
+   "followup": "Want me to compare your tired days with your sleep and water logs?"
+  },
+  {
+   "id": "drink_more_water",
+   "title": "Drinking more water",
+   "concepts": [],
+   "triggers": [
+    "drink more water",
+    "remember to drink water",
+    "i forget to drink water",
+    "increase my water intake",
+    "water habit"
+   ],
+   "answer": "It is easiest to drink more when water is simply in front of you and tied to things you already do.",
+   "tips": [
+    "Keep a bottle where you work or study and refill it at set moments.",
+    "Have a glass when you wake up and with each meal.",
+    "Plain water not your favourite? Try lemon, mint, or buttermilk and clear soups, which count too.",
+    "Pale yellow urine is a simple sign you are doing fine."
+   ],
+   "clinician": "If you are very thirsty all the time or pass a lot of urine, please check with a clinician.",
+   "followup": "Want me to track your water against a goal you choose?"
+  },
+  {
+   "id": "healthy_breakfast",
+   "title": "A good breakfast",
+   "concepts": [],
+   "triggers": [
+    "healthy breakfast",
+    "breakfast ideas",
+    "what to eat for breakfast",
+    "good breakfast",
+    "tips for a healthy breakfast"
+   ],
+   "answer": "A good breakfast has some protein and some fibre, so it holds you until lunch.",
+   "tips": [
+    "Eggs, curd, paneer, besan chilla, sprouts or dal-based dishes bring protein.",
+    "Add a fruit, or oats, poha, upma or whole-grain toast for fibre.",
+    "Make the night before what you can: soaked oats, chopped fruit, boiled eggs.",
+    "Not hungry early? A small bite is enough; you can eat more later."
+   ],
+   "clinician": "If you have a condition like diabetes, ask your clinician or dietitian for a plan that fits you.",
+   "followup": "Want me to look at what you usually log for breakfast?"
+  },
+  {
+   "id": "overthinking_night",
+   "title": "A busy mind at night",
+   "concepts": [],
+   "triggers": [
+    "stop overthinking",
+    "overthinking at night",
+    "mind racing at night",
+    "cant switch off at night",
+    "thoughts at night"
+   ],
+   "answer": "A busy mind at night is very common. It helps to give the thoughts somewhere to go before bed.",
+   "tips": [
+    "Write down what's on your mind and one small next step, then close the page.",
+    "Do a few slow breaths with a longer breath out.",
+    "Keep the phone away from the bed so the scroll doesn't feed the thoughts.",
+    "If you're still awake after about 20 minutes, get up and do something quiet in low light."
+   ],
+   "clinician": "If worry or low mood is with you most days for weeks, talking to a professional can really help.",
+   "followup": "Want to talk it through here for a bit?"
+  },
+  {
+   "id": "wake_early",
+   "title": "Waking up earlier",
+   "concepts": [],
+   "triggers": [
+    "wake up early",
+    "wake up earlier",
+    "waking up early",
+    "get up early",
+    "subah jaldi",
+    "jaldi uthna"
+   ],
+   "answer": "Waking earlier works best by shifting bedtime and wake time together, a little at a time.",
+   "tips": [
+    "Move your wake time earlier by about 15 minutes every few days.",
+    "Get bright daylight soon after waking; it helps the body clock.",
+    "Go to bed earlier too, or the extra tiredness won't last.",
+    "Put the alarm across the room, with a glass of water ready."
+   ],
+   "clinician": "If you struggle to wake no matter how much you sleep, please check in with a clinician.",
+   "followup": "Want me to look at your usual sleep and wake pattern?"
+  },
+  {
+   "id": "nap_length",
+   "title": "Naps",
+   "concepts": [],
+   "triggers": [
+    "how long should i nap",
+    "how long to nap",
+    "nap length",
+    "is napping good",
+    "power nap",
+    "daytime nap"
+   ],
+   "answer": "A short nap can refresh you; a long or late one can make night sleep harder.",
+   "tips": [
+    "About 15 to 25 minutes is usually enough to feel more alert.",
+    "Try to nap before mid-afternoon.",
+    "Set an alarm so you don't slide into a long sleep.",
+    "If you can't sleep at night, skipping the nap for a few days may help."
+   ],
+   "clinician": "If you need long naps every day and still feel exhausted, please mention it to a clinician.",
+   "followup": "Want me to see how your naps and night sleep line up?"
+  },
+  {
+   "id": "calcium_foods",
+   "title": "Calcium in food",
+   "concepts": [],
+   "triggers": [
+    "sources of calcium",
+    "good sources of calcium",
+    "foods with calcium",
+    "calcium foods",
+    "calcium rich foods",
+    "calcium vegetarian"
+   ],
+   "answer": "Calcium comes from more than milk, and a mix across the week usually covers it.",
+   "tips": [
+    "Milk, curd, paneer and buttermilk are easy sources.",
+    "Ragi, sesame seeds, almonds and green leafy vegetables like methi and amaranth also help.",
+    "Fortified foods can fill gaps if you avoid dairy.",
+    "Some sunlight helps your body use calcium."
+   ],
+   "clinician": "If you have bone pain, frequent fractures, or a medical condition, please ask a clinician about testing.",
+   "followup": "Want some simple meal ideas with these foods?"
+  },
+  {
+   "id": "screen_time",
+   "title": "Cutting back on screen time",
+   "concepts": [],
+   "triggers": [
+    "reduce screen time",
+    "less screen time",
+    "too much screen time",
+    "use my phone less",
+    "phone addiction",
+    "cut down on phone"
+   ],
+   "answer": "Small friction works better than strict rules: make the phone a little less convenient and give your hands something else to do.",
+   "tips": [
+    "Turn off non-essential notifications and move the noisy apps off the first screen.",
+    "Keep the phone out of the bedroom, or charge it across the room.",
+    "Pick one or two phone-free windows, such as meals and the first half hour of the day.",
+    "Plan a replacement: a walk, a book or a call with a friend."
+   ],
+   "clinician": "If screen use is hurting your sleep, work or mood and you can't cut back, talking to a counsellor can help.",
+   "followup": "Want me to compare your screen time with your sleep?"
+  },
+  {
+   "id": "homesick",
+   "title": "Missing home",
+   "concepts": [],
+   "triggers": [
+    "cope with homesickness",
+    "feeling homesick",
+    "so homesick",
+    "missing home",
+    "ghar ki yaad"
+   ],
+   "answer": "Missing home is a normal sign that people and places matter to you. It usually softens as new routines settle in.",
+   "tips": [
+    "Schedule regular calls or messages with people at home, so there's something to look forward to.",
+    "Make your space feel familiar with a photo, a blanket or a favourite snack.",
+    "Build one small routine where you are, like a walk or a regular chai with someone.",
+    "Be kind to yourself: it comes in waves."
+   ],
+   "clinician": "If the sadness is heavy, lasts for weeks, or you stop enjoying everything, please talk to someone you trust or a professional.",
+   "followup": "Want to tell me what you miss most?"
+  },
+  {
+   "id": "anger_handling",
+   "title": "Handling anger",
+   "concepts": [],
+   "triggers": [
+    "handle anger",
+    "deal with anger",
+    "control my anger",
+    "manage anger",
+    "anger management tips",
+    "healthy ways to handle anger"
+   ],
+   "answer": "Anger is a signal, not a flaw. The aim is to let the heat pass before you decide what to do.",
+   "tips": [
+    "Pause before you reply: a few slow breaths or a short walk lets your body calm down.",
+    "Name what is under it: hurt, tiredness, fear, or feeling unheard.",
+    "Come back to the conversation once you're calmer, and start with how you feel.",
+    "Regular sleep, food and movement make everything feel less sharp."
+   ],
+   "clinician": "If your anger frightens you or others, or ever leads to hurting someone, please speak to a professional soon.",
+   "followup": "Want to talk about what happened?"
+  },
+  {
+   "id": "balanced_plate",
+   "title": "A balanced plate",
+   "concepts": [],
+   "triggers": [
+    "balanced plate",
+    "balanced meal",
+    "balanced diet",
+    "what is a balanced diet",
+    "healthy plate",
+    "thali balance"
+   ],
+   "answer": "A simple way to build a meal is to think in halves and quarters.",
+   "tips": [
+    "About half the plate vegetables or salad.",
+    "About a quarter protein: dal, curd, paneer, eggs, fish or chicken, beans.",
+    "About a quarter grains like roti, rice or millets, ideally some whole.",
+    "Add a little healthy fat, and drink water with the meal."
+   ],
+   "clinician": "If you have a condition or are pregnant, ask a clinician or dietitian for a plan made for you.",
+   "followup": "Want me to look at what you usually log at lunch?"
+  },
+  {
+   "id": "study_burnout",
+   "title": "Studying without burning out",
+   "concepts": [],
+   "triggers": [
+    "studying without burning out",
+    "avoid burnout",
+    "burnout tips",
+    "study tips without stress",
+    "too much studying",
+    "study routine tips"
+   ],
+   "answer": "Rest is part of studying. Short focused blocks with real breaks help you remember more and feel better.",
+   "tips": [
+    "Try 25 to 45 minutes of focus, then a 5 to 10 minute break away from the screen.",
+    "Study the hardest thing when you are freshest.",
+    "Keep sleep, meals and a little movement fixed; they are not optional extras.",
+    "Plan the next day in two minutes before you stop."
+   ],
+   "clinician": "If you feel numb, hopeless, or can't function for days, please talk to someone you trust or a professional.",
+   "followup": "Want to plan tomorrow together?"
+  },
+  {
+   "id": "beginner_exercise",
+   "title": "Starting to move",
+   "concepts": [],
+   "triggers": [
+    "easy exercises for beginners",
+    "exercise for beginners",
+    "beginner workout",
+    "beginner exercises",
+    "how to start working out",
+    "start working out"
+   ],
+   "answer": "The best start is small enough that you'll actually do it. Consistency matters more than intensity at first.",
+   "tips": [
+    "Start with a 10 to 20 minute walk on most days.",
+    "Add two short sessions a week of simple strength moves: squats to a chair, wall push-ups, a plank for a few seconds.",
+    "Stretch gently afterwards and drink water.",
+    "Increase a little each week, and rest if something hurts sharply."
+   ],
+   "clinician": "If you have a heart or joint condition, are pregnant, or feel chest pain or dizziness with effort, check with a clinician before starting.",
+   "followup": "Want me to suggest a gentle first week?"
+  },
+  {
+   "id": "interview_nerves",
+   "title": "Nerves before an interview",
+   "concepts": [],
+   "triggers": [
+    "relax before an interview",
+    "nervous before interview",
+    "interview nerves",
+    "interview anxiety",
+    "calm before presentation",
+    "nervous before exam"
+   ],
+   "answer": "Some nerves mean you care, and they can be turned into focus.",
+   "tips": [
+    "Prepare two or three stories or points you know well, and say them out loud once.",
+    "Sleep well the night before and eat something light beforehand.",
+    "Do slow breathing with a longer breath out in the last few minutes.",
+    "Remind yourself it's a conversation, and it's fine to pause and think."
+   ],
+   "clinician": "If anxiety stops you from doing things you want to do, talking to a professional can help.",
+   "followup": "Want to practise a few questions together?"
+  }
+ ]
 }
