@@ -568,3 +568,22 @@ already stored.
 - What keeps a card from answering: any dose or medicine word, severity or long duration, pregnancy or a baby, a chronic condition word (heart, diabetes, thyroid, kidney, asthma and others), a red-flag word, or two topics at once. These guards are in `knowledge_cards._NEEDS_CARE`.
 - `backend/companion_voice.py`: fixed supportive replies for stress, worry, panic, loneliness, missing someone, a low day, tiredness and good news (English and Hinglish). Panic replies always carry the line about getting medical help. Anything with hopelessness, harm, severity, long duration, a diagnosis question, a number, medicine or someone else's feelings is not answered there.
 - `backend/data_answers.py`: sleep guide of 7 to 9 hours and movement guide of 150 minutes a week, quoted as "what most adults do well on" with "how rested you feel matters more".
+
+## Saving from chat: what is saved by itself and what is asked (2026-10-25), awaiting clinician sign-off
+
+`backend/event_policy.py`. A rule-extracted item stated plainly (sleep, water, exercise, weight, mood, meals, lifestyle) with confidence 0.8 or more is saved without asking. Everything else is asked once (Save or Skip): symptoms, fever, injuries, medicines, supplements, period and cycle items, conditions, any vital outside the range below, anything proposed by a model, and a second sleep, weight or mood on the same day.
+
+Vital-sign ranges treated as "normal, safe to save without asking" (outside these, or at the edge, the person is asked):
+
+| Reading | Range |
+| --- | --- |
+| Temperature | 35.5 to 37.7 °C |
+| Heart rate | 50 to 110 per minute |
+| Systolic / diastolic | 91 to 139 / 61 to 89 mmHg |
+| Oxygen saturation | 95 to 100 % |
+
+Please confirm these ranges, and whether any further item type (for example weight changes of more than a few kilograms in a day) should always be asked about.
+
+## Personal guess checking (2026-10-25), awaiting review
+
+`backend/prediction_ledger.py`. Bubbles makes small guesses from a person's own history and scores them against what they log. It speaks a link only after at least 6 scored guesses with a hit rate of 65% or more, and stops using it below 50%. Wording is always "in your own history", never a cause, and never advice. Please confirm the thresholds and the four links (sleep and mood, activity and next sleep, water and mood, sleep and movement).
