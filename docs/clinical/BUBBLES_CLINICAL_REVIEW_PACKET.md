@@ -591,3 +591,7 @@ Please confirm these ranges, and whether any further item type (for example weig
 ### Own Brain, 15 more self-care cards (2026-10-25), awaiting clinician sign-off
 
 Added to `backend/data/knowledge_cards.json`: sleep_routine, energy_foods, drink_more_water, healthy_breakfast, overthinking_night, wake_early, nap_length, calcium_foods, screen_time, homesick, anger_handling, balanced_plate, study_burnout, beginner_exercise, interview_nerves. Same rules as the first set: general self-care only, no doses, no diagnoses, each names when to see a clinician. Please read them in the file.
+
+### Own Brain, 34 more self-care cards (2026-10-26), awaiting clinician sign-off
+
+Added to `backend/data/knowledge_cards.json` (now 79 cards in all): focus_study, sleep_foods, hydrate_work, work_stress, night_snacking, quick_lunch, meditation_start, desk_active, stiff_neck, hot_sleep, exercise_motivation2, exam_pressure, morning_stretch, morning_routine, evening_routine, eat_vegetables, fibre_amount, bad_day, morning_energy, travel_tiredness, bloating_comfort, cold_cough_tips, procrastination, budget_eating, late_nights, walking_habit, less_coffee, cut_sugar, protein_breakfast, light_dinner, desk_stretch, nail_biting, confidence, stay_positive. Same rules: general self-care only, no doses, no diagnoses, each names when to see a clinician. The guards also stop a card from answering a question about the person's own days (today, this week), about someone else, or with despair or drinking wording. Please read them in the file.
