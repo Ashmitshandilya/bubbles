@@ -98,6 +98,7 @@ def load_some(db: Any, uid: str, names: set[str], days: int = 60, tz_offset_minu
 
     jobs = {"sleep_hours": sleep, "mood": mood,
             "activity_minutes": lambda: {"activity_minutes": _daily(db, uid, "activity", days, off, "duration", "sum")},
+            "screen_hours": lambda: {"screen_hours": _daily(db, uid, "eyes", days, off, "screen_hours", "max")},
             "hydration_ml": lambda: {"hydration_ml": _daily(db, uid, "hydration", days, off, "volume", "sum")}}
 
     def safe(job):

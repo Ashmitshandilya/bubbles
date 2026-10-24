@@ -18,6 +18,9 @@ LINKS: list[tuple[str, str, int, str, str, str]] = [
     ("activity_minutes", "sleep_hours", 1, "sleep", "a quiet day", "a busy day"),
     ("hydration_ml", "mood", 0, "mood", "a low-water day", "a high-water day"),
     ("sleep_hours", "activity_minutes", 0, "movement", "a short night", "a long night"),
+    ("mood", "sleep_hours", 1, "sleep", "a low day", "a good day"),
+    ("mood", "activity_minutes", 1, "movement", "a low day", "a good day"),
+    ("screen_hours", "sleep_hours", 1, "sleep", "a light screen day", "a long screen day"),
 ]
 MIN_PAIRS = 14
 MIN_GROUP = 5
