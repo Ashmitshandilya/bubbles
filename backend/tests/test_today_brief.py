@@ -23,3 +23,11 @@ def test_green_is_not_safety_and_line_is_stable_and_short():
 def test_long_insight_is_cut():
     long = " ".join(["word"] * 60)
     assert len(tb.pick(uid="u", day="d", association=long)["text"].split()) <= tb.MAX_WORDS
+
+
+def test_a_pattern_becomes_one_friendly_sentence():
+    raw = "On days after you slept longer, your logged mood tended to be higher (60 days logged). Only days you logged are compared. An association in their logs."
+    out = tb.pick(uid="u", day="d", association=raw)
+    assert out["kind"] == "pattern"
+    assert out["text"] == "On days after you slept longer, your logged mood tended to be higher. That's from your own logs, not a cause."
+    assert "(" not in out["text"] and "their" not in out["text"]

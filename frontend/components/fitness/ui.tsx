@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useApi } from "../Providers";
-import { CARD, HubPage, PILL, type Tone, TONE, useBubblesQuery } from "../hub/HubKit";
+import { HubPage, PILL, type Tone, TONE, useBubblesQuery } from "../hub/HubKit";
 import { classifyFailure, failureFromError } from "../../app/lib/connection";
 import { detailMessage, fmt, macroRows, reviewPending, type MacroRow } from "../../app/lib/fitness-calc";
 import type { Review } from "../../app/lib/fitness-types";
@@ -60,7 +60,7 @@ export function PageHeading({ kicker, title, text }: { kicker?: string; title: s
 export function Section({ title, children, aside, id }: { title?: string; children: ReactNode; aside?: ReactNode; id?: string }) {
   const hid = useId();
   return (
-    <section aria-labelledby={title ? hid : undefined} id={id} className={`${CARD} p-5 sm:p-6`}>
+    <section aria-labelledby={title ? hid : undefined} id={id} className="border-t border-[color:var(--hairline)] py-6">
       {(title || aside) && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           {title && (
@@ -108,16 +108,16 @@ export function RangeBadge({ value, low, high, unit = "kcal" }: { value: number;
 /* ── Notices ────────────────────────────────────────────────────────── */
 
 const NOTICE_TONE: Record<"sky" | "mint" | "sun" | "pink" | "plain", string> = {
-  sky: "bg-tint-sky text-ink",
-  mint: "bg-tint-mint text-ink",
-  sun: "bg-tint-sun text-ink",
-  pink: "bg-tint-pink text-ink",
-  plain: "bg-blush text-ink border border-line",
+  sky: "border-l-2 border-bubbles-sky text-ink",
+  mint: "border-l-2 border-bubbles-mint text-ink",
+  sun: "border-l-2 border-bubbles-sun text-ink",
+  pink: "border-l-2 border-bubbles-pink text-ink",
+  plain: "border-l-2 border-line-strong text-ink",
 };
 
 export function Notice({ tone = "sky", title, children, role }: { tone?: keyof typeof NOTICE_TONE; title?: string; children: ReactNode; role?: "status" | "alert" }) {
   return (
-    <div role={role} className={`rounded-3xl px-5 py-4 ${NOTICE_TONE[tone]}`}>
+    <div role={role} className={`py-1 pl-4 ${NOTICE_TONE[tone]}`}>
       {title && <p className="m-0 font-display text-h4">{title}</p>}
       <div className="text-body-sm">{children}</div>
     </div>
@@ -130,7 +130,7 @@ export function Notice({ tone = "sky", title, children, role }: { tone?: keyof t
 export function ClinicalNote({ review }: { review: Review | null | undefined }) {
   if (!reviewPending(review)) return null;
   return (
-    <aside aria-label="About these numbers" className="mb-5 rounded-3xl bg-tint-sky px-5 py-4 text-ink">
+    <aside aria-label="About these numbers" className="mb-5 border-l-2 border-bubbles-sky py-1 pl-4 text-ink">
       <p className="m-0 text-body-sm font-extrabold text-bubbles-sky-deep">Waiting for a clinician&rsquo;s review</p>
       <p className="m-0 mt-1 text-body-sm">
         Bubbles&rsquo;s targets are general estimates and have not yet been checked by a clinician. Treat them as a starting point.

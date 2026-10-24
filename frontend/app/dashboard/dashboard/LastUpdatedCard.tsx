@@ -12,7 +12,7 @@ export function LastUpdatedCard({ update }: { update: LastUpdate | null }) {
   }, []);
   if (!update) return null;
   return (
-    <section aria-label="Last updated" className="flex items-center justify-between gap-3 rounded-[20px] border border-line bg-surface px-4 py-3">
+    <section aria-label="Last updated" className="flex items-center justify-between gap-3 border-t border-[color:var(--hairline)] py-4">
       <div className="min-w-0">
         <p className="m-0 text-chip font-semibold uppercase tracking-wide text-ink-soft">Last updated</p>
         <p className="m-0 truncate text-body font-bold">{update.label}</p>

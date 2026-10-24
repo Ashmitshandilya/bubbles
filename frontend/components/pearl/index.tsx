@@ -137,18 +137,32 @@ export function LivingBubbles({ signals, onOpen, width = 360 }: { signals: Bubbl
   const placed = layoutBubbles(signals, width);
   return (
     <ul className="pearl-bubbles" style={{ maxWidth: width }}>
-      {placed.map((b, i) => (
-        <li key={b.id}>
-          <button type="button" className="pearl-bubble" onClick={() => onOpen?.(b.id)} aria-label={describeBubble(signals[i])}>
-            <svg viewBox={`0 0 ${b.r * 2 + 4} ${b.r * 2 + 4}`} width={b.r * 2 + 4} height={b.r * 2 + 4} aria-hidden="true" style={{ transform: `translateY(${b.drift}px)` }}>
-              <circle cx={b.r + 2} cy={b.r + 2} r={b.r} fill={b.empty ? "none" : b.color} fillOpacity={b.empty ? 0 : 0.28} stroke={b.empty ? "currentColor" : b.color}
-                strokeOpacity={b.empty ? 0.5 : 0.9} strokeWidth="1.5" strokeDasharray={b.empty ? "4 5" : undefined} />
-            </svg>
-            <span className="pearl-bubble-label">{b.label}</span>
-            {b.empty && <span className="pearl-bubble-gap">no entries</span>}
-          </button>
-        </li>
-      ))}
+      {placed.map((b, i) => {
+        const size = b.r * 2 + 4;
+        const gradient = `pj-film-${b.id}`;
+        return (
+          <li key={b.id}>
+            <button type="button" className="pearl-bubble" onClick={() => onOpen?.(b.id)} aria-label={describeBubble(signals[i])}>
+              <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true" className="pearl-bubble-svg"
+                style={{ ["--drift" as string]: `${b.drift}px`, animationDelay: `${-i * 1.7}s` }}>
+                <defs>
+                  <radialGradient id={gradient} cx="34%" cy="28%" r="78%">
+                    <stop offset="0%" style={{ stopColor: "#fff", stopOpacity: 0.95 }} />
+                    <stop offset="48%" style={{ stopColor: b.color, stopOpacity: 0.2 }} />
+                    <stop offset="100%" style={{ stopColor: b.color, stopOpacity: 0.42 }} />
+                  </radialGradient>
+                </defs>
+                <circle cx={b.r + 2} cy={b.r + 2} r={b.r} fill={b.empty ? "none" : `url(#${gradient})`} stroke={b.empty ? "currentColor" : b.color}
+                  strokeOpacity={b.empty ? 0.45 : 0.85} strokeWidth="1.25" strokeDasharray={b.empty ? "3 5" : undefined} />
+                {!b.empty && <ellipse cx={b.r * 0.78} cy={b.r * 0.62} rx={b.r * 0.22} ry={b.r * 0.12} fill="#fff" opacity="0.7" transform={`rotate(-28 ${b.r * 0.78} ${b.r * 0.62})`} />}
+                <text x={b.r + 2} y={b.r + 6} textAnchor="middle" className="pearl-bubble-value">{b.empty ? "–" : b.valueText ?? ""}</text>
+              </svg>
+              <span className="pearl-bubble-label">{b.label}</span>
+              {b.empty && <span className="pearl-bubble-gap">no entries</span>}
+            </button>
+          </li>
+        );
+      })}
     </ul>
   );
 }

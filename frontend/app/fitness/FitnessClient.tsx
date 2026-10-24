@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BubblesMascot } from "../../components/BubblesMascot";
-import { BTN_PRIMARY, CARD, SECTION, ErrorCard, Icon, Skeleton, TONE, useBubblesQuery, type Tone } from "../../components/hub/HubKit";
+import { BTN_PRIMARY, SECTION, ErrorCard, Icon, Skeleton, TONE, useBubblesQuery, type Tone } from "../../components/hub/HubKit";
 import { ClinicalNote, Disclaimer, EstimateLabel, FitnessPage, MacroBars, PageHeading, Pill, ProgressRing, RangeBadge, Section } from "../../components/fitness/ui";
 import { useUnits } from "../../components/fitness/useUnits";
 import { cardState, fmt, formatWeeks, formatWeight, ringFraction, ringWord } from "../lib/fitness-calc";
@@ -48,8 +48,8 @@ function Hub() {
       <PageHeading kicker="Fitness" title="Your day, gently" text="Everything here is an estimate that moves with you. Close is good enough." />
 
       {t === null && (
-        <section className={`${CARD} flex flex-wrap items-center gap-5 bg-tint-pink p-5 sm:p-6`} aria-labelledby="onboard">
-          <BubblesMascot size={72} mood="happy" animated={false} />
+        <section className="flex flex-wrap items-center gap-5 border-b border-[color:var(--hairline)] pb-6" aria-labelledby="onboard">
+          <BubblesMascot size={56} mood="happy" animated={false} />
           <div className="min-w-[14rem] flex-1">
             <h2 id="onboard" className="m-0 font-display text-h3 text-ink">Let&rsquo;s set up your numbers</h2>
             <p className="m-0 mt-1 text-body-sm text-ink-soft">{s.message ?? "Add a few details so Bubbles can work out calories, protein and water for you."}</p>

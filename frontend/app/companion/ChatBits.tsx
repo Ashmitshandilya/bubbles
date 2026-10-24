@@ -636,14 +636,14 @@ export function BubblesReply({
         <ReplyFeedback feedback={feedback} busy={feedbackBusy} failed={feedbackFailed} onRate={onRate} />
       )}
       {chips.length > 0 && onChip && (
-        <div role="group" aria-label="Suggested follow-ups" className="flex flex-col items-start">
+        <div role="group" aria-label="Suggested follow-ups" className="flex flex-wrap gap-x-5 gap-y-0.5">
           {chips.map((chip, i) => (
             <button
               key={`${i}-${chip}`}
               type="button"
               disabled={chipsDisabled}
               onClick={() => onChip(chip)}
-              className="pearl-link text-left disabled:cursor-not-allowed disabled:opacity-60"
+              className="pearl-suggest text-left disabled:cursor-not-allowed disabled:opacity-60"
             >
               {chip}
             </button>
@@ -717,7 +717,7 @@ export function ConversationList({
                         onClick={() => onSelect(c.id)}
                         aria-current={active ? "true" : undefined}
                         className={`flex min-h-[48px] w-full flex-col gap-0.5 rounded-2xl px-3.5 py-2.5 text-left transition-colors ${
-                          active ? "bg-tint-pink" : "hover:bg-blush"
+                          active ? "bg-surface shadow-[inset_3px_0_0_var(--brand)]" : "hover:bg-surface"
                         }`}
                       >
                         <strong className="block w-full truncate text-body-sm font-extrabold text-ink">{c.title}</strong>

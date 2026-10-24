@@ -110,9 +110,14 @@ def test_day1_log_with_denied_symptoms_is_not_an_emergency(env):
     cramps = [d for d in by_type["menstrual_symptom"] if d.get("symptom") == "cramps"]
     assert cramps and cramps[0]["severity"] == 4
     assert any(d.get("cycle_day") == 3 and d.get("is_start") is True for d in by_type["menstrual_symptom"])
-    assert all(e["extraction_status"] == "pending" and e["user_confirmed"] is False for e in events)
+    # what was stated plainly (sleep, water, steps, meals, a mood) is saved on its own; a symptom, the cycle and a supplement still wait for the person's OK
+    auto_types = {"sleep", "hydration", "activity", "exercise", "weight", "mood", "stress", "food", "lifestyle", "wellness_checkin"}
+    assert all((e["extraction_status"] == "confirmed" and e["user_confirmed"] is True) == (e["event_type"] in auto_types) for e in events)
+    assert all(e["extraction_status"] == "pending" and e["user_confirmed"] is False for e in events if e["event_type"] not in auto_types)
+    assert any(e["event_type"] == "menstrual_symptom" for e in events) and any(e["event_type"] == "supplement" for e in events)
     # response contract: events carry ids, assertion and status; metadata keys are not leaked to the UI
-    assert body["health_events"] and all(e["id"] and e["status"] == "pending" for e in body["health_events"])
+    assert body["health_events"] and all(e["id"] and e["status"] in ("pending", "confirmed") for e in body["health_events"])
+    assert {e["event_type"]: e["status"] for e in body["health_events"]}["sleep"] == "confirmed" and {e["event_type"]: e["status"] for e in body["health_events"]}["menstrual_symptom"] == "pending"
     assert all(not any(k.startswith("_") for k in e["extracted_data"]) for e in body["health_events"])
 
 

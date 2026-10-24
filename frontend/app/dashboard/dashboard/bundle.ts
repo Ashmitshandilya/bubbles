@@ -59,6 +59,6 @@ export function bubbleSignals(signals: SignalSummary[]): BubbleSignal[] {
     const s = signals.find((x) => x.slug === slug);
     const logged = s?.bars.filter((b) => b > 0) ?? [];
     const amount = s?.value && logged.length ? Math.min(1, Math.max(0.2, logged.reduce((a, b) => a + b, 0) / logged.length)) : null;
-    return { id: slug, label, domain, amount, trend: amount !== null && s?.trend ? TREND[s.trend] : null };
+    return { id: slug, label, domain, amount, trend: amount !== null && s?.trend ? TREND[s.trend] : null, valueText: amount !== null ? s?.value : undefined };
   });
 }

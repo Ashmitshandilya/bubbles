@@ -37,6 +37,7 @@ from people_memory import recall_target, remembered_reply
 import brain
 import locale_support
 import orbit_knowledge
+import paragraph_extras
 import response_quality
 import topic_tags
 import safe_harbor
@@ -594,7 +595,7 @@ def reply_kind(route: str) -> str:
             "daily_log": "daily_log_summary", "fitness_support": "fitness_support", "fitness_answer": "fitness_answer"}.get(route, "reply")
 
 
-def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> str:
+def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int, status_note: str = "") -> str:
     route, safety = turn.route, turn.safety
     if route == "emergency":
         text = emergency_response(safety, turn.country)
@@ -632,7 +633,9 @@ def deterministic_reply(turn: Turn, *, name: str | None, saved_events: int) -> s
         parts.append(note)
     pick = int(hashlib.sha256(parts[0].encode("utf-8")).hexdigest(), 16)   # stable per message, so a retried message gets the same words
     parts.append(_ONE_DAY[pick % len(_ONE_DAY)])
-    if saved_events:
+    if status_note:   # what was saved on its own and what needs the person's OK (event_autosave.status_note)
+        parts.append(status_note)
+    elif saved_events:
         parts.append(_SAVED_NOTES[(pick // 7) % len(_SAVED_NOTES)])
     return "\n\n".join(parts)
 
@@ -712,6 +715,10 @@ def fact_day(turn: Turn, f: Fact, today: date) -> date | None:
     return None
 
 
+_EXERCISE_NAME = {"walked": "walking", "ran": "running", "jogged": "jogging", "swam": "swimming", "cycled": "cycling", "danced": "dancing", "hiked": "hiking",
+                  "stretched": "stretching", "worked out": "workout", "exercised": "exercise", "exercises": "exercise"}
+
+
 def build_rule_events(turn: Turn, message_id: str | None, *, now: datetime | None = None) -> list[dict[str, Any]]:
     """Events from explicitly stated values only (nothing inferred). Denials become ONE symptom-screen event."""
     now = now or datetime.now(timezone.utc)
@@ -741,6 +748,11 @@ def build_rule_events(turn: Turn, message_id: str | None, *, now: datetime | Non
         prev = seen.get((f.concept, when))
         if prev is None or (f.severity or 0) > (prev.severity or 0):
             seen[(f.concept, when)] = f
+    injured = paragraph_extras.injuries(turn.text)
+    if injured and any(i["swollen"] for i in injured):
+        seen = {k: v for k, v in seen.items() if k[0] != "swelling"}   # the swelling is part of the injury, asked about once
+    for info in injured:   # always asked about, never saved unseen (event_policy)
+        add("symptom", paragraph_extras.injury_event(info), 0.85, metric=f"injury-{info['part']}", temporal="recent")
     for (concept, when), f in seen.items():
         label = display_name(concept)
         data: dict[str, Any] = {"symptom": label, "name": label, "date": when}
@@ -794,7 +806,7 @@ def build_rule_events(turn: Turn, message_id: str | None, *, now: datetime | Non
         add("activity", {"name": "walking", "activity": "walking", "steps": mt["steps"], "unit": "steps"}, 0.95, metric="steps")
     if "exercise_minutes" in mt:
         types = mt.get("exercise_types") or []
-        name = types[0] if len(types) == 1 else "exercise"
+        name = _EXERCISE_NAME.get(types[0], types[0]) if len(types) == 1 else "exercise"
         add("exercise", {"name": name, "activity": ", ".join(types) or name, "duration_minutes": mt["exercise_minutes"],
                          "minutes": mt["exercise_minutes"], "unit": "min"}, 0.9, metric="exercise")
 
@@ -842,6 +854,9 @@ def build_rule_events(turn: Turn, message_id: str | None, *, now: datetime | Non
             if est.get("calories_low") is not None:
                 data.update(calories_low=est["calories_low"], calories_high=est["calories_high"])
         add("food", data, 0.85, metric=f"meal-{slot}")
+
+    for slot in mt.get("skipped_meals") or []:
+        add("food", {"name": f"skipped {slot}", "meal": slot, "skipped": True, "foods": []}, 0.85, metric=f"skipped-{slot}")
 
     # ---- supplements / medication (only explicitly named)
     for supp in mt.get("supplements") or []:

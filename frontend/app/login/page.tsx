@@ -265,7 +265,7 @@ function LoginForm() {
           </form>
         ) : (
         <>
-        <div role="tablist" aria-label="How would you like to continue?" className={`mb-6 grid ${isNativeApp ? "grid-cols-2" : "grid-cols-3"} gap-1 rounded-full bg-blush p-1`}>
+        <div role="tablist" aria-label="How would you like to continue?" className={`mb-6 grid ${isNativeApp ? "grid-cols-2" : "grid-cols-3"} gap-1 rounded-full border border-[color:var(--hairline)] bg-blush p-1`}>
           {MODES.map((item) => (
             <button
               key={item.id}
@@ -275,8 +275,8 @@ function LoginForm() {
               aria-selected={mode === item.id}
               aria-controls={`${formId}-panel`}
               onClick={() => switchMode(item.id)}
-              className={`min-h-[44px] rounded-full px-2 text-body-sm font-extrabold transition-colors ${
-                mode === item.id ? "bg-bubbles-pink-ink text-white" : "text-ink-soft hover:text-ink"
+              className={`min-h-[44px] rounded-full px-2 text-body-sm font-semibold transition-all ${
+                mode === item.id ? "bg-surface text-ink shadow-[0_1px_3px_rgba(30,27,46,0.12)]" : "text-ink-soft hover:text-ink"
               }`}
             >
               {item.label}
@@ -426,9 +426,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-blush px-5 py-10">
-      <div className="bubbles-drift pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-tint-pink" aria-hidden="true" />
-      <div className="bubbles-drift-slow pointer-events-none absolute -bottom-28 -right-20 h-80 w-80 rounded-full bg-tint-grape" aria-hidden="true" />
-      <div className="relative z-base flex w-full justify-center">
+            <div className="relative z-base flex w-full justify-center">
         <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
           <LoginForm />
         </Suspense>

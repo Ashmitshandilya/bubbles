@@ -165,8 +165,8 @@ function SidebarLink({ section, current }: { section: Section; current?: Section
       <Link
         href={section.href}
         aria-current={active ? "page" : undefined}
-        className={`flex min-h-[48px] items-center gap-3 rounded-2xl px-3 text-nav font-extrabold no-underline transition-colors ${
-          active ? "bg-tint-grape text-bubbles-grape-deep" : "text-muted hover:bg-blush hover:text-default"
+        className={`relative flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-nav font-semibold no-underline transition-colors ${
+          active ? "text-default before:absolute before:bottom-2.5 before:left-0 before:top-2.5 before:w-[3px] before:rounded-full before:bg-bubbles-pink-ink" : "text-muted hover:text-default"
         }`}
       >
         <NavIcon id={section.icon} size={20} />
@@ -184,7 +184,7 @@ export function Sidebar(_props: { apiStatus: "checking" | "online" | "offline" }
   const { experience } = useExperience();
 
   return (
-    <aside className="hidden lg:flex w-[248px] shrink-0 border-r border-soft bg-surface min-h-dvh flex-col sticky top-0 h-dvh" aria-label="Bubbles navigation">
+    <aside className="hidden lg:flex w-[232px] shrink-0 border-r border-soft bg-blush min-h-dvh flex-col sticky top-0 h-dvh" aria-label="Bubbles navigation">
       <Link href="/dashboard" className="flex items-center gap-3 px-5 pt-5 pb-4 no-underline text-default">
         <BubblesMascot size={40} animated={false} />
         <span className="font-display text-[1.75rem] leading-none tracking-tight">bubbles</span>
@@ -218,7 +218,7 @@ export function SectionTabs() {
   if (!section?.tabs || section.tabs.length < 2) return null;
   return (
     <nav aria-label={`${section.label} pages`} className="-mx-4 mb-1 sm:mx-0">
-      <ul className="m-0 flex list-none gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="m-0 flex list-none gap-6 overflow-x-auto border-b border-[color:var(--hairline)] px-4 pt-1 sm:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {section.tabs.map((tab) => {
           const active = tabActive(pathname, tab);
           return (
@@ -226,10 +226,8 @@ export function SectionTabs() {
               <Link
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
-                className={`bubbles-press inline-flex min-h-[44px] items-center rounded-full border px-4 text-body-sm font-extrabold no-underline transition-colors ${
-                  active
-                    ? "border-bubbles-pink-ink bg-bubbles-pink-ink text-white"
-                    : "border-line bg-surface text-ink-soft hover:border-line-strong hover:text-ink"
+                className={`-mb-px inline-flex min-h-[44px] items-center whitespace-nowrap border-b-2 px-0.5 text-body-sm font-semibold no-underline transition-colors ${
+                  active ? "border-[color:var(--ink)] text-ink" : "border-transparent text-ink-soft hover:text-ink"
                 }`}
               >
                 {tab.label}
@@ -324,7 +322,7 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
                         href={tab.href}
                         aria-current={active ? "page" : undefined}
                         className={`flex min-h-[44px] items-center gap-2 rounded-2xl px-3 text-body-sm font-extrabold no-underline ${
-                          active ? "bg-tint-grape text-bubbles-grape-deep" : "text-default hover:bg-blush"
+                          active ? "bg-blush font-semibold text-bubbles-pink-ink" : "text-default hover:bg-blush"
                         }`}
                       >
                         {tab.label}
@@ -363,7 +361,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
           href={item.href}
           aria-current={active ? "page" : undefined}
           data-tab
-          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold no-underline ${
+          className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-semibold no-underline ${
             active ? "text-bubbles-pink-ink" : "text-muted"
           }`}
         >
@@ -380,7 +378,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
         className="lg:hidden sticky bottom-0 z-sticky px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-blush via-blush/95 to-transparent"
         aria-label="Bubbles navigation"
       >
-        <ul data-dock className="m-0 flex list-none items-end justify-around gap-1 rounded-full border border-line bg-surface px-2 py-1.5 shadow-lg">
+        <ul data-dock className="m-0 flex list-none items-end justify-around gap-1 rounded-[28px] border border-[color:var(--hairline)] bg-surface/95 px-2 py-1.5 shadow-[0_10px_32px_rgba(30,27,46,0.08)] backdrop-blur">
           {tabLink(tabs[0])}
           {tabLink(tabs[1])}
           <li>
@@ -402,7 +400,7 @@ export function MobileNav(_props: { activeView?: string; onNavigate?: (id: strin
               aria-current={!onTab ? "page" : undefined}
               data-tab
               onClick={() => setMoreOpen(true)}
-              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-extrabold ${
+              className={`flex min-h-[48px] min-w-[56px] flex-col items-center justify-center gap-0.5 rounded-2xl text-chip font-semibold ${
                 !onTab ? "text-bubbles-pink-ink" : "text-muted"
               }`}
             >
@@ -447,7 +445,7 @@ export function Header({
               onClick={() => window.dispatchEvent(new Event("bubbles:ask"))}
               aria-label="Ask Bubbles or find a page"
               aria-haspopup="dialog"
-              className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full border-2 border-line bg-surface text-muted hover:text-default lg:hidden"
+              className="bubbles-press flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-muted hover:text-default lg:hidden"
             >
               <NavIcon id="search" size={20} />
             </button>

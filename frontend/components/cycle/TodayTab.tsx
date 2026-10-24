@@ -176,7 +176,7 @@ function Loaded({ o, safety, onSafety }: { o: Overview; safety: DayResponse["saf
         )}
         {o.fertility_note && <p className="m-0 mt-3 text-body-sm text-muted">{o.fertility_note}</p>}
         {o.pms && (
-          <p className="m-0 mt-3 rounded-2xl bg-tint-grape px-4 py-3 text-body-sm font-bold text-bubbles-grape-deep">
+          <p className="m-0 mt-3 border-l-2 border-bubbles-grape py-1 pl-4 text-body-sm text-ink">
             PMS hint · {o.pms.text}{o.pms.personal ? "" : " This is a general window, not learned from your logs yet."}
           </p>
         )}

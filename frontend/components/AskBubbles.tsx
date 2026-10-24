@@ -211,7 +211,7 @@ export function AskBubbles() {
           aria-haspopup="dialog"
           aria-keyshortcuts="Control+K Meta+K"
           aria-expanded={isOpen}
-          className="bubbles-ask-fab bubbles-press fixed bottom-6 right-6 z-sticky hidden h-16 items-center gap-2 rounded-full bg-bubbles-grape p-2 pr-5 text-white bubbles-glow bubbles-glow-grape lg:flex"
+          className="bubbles-ask-fab bubbles-press fixed bottom-6 right-6 z-sticky hidden h-16 items-center gap-2 rounded-full bg-ink p-2 pr-5 text-white shadow-[0_10px_30px_rgba(30,27,46,0.22)] lg:flex"
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-full" aria-hidden="true">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 15a3 3 0 0 1-3 3H8l-4 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3z" /></svg>

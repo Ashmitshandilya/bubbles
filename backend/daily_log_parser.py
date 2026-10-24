@@ -50,6 +50,9 @@ _WAKE = re.compile(
     + r"|\bup\s+(\d{1,2}:\d{2})\s*(am|pm)?", _I)
 # "Slept from 22:50 to 06:30" / "slept 10pm-6am": both ends must be clock times (a colon or am/pm), never bare numbers
 _SLEEP_RANGE = re.compile(r"(?:slept|sleep|asleep|in bed)\s*(?:from|between)?\s*" + _TIME + r"\s*(?:to|until|till|-|–|—|and)\s*" + _TIME, _I)
+# "woke up twice" / "woke up 3 times", with no "during the night"; "woke up at 6" is a wake time, not a count
+_AWAKE_PLAIN = re.compile(r"\bwoke(?:\s+up)?\s+(?:(\d+)\s+times|(once|twice)|(three|four|five)\s+times|(a few|several)\s+times)\b", re.I)
+_SKIPPED_MEAL = re.compile(r"\b(?:skipped|missed|(?:didn'?t|did\s+not)\s+(?:eat|have)|had\s+no|no)\s+(?:my\s+|the\s+|any\s+)?(breakfast|lunch|dinner)\b", re.I)
 _AWAKE = re.compile(r"woke up\s+(?:(\d+)|(once|twice)|(three|four|five) times|(a few|several) times)(?:\s+times)?\s*(?:during|in|at)\s+(?:the\s+)?night", _I)
 _SLEEP_Q_NUM = re.compile(r"sleep quality\D{0,8}(\d{1,2})\s*/\s*10", _I)
 _SLEEP_Q_WORD = re.compile(r"slept\s+(?:very\s+|pretty\s+|quite\s+|fairly\s+)?(great|well|badly|poorly|terribly|okay|ok|fine|deeply|restlessly)", _I)
@@ -78,7 +81,8 @@ _CAFFEINE = re.compile(r"\b(\d+|a|one|two|three|four|five)\s*(?:cups?|mugs?|glas
 # "Coffee: 1 cup", "Tea - 2 cups"
 _CAFFEINE_B = re.compile(r"\b(coffee|tea|chai|espresso|latte|cappuccino)\s*[:\-–]\s*(\d+|a|one|two|three|four|five)\s*(?:cups?|mugs?|glasses?)\b", _I)
 _STEPS = re.compile(r"\b([\d,]{3,7})\s*steps\b|\bsteps\W{0,6}([\d,]{3,7})\b", _I)
-_EXERCISE_WORDS = r"yoga|walk(?:ing)?|run(?:ning)?|jog(?:ging)?|gym|workout|cycling|swim(?:ming)?|exercise|pilates|stretching|dancing|hiking|strength|cardio|zumba"
+_EXERCISE_WORDS = (r"yoga|walk(?:ed|ing)?|run(?:ning)?|ran|jog(?:ged|ging)?|gym|workout|worked\s+out|cycl(?:ing|ed)|swim(?:ming)?|swam|exercise[sd]?|pilates|stretch(?:ing|ed)|"
+                   r"danc(?:ing|ed)|hik(?:ing|ed)|strength|cardio|zumba")
 _EX_A = re.compile(r"\b(\d{1,3})\s*(?:minutes?|mins?)\s*(?:of\s+)?(" + _EXERCISE_WORDS + r")\b", _I)
 _EX_B = re.compile(r"\b(" + _EXERCISE_WORDS + r")\s*(?:for|:)?\s*(\d{1,3})\s*(?:minutes?|mins?)\b", _I)
 _EX_H = re.compile(r"\b(\d(?:\.\d)?)\s*" + _HR_U + r"\s*(?:of\s+)?(" + _EXERCISE_WORDS + r")\b", _I)
@@ -88,7 +92,7 @@ _EX_HM_A = re.compile(r"\b(\d(?:\.\d)?)\s*" + _HR_U + r"\s*(?:and\s*)?(\d{1,2})\
 _WEIGHT = re.compile(r"(?:weight|weigh(?:ed|s)?)\D{0,12}?(\d{2,3}(?:\.\d+)?)\s*(kg|kgs|lbs?|pounds)\b", _I)
 _HR = re.compile(r"(?:resting\s+)?(?:\bhr\b|heart rate|pulse)\D{0,8}?(\d{2,3})(?:\s*bpm)?", _I)
 _BP = re.compile(r"(?:\bbp\b|blood pressure)\D{0,8}?(\d{2,3})\s*/\s*(\d{2,3})", _I)
-_TEMP = re.compile(r"\btemp(?:erature)?\D{0,8}?(\d{2,3}(?:\.\d+)?)\s*°?\s*([cf])?\b", _I)
+_TEMP = re.compile(r"\b(?:temp(?:erature)?\D{0,8}?|fever\D{0,12}?)(\d{2,3}(?:\.\d+)?)\s*°?\s*([cf])?\b", _I)
 _SPO2 = re.compile(r"(?:spo2|oxygen(?: saturation)?)\D{0,8}?(\d{2,3})\s*%?", _I)
 
 # --------------------------------------------------------------------------
@@ -322,7 +326,7 @@ def parse_daily_log(text: str, facts: Iterable[Fact] = (), *, now: datetime | No
                 if "sleep_minutes" not in mt and 30 <= span <= 18 * 60:   # a stated duration always wins over a derived one
                     mt["sleep_minutes"] = span
                     log.estimates["sleep_minutes"] = "derived from the stated bed and wake times"
-    aw = _AWAKE.search(t)
+    aw = _AWAKE.search(t) or _AWAKE_PLAIN.search(t)
     if aw:
         word = (aw.group(2) or aw.group(3) or aw.group(4) or "").lower()
         n = int(aw.group(1)) if aw.group(1) else _COUNT_WORDS.get(word)
@@ -504,6 +508,10 @@ def parse_daily_log(text: str, facts: Iterable[Fact] = (), *, now: datetime | No
         est = _estimate_nutrition(foods, log.meal_phrases)
         if est:
             log.estimates["nutrition"] = est
+    skipped = list(dict.fromkeys(m.group(1).lower() for m in _SKIPPED_MEAL.finditer(t) if m.group(1).lower() not in log.meals))
+    if skipped:
+        mt["skipped_meals"] = skipped   # said, not guessed: "skipped breakfast" is a log of its own
+        d.add("nutrition")
     cm = _CALORIES.search(t)
     if cm:
         mt["calories"] = int(cm.group(1))
