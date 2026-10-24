@@ -233,7 +233,9 @@
     "improve my posture",
     "better posture",
     "stretch my back",
-    "back stretches"
+    "back stretches",
+    "stiff back",
+    "relieve a stiff back"
    ],
    "answer": "Long hours in one position stiffen muscles. Small, frequent changes help more than one big fix.",
    "tips": [
@@ -364,7 +366,6 @@
     "reduce stress quickly",
     "stress relief tips",
     "how to relax",
-    "tension kaise kam karu",
     "ghabrahat kaise kam"
    ],
    "answer": "When you're wound up, slow breathing with a long breath out tells your body it can settle.",
@@ -393,7 +394,10 @@
     "exam ka tension",
     "how to study without stress",
     "exam ka darr",
-    "paper ka tension"
+    "paper ka tension",
+    "calm during exams",
+    "calm during exam",
+    "exam ke time stress"
    ],
    "answer": "Exam pressure is real, and the basics protect your focus: sleep, food, movement and short breaks.",
    "tips": [
@@ -440,7 +444,8 @@
     "is walking enough",
     "benefits of walking",
     "walking benefits",
-    "daily walk"
+    "daily walk",
+    "how much walking"
    ],
    "answer": "Walking is a great place to start. Research suggests benefits begin well below 10,000 steps, and steady daily movement matters more than a magic number.",
    "tips": [
@@ -706,7 +711,9 @@
     "what to snack on",
     "snack ideas",
     "evening snack healthy",
-    "healthy snack options"
+    "healthy snack options",
+    "snack healthy",
+    "healthy snacks kya"
    ],
    "answer": "Aim for snacks with some protein or fibre so they hold you till the next meal.",
    "tips": [
@@ -774,7 +781,9 @@
     "better sleep at night",
     "bedtime routine",
     "build a bedtime routine",
-    "how to build a night routine"
+    "how to build a night routine",
+    "tips for better sleep",
+    "neend ke liye tips"
    ],
    "answer": "Sleep likes a pattern. A short, repeatable wind-down tells your body the day is over.",
    "tips": [
@@ -822,7 +831,9 @@
     "water habit",
     "zyada paani kaise",
     "paani peena bhool",
-    "paani zyada kaise"
+    "paani zyada kaise",
+    "kam paani peeta",
+    "kam paani peete"
    ],
    "answer": "It is easiest to drink more when water is simply in front of you and tied to things you already do.",
    "tips": [
@@ -961,7 +972,8 @@
     "phone addiction",
     "cut down on phone",
     "screen time kaise kam",
-    "phone kam kaise"
+    "phone kam kaise",
+    "manage screen time"
    ],
    "answer": "Small friction works better than strict rules: make the phone a little less convenient and give your hands something else to do.",
    "tips": [
@@ -983,7 +995,8 @@
     "so homesick",
     "missing home",
     "ghar ki yaad",
-    "ghar ki bahut yaad"
+    "ghar ki bahut yaad",
+    "deal with homesickness"
    ],
    "answer": "Missing home is a normal sign that people and places matter to you. It usually softens as new routines settle in.",
    "tips": [
@@ -1007,7 +1020,8 @@
     "anger management tips",
     "healthy ways to handle anger",
     "gussa kaise control",
-    "gusse ko kaise"
+    "gusse ko kaise",
+    "gussa aaye"
    ],
    "answer": "Anger is a signal, not a flaw. The aim is to let the heat pass before you decide what to do.",
    "tips": [
@@ -1073,7 +1087,9 @@
     "beginner workout",
     "beginner exercises",
     "how to start working out",
-    "start working out"
+    "start working out",
+    "start jogging",
+    "start running"
    ],
    "answer": "The best start is small enough that you'll actually do it. Consistency matters more than intensity at first.",
    "tips": [
@@ -1119,7 +1135,12 @@
     "stay focused while studying",
     "improve my focus",
     "padhai mein focus",
-    "focus kaise karu"
+    "focus kaise karu",
+    "focus better",
+    "how to focus",
+    "cant focus",
+    "padhai mein dhyan",
+    "dhyan kaise lagau"
    ],
    "answer": "Focus comes in short stretches, so working in blocks usually beats long marathons.",
    "tips": [
@@ -1311,7 +1332,8 @@
     "sleeping in the heat",
     "too hot to sleep",
     "better sleep when it is hot",
-    "garmi mein neend"
+    "garmi mein neend",
+    "hot weather sleep"
    ],
    "answer": "A cooler body helps sleep, so the aim is to lose heat before and during the night.",
    "tips": [
@@ -1394,7 +1416,8 @@
     "morning routine",
     "start my day well",
     "better mornings",
-    "how to start the day"
+    "how to start the day",
+    "productive in the morning"
    ],
    "answer": "A good morning routine is short and repeatable rather than perfect.",
    "tips": [
@@ -1503,7 +1526,10 @@
     "energy in the morning",
     "wake up energetic",
     "feel fresh in the morning",
-    "subah energy"
+    "subah energy",
+    "wake up fresh",
+    "fresh in the morning",
+    "subah kaise fresh"
    ],
    "answer": "Morning energy mostly comes from steady sleep, light and movement.",
    "tips": [
@@ -1585,6 +1611,48 @@
    ],
    "clinician": "See a doctor if you have trouble breathing, high fever, chest pain, or symptoms lasting more than 10 days or getting worse.",
    "followup": "Want some tips for sleeping with a cold?"
+  },
+  {
+   "id": "procrastination",
+   "title": "Beating procrastination",
+   "concepts": [],
+   "triggers": [
+    "stop procrastinating",
+    "beat procrastination",
+    "overcome procrastination",
+    "procrastinating all day",
+    "keep procrastinating"
+   ],
+   "answer": "Procrastination is usually about feeling, not laziness: the task feels big, boring or scary, so the fix is to make the first step tiny.",
+   "tips": [
+    "Decide the very first action and do just 5 minutes of it.",
+    "Break the task into pieces you can finish in 30 minutes or less.",
+    "Remove distractions: phone out of reach, one tab open.",
+    "Reward yourself after a block, and be kind about slips."
+   ],
+   "clinician": "If you can't start anything for weeks and feel low or empty, talking to a professional can help.",
+   "followup": "Want help picking the first tiny step?"
+  },
+  {
+   "id": "budget_eating",
+   "title": "Healthy eating on a budget",
+   "concepts": [],
+   "triggers": [
+    "eat healthy on a budget",
+    "healthy on a budget",
+    "cheap healthy food",
+    "healthy eating on a budget",
+    "budget friendly healthy"
+   ],
+   "answer": "Some of the healthiest foods are also the cheapest, and cooking at home does most of the work.",
+   "tips": [
+    "Build meals on dal, rajma, chana, eggs, curd, oats and seasonal vegetables.",
+    "Buy seasonal fruit and vegetables, and use local markets.",
+    "Cook in batches and carry food from home.",
+    "Limit packaged snacks and sugary drinks, which cost more and fill you less."
+   ],
+   "clinician": "If you have a medical condition with food rules, follow what your doctor or dietitian advised.",
+   "followup": "Want a cheap high-protein meal idea?"
   }
  ]
 }
