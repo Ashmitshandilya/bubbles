@@ -745,3 +745,7 @@ Docs: `docs/admin/README.md` (named exception, Add another admin, rollup and cro
 - Consent text and notice bumped to 2026-11b (`health_memory_from_chat` now covers auto-save); everyone is asked again.
 - Style block gained a short LENSES rule; its word budget moved 540 to 560.
 - Pearl v2: warm pearl ground, hairlines, thin-marker notices, underlined tabs, flat buttons (no glows), signal bubbles show their value.
+
+## 2026-10-25: Bubbles checks its own guesses (prediction ledger)
+
+- `prediction_ledger.py` + `GET /me/predictions` (`prediction_api.py`): from a person's own history Bubbles makes small guesses (a short night, then a lower mood than their usual; a quiet day, then shorter sleep), waits, and scores them against what was logged. A link is only spoken once it has been right at least 65% of 6 or more scored guesses for that person, and is doubted below 50%. One signed `prediction_ledger` document of dates, numbers and counts, no words; no model is involved. Not yet shown in the app: next step is a line on Today or Patterns.

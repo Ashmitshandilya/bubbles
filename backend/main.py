@@ -48,6 +48,7 @@ from insights_api import build_router as build_insights_router
 from push_api import build_router as build_push_router
 from chat_feedback import build_router as build_chat_feedback_router
 from understanding_api import build_router as build_understanding_router
+from prediction_api import build_router as build_prediction_router
 from orbit import build_router as build_orbit_router
 import doc_store
 import brain
@@ -565,6 +566,7 @@ app.include_router(build_wellness_router(get_authenticated_user, supabase))
 app.include_router(build_push_router(supabase))   # POST /internal/push/run (cron secret, not a user route)
 app.include_router(build_chat_feedback_router(get_authenticated_user, supabase))
 app.include_router(build_understanding_router(get_authenticated_user, supabase))   # GET/PUT/DELETE /me/understanding: how Bubbles understands you
+app.include_router(build_prediction_router(get_authenticated_user, supabase))   # GET /me/predictions: Bubbles scores its own guesses against your logs
 app.include_router(build_orbit_router(get_authenticated_user, supabase))   # /orbit/*: relationship support, shared rituals, partner weather
 app.include_router(build_consent_router(get_authenticated_user, supabase))
 app.include_router(build_client_telemetry_router())   # POST /telemetry/client: a fixed problem code, nothing else
