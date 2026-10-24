@@ -216,7 +216,7 @@
   --ease-standard: cubic-bezier(0.2, 0.75, 0.25, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* ── Motion: Semantic ── */
   --transition-fast: var(--duration-fast) var(--ease-standard);
@@ -540,3 +540,14 @@
 .pearl-suggest:hover::before { transform: translateX(3px); }
 .pearl-suggest:focus-visible { outline: 3px solid var(--mind); outline-offset: 2px; border-radius: 6px; }
 @media (prefers-reduced-motion: reduce) { .pearl-suggest, .pearl-suggest::before { transition: none; } }
+
+/* Today's signal bubbles surface once, one after another, like soap bubbles; the float afterwards keeps them alive. */
+@keyframes pearl-surface { from { opacity: 0; transform: translateY(22px) scale(0.6); } to { opacity: 1; transform: none; } }
+@keyframes pearl-fade { from { opacity: 0; } to { opacity: 1; } }
+.pearl-bubbles > li { animation: pearl-surface 720ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.pearl-bubbles > li:nth-child(2) { animation-delay: 70ms; }
+.pearl-bubbles > li:nth-child(3) { animation-delay: 140ms; }
+.pearl-bubbles > li:nth-child(4) { animation-delay: 210ms; }
+.pearl-bubbles > li:nth-child(n+5) { animation-delay: 280ms; }
+.pearl-bubble:active .pearl-bubble-svg { transition-duration: 90ms; }
+@media (prefers-reduced-motion: reduce) { .pearl-bubbles > li { animation: pearl-fade 200ms linear both; animation-delay: 0ms !important; } }
