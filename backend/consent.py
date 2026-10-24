@@ -28,7 +28,7 @@ from ttl_cache import TTLCache
 KIND = "consent"            # the older single yes: document kind / key
 KEY = "ai_chat"
 VERSION = "2026-10b"        # text version of ai_chat_processing (kept so an old yes keeps its meaning). Bump when what is sent changes.
-POLICY_VERSION = "2026-11a"
+POLICY_VERSION = "2026-11b"
 """Version of the privacy notice (frontend/app/lib/privacy-notice-version.ts must match; a test pins it)."""
 
 TABLE = "consent_events"
@@ -50,9 +50,10 @@ PURPOSES: dict[str, dict[str, Any]] = {
     },
     "health_memory_from_chat": {
         "title": "Save details Bubbles notices in chat",
-        "description": "When you mention something about your health in chat, Bubbles suggests saving it so you can confirm or dismiss it. "
-                       "When this is off, chat still works and anything you log yourself is still saved.",
-        "text_version": "2026-10a", "available": True,
+        "description": "When you tell Bubbles things about your day in chat, like how long you slept, water, meals, a walk, your weight or your mood, it saves what you say "
+                       "plainly straight to your logs. Anything that needs more care, like a symptom, a fever, an injury, a medicine or your period, it asks you about first: "
+                       "you choose Save or Skip. When this is off, chat still works and anything you log yourself is still saved.",
+        "text_version": "2026-11b", "available": True,
     },
     "partner_sharing": {
         "title": "Share summaries with one person",

@@ -53,6 +53,7 @@ import doc_store
 import brain
 import brain_facts
 import brain_stats
+import event_autosave
 import name_privacy
 import open_threads
 import person_model
@@ -881,7 +882,11 @@ def _context_stage(user_id: str, user_message: str, first_message: bool = False)
         if names:
             import association_loader
             series, today = association_loader.load_some(supabase, user_id, names)
-            parts.append(("own_facts", brain_facts.sheet(series, today, names), 6))
+            extra = []
+            if brain_facts.mentions_relationship(user_message):   # a fight and a bad night are read side by side
+                tension = association_loader._orbit_series(supabase, user_id, today, 30).get("orbit_tension", {})
+                extra.append(brain_facts.tension_line([d for d, v in tension.items() if v == 1.0], today))
+            parts.append(("own_facts", brain_facts.sheet(series, today, names, extra), 6))
     except Exception:  # noqa: BLE001 - an extra: the reply goes out without it
         pass
     from latest_values_block import latest_values_block
@@ -990,7 +995,15 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             response_text = urgent_fallback_response(safety) if safety.state == "URGENT" else (
                 loneliness_no_consent_reply(turn, name) or (f"{lite}\n\n{consent_ask['reply']}" if lite else consent_ask["reply"]))
         else:
-            response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
+            note, off = "", ""
+            if persisted and safety.state == "NO_REDFLAG" and not turn.conflicts and turn.route in ("daily_log",):
+                done = event_autosave.autosave(supabase, user_id, persisted, defer)   # what was stated plainly is saved now; the rest waits for an OK
+                note = event_autosave.status_note(done["saved"], done["ask"])
+            elif not persisted and state.rule_events and turn.route == "daily_log":
+                off = event_autosave.off_note(supabase, user_id)
+            response_text = deterministic_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]), status_note=note)
+            if off:
+                response_text += "\n\n" + off
         if turn.route in {"fitness_support", "fitness_answer"}:
             response_text = _fitness_text(user_id, user_message)
         elif turn.route == "recall" and not state.consent_required:
@@ -1092,6 +1105,10 @@ def _chat_respond(state: _ChatState, defer) -> dict:
         proposed_saved = persist_chat_events(supabase, user_id, user_message_id, reconciled, persist=persist_events, fresh=state.fresh)
         rule_saved = (rule_job.result()[0] or []) if rule_job is not None else []
         persisted = rule_saved + proposed_saved
+        if persisted and safety.state == "NO_REDFLAG" and not turn.conflicts:
+            ai_done = event_autosave.autosave(supabase, user_id, persisted, defer)
+        else:
+            ai_done = {"saved": [], "ask": []}
         timings["events_ms"] = _ms(t0)
         if is_degraded(ai_result):
             response_text = ai_failed_reply(turn, name=name, saved_events=sum(1 for e in persisted if e["id"]))
@@ -1112,6 +1129,15 @@ def _chat_respond(state: _ChatState, defer) -> dict:
             note = contradiction_note(turn.conflicts)
             if note:
                 response_text += "\n\n" + note
+            if ai_done["saved"]:
+                response_text += "\n\n" + event_autosave.status_note(ai_done["saved"], [])   # the cards below ask about the rest
+            elif state.rule_events and not persisted:
+                off_text = event_autosave.off_note(supabase, user_id)   # typed things Bubbles could log, but saving from chat is off: said once in a while
+                if off_text:
+                    response_text += "\n\n" + off_text
+
+    if not state.consent_required and turn.harbor.tier == 0 and safety.level != "RED":
+        defer(event_autosave.mark_tension_day, supabase, user_id, user_message)   # "a big fight with my boyfriend" marks the day for their own sleep and mood patterns
 
     # ---- 2b. a plainly stated weight or height is saved now, so every screen shows it without a Save tap
     if not state.consent_required and turn.route not in ("correction", "safe_harbor") and safety.level != "RED":

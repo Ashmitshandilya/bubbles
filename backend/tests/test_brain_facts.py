@@ -36,3 +36,14 @@ def test_a_topic_with_no_logs_is_marked_so_the_model_does_not_guess():
 
 def test_nothing_asked_nothing_written():
     assert bf.sheet(series(mood=[5]), TODAY, set()) == ""
+
+
+def test_a_fight_and_a_bad_night_are_read_side_by_side():
+    import brain_facts as b
+    assert b.mentions_relationship("I had a fight with my boyfriend and slept badly")
+    assert "mood" in {n for n in b.series_needed("my boyfriend and I argued")} and "sleep_hours" in b.series_needed("my boyfriend and I argued")
+    line = b.tension_line([TODAY - timedelta(days=1), TODAY - timedelta(days=3), TODAY - timedelta(days=40)], TODAY)
+    assert "2 in the last 14 days" in line and "yesterday" in line
+    assert "none marked" in b.tension_line([], TODAY)
+    text = b.sheet(series(sleep_hours=[6, 5]), TODAY, {"sleep_hours"}, [line])
+    assert text.endswith(line)

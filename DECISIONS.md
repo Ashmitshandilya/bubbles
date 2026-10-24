@@ -737,3 +737,11 @@ Docs: `docs/admin/README.md` (named exception, Add another admin, rollup and cro
 - Clinician sign-off for `clinical_constants.py` before removing the "pending review" banner.
 - Decide which further Figma ideas to build (see the Figma entry: only copy lines and the cue motion are in so far).
 - Owner to fix `~/.claude/settings.json` model aliases only when wanting the free router back (currently reset to defaults).
+
+## 2026-10-25: paragraph logging, save-or-ask policy, Pearl v2
+
+- A long message about a whole day is read by rules (`daily_log_parser`, `paragraph_extras`) into events. `event_policy.decide` saves a plainly stated, rule-extracted, normal-range sleep/water/exercise/weight/mood/food/lifestyle item at once (`event_autosave`); symptoms, fever, injuries, medicine, supplements, period items, abnormal vitals, model proposals and a second sleep/weight/mood the same day are asked once. The reply says which is which.
+- A fight with a partner marks a date-only tension day (`orbit_tension`, no words kept) so a bad night can be read next to it; the model facts sheet carries it.
+- Consent text and notice bumped to 2026-11b (`health_memory_from_chat` now covers auto-save); everyone is asked again.
+- Style block gained a short LENSES rule; its word budget moved 540 to 560.
+- Pearl v2: warm pearl ground, hairlines, thin-marker notices, underlined tabs, flat buttons (no glows), signal bubbles show their value.

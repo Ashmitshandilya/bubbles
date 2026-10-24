@@ -11,6 +11,8 @@ export interface BubbleSignal {
   amount: number | null;
   /** -1 (down) .. 1 (up) against the person's usual, or null when unknown. */
   trend: number | null;
+  /** The value in words, shown inside the bubble ("6h 24m"); omitted when nothing is logged. */
+  valueText?: string;
 }
 
 export interface PlacedBubble {
@@ -21,6 +23,7 @@ export interface PlacedBubble {
   cy: number;
   r: number;
   empty: boolean;
+  valueText?: string;
   /** Vertical rest offset in px: up for a rising trend, down for a falling one, 0 when steady or unknown. */
   drift: number;
 }
@@ -47,7 +50,7 @@ export function layoutBubbles(signals: BubbleSignal[], width: number, height = M
     const trend = s.trend !== null && Number.isFinite(s.trend) && !empty ? clamp(s.trend, -1, 1) : 0;
     return {
       id: s.id, label: s.label, color: COLORS[s.domain], cx: Math.round(slot * (i + 0.5)), cy: Math.round(height / 2),
-      r, empty, drift: Math.round(-trend * MAX_DRIFT) || 0,   // `|| 0` turns -0 into 0
+      r, empty, valueText: empty ? undefined : s.valueText, drift: Math.round(-trend * MAX_DRIFT) || 0,   // `|| 0` turns -0 into 0
     };
   });
 }

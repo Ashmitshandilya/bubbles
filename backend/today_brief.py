@@ -49,6 +49,13 @@ def _short(text: str) -> str:
     return text.strip() if len(words) <= MAX_WORDS else " ".join(words[:MAX_WORDS]).rstrip(",;:") + "."
 
 
+def tidy_association(line: str) -> str:
+    """"On days after you slept longer, your logged mood tended to be higher (60 days logged). ..." as one friendly sentence for the top of Today:
+    the finding, then where it comes from. The statistics and caveats stay on the Patterns page."""
+    head = str(line or "").split(" (")[0].split(". ")[0].strip().rstrip(".")
+    return f"{head}. That's from your own logs, not a cause." if head else ""
+
+
 def warm_line(uid: str, day: str) -> str:
     digest = hashlib.sha256(f"{uid}:{day}".encode()).digest()
     return WARM_LINES[digest[0] % len(WARM_LINES)]
@@ -62,7 +69,7 @@ def pick(*, uid: str, day: str, safety: str | None = None, open_thread: str | No
     if open_thread and open_thread.strip():
         return {"kind": "thread", "text": _short(open_thread)}
     if association and association.strip():
-        return {"kind": "pattern", "text": _short(association)}
+        return {"kind": "pattern", "text": _short(tidy_association(association))}
     if cycle_line and cycle_line.strip():
         return {"kind": "cycle", "text": _short(cycle_line)}
     if orbit_waiting:

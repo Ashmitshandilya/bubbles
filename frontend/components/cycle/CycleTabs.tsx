@@ -42,7 +42,7 @@ export function CycleTabs() {
       <div
         role="tablist"
         aria-label="Cycle sections"
-        className="-mx-1 flex gap-1 overflow-x-auto rounded-full border border-line bg-surface p-1 print:hidden"
+        className="flex gap-6 overflow-x-auto border-b border-[color:var(--hairline)] print:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {CYCLE_TABS.map((t) => {
           const active = t.id === tab;
@@ -64,8 +64,8 @@ export function CycleTabs() {
                   select(next, true);
                 }
               }}
-              className={`min-h-[44px] shrink-0 whitespace-nowrap rounded-full px-4 text-body-sm font-extrabold ${
-                active ? "bg-bubbles-pink-ink text-white" : "text-ink-soft hover:bg-tint-pink hover:text-bubbles-pink-deep"
+              className={`-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b-2 px-0.5 text-body-sm font-semibold transition-colors ${
+                active ? "border-[color:var(--ink)] text-ink" : "border-transparent text-ink-soft hover:text-ink"
               }`}
             >
               {t.label}

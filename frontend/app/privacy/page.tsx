@@ -52,7 +52,7 @@ export default function PrivacyPage() {
             Each provider handles data under its own terms. Turn it off and nothing more is sent. Messages that sound like an emergency, logging, patterns and fitness questions are handled by Bubbles itself and never need this.
           </li>
           <li>
-            <strong>Save details Bubbles notices in chat.</strong> Bubbles suggests saving them and you confirm or dismiss each one. When it is off, chat still works and anything you log yourself is still saved.
+            <strong>Save details Bubbles notices in chat.</strong> What you say plainly, such as how long you slept, water, meals, a walk, your weight or your mood, is saved straight to your logs. Anything that needs more care, such as a symptom, a fever, an injury, a medicine or your period, Bubbles asks about first: you choose Save or Skip, and a detail a model proposed is never saved without you. When it is off, chat still works and anything you log yourself is still saved. A fight with a partner that you mention only marks the day as a tense day in your own patterns; no words are kept.
           </li>
           <li>
             <strong>Share summaries with one person.</strong> Nothing is shared until you pick what and who. Turning it off ends all sharing at once.

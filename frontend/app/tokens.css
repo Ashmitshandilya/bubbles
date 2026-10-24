@@ -386,6 +386,34 @@
   --pearl-shadow-sheet: 0 -8px 40px rgba(30, 27, 46, 0.14);
 }
 
+/* ============================================================
+   PEARL v2: the quiet ground (renovation, 2026-10-25)
+   A warm pearl page, neutral hairlines, deep plum ink, one pink accent used on actions only, soft neutral shadows, and no glows. These
+   come after the first palette so they win; the dusk theme below re-points them again for Heart-to-heart.
+   ============================================================ */
+:root {
+  --bubbles-blush: #FAF8F5;
+  --bubbles-line: #ECE7E1;
+  --bubbles-line-strong: #DDD6CE;
+  --bubbles-lilac: #EDE8F4;
+  --bubbles-ink: #1E1B2E;
+  --bubbles-ink-soft: #57516A;
+  --bubbles-ink-faint: #706A7D;
+  --color-border-strong: #CFC7BE;
+  --color-surface-soft: #FDFCFA;
+  --color-overlay: rgba(250, 248, 245, 0.92);
+  --color-overlay-strong: rgba(250, 248, 245, 0.97);
+  --paper: #FAF8F5;
+  --hairline: #E8E2DB;
+  --shadow-sm: 0 1px 2px rgba(30, 27, 46, .04), 0 4px 12px rgba(30, 27, 46, .04);
+  --shadow-md: 0 8px 24px rgba(30, 27, 46, .06);
+  --shadow-lg: 0 16px 40px rgba(30, 27, 46, .08);
+  --shadow-xl: 0 24px 56px rgba(30, 27, 46, .10);
+  --shadow-glow-brand: none;
+  --shadow-glow-accent: none;
+  --shadow-glow-success: none;
+}
+
 /* Heart-to-heart and the Orbit hero: a late-night conversation, clearly different from Talk. Scoped, never app-wide.
    It re-points the working palette, so every component inside follows (text AA on the plum background). */
 .dusk {
@@ -481,15 +509,27 @@
 .pearl-bubbles { display: flex; justify-content: space-between; align-items: flex-end; margin: 22px 0 0; padding: 0; list-style: none; width: 100%; }
 .pearl-bubble { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 44px; min-height: 44px; padding: 4px; background: none; border: 0; color: var(--ink); font: inherit; cursor: pointer; }
 .pearl-bubble:focus-visible { outline: 3px solid var(--mind); outline-offset: 2px; border-radius: 12px; }
-.pearl-bubble svg { transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes pearl-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
+.pearl-bubble-svg { --s: 1; animation: pearl-float 7s ease-in-out infinite; transform: translateY(var(--drift, 0px)) scale(var(--s)); transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1); overflow: visible; }
+.pearl-bubble:hover .pearl-bubble-svg, .pearl-bubble:focus-visible .pearl-bubble-svg { --s: 1.07; }
+.pearl-bubble:active .pearl-bubble-svg { --s: 0.97; }
+.pearl-bubble-value { font-family: var(--font-fraunces), Georgia, serif; font-size: 0.78rem; font-weight: 600; fill: var(--ink); }
 .pearl-bubble-label { font-size: 0.8125rem; font-weight: 600; }
 .pearl-bubble-gap { font-size: 0.75rem; color: var(--ink-soft); }
 .pearl-thread { padding: 18px 0; border-bottom: 1px solid var(--hairline); }
 .pearl-thread-ends { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; color: var(--ink-soft); }
 .pearl-thread-ends i { flex: 1; border-top: 1.5px dotted var(--gold-line); }
 .pearl-thread-text { margin: 8px 0 0; font-family: var(--font-fraunces), Georgia, serif; font-size: 1.125rem; line-height: 1.5; }
-@media (prefers-reduced-motion: reduce) { .pearl-bubble svg { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pearl-bubble-svg { transition: none; animation: none !important; } }
 .pearl-log { margin-top: 32px; }
 .pearl-log-row { display: flex; gap: 10px; margin-top: 8px; }
 .pearl-log-input { flex: 1 1 auto; min-width: 0; min-height: 48px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--hairline); background: var(--paper-raised); color: var(--ink); font: inherit; }
 .pearl-log-input:focus-visible { outline: 3px solid var(--mind); outline-offset: 1px; }
+
+/* A suggested follow-up: quiet text with a small arrow, not an underlined link */
+.pearl-suggest { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 4px 0; background: none; border: 0; color: var(--ink-soft); font: inherit; font-size: 0.9375rem; font-weight: 500; cursor: pointer; transition: color 160ms; }
+.pearl-suggest::before { content: "\2192"; color: var(--brand); font-weight: 600; transition: transform 160ms; }
+.pearl-suggest:hover { color: var(--ink); }
+.pearl-suggest:hover::before { transform: translateX(3px); }
+.pearl-suggest:focus-visible { outline: 3px solid var(--mind); outline-offset: 2px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { .pearl-suggest, .pearl-suggest::before { transition: none; } }

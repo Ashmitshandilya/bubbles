@@ -952,8 +952,8 @@ export function CompanionClient({ mode = "talk" }: { mode?: "talk" | "orbit" } =
                     disabled={composerDisabled || !input.trim()}
                     className={`bubbles-press flex h-12 w-12 shrink-0 items-center justify-center rounded-full disabled:cursor-not-allowed ${
                       sending || input.trim()
-                        ? "bg-bubbles-pink-ink text-white bubbles-glow"
-                        : "bg-tint-grape text-bubbles-grape-deep shadow-none"
+                        ? "bg-ink text-white"
+                        : "bg-blush text-ink-soft shadow-none"
                     }`}
                   >
                     {sending ? (
