@@ -366,7 +366,7 @@
     "reduce stress quickly",
     "stress relief tips",
     "how to relax",
-    "ghabrahat kaise kam"
+    "reduce stress naturally"
    ],
    "answer": "When you're wound up, slow breathing with a long breath out tells your body it can settle.",
    "tips": [
@@ -467,7 +467,9 @@
     "exercise motivation",
     "workout motivation",
     "how to start a routine",
-    "exercise shuru kaise"
+    "exercise shuru kaise",
+    "slump in motivation",
+    "motivation slump"
    ],
    "answer": "The easiest way to start is smaller than you think, at a time you already have.",
    "tips": [
@@ -783,7 +785,9 @@
     "build a bedtime routine",
     "how to build a night routine",
     "tips for better sleep",
-    "neend ke liye tips"
+    "neend ke liye tips",
+    "sleep better when stressed",
+    "sleep when stressed"
    ],
    "answer": "Sleep likes a pattern. A short, repeatable wind-down tells your body the day is over.",
    "tips": [
@@ -1113,7 +1117,10 @@
     "calm before presentation",
     "nervous before exam",
     "interview se pehle ghabrahat",
-    "interview ka tension"
+    "interview ka tension",
+    "nervousness before a presentation",
+    "presentation se pehle ghabrahat",
+    "nervous before a presentation"
    ],
    "answer": "Some nerves mean you care, and they can be turned into focus.",
    "tips": [
@@ -1653,6 +1660,226 @@
    ],
    "clinician": "If you have a medical condition with food rules, follow what your doctor or dietitian advised.",
    "followup": "Want a cheap high-protein meal idea?"
+  },
+  {
+   "id": "late_nights",
+   "title": "Staying up too late",
+   "concepts": [],
+   "triggers": [
+    "stop staying up late",
+    "habit of staying up late",
+    "staying up late",
+    "go to bed earlier",
+    "raat ko late tak jagna",
+    "late tak jagna"
+   ],
+   "answer": "Late nights usually run on a habit loop, so the aim is to move bedtime a little at a time and make the evening calmer.",
+   "tips": [
+    "Shift bedtime earlier by 15 minutes every few days rather than all at once.",
+    "Set a screens-off time and an alarm for winding down, not just waking.",
+    "Get daylight in the morning; it anchors your body clock.",
+    "If you stay up for something fun or stress, decide a cut-off time in advance."
+   ],
+   "clinician": "If you cannot fall asleep even when you try, or feel unrefreshed for weeks, speak to a doctor.",
+   "followup": "Want to look at your sleep times this week?"
+  },
+  {
+   "id": "walking_habit",
+   "title": "Building a walking habit",
+   "concepts": [],
+   "triggers": [
+    "habit of walking",
+    "build a walking habit",
+    "start a walking habit",
+    "walk every day",
+    "make walking a habit",
+    "walking routine"
+   ],
+   "answer": "A walking habit sticks when it is tied to something you already do and starts small.",
+   "tips": [
+    "Begin with 10 minutes after a meal or after your morning tea.",
+    "Add 2 to 5 minutes each week.",
+    "Walk with a friend, a podcast or music.",
+    "Track the streak, not the distance."
+   ],
+   "clinician": "If you have pain, dizziness or a health condition, check with a doctor before increasing.",
+   "followup": "Want to set a small daily walking goal?"
+  },
+  {
+   "id": "less_coffee",
+   "title": "Drinking less coffee",
+   "concepts": [],
+   "triggers": [
+    "drink less coffee",
+    "cut down on coffee",
+    "reduce coffee",
+    "less caffeine",
+    "chai kam",
+    "coffee kam kaise"
+   ],
+   "answer": "Cutting down slowly avoids headaches and tiredness, and swapping rather than just removing makes it stick.",
+   "tips": [
+    "Reduce by half a cup every few days instead of stopping suddenly.",
+    "Swap some cups for water, herbal tea or a smaller serving.",
+    "Keep caffeine to the morning so sleep isn't affected.",
+    "Have a snack or a glass of water first when you reach for a cup out of habit."
+   ],
+   "clinician": "If you get strong withdrawal symptoms, a racing heart or chest discomfort, speak to a doctor.",
+   "followup": "Want to see how your sleep looks on high and low caffeine days?"
+  },
+  {
+   "id": "cut_sugar",
+   "title": "Cutting down on sugar",
+   "concepts": [],
+   "triggers": [
+    "cut down on sugar",
+    "reduce sugar",
+    "eat less sugar",
+    "less sugar",
+    "meetha kam",
+    "sugar cravings"
+   ],
+   "answer": "Most people do best by trimming sugar gradually and replacing it with something satisfying.",
+   "tips": [
+    "Start with sugary drinks: swap for water, nimbu pani or plain tea with less sugar.",
+    "Eat enough protein and fibre so you aren't chasing quick energy.",
+    "Keep fruit or nuts handy for cravings.",
+    "Check labels: sugar hides in sauces, cereals and packaged snacks."
+   ],
+   "clinician": "If you have diabetes or are worried about your sugar levels, ask your doctor or dietitian for personal advice.",
+   "followup": "Want some low-sugar snack ideas?"
+  },
+  {
+   "id": "protein_breakfast",
+   "title": "High protein breakfast",
+   "concepts": [],
+   "triggers": [
+    "high protein breakfast",
+    "protein breakfast",
+    "protein rich breakfast",
+    "breakfast with protein",
+    "easy protein breakfast",
+    "high protein breakfasts",
+    "easy high protein"
+   ],
+   "answer": "A breakfast with protein keeps you full for longer, and it doesn't need to be complicated.",
+   "tips": [
+    "Eggs, omelette or egg bhurji with toast.",
+    "Moong dal or besan chilla, paneer paratha, or sprouts.",
+    "Curd or Greek yogurt with fruit and nuts.",
+    "Oats or poha with peanuts and a side of milk or curd."
+   ],
+   "clinician": "If you have a medical condition with diet rules, follow what your doctor or dietitian advised.",
+   "followup": "Want a vegetarian or egg-based plan?"
+  },
+  {
+   "id": "light_dinner",
+   "title": "A light dinner",
+   "concepts": [],
+   "triggers": [
+    "light dinner",
+    "light dinner ideas",
+    "ideas for dinner",
+    "what to eat for dinner",
+    "dinner mein halka",
+    "halka dinner",
+    "dinner mein kya halka",
+    "halka khayein"
+   ],
+   "answer": "A light dinner sits easily and helps sleep, and it can still be filling.",
+   "tips": [
+    "Dal soup or khichdi with vegetables.",
+    "A roti or two with sabzi and curd.",
+    "Grilled paneer, tofu or eggs with salad.",
+    "Finish about 2 to 3 hours before bed."
+   ],
+   "clinician": "If you have digestive issues or a medical diet, follow your doctor's advice.",
+   "followup": "Want a few quick recipes?"
+  },
+  {
+   "id": "desk_stretch",
+   "title": "Desk stretches",
+   "concepts": [],
+   "triggers": [
+    "stretch at my desk",
+    "desk stretches",
+    "stretches at your desk",
+    "stretch at work",
+    "desk stretch routine"
+   ],
+   "answer": "A minute of stretching every hour keeps the neck, shoulders and back from stiffening.",
+   "tips": [
+    "Roll your shoulders back, then slowly tilt your head side to side.",
+    "Stand, reach overhead and gently lean left and right.",
+    "Do wrist circles and open-close your hands.",
+    "Stand up and walk for a minute whenever you can."
+   ],
+   "clinician": "If a stretch causes sharp pain, numbness or tingling, stop and see a doctor or physiotherapist.",
+   "followup": "Want a full 3-minute desk routine?"
+  },
+  {
+   "id": "nail_biting",
+   "title": "Stopping nail biting",
+   "concepts": [],
+   "triggers": [
+    "stop biting my nails",
+    "nail biting",
+    "bite my nails",
+    "stop nail biting",
+    "nakhun chabana"
+   ],
+   "answer": "Nail biting is often a stress or boredom habit, so replacing it works better than just trying to stop.",
+   "tips": [
+    "Notice when you do it: stress, boredom or screens.",
+    "Keep nails short and filed, and keep your hands busy with a fidget item.",
+    "Chew sugar-free gum or have something crunchy as a swap.",
+    "Be patient; habits take weeks to change."
+   ],
+   "clinician": "If it causes pain, infection or you can't stop despite trying, talk to a doctor or counsellor.",
+   "followup": "Want help with the stress side of it?"
+  },
+  {
+   "id": "confidence",
+   "title": "Feeling more confident",
+   "concepts": [],
+   "triggers": [
+    "feel more confident",
+    "build confidence",
+    "boost my confidence",
+    "more confident",
+    "confidence tips",
+    "confidence badhane"
+   ],
+   "answer": "Confidence grows from small proofs that you can do things, more than from pep talks.",
+   "tips": [
+    "Pick one small challenge a day and finish it.",
+    "Prepare for situations that worry you, and practise out loud.",
+    "Notice what you did well at the end of each day.",
+    "Stand tall, breathe slowly, and speak a little slower."
+   ],
+   "clinician": "If low self-worth feels constant or heavy, talking to a counsellor can help.",
+   "followup": "Want to try a small confidence challenge today?"
+  },
+  {
+   "id": "stay_positive",
+   "title": "Staying positive",
+   "concepts": [],
+   "triggers": [
+    "stay positive",
+    "be more positive",
+    "positive thinking",
+    "think positive",
+    "positive rehne"
+   ],
+   "answer": "Staying positive isn't about ignoring problems; it's about giving good things and small wins equal attention.",
+   "tips": [
+    "Write down 3 small good things each evening.",
+    "Limit doomscrolling and spend time with people who lift you.",
+    "Move your body and get daylight; mood follows.",
+    "Speak to yourself the way you'd speak to a friend."
+   ],
+   "clinician": "If you feel low most days for weeks, a professional can help.",
+   "followup": "Want to start a three good things habit tonight?"
   }
  ]
 }
