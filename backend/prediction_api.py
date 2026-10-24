@@ -29,7 +29,7 @@ def run(db: Any, uid: str) -> dict[str, Any]:
         doc_store.put(db, uid, KIND, KEY, ledger)
     sentences = [s for s in (pl.line(ledger, g) for g in fresh) if s]
     links = [{"link": [x, y], **pl.trust(ledger, x, y)} for x, y, *_ in pl.LINKS]
-    return {"status": "success", "today": sentences, "links": links, "scored_now": scored}
+    return {"status": "success", "today": sentences, "links": links, "scored_now": scored, "checked": pl.checked(ledger, today)}
 
 
 def build_router(get_user: Callable[[str | None], Any], db: Any) -> APIRouter:

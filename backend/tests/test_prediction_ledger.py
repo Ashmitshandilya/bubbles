@@ -92,3 +92,12 @@ def test_the_facts_sheet_gets_only_earned_links():
     ledger = {"stats": {"sleep_hours->mood": {"hit": 8, "miss": 2}, "hydration_ml->mood": {"hit": 1, "miss": 5}}}
     lines = pl.record_lines(ledger)
     assert len(lines) == 1 and "right 8 of 10" in lines[0] and "never a cause" in lines[0]
+
+
+def test_the_newest_checked_guess_is_said_plainly_hit_or_miss_and_old_ones_are_not():
+    base = {"link": ["sleep_hours", "mood"], "x_now": 4.0, "x_usual": 7.0, "y_usual": 3.0, "tie_band": 0.1, "expected": "lower"}
+    miss = {**base, "made_on": "2026-10-23", "target": "2026-10-24", "scored": "miss"}
+    old = {**base, "made_on": "2026-10-01", "target": "2026-10-02", "scored": "hit"}
+    assert "did not hold" in pl.checked({"entries": [old, miss]}, TODAY)
+    assert "it held" in pl.checked({"entries": [{**miss, "scored": "hit"}]}, TODAY)
+    assert pl.checked({"entries": [old]}, TODAY) == ""

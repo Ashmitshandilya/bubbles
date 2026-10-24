@@ -12,7 +12,7 @@ import { LoadingBubbles } from "../../../components/hub/HubKit";
 import { isSupabaseConfigured } from "../../../lib/supabase";
 import { SafetyBanner, type SafetyLevel } from "./SafetyBanner";
 import { BodyMapRow, ComingUp, LogInput, MoreFold, QuickLog, WorthALook, comingUpRows } from "./TodaySections";
-import { Lede, LivingBubbles, Row, Rows, Section } from "../../../components/pearl";
+import { InlineNote, Lede, LivingBubbles, Row, Rows, Section } from "../../../components/pearl";
 import { type Nudge } from "../../lib/nutrients";
 import { InsightSheetProvider } from "../../insights/InsightDetailSheet";
 import { LastUpdatedCard } from "./LastUpdatedCard";
@@ -71,6 +71,7 @@ export function DashboardClient() {
   const [livingMap, setLivingMap] = useState<Loadable<LivingMapData>>(LOADING);
   const [nudges, setNudges] = useState<Nudge[]>([]);
   const [lede, setLede] = useState<string | null>(null);
+  const [checked, setChecked] = useState<string | null>(null);
   const [orbitQuestion, setOrbitQuestion] = useState<{ text?: string; answered?: boolean } | null>(null);
   const [water, setWater] = useState<WaterState>("idle");
   const [serverLastUpdate, setServerLastUpdate] = useState<string | null>(null);
@@ -102,7 +103,7 @@ export function DashboardClient() {
       if (earlier.brief) setBrief({ status: "ready", data: earlier.brief });
       if (earlier.weekly) setWeekly({ status: "ready", data: earlier.weekly });
       if (earlier.livingMap) setLivingMap({ status: "ready", data: earlier.livingMap });
-      setNudges(earlier.nudges); setProfile(earlier.profile ?? null); setLede(earlier.lede?.text ?? null); setOrbitQuestion(earlier.orbit?.question ?? null);
+      setNudges(earlier.nudges); setProfile(earlier.profile ?? null); setLede(earlier.lede?.text ?? null); setChecked(earlier.checked || null); setOrbitQuestion(earlier.orbit?.question ?? null);
     }
     const get = async <T,>(path: string, init?: RequestInit): Promise<T> => {
       const response = await fetchRef.current(path, init, TODAY_LIMITS);
@@ -129,7 +130,7 @@ export function DashboardClient() {
     settle(part((b) => b.weekly), setWeekly);
     settle(part((b) => b.livingMap), setLivingMap);
     bundle.then(
-      (b) => { if (alive) { setNudges(b.nudges); setProfile(b.profile ?? null); setLede(b.lede?.text ?? null); setOrbitQuestion(b.orbit?.question ?? null); } },
+      (b) => { if (alive) { setNudges(b.nudges); setProfile(b.profile ?? null); setLede(b.lede?.text ?? null); setChecked(b.checked || null); setOrbitQuestion(b.orbit?.question ?? null); } },
       () => { /* every part above shows its own error; the greeting and lede fall back to neutral */ },
     );
     get<{ last_update?: string | null; summary?: { last_update?: string } }>("/health/summary?last_only=true").then(
@@ -254,6 +255,7 @@ export function DashboardClient() {
             {lede ? <Lede>{lede}</Lede> : brief.status === "error" && trackers.sleep.status === "error" ? (
               <Lede>Bubbles couldn&apos;t load today. Your data is safe. <button type="button" onClick={reload} className="pearl-link">Try again</button></Lede>
             ) : null}
+            {checked ? <InlineNote>{checked}</InlineNote> : null}
 
             <Section label="Today's signals">
               <LivingBubbles signals={bubbles} onOpen={(id) => router.push(SIGNAL_META[id as SignalSlug].href)} />

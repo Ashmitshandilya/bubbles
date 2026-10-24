@@ -90,6 +90,9 @@ _EX_H = re.compile(r"\b(\d(?:\.\d)?)\s*" + _HR_U + r"\s*(?:of\s+)?(" + _EXERCISE
 # "Gym for 1 hour 15 minutes" / "1 hour 15 minutes of yoga": hours plus optional minutes
 _EX_HM_B = re.compile(r"\b(" + _EXERCISE_WORDS + r")\s*(?:for|:)?\s*(\d(?:\.\d)?)\s*" + _HR_U + r"(?:\s*(?:and\s*)?(\d{1,2})\s*" + _MIN_U + r")?", _I)
 _EX_HM_A = re.compile(r"\b(\d(?:\.\d)?)\s*" + _HR_U + r"\s*(?:and\s*)?(\d{1,2})\s*" + _MIN_U + r"\s*(?:of\s+)?(" + _EXERCISE_WORDS + r")\b", _I)
+# "ran 5 km", "walked 3.5 kilometres": a distance with no minutes; the time is estimated from an easy pace and flagged as an estimate
+_EX_KM = re.compile(r"\b(run|ran|running|jog(?:ged|ging)?|walk(?:ed|ing)?|cycl(?:ed|ing)|swam|swim(?:ming)?|hik(?:ed|ing))\b\D{0,20}?(\d{1,3}(?:\.\d+)?)\s*(?:km|kms|kilomet(?:er|re)s?)\b", _I)
+_MIN_PER_KM = {"r": 6, "j": 7, "w": 12, "c": 4, "s": 25, "h": 15}
 _WEIGHT = re.compile(r"(?:weight|weigh(?:ed|s)?)\D{0,24}?(\d{2,3}(?:\.\d+)?)\s*(kg|kgs|lbs?|pounds)\b", _I)
 # a number that is a wish or somebody's advice, not a reading: "should be 55 kg someday", "my goal is 60 kg", "want to reach 58 kg"
 _WEIGHT_WISH = re.compile(r"\b(?:should|ought\s+to|want\s+to|wanna|goal|target|aim(?:ing)?|ideal|someday|one\s+day|hope|wish|trying\s+to\s+(?:reach|get\s+to))\b", _I)
@@ -437,6 +440,13 @@ def parse_daily_log(text: str, facts: Iterable[Fact] = (), *, now: datetime | No
             if 0 < mins <= 600:
                 ex_total += mins
                 ex_types.append(kind.lower())
+    if not ex_total:
+        km = _EX_KM.search(t)
+        if km and 0 < float(km.group(2)) <= 100:
+            ex_total = max(1, round(float(km.group(2)) * _MIN_PER_KM[km.group(1)[0].lower()]))
+            ex_types.append(km.group(1).lower())
+            mt["exercise_distance_km"] = float(km.group(2))
+            mt["exercise_minutes_estimated"] = True
     if ex_total:
         mt["exercise_minutes"] = ex_total
         mt["exercise_types"] = list(dict.fromkeys(ex_types))

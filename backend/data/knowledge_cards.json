@@ -17,7 +17,9 @@
     "fall asleep faster",
     "neend nahi aa rahi",
     "neend nahi aati",
-    "sleep faster"
+    "sleep faster",
+    "neend kaise aaye",
+    "raat ko neend nahi"
    ],
    "answer": "A few small habits help most people settle: the body likes a steady rhythm and a calm, dim runway into bed.",
    "tips": [
@@ -82,7 +84,8 @@
     "daily water intake",
     "how much water do i need",
     "kitna paani peena chahiye",
-    "how much water to drink"
+    "how much water to drink",
+    "roz kitna paani"
    ],
    "answer": "There isn't one number for everyone. Many adults feel well on roughly 6 to 8 glasses of fluids a day, more in heat or when active.",
    "tips": [
@@ -108,7 +111,10 @@
     "headache remedy",
     "headache home remedy",
     "sar dard",
-    "headache what to do"
+    "headache what to do",
+    "sar dard ke liye",
+    "sir dard ke liye",
+    "sar dard tips"
    ],
    "answer": "Many everyday headaches ease with a few comfort steps: water, rest and a quieter, dimmer space.",
    "tips": [
@@ -138,7 +144,9 @@
     "relieve cramps",
     "cramps tips",
     "periods mein dard",
-    "period ka dard"
+    "period ka dard",
+    "periods ke dard",
+    "period dard ke liye"
    ],
    "answer": "Cramps are common, and gentle comfort steps help many people.",
    "tips": [
@@ -191,7 +199,9 @@
     "20-20-20 rule",
     "eyes feel tired",
     "aankhein thak gayi",
-    "screen time eyes"
+    "screen time eyes",
+    "aankhen thak gayi",
+    "aankhon ki thakan"
    ],
    "answer": "Long screen time makes us blink less, which dries and tires the eyes. A few habits help.",
    "tips": [
@@ -353,7 +363,9 @@
     "reduce stress quickly",
     "stress relief tips",
     "how to relax",
-    "tension kaise kam karu"
+    "tension kaise kam karu",
+    "tension kaise kam",
+    "ghabrahat kaise kam"
    ],
    "answer": "When you're wound up, slow breathing with a long breath out tells your body it can settle.",
    "tips": [
@@ -379,7 +391,9 @@
     "nervous before exam",
     "board exam tips",
     "exam ka tension",
-    "how to study without stress"
+    "how to study without stress",
+    "exam ka darr",
+    "paper ka tension"
    ],
    "answer": "Exam pressure is real, and the basics protect your focus: sleep, food, movement and short breaks.",
    "tips": [
@@ -402,7 +416,9 @@
     "post meal walk",
     "walk after dinner",
     "should i walk after eating",
-    "khana khane ke baad walk"
+    "khana khane ke baad walk",
+    "khane ke baad walk",
+    "khane ke baad tehelna"
    ],
    "answer": "A gentle 10 to 15 minute walk after meals is a kind habit for digestion and steady energy for many people.",
    "tips": [
@@ -473,7 +489,9 @@
     "boost my energy",
     "more energy",
     "feel sleepy after lunch",
-    "energy kaise badhaye"
+    "energy kaise badhaye",
+    "dopahar mein neend",
+    "lunch ke baad neend"
    ],
    "answer": "An afternoon dip is very common. It's partly the body's rhythm and partly what and when we eat.",
    "tips": [
@@ -777,7 +795,9 @@
     "what to eat for energy",
     "energy boosting food",
     "kya khana chahiye jab energy kam ho",
-    "energy kam ho"
+    "energy kam ho",
+    "energy ke liye kya khayein",
+    "energy badhane ke liye"
    ],
    "answer": "Steady energy usually comes from regular meals that mix a slow carbohydrate, some protein and something fresh, rather than from one special food.",
    "tips": [
@@ -798,7 +818,9 @@
     "remember to drink water",
     "i forget to drink water",
     "increase my water intake",
-    "water habit"
+    "water habit",
+    "zyada paani kaise",
+    "paani peena bhool"
    ],
    "answer": "It is easiest to drink more when water is simply in front of you and tied to things you already do.",
    "tips": [
@@ -819,7 +841,10 @@
     "breakfast ideas",
     "what to eat for breakfast",
     "good breakfast",
-    "tips for a healthy breakfast"
+    "tips for a healthy breakfast",
+    "nashte mein kya",
+    "healthy nashta",
+    "breakfast mein kya"
    ],
    "answer": "A good breakfast has some protein and some fibre, so it holds you until lunch.",
    "tips": [
@@ -840,7 +865,9 @@
     "overthinking at night",
     "mind racing at night",
     "cant switch off at night",
-    "thoughts at night"
+    "thoughts at night",
+    "raat ko overthinking",
+    "zyada sochna kaise"
    ],
    "answer": "A busy mind at night is very common. It helps to give the thoughts somewhere to go before bed.",
    "tips": [
@@ -862,7 +889,9 @@
     "waking up early",
     "get up early",
     "subah jaldi",
-    "jaldi uthna"
+    "jaldi uthna",
+    "subah jaldi uthna",
+    "jaldi kaise uthu"
    ],
    "answer": "Waking earlier works best by shifting bedtime and wake time together, a little at a time.",
    "tips": [
@@ -928,7 +957,9 @@
     "too much screen time",
     "use my phone less",
     "phone addiction",
-    "cut down on phone"
+    "cut down on phone",
+    "screen time kaise kam",
+    "phone kam kaise"
    ],
    "answer": "Small friction works better than strict rules: make the phone a little less convenient and give your hands something else to do.",
    "tips": [
@@ -949,7 +980,8 @@
     "feeling homesick",
     "so homesick",
     "missing home",
-    "ghar ki yaad"
+    "ghar ki yaad",
+    "ghar ki bahut yaad"
    ],
    "answer": "Missing home is a normal sign that people and places matter to you. It usually softens as new routines settle in.",
    "tips": [
@@ -971,7 +1003,9 @@
     "control my anger",
     "manage anger",
     "anger management tips",
-    "healthy ways to handle anger"
+    "healthy ways to handle anger",
+    "gussa kaise control",
+    "gusse ko kaise"
    ],
    "answer": "Anger is a signal, not a flaw. The aim is to let the heat pass before you decide what to do.",
    "tips": [
@@ -1059,7 +1093,9 @@
     "interview nerves",
     "interview anxiety",
     "calm before presentation",
-    "nervous before exam"
+    "nervous before exam",
+    "interview se pehle ghabrahat",
+    "interview ka tension"
    ],
    "answer": "Some nerves mean you care, and they can be turned into focus.",
    "tips": [

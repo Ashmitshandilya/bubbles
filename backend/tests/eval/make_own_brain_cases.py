@@ -30,6 +30,10 @@ add("knowledge",
     "how to reduce acidity?", "tips for back pain from sitting all day?", "how to boost my energy in the afternoon?", "any hair fall tips?",
     "how to reduce pimples?", "how to get vitamin D from sun?", "tips for a cold and cough?", "how to feel less lonely?", "how to quit smoking?",
     "neend nahi aa rahi kya karu?", "kamar dard ke liye kuch tips?", "periods irregular kyun hote hain?", "does phone before bed affect sleep?")
+add("knowledge",
+    "exam ka tension kaise kam karu?", "khane ke baad walk karna kaisa hai?", "nashte mein kya khana chahiye?", "gussa kaise control karu?",
+    "ghar ki bahut yaad aa rahi hai kya karu?", "subah jaldi uthna kaise start karu?", "roz kitna paani peena chahiye?", "interview ka tension kaise kam karu?",
+    "dopahar mein neend aati hai kya karu?", "zyada paani kaise piye?")
 add("companion",
     "I feel so alone today", "feeling really lonely tonight", "I'm so anxious about tomorrow", "I'm having a panic attack right now", "I miss my mom so much",
     "feeling really low today", "I'm so stressed with work", "feeling overwhelmed with everything", "I'm so tired today", "exhausted after a long day",
