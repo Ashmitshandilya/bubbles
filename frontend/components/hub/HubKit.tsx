@@ -32,6 +32,7 @@ export function HubPage({ title, children }: { title: string; children: ReactNod
 
   return (
     <div className="flex min-h-dvh bg-blush text-ink">
+      <a href="#main" className="pearl-skip">Skip to content</a>
       <Sidebar apiStatus={apiStatus} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header apiStatus={apiStatus} currentPage={title} />

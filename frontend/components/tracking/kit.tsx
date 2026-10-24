@@ -117,11 +117,12 @@ export function TrackerShell({ title, children }: { title: string; children: Rea
   return (
     // Same frame as HubPage: sidebar on the left, then header, notices and the page in one column.
     <div className="flex min-h-dvh bg-blush">
+      <a href="#main" className="pearl-skip">Skip to content</a>
       <Sidebar apiStatus={apiStatus} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Header apiStatus={apiStatus} currentPage={title} />
         <ApiAlert connectionError={connectionError} onRetry={checkApiHealth} />
-        <main className="min-w-0 flex-1 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
+        <main id="main" className="min-w-0 flex-1 px-4 pb-10 pt-6 sm:px-8 sm:pt-7">
           <div className="mx-auto flex w-full max-w-[920px] flex-col gap-6">
             <SectionTabs />
             {children}
