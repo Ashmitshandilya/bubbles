@@ -79,6 +79,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import `in`.heybubbles.app.data.Api
+import `in`.heybubbles.app.data.ChatEvent
 import `in`.heybubbles.app.data.Harbor
 import `in`.heybubbles.app.data.friendly
 import `in`.heybubbles.app.ui.ChatBubbleIcon
@@ -95,6 +96,8 @@ data class Msg(
     val harbor: Harbor? = null,
     /** Quick replies offered under this message (only the newest reply shows them). */
     val suggestions: List<String> = emptyList(),
+    /** Things Bubbles picked up that still wait for the person's Save or Skip. */
+    val asking: List<ChatEvent> = emptyList(),
 )
 
 /** The screen hides itself from screenshots and the recent-apps preview while a Safe Harbor reply is in the conversation. */
@@ -139,10 +142,19 @@ class TalkViewModel(private val api: Api, private val mode: String = "talk") : V
                 val r = api.chat(clean, UUID.randomUUID().toString(), conversationId, mode.takeIf { it == "orbit" })
                 conversationId = r.conversationId ?: conversationId
                 val urgent = r.safety.level == "RED" || r.kind == "emergency"
-                _state.update { it.copy(sending = false, msgs = it.msgs + Msg(r.messageId ?: UUID.randomUUID().toString(), false, r.response, urgent, r.consentAsk, harbor = r.harbor?.shown(), suggestions = r.suggestions.filter { it.isNotBlank() && it != "Open in Heart-to-heart" }.take(3))) }
+                _state.update { it.copy(sending = false, msgs = it.msgs + Msg(r.messageId ?: UUID.randomUUID().toString(), false, r.response, urgent, r.consentAsk, harbor = r.harbor?.shown(), suggestions = r.suggestions.filter { it.isNotBlank() && it != "Open in Heart-to-heart" }.take(3), asking = r.healthEvents.filter { it.status == "pending" && it.id != null })) }
             } catch (e: Exception) {
                 _state.update { it.copy(sending = false, notice = e.friendly()) }
             }
+        }
+    }
+
+    /** Save or Skip for the things asked about under a reply; the card goes away either way. */
+    fun answerEvents(messageId: String, yes: Boolean) {
+        val ids = _state.value.msgs.firstOrNull { it.id == messageId }?.asking?.mapNotNull { it.id }.orEmpty()
+        _state.update { s -> s.copy(msgs = s.msgs.map { if (it.id == messageId) it.copy(asking = emptyList()) else it }) }
+        viewModelScope.launch {
+            try { api.confirmEvents(ids, yes) } catch (e: Exception) { _state.update { it.copy(notice = e.friendly()) } }
         }
     }
 
@@ -199,6 +211,7 @@ fun TalkScreen(api: Api, mode: String = "talk", onBack: (() -> Unit)? = null) {
                             Bubble(m)
                             if (harbor != null) HelpPill { helpFor = harbor }
                         }
+                        if (m.asking.isNotEmpty()) EventAsk(m.asking, onSave = { vm.answerEvents(m.id, true) }, onSkip = { vm.answerEvents(m.id, false) })
                         if (m.consentAsk) ConsentRow(onYes = { vm.answerConsent(true) }, onNo = { vm.answerConsent(false) })
                         if (!s.sending && m.id == s.msgs.last().id && !m.fromUser && m.suggestions.isNotEmpty() && !m.consentAsk && !m.urgent) {
                             Suggestions(m.suggestions, onPick = { vm.send(it) })
@@ -306,6 +319,17 @@ private fun Bubble(m: Msg) {
                 .semantics { contentDescription = (if (mine) "You said: " else if (m.urgent) "Urgent, Bubbles said: " else "Bubbles said: ") + m.text },
             style = MaterialTheme.typography.bodyLarge, color = ink,
         )
+    }
+}
+
+@Composable
+private fun EventAsk(items: List<ChatEvent>, onSave: () -> Unit, onSkip: () -> Unit) {
+    Column(Modifier.fillMaxWidth().padding(top = 2.dp)) {
+        Text("Save to your record: " + items.joinToString(", ") { it.label }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Pill("Save", MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, onClick = onSave)
+            Pill("Skip", MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant, onClick = onSkip)
+        }
     }
 }
 

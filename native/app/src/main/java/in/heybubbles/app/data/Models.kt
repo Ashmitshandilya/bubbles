@@ -54,7 +54,19 @@ fun dialNumber(raw: String?): String {
     val harbor: Harbor? = null,
     /** Up to three quick replies for this message (empty on safety replies). Shown as quiet text buttons under the newest reply. */
     val suggestions: List<String> = emptyList(),
+    /** What Bubbles picked up from the message; the ones still "pending" are asked about once (Save or Skip). */
+    @SerialName("health_events") val healthEvents: List<ChatEvent> = emptyList(),
 )
+
+@Serializable data class ChatEvent(
+    val id: String? = null,
+    @SerialName("event_type") val eventType: String = "",
+    val status: String = "pending",
+    @SerialName("extracted_data") val data: kotlinx.serialization.json.JsonObject = kotlinx.serialization.json.JsonObject(emptyMap()),
+) {
+    /** A short plain label such as "headache" or "ankle injury". */
+    val label: String get() = (data["name"] as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() } ?: eventType.replace('_', ' ')
+}
 
 @Serializable data class StoredMessage(
     val id: String,

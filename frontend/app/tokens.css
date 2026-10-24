@@ -409,6 +409,13 @@
   --shadow-md: 0 8px 24px rgba(30, 27, 46, .06);
   --shadow-lg: 0 16px 40px rgba(30, 27, 46, .08);
   --shadow-xl: 0 24px 56px rgba(30, 27, 46, .10);
+  --tint-pink: #FBEEF3;
+  --tint-grape: #F1EEF8;
+  --tint-sun: #FBF4DC;
+  --tint-mint: #E8F6F0;
+  --tint-sky: #EAF3FA;
+  --tint-peach: #FBEFE8;
+  --tint-urgent: #FBE8EA;
   --shadow-glow-brand: none;
   --shadow-glow-accent: none;
   --shadow-glow-success: none;
