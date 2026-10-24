@@ -29,10 +29,10 @@ TOPIC_WORDS: dict[str, tuple[str, ...]] = {
 
 _ASKS_ABOUT_ME = re.compile(
     r"\b(?:my|mine|i\s+(?:slept|drank|walked|exercised|worked out|have|had|did|was|been)|(?:did|have|was|am|has|do)\s+i|me)\b|"
-    r"\b(?:mera|meri|mere|maine|mujhe|main)\b", re.I)
+    r"\b(?:mera|meri|mere|maine|mujhe|main)\b|\b(?:pichle|is)\s+hafte\s+ka\b", re.I)
 _QUESTION = re.compile(
-    r"\?|^\s*(?:how|what|which|when|did|do|am|is|are|has|have|show|tell|check|give|batao|bata|dikhao|kitna|kitni|kitne|kaisa|kaisi|kya|kab)\b|"
-    r"\b(?:summary|average|compare|compared|batao|bata do|dikhao)\b", re.I)
+    r"\?|^\s*(?:how|what|which|when|did|do|am|is|are|was|were|has|have|show|tell|check|give|batao|bata|dikhao|kitna|kitni|kitne|kaisa|kaisi|kya|kab)\b|"
+    r"\b(?:summary|average|avg|compare|compared|batao|bata do|dikhao|kaisa|kaisi|kitna|kitni|kitne)\b", re.I)
 # advice and "why" questions are for the model, which then gets these numbers as facts
 _NOT_A_DATA_QUESTION = re.compile(
     r"\bhow\s+(?:can|do|to|should|could|would)\b|\bwhat\s+should\b|\bwhy\b|\btips?\b|\badvice\b|\bimprove\b|\bhelp\s+me\b|\bsuggest|\bsleep(?:ing)?\s+better\b(?!\s+than)|\bsleep\s+more\b|"

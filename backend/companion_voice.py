@@ -16,25 +16,25 @@ _NOT_FOR_THIS = re.compile(
     r"\b(?:hopeless|worthless|no\s+point|give\s+up|giving\s+up|can'?t\s+go\s+on|don'?t\s+want\s+to\s+(?:live|be\s+here|exist)|end\s+it|kill|die|dying|suicid\w+|self[- ]?harm|"
     r"hurt\s+myself|cut\s+myself|do\s+something\s+(?:stupid|drastic|crazy|rash|silly)|might\s+do\s+something|trapped|controls?\s+my|disappear\w*|abuse\w*|hits?\s+me|beat\w*|assault\w*|rape\w*|unsafe|threat\w*|"
     r"for\s+(?:weeks|months|years)|since\s+(?:weeks|months|years)|every\s+day|all\s+the\s+time|always|never\s+(?:feel|happy)|"
-    r"pregnan\w+|medicine|medication|tablets?|doctor|hospital|diagnos\w+|"
+    r"pointless|tired\s+of\s+it\s+all|no\s+one\s+would\s+miss|every\s+(?:single\s+)?day|pregnan\w+|medicine|medication|tablets?|doctor|hospital|diagnos\w+|"
     r"disorder|disease|illness|syndrome|condition|depress\w*|bipolar|ocd|ptsd|schizo\w*|adhd|autis\w*|do\s+i\s+have|am\s+i\s+(?:sick|ill|mad|crazy)|"
     r"har\s+din|roz|hamesha|lagatar|kai\s+(?:hafte|mahine)|hafto|mahino|"
     r"drinking|drunk|alcohol|can'?t\s+eat|for\s+days|no\s+reason\s+to\s+live|mar\s+jana|jeena\s+nahi|jaan\s+de)\b", re.I)
 # a feeling someone else has is not the person's own: "my mother feels very sad" goes to the model, "I miss my mom" stays
-_THIRD_PERSON = re.compile(r"\b(?:my\s+(?:mother|mom|mum|father|dad|friend|brother|sister|husband|wife|boyfriend|girlfriend|partner|son|daughter|boss|colleague|neighbou?r)|he|she|they|his|her|their)\b", re.I)
+_THIRD_PERSON = re.compile(r"\b(?:my\s+(?:mother|mom|mum|father|dad|friend|brother|sister|husband|wife|boyfriend|girlfriend|partner|son|daughter|boss|colleague|neighbou?r)|he|she|they|him|them|his|her|their)\b", re.I)
 _FIRST_PERSON = re.compile(r"\b(?:i|i'm|im|i've|ive|i'd|me|myself|main|mujhe|mera|meri|mere|maine)\b", re.I)
 # stress and overwhelm are not health-semantics concepts; these words carry them
 _STRESS = re.compile(r"\b(?:stress(?:ed|ful)?|overwhelm\w*|burn(?:ed|t)\s*out|swamped|too\s+much\s+(?:work|on\s+my\s+plate)|tension|tensed|pressure\s+(?:at|of)\s+(?:work|college|exams?))\b|\bstressed\s+out\b", re.I)
 _JOY = re.compile(
     r"\b(?:got\s+(?:the|a)\s+(?:job|promotion|offer|internship|raise)|promoted|i\s+passed|passed\s+my|cleared\s+(?:my|the)|so\s+happy|really\s+happy|feeling\s+(?:great|amazing|fantastic|wonderful|"
-    r"so\s+good|really\s+good)|great\s+day|good\s+news|excited|(?:feeling|so|really)\s+proud|(?:felt|feel|feeling)\s+(?:so\s+)?calm|feel\s+so\s+much\s+better|(?:feel|feeling)\s+(?:really\s+)?(?:motivated|hopeful)|so\s+relieved|proud\s+of\s+myself|nailed\s+it|did\s+it|best\s+day|khush|bahut\s+khush|maza\s+aa\s+raha|grateful|thankful|nice\s+day|good\s+mood|great\s+workout|feel\s+amazing)\b", re.I)
+    r"so\s+good|really\s+good)|great\s+day|good\s+news|excited|(?:feeling|so|really)\s+proud|(?:felt|feel|feeling)\s+(?:so\s+)?calm|feel\s+so\s+much\s+better|(?:feel|feeling)\s+(?:really\s+)?(?:motivated|hopeful)|so\s+relieved|proud\s+of\s+myself|nailed\s+it|did\s+it|best\s+day|khush|bahut\s+khush|maza\s+aa\s+raha|grateful|thankful|nice\s+day|good\s+mood|(?:really\s+|such\s+a\s+)?good\s+day|bahut\s+ac?cha\s+din|ac?cha\s+din|great\s+workout|feel\s+amazing)\b", re.I)
 _TIRED = re.compile(r"\b(?:so\s+tired|very\s+tired|really\s+tired|exhausted|drained|wiped\s+out|worn\s+out|thak\s+gaya|thak\s+gayi|bahut\s+thak|thaka\s+hua|thaki\s+hui|energy\s+nahi)\b", re.I)
 # softer everyday feelings that carry no symptom: nerves, missing home or family, an ordinary hard day (each needs a first-person cue, checked above)
 _NERVOUS = re.compile(r"\b(?:nervous|worried\s+about|anxious\s+about|scared\s+about|jittery|on\s+edge)\b", re.I)
 _MISSING = re.compile(r"\bmiss(?:ing)?\s+(?:my\s+)?(?:family|home|hometown|parents|friends|college|school|ghar)\b|\bghar\s+ki\s+yaad\b", re.I)
 _LOWISH = re.compile(
     r"\b(?:feel(?:ing)?\s+like\s+crying|want\s+to\s+cry|(?:such\s+a\s+)?(?:hard|tough|rough|bad)\s+day|feel(?:ing)?\s+(?:kind\s+of\s+)?empty|frustrated\s+with\s+myself|feeling\s+(?:kind\s+of\s+)?lost|feel\s+(?:a\s+bit\s+)?stuck|cried\s+(?:a\s+little|today)|today\s+felt\s+heavy|(?:aaj\s+ka\s+)?din\s+bahut\s+bura|bored\s+and\s+(?:a\s+bit\s+)?down|need\s+a\s+hug|"
-    r"udaas\w*|man\s+nahi\s+lag\s+raha)\b", re.I)
+    r"udaas\w*|mood\s+off|man\s+nahi\s+lag\s+raha)\b", re.I)
 _QUESTION_FOR_INFO = re.compile(r"\b(?:how\s+(?:to|can|do|much|many)|what\s+(?:is|are|should)|why|tips?|advice|suggest|which|kaise|kya\s+karu)\b", re.I)
 
 MIND_CONCEPTS = ("panic_attack", "separation_anxiety", "loneliness", "anxiety", "low_mood")
@@ -110,8 +110,8 @@ def concept_of(text: str, active_concepts: Iterable[str] = ()) -> str | None:
     t = str(text or "")
     if not t.strip() or len(t) > 280 or re.search(r"\d", t) or _NOT_FOR_THIS.search(t) or _QUESTION_FOR_INFO.search(t):
         return None   # a number means a log is in the message (it has its own route); a question for information is for a card or the model
-    if _THIRD_PERSON.search(t) and not _FIRST_PERSON.search(t):
-        return None   # about someone else
+    if _THIRD_PERSON.search(t) and (not _FIRST_PERSON.search(t) or not re.search(r"\bmiss(?:ing)?\s+my\b", t, re.I)):
+        return None   # about someone else (only "I miss my mom" is both about them and about me)
     concepts = set(active_concepts)
     mind = next((c for c in MIND_CONCEPTS if c in concepts), None)
     others = concepts - set(MIND_CONCEPTS) - {"fatigue"}

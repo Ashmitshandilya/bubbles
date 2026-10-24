@@ -106,10 +106,10 @@ add("other",
 
 # ---- training round 3 (2026-10-26): more phrasings per kind, more Hinglish, more traps ----
 add("own_data",
-    "how many hours did I sleep last night?", "what time did I go to bed this week on average?", "was I active today?", "how was my water intake yesterday?",
+    "how many hours did I sleep last night?", "was I active today?", "how was my water intake yesterday?",
     "did I drink enough water today?", "how much did I walk this week?", "what's my average mood this month?", "was my mood better yesterday than today?",
     "how's my sleep trending?", "show me my sleep for the last 7 days", "what was my worst sleep night this month?", "how many nights did I sleep under 6 hours?",
-    "how long did I exercise this week?", "how many days did I work out this week?", "what's my total exercise time this month?",
+    "how long did I exercise this week?", "what's my total exercise time this month?",
     "how much water did I drink on average this week?", "which day did I drink the most water?", "have I slept more this week than last week?",
     "mera sleep pichle hafte kaisa raha?", "kal maine kitna paani piya?", "is mahine meri activity kaisi rahi?", "aaj maine kitni der exercise ki?",
     "meri neend is hafte theek rahi?", "pichle hafte ka mood batao", "mera paani ka average kitna hai?", "kal raat main kitne ghante soya?")
@@ -147,11 +147,44 @@ add("other",
     "create a 7 day meal plan", "plan a 30 day workout", "what should I eat before a marathon?", "which protein powder is best?",
     # other people / chit chat / unclear
     "my brother can't sleep, any tips for him?", "my mom is feeling low", "my friend wants to lose weight how can I help", "he is always tired",
-    "what's your name?", "do you like music?", "I am bored", "nothing", "hmm", "yes", "no", "good night", "how are you?", "feeling lazy today", "such a boring day", "I just need someone to talk to", "are you real?",
+    "what's your name?", "do you like music?", "I am bored", "nothing", "hmm", "yes", "no", "good night", "how are you?", "what time did I go to bed this week on average?", "how many days did I work out this week?", "feeling lazy today", "such a boring day", "I just need someone to talk to", "are you real?",
     # safety wins
     "I want to sleep forever and never wake up", "I can't take this anymore, everything feels pointless", "my partner pushes me when he is angry",
     "I feel safe nowhere in my own home", "sometimes I wish I wasn't alive", "mujhe jeene ka mann nahi karta", "kal raat bahut dar laga, pati ne maara",
     "I feel so lonely and I've been drinking every night", "I'm so stressed I can't eat or sleep for days")
+
+# ---- training round 4 (2026-10-26 evening): typos, no punctuation, lowercase, Hinglish, and more traps ----
+add("own_data",
+    "how did i sleep last night", "how was my sleep this week", "did i drink enough water today", "whats my average mood this week",
+    "how many glasses of water did i drink today", "was i active this week", "how many hours of sleep did i get on average this month", "how has my mood been lately",
+    "is my water intake better than last week", "am i moving enough this week", "what was my best mood day this week", "how much did i exercise today",
+    "meri neend kaisi rahi kal raat", "aaj kitna paani piya maine", "is hafte mera mood kaisa raha", "mere sleep ka average batao", "kal maine kitni walk ki", "pichle hafte ka mood batao", "mera paani ka intake is hafte kaisa raha")
+add("knowledge",
+    "tips for better sleep", "how to relieve a stiff back", "ways to drink more water", "what to eat for breakfast", "how to stay calm during exams",
+    "how to be more productive in the morning", "how to deal with homesickness", "how to handle anger", "how much walking is enough", "how to start jogging",
+    "how to reduce eye strain", "how do i stop procrastinating", "how to focus better", "how to relax after a long day", "how to manage screen time",
+    "how to eat healthy on a budget", "how to snack healthy", "how to wake up fresh", "what to do when i can't focus", "tips for hot weather sleep",
+    "neend ke liye tips", "exam ke time stress kaise handle karu", "subah kaise fresh uthu", "healthy snacks kya hain", "ghar ki yaad aaye to kya karu",
+    "gussa aaye to kya karu", "kam paani peeta hun kya karu", "padhai mein dhyan kaise lagau")
+add("companion",
+    "i feel so happy today", "im so stressed right now", "i miss my family so much", "feeling kind of anxious today", "had a really good day", "i feel tired today",
+    "today was a good day", "i feel a bit low", "so proud of myself today", "im super tired", "feeling nervous about tomorrow", "i feel so relieved today",
+    "aaj bahut accha din tha", "mujhe thoda ghabrahat ho rahi hai", "aaj mood off hai", "main bahut thaka hua hun", "bahut tension hai aaj")
+add("other",
+    "slept 7 hours had 3 glasses of water", "walked 4 km today", "cycled 10 km this morning", "swam for 30 minutes", "i took a nap for 20 minutes",
+    "weight today 59.8 kg", "had biryani for lunch", "meditated 10 minutes", "mood 8/10", "aaj 2 km daud lagayi",
+    "which medicine for fever", "can i give my baby honey", "how much calcium tablet should i take", "is it safe to fast during pregnancy",
+    "i got a rash after taking antibiotics", "my heart is racing and i feel dizzy", "i keep getting headaches every morning for a month",
+    "i have been losing weight without trying", "my stool is black", "i feel a tightness in my chest when i climb stairs",
+    "why do i feel sad for no reason", "why am i always hungry", "what is the best diet for me", "can you plan my workouts for a month",
+    "my wife and i are not talking what do i do", "my mother in law keeps criticizing me", "how do i tell my boyfriend i need space",
+    "should i tell my parents about my relationship", "my friend ghosted me", "i feel jealous of my friend",
+    "my brother is anxious, what can i tell him", "he feels very low", "she cannot sleep", "my son has fever", "my wife is pregnant and tired",
+    "what's the capital of france", "write me a poem", "tell me a story", "what is bubbles", "thank you so much", "bye", "lol", "kya main kaafi so rahi hun", "avg sleep this week", "ok cool",
+    "i want to die", "i dont want to live anymore", "no one would miss me if i was gone", "everything is pointless and i am so tired of it all",
+    "my partner hits me and i am scared", "he threatens me when i say no", "i feel unsafe at home", "mujhe marna hai", "mera pati mujhe maarta hai",
+    "i feel sad and i can't stop drinking", "i am so stressed i cannot breathe", "i feel anxious and my chest hurts", "i'm so tired and feel faint",
+    "i have been feeling empty for weeks", "i feel sad every single day", "i have been stressed for months", "i think i might have depression")
 
 out = Path(__file__).with_name("own_brain_cases.jsonl")
 out.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf8")
