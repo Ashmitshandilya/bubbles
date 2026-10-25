@@ -323,7 +323,15 @@ class Api(private val session: Session) {
     suspend fun associations(): AssociationsResponse = json.decodeFromString(get("/wellness/associations"))
     suspend fun daily(): DailyResponse = json.decodeFromString(send("POST", "/companion/daily", "{}"))
     /** Everything Today shows, in one call (the server reads the parts side by side and chooses the lede sentence). */
-    suspend fun today(): TodayBundle = parseToday(getJson("/today?days=14"))
+    suspend fun today(): TodayBundle {
+        val raw = get("/today?days=14")
+        val bundle = parseToday(json.parseToJsonElement(raw).jsonObject)
+        session.todayCache = raw
+        return bundle
+    }
+
+    /** The last Today this phone saw, or null (nothing saved, or it no longer reads). */
+    fun cachedToday(): TodayBundle? = runCatching { session.todayCache?.let { parseToday(json.parseToJsonElement(it).jsonObject) } }.getOrNull()
     suspend fun setConsent(purpose: String, granted: Boolean, textHash: String? = null, source: String = "settings") {
         send("PUT", "/consents/$purpose", json.encodeToString(ConsentBody.serializer(), ConsentBody(granted, source, textHash)))
     }
