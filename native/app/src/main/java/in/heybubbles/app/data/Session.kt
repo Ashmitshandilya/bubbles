@@ -35,6 +35,11 @@ class Session(context: Context) {
         get() = prefs.getString("pending_ack", null)
         set(v) { prefs.edit().apply { if (v == null) remove("pending_ack") else putString("pending_ack", v) }.apply() }
 
+    /** The last answer to GET /today, so Today opens instantly with the last known day while the fresh one loads. Encrypted here and wiped on sign-out. */
+    var todayCache: String?
+        get() = prefs.getString("today_cache", null)
+        set(v) { prefs.edit().apply { if (v == null) remove("today_cache") else putString("today_cache", v) }.apply() }
+
     fun save(access: String, refresh: String?) {
         prefs.edit().putString("access", access).putString("refresh", refresh).apply()
         _signedIn.value = true

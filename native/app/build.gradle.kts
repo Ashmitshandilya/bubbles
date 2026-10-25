@@ -22,8 +22,8 @@ android {
         applicationId = "in.heybubbles.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "3.1.0"
+        versionCode = 12
+        versionName = "3.2.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Public values only (same as the website). Override with -PBUBBLES_API_URL=... for a local server.
         buildConfigField("String", "API_URL", "\"${providers.gradleProperty("BUBBLES_API_URL").getOrElse("https://bubbles-dk3v.onrender.com")}\"")

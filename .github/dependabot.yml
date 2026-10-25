@@ -9,6 +9,14 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    # eslint 10 / typescript 7 break eslint-config-next 15 (ERESOLVE); bump them together with Next.
+    ignore:
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
   - package-ecosystem: pip
     directory: /backend
     schedule:

@@ -68,6 +68,11 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
     val state: StateFlow<TodayState> = _state
 
     init {
+        // Show the last known day at once, then replace it with the fresh one: the phone never opens on a blank "Getting your day ready".
+        api.cachedToday()?.let { cached ->
+            repo.seed(cached.trackers)
+            _state.value = TodayState(loading = false, today = cached, gaps = cached.gaps)
+        }
         load()
         // No separate load of every tracker: the one /today call carries the ones Today shows, and the Track screen loads the rest when it opens.
     }
@@ -78,7 +83,7 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
     }
 
     fun load() {
-        _state.update { it.copy(loading = true, error = null) }
+        _state.update { it.copy(loading = it.today == null, error = null) }
         viewModelScope.launch {
             try {
                 // One call carries the lede, the brief, the Orbit question and the profile; the patterns come beside it.
@@ -96,7 +101,8 @@ class TodayViewModel(private val api: Api, val repo: Repo) : ViewModel() {
                     )
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = e.friendly()) }
+                // With a saved day on screen, a failed refresh stays quiet: the old day is still true and the pull-to-refresh is there.
+                _state.update { if (it.today != null) it.copy(loading = false) else it.copy(loading = false, error = e.friendly()) }
             }
         }
     }
@@ -162,6 +168,10 @@ fun TodayScreen(api: Api, repo: Repo, onTalk: () -> Unit, onOpenTracker: (String
                     }
                 }
             }
+        }
+
+        s.today?.checked?.let { line ->
+            Text(line, Modifier.padding(horizontal = 24.dp).padding(top = 12.dp), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Spacer(Modifier.height(16.dp))

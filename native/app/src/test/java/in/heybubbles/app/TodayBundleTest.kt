@@ -53,4 +53,10 @@ class TodayBundleTest {
         assertEquals(7.0, b.trackers["sleep"]!!.first().number("duration")!!, 0.0)
         assertTrue(b.trackers["hydration"]!!.isEmpty())                           // read, and nothing logged: that is an answer
     }
+
+    @Test fun theCheckedGuessIsKeptWordForWordAndAbsentWhenBlank() {
+        assertEquals("Bubbles guessed it, and it held.", parse("""{"learned":{"checked":"Bubbles guessed it, and it held."}}""").checked)
+        assertNull(parse("""{"learned":{"checked":""}}""").checked)
+        assertNull(parse("""{}""").checked)
+    }
 }

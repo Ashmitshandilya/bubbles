@@ -18,6 +18,8 @@ data class TodayBundle(
     val safetyNote: String = "",
     val orbitQuestionWaiting: Boolean = false,
     val displayName: String? = null,
+    /** One honest sentence about the newest guess Bubbles has scored against the person's own logs (a miss is said as plainly as a hit); null when none. */
+    val checked: String? = null,
     /** The tracker entries the server already read for Today, by slug. A tracker it could not read is absent (never an empty list). */
     val trackers: Map<String, List<Entry>> = emptyMap(),
 )
@@ -46,6 +48,7 @@ fun parseToday(root: JsonObject): TodayBundle {
         safetyNote = brief?.get("companion").obj()?.get("safety_note").text().orEmpty(),
         orbitQuestionWaiting = (orbitQuestion?.get("answered") as? JsonPrimitive)?.booleanOrNull == false,
         displayName = name,
+        checked = root["learned"].obj()?.get("checked").text(),
         trackers = root["trackers"].obj()?.mapNotNull { (slug, v) -> v.obj()?.let { slug to parseEntries(it) } }?.toMap().orEmpty(),
     )
 }
