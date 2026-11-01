@@ -135,7 +135,7 @@ Chat persistence is backend-owned. The browser sends the optional conversation I
 
 `backend/safety_engine.py` is deterministic and runs before generative AI. RED is a hard gate: urgent responses are generated without sending the message or health context to a provider. AMBER routes to cautious guidance without diagnosis or false reassurance. GREEN is not proof that no emergency exists.
 
-`backend/ai_provider.py` implements the free-provider allowlist and provider error handling. `backend/ai_orchestrator.py` applies policy and budget routing. The default policy is `$0 AI`: paid routing and keyless routing are disabled, and keyless health-data routing is disabled. Do not enable paid or keyless health-data routing without explicitly revisiting policy, privacy, and provider terms.
+`backend/ai_provider.py` implements the free-provider allowlist and provider error handling. `HomeServer` (the owner's Ubuntu laptop running Ollama, `docs/HOME_SERVER.md`, `scripts/homeserver/`) is the last keyed fallback and is in the pool only when `HOME_LLM_URL` (https) and `HOME_LLM_TOKEN` are set; the same laptop keeps a nightly age-encrypted Supabase backup and never a readable one. `backend/ai_orchestrator.py` applies policy and budget routing. The default policy is `$0 AI`: paid routing and keyless routing are disabled, and keyless health-data routing is disabled. Do not enable paid or keyless health-data routing without explicitly revisiting policy, privacy, and provider terms.
 
 ### Operational telemetry and caches
 

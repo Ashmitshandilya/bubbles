@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 
@@ -31,6 +32,9 @@ FREE_MODEL_ALLOWLIST = {
     "Murakumo": {"murakumo-main"},
     "BlockRun": {"nvidia/nemotron-3.5-lightning"},
     "Animica": {"kimi-k3"},
+    # The owner's own Ubuntu laptop running Ollama (docs/HOME_SERVER.md). It costs nothing per call, but the list still fails
+    # closed: HOME_LLM_URL pointed at a paid API by mistake cannot be used with a model name that is not one of these.
+    "HomeServer": {"llama3.2:1b", "llama3.2:3b", "qwen2.5:3b", "qwen2.5:7b", "llama3.1:8b", "gemma3:4b"},
 }
 
 # One call may take this long (the reply budget below is still the ceiling for the whole chain). A chat reply is a few hundred
@@ -163,6 +167,7 @@ def _post_openai_compatible(
     model: str,
     system_instruction: str,
     user_message: str,
+    timeout_cap: float = REQUEST_TIMEOUT,
 ) -> ProviderResult:
 
     if not model:
@@ -197,14 +202,14 @@ def _post_openai_compatible(
     extras: dict[str, Any] = {}
     if provider == "Groq" and "gpt-oss" in model:
         extras["reasoning_effort"] = "low"
-    if provider in {"Groq", "Mistral"}:
+    if provider in {"Groq", "Mistral", "HomeServer"}:
         extras["response_format"] = {"type": "json_object"}
     payload.update(extras)
 
     last_error: Exception | None = None
     response = None
     for attempt in range(AI_MAX_RETRIES + 1):
-        timeout = call_timeout()  # outside the try: a spent budget ends the retries instead of being swallowed
+        timeout = call_timeout(timeout_cap)  # outside the try: a spent budget ends the retries instead of being swallowed
         try:
             response = _SESSION.post(
                 url,
@@ -223,7 +228,7 @@ def _post_openai_compatible(
                     url,
                     headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                     json=payload,
-                    timeout=call_timeout(),
+                    timeout=call_timeout(timeout_cap),
                 )
             if response.status_code == 429 or response.status_code >= 500:
                 raise ProviderError(f"HTTP {response.status_code}")
@@ -323,8 +328,9 @@ DEFAULT_MODELS = {
     "Murakumo": "murakumo-main",
     "BlockRun": "nvidia/nemotron-3.5-lightning",
     "Animica": "kimi-k3",
+    "HomeServer": "llama3.2:3b",
 }
-_MODEL_ENV = {"Z.AI": "ZAI_MODEL", "AIML API": "AIML_MODEL"}
+_MODEL_ENV = {"Z.AI": "ZAI_MODEL", "AIML API": "AIML_MODEL", "HomeServer": "HOME_LLM_MODEL"}
 
 
 def configured_model(provider: str) -> str:
@@ -736,6 +742,44 @@ def call_animica(system_instruction: str, user_message: str) -> ProviderResult:
 
 
 # ============================================================
+# HOME SERVER (the owner's own laptop, docs/HOME_SERVER.md)
+# ============================================================
+
+# A small model on a laptop CPU reads a long prompt slowly, so it gets a longer cap than a cloud provider. It is last in the chain,
+# so in practice it gets whatever is left of the reply budget.
+HOME_LLM_TIMEOUT = max(5.0, min(float(os.getenv("HOME_LLM_TIMEOUT_S", "45")), 90.0))
+
+
+def home_server_url() -> str | None:
+    """The chat-completions address of the home server, or None when it is not set up (or set up unsafely).
+    Only https is accepted, except a loopback address for local development: a token or a health prompt never travels in clear."""
+    base = (os.getenv("HOME_LLM_URL") or "").strip().rstrip("/")
+    if not base or not os.getenv("HOME_LLM_TOKEN"):
+        return None
+    parsed = urlparse(base)
+    if parsed.scheme != "https" and not (parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1"}):
+        return None
+    if not base.endswith("/chat/completions"):
+        base += "/v1/chat/completions" if not base.endswith("/v1") else "/chat/completions"
+    return base
+
+
+def call_home_server(system_instruction: str, user_message: str) -> ProviderResult:
+    url = home_server_url()
+    if not url:
+        raise ProviderError("HomeServer: HOME_LLM_URL (https) and HOME_LLM_TOKEN are not configured.")
+    return _post_openai_compatible(
+        provider="HomeServer",
+        url=url,
+        api_key=_require_key("HOME_LLM_TOKEN"),
+        model=configured_model("HomeServer"),
+        system_instruction=system_instruction,
+        user_message=user_message,
+        timeout_cap=HOME_LLM_TIMEOUT,
+    )
+
+
+# ============================================================
 # PROVIDER ORDER
 # ============================================================
 
@@ -746,6 +790,9 @@ AUTHENTICATED_PROVIDERS = [
     ("Groq", call_groq),
     ("NVIDIA", call_nvidia),
     ("Mistral", call_mistral),
+    # Last: the owner's laptop is slower than any cloud provider, but it is free and never a third party. Left out of the pool
+    # (below) until HOME_LLM_URL and HOME_LLM_TOKEN are set.
+    ("HomeServer", call_home_server),
 ]
 
 KEYLESS_PROVIDERS = [
@@ -758,7 +805,7 @@ KEYLESS_PROVIDERS = [
 
 
 def provider_pool(*, health_data: bool) -> list[tuple[str, Any]]:
-    providers = list(AUTHENTICATED_PROVIDERS)
+    providers = [(name, fn) for name, fn in AUTHENTICATED_PROVIDERS if name != "HomeServer" or home_server_url()]
     if ALLOW_KEYLESS_AI and (not health_data or ALLOW_KEYLESS_HEALTH_DATA):
         providers.extend(KEYLESS_PROVIDERS)
     # After the policy gate: an administrator's pause can only remove a provider, never add or reorder one (admin_settings).

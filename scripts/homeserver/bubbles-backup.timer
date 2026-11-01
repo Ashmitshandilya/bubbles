@@ -1,0 +1,12 @@
+[Unit]
+Description=Bubbles: run the Supabase backup every night
+
+[Timer]
+# 02:30 India time is 21:00 UTC; the laptop's clock zone does not matter.
+OnCalendar=*-*-* 21:00:00 UTC
+RandomizedDelaySec=20m
+# If the laptop was off at that time, run once when it is back on.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

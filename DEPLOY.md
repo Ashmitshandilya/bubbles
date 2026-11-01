@@ -25,6 +25,7 @@ Environment (names are `BUBBLES_*`; old `COCO_*` names are still mapped by `env_
 | `GROQ_*` / `NVIDIA_*` / `MISTRAL_*` | Only providers you verified as free. |
 | `AI_REPLY_BUDGET_S` (50), `AI_REQUEST_TIMEOUT` (18), `AI_MAX_OUTPUT_TOKENS` (900) | One chat reply waits at most the budget for models in total; one call at most the request timeout. Leave the output cap generous: a cut-off reply is invalid JSON. |
 | `CHAT_RAG_BUDGET_S` (2), `CHAT_CONTEXT_BUDGET_S` (8), `RAG_EMBED_TIMEOUT_S` (3) | How long a chat turn waits for the evidence lookup, the person's own context and the meaning-search call before answering without them. |
+| `HOME_LLM_URL`, `HOME_LLM_TOKEN`, `HOME_LLM_MODEL`, `HOME_LLM_TIMEOUT_S` (45) | Optional. The owner's laptop running Ollama as the last AI fallback; https and a token only. Setup and the nightly encrypted Supabase backup it also runs: `docs/HOME_SERVER.md`. |
 | `BUBBLES_CLINICALLY_REVIEWED` | Leave `false` until a clinician signs `docs/clinical/BUBBLES_CLINICAL_REVIEW_PACKET.md`. |
 | `BUBBLES_ENABLE_RXNAV` | Leave unset (drug names are not sent to an outside service). |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Optional. Turns on phone reminders for the Android app (Firebase Cloud Messaging). Secret: the service-account key file, pasted whole. See `docs/FIREBASE.md`. `PUSH_SWEEP_SECONDS` (default 300) and `BUBBLES_PUSH_SWEEP=0` tune or stop the background check. |
