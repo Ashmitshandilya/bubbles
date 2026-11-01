@@ -15,6 +15,11 @@ def _clean(monkeypatch):
     admin_settings._values.pop("provider_paused.HomeServer", None)
 
 
+def _call(*args):
+    # The function the chain really calls (the route smoke test replaces the module attribute ai_provider.call_* for the session).
+    return dict(ai_provider.AUTHENTICATED_PROVIDERS)["HomeServer"](*args)
+
+
 def _names(**kw):
     return [name for name, _fn in ai_provider.provider_pool(health_data=True, **kw)]
 
@@ -70,7 +75,7 @@ def test_a_model_off_the_list_fails_closed(monkeypatch):
     called = []
     monkeypatch.setattr(ai_provider._SESSION, "post", lambda *a, **k: called.append(1))
     with pytest.raises(ai_provider.ProviderError, match="allowlist"):
-        ai_provider.call_home_server("sys", "hi")
+        _call("sys", "hi")
     assert not called
 
 
@@ -92,7 +97,7 @@ def test_sends_the_token_asks_for_json_and_gets_the_longer_timeout(monkeypatch):
         return _Response()
 
     monkeypatch.setattr(ai_provider._SESSION, "post", fake_post)
-    result = ai_provider.call_home_server("sys", "hi")
+    result = _call("sys", "hi")
     assert result.provider == "HomeServer" and result.model == "llama3.2:3b"
     assert seen["url"] == "https://h.ts.net/v1/chat/completions"
     assert seen["headers"]["Authorization"] == "Bearer secret-token"
@@ -106,5 +111,5 @@ def test_the_reply_budget_still_caps_it(monkeypatch):
     seen = {}
     monkeypatch.setattr(ai_provider._SESSION, "post", lambda url, **k: seen.update(k) or _Response())
     with ai_provider.reply_budget(10):
-        ai_provider.call_home_server("sys", "hi")
+        _call("sys", "hi")
     assert seen["timeout"] <= 10

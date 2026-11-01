@@ -117,10 +117,12 @@ def client():
 
     def no_network(*a, **k):
         raise RuntimeError("network disabled in smoke test")
-    for name in dir(ai_provider):
-        if name.startswith("call_") or name == "_post_json":
-            setattr(ai_provider, name, no_network)
+    replaced = {name: getattr(ai_provider, name) for name in dir(ai_provider) if name.startswith("call_") or name == "_post_json"}
+    for name in replaced:
+        setattr(ai_provider, name, no_network)
     yield TestClient(main.app, raise_server_exceptions=False), main.app
+    for name, fn in replaced.items():   # put them back: later test files use the real provider code
+        setattr(ai_provider, name, fn)
     if saved is not None:
         sys.modules["supabase_client"] = saved
     else:
